@@ -16,3 +16,8 @@ coverage/
 # os / editor
 .DS_Store
 *.log
+
+# playwright
+apps/web/test-results/
+apps/web/playwright-report/
+apps/web/screenshots/
