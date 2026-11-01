@@ -31,6 +31,7 @@
     "MODEL_PROVIDER": "anthropic",
     "MODEL_ID": "claude-sonnet-5-5",
     "RP_NAME": "Pact",
-    "STEP_UP_ABOVE_MINOR": "20000"
+    "STEP_UP_ABOVE_MINOR": "20000",
+    "PAYPAL_MODE": "sandbox"
   }
 }

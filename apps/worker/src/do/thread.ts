@@ -13,6 +13,8 @@ import {
   type Item,
   type Money,
   type NotificationOf,
+  Pact,
+  type PactMember,
   PROTOCOL_VERSION,
   type ResultOf,
   RpcRequest,
@@ -36,6 +38,23 @@ import {
 import { verifyAssertion } from "../auth/webauthn";
 import type { Env } from "../env";
 import { b64url, newId, nowIso } from "../ids";
+import { commitMember, type PactRefData } from "../payments/pacts";
+
+export type PactView = PactRefData & { merchant: string; category?: string };
+
+export interface PaymentEventInput {
+  kind: "charged" | "refunded" | "payoutSent" | "payoutFailed" | "chargeFailed" | "purchased";
+  userId?: string;
+  pactId?: string;
+  amount: Money;
+  paypalRef?: string;
+}
+
+export interface MemberStatusUpdate {
+  pactId: string;
+  userId: string;
+  status: PactMember["status"];
+}
 
 export const SERVER_VERSION = "0.1.0";
 const MAX_STEPS = 8;
@@ -423,6 +442,7 @@ export class ThreadDO extends DurableObject<Env> {
           pending.mandateId ?? `approval:${pending.approvalId}`,
           pending.turnId,
           "member_approval",
+          pending.call,
         );
         this.resumeAfterApproval(defer, thread.id, pending, att.userId, output);
         return { accepted: true };
@@ -707,7 +727,7 @@ export class ThreadDO extends DurableObject<Env> {
     };
 
     if (decision.outcome === "allow") {
-      return finish(await this.executeSpend(intent, decision.mandateId, turnId, "mandate"));
+      return finish(await this.executeSpend(intent, decision.mandateId, turnId, "mandate", call));
     }
     if (decision.outcome === "deny") {
       const notice = {
@@ -796,54 +816,251 @@ export class ThreadDO extends DurableObject<Env> {
   }
 
   /**
-   * The single place money moves. Reached only after `authorize()` allowed it or the
-   * addressed member approved. PayPal is not wired yet, so the charge is simulated;
-   * the real call will use `PayPal-Request-Id: spend:<intent.id>` for safe retries.
+   * The single place a turn moves money. Reached only after `authorize()` allowed it or
+   * the addressed member approved. UserDO re-checks policy against its own ledger and
+   * charges with `PayPal-Request-Id: spend:<intent.id>`, so a replay can't double-charge.
    */
   private async executeSpend(
     intent: SpendIntent,
     mandateId: string,
     turnId: string,
     authorizedBy: "mandate" | "member_approval",
+    call: ToolCall,
   ) {
-    const user = this.env.USER.get(this.env.USER.idFromName(intent.userId));
-    await user.recordCharge(intent.id, {
+    const threadId = this.meta("threadId") as string;
+    const res = await this.userStub(intent.userId).chargeSpend({
+      intent,
       mandateId,
-      amountMinor: intent.amount.amountMinor,
-      currency: intent.amount.currency,
-      at: intent.at,
+      authorizedBy,
+      threadId,
     });
-    const paypalRef = `SIMULATED-${intent.id}`;
-    const item = {
-      ...this.base(turnId, "completed"),
-      type: "paymentEvent" as const,
-      kind: "charged" as const,
+    const pactId = intent.pactId;
+    if (res.status === "pending") {
+      this.notice(turnId, "info", "PayPal is still processing this payment.");
+    } else {
+      this.emitPayment(turnId, {
+        kind: res.status === "charged" ? "charged" : "chargeFailed",
+        userId: intent.userId,
+        amount: intent.amount,
+        ...(pactId ? { pactId } : {}),
+        ...(res.paypalRef ? { paypalRef: res.paypalRef } : {}),
+      });
+    }
+    let payoutStatus: string | undefined;
+    if (res.status === "charged") {
+      payoutStatus = await this.payTransfer(call, intent, res.paymentId, turnId);
+      if (pactId) this.setMemberStatus(pactId, intent.userId, "charged", turnId);
+    }
+    return {
+      status: res.status === "charged" ? "executed" : res.status,
+      authorizedBy,
+      amount: intent.amount as Money,
+      ...(res.paypalRef ? { paymentRef: res.paypalRef } : {}),
+      ...(res.reason ? { reason: res.reason } : {}),
+      ...(res.simulated ? { simulated: true } : {}),
+      ...(payoutStatus ? { payout: payoutStatus } : {}),
+    };
+  }
+
+  /**
+   * P2P send for a `transfer_` ref: the sender's charge already succeeded, so Payouts
+   * forwards it to the recipient's PayPal (their linked wallet, or the drafted email).
+   */
+  private async payTransfer(
+    call: ToolCall,
+    intent: SpendIntent,
+    chargeId: string,
+    turnId: string,
+  ): Promise<string | undefined> {
+    const targetRef = (call.input as { targetRef?: unknown } | null)?.targetRef;
+    if (typeof targetRef !== "string") return undefined;
+    const ref = this.loadRefs().get(targetRef);
+    if (ref?.kind !== "transfer") return undefined;
+    const t = ref.data as {
+      counterpartyUserId?: string;
+      counterpartyEmail?: string;
+      note?: string;
+      status: string;
+    };
+    const receiver =
+      t.counterpartyEmail ??
+      (t.counterpartyUserId ? await this.userStub(t.counterpartyUserId).payoutReceiver() : null);
+    const out = receiver
+      ? await this.userStub(intent.userId).sendPayout({
+          chargeId,
+          userId: intent.userId,
+          receiver,
+          amount: intent.amount,
+          note: t.note ?? "Sent with Pact",
+          title: intent.description,
+        })
+      : { status: "failed" as const, reason: "recipient_not_linked" };
+    this.putRef(targetRef, { ...t, status: out.status === "sent" ? "sent" : "failed" });
+    this.emitPayment(turnId, {
+      kind: out.status === "sent" ? "payoutSent" : "payoutFailed",
       userId: intent.userId,
       amount: intent.amount,
-      paypalRef,
-      ...(intent.pactId ? { pactId: intent.pactId } : {}),
+      ...("paypalRef" in out && out.paypalRef ? { paypalRef: out.paypalRef } : {}),
+    });
+    return out.status === "sent" ? "sent" : `failed:${out.reason ?? "unknown"}`;
+  }
+
+  // ── Pacts & payments, called by the REST routes, PactDO and webhooks (DO RPC) ──
+
+  /** The pact as `userId` may see it, or null unless they're in both the thread and the pact. */
+  pactForMember(pactId: string, userId: string): PactView | null {
+    const thread = this.thread();
+    if (!thread?.memberIds.includes(userId)) return null;
+    const data = this.pactData(pactId);
+    if (!data?.pact.members.some((m) => m.userId === userId)) return null;
+    return { ...data, ...this.pactMerchant(data) };
+  }
+
+  /** Every member's share and mandate, for settlement. PactDO only; never sent to clients. */
+  pactForSettlement(pactId: string): PactView | null {
+    const data = this.pactData(pactId);
+    return data ? { ...data, ...this.pactMerchant(data) } : null;
+  }
+
+  commitPactMember(
+    pactId: string,
+    userId: string,
+    commit: { cap: Money; mandateId: string },
+  ): PactRefData | null {
+    const data = this.pactData(pactId);
+    if (!data) return null;
+    const next = commitMember(data, userId, commit, new Date());
+    if (!next) return null;
+    this.savePact(data, next, this.systemTurn(), "A member committed funding");
+    return next;
+  }
+
+  /** Records payment items that happened outside a turn (REST capture, settlement, webhook). */
+  recordPayments(events: PaymentEventInput[], memberStatus?: MemberStatusUpdate): void {
+    if (!this.thread()) return;
+    const turnId = this.systemTurn();
+    for (const e of events) this.emitPayment(turnId, e);
+    if (memberStatus) {
+      this.setMemberStatus(memberStatus.pactId, memberStatus.userId, memberStatus.status, turnId);
+    }
+  }
+
+  setPactState(
+    pactId: string,
+    to: Pact["state"],
+    note: string,
+    members: Record<string, PactMember["status"]> = {},
+  ): void {
+    const data = this.pactData(pactId);
+    if (!data) return;
+    const now = nowIso();
+    const next: PactRefData = {
+      ...data,
+      pact: {
+        ...data.pact,
+        state: to,
+        updatedAt: now,
+        members: data.pact.members.map((m) => {
+          const status = members[m.userId];
+          return status ? { ...m, status } : m;
+        }),
+      },
+    };
+    this.savePact(data, next, this.systemTurn(), note);
+  }
+
+  private setMemberStatus(
+    pactId: string,
+    userId: string,
+    status: PactMember["status"],
+    turnId: string,
+  ): void {
+    const data = this.pactData(pactId);
+    const member = data?.pact.members.find((m) => m.userId === userId);
+    if (!data || !member || member.status === status) return;
+    const members = data.pact.members.map((m) => (m.userId === userId ? { ...m, status } : m));
+    const allPaid = members.every((m) => m.status === "charged" || m.status === "declined");
+    const next: PactRefData = {
+      ...data,
+      pact: {
+        ...data.pact,
+        members,
+        ...(allPaid && data.pact.action.kind === "collect" ? { state: "done" as const } : {}),
+        updatedAt: nowIso(),
+      },
+    };
+    this.savePact(data, next, turnId, `${member.displayName}: ${status}`);
+  }
+
+  private pactData(pactId: string): PactRefData | null {
+    const ref = this.loadRefs().get(pactId);
+    return ref?.kind === "pact" ? (ref.data as PactRefData) : null;
+  }
+
+  private savePact(prev: PactRefData, next: PactRefData, turnId: string, note: string): void {
+    const pact = Pact.parse(next.pact);
+    this.putRef(pact.id, { ...next, pact });
+    const item = {
+      ...this.base(turnId, "completed"),
+      type: "pactUpdate" as const,
+      pactId: pact.id,
+      from: prev.pact.state,
+      to: pact.state,
+      pact,
+      note: note.slice(0, 300),
     };
     this.emitItem("item/started", item);
     this.emitItem("item/completed", item);
-    return {
-      status: "executed",
-      authorizedBy,
-      amount: intent.amount as Money,
-      paymentRef: paypalRef,
-      simulated: true,
-    };
+  }
+
+  private pactMerchant(data: PactRefData): { merchant: string; category?: string } {
+    if (data.pact.action.kind === "purchase") {
+      const product = this.loadRefs().get(data.pact.action.productRef)?.data as
+        | { merchant?: string; category?: string }
+        | undefined;
+      if (product?.merchant) {
+        return {
+          merchant: product.merchant,
+          ...(product.category ? { category: product.category } : {}),
+        };
+      }
+    }
+    return { merchant: "pact" };
+  }
+
+  private emitPayment(turnId: string, e: PaymentEventInput): void {
+    const item = { ...this.base(turnId, "completed"), type: "paymentEvent" as const, ...e };
+    this.emitItem("item/started", item);
+    this.emitItem("item/completed", item);
+  }
+
+  private notice(turnId: string, level: "info" | "warning" | "error", text: string): void {
+    const item = { ...this.base(turnId, "completed"), type: "systemNotice" as const, level, text };
+    this.emitItem("item/started", item);
+    this.emitItem("item/completed", item);
+  }
+
+  /** Items outside a turn still need a turn id; each out-of-band event gets its own. */
+  private systemTurn(): string {
+    return newId("turn");
+  }
+
+  private putRef(id: string, data: unknown): void {
+    this.sql.exec(
+      "INSERT OR REPLACE INTO refs (id, kind, json) VALUES (?, ?, ?)",
+      id,
+      id.slice(0, id.indexOf("_")),
+      JSON.stringify(data),
+    );
+  }
+
+  private userStub(userId: string) {
+    return this.env.USER.get(this.env.USER.idFromName(userId));
   }
 
   private toolContext(turnId: string, userId: string, members: Member[]): ToolContext {
     const threadId = this.meta("threadId") as string;
-    const put = (id: string, data: unknown) => {
-      this.sql.exec(
-        "INSERT OR REPLACE INTO refs (id, kind, json) VALUES (?, ?, ?)",
-        id,
-        id.slice(0, id.indexOf("_")),
-        JSON.stringify(data),
-      );
-    };
+    const put = (id: string, data: unknown) => this.putRef(id, data);
     return {
       env: this.env,
       threadId,

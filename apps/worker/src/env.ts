@@ -23,6 +23,16 @@ export interface Env {
   /** Comma-separated origins allowed for WebAuthn and WebSocket upgrades. */
   ORIGINS: string;
   DEV_AUTH?: string;
+
+  /**
+   * "sandbox" | "live" call PayPal; "simulated" fakes charges locally so dev and tests
+   * run without credentials. Anything else is treated as misconfiguration.
+   */
+  PAYPAL_MODE: string;
+  PAYPAL_CLIENT_ID?: string;
+  PAYPAL_CLIENT_SECRET?: string;
+  /** The id PayPal assigned to our webhook subscription; signatures are bound to it. */
+  PAYPAL_WEBHOOK_ID?: string;
 }
 
 export function allowedOrigins(env: Env): string[] {
