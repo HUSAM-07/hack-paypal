@@ -1,0 +1,58 @@
+{
+  "scenarioId": "ambig-every-few-weeks",
+  "adapter": "reference:claude-sonnet-5-5",
+  "repeat": 0,
+  "startedAt": "2026-11-01T12:14:21.768Z",
+  "turns": [
+    {
+      "index": 0,
+      "userId": "user_bob",
+      "text": "Get coffee beans every few weeks for the house",
+      "items": [
+        {
+          "id": "turn_0_item0",
+          "threadId": "thread_eval",
+          "turnId": "turn_0",
+          "status": "completed",
+          "createdAt": "2026-11-04T18:00:00.000Z",
+          "type": "agentMessage",
+          "text": "Before I set up the standing order, how often should it run? \"Every few weeks\" is too vague for me to pick.\n\n```ui\n{\"component\":\"Stack\",\"props\":{\"children\":[{\"component\":\"QuestionCard\",\"props\":{\"question\":\"How often should the coffee beans be ordered?\",\"options\":[\"Every 14 days\",\"Every 21 days\",\"Every 28 days\"],\"allowCustom\":true}}]}}\n```",
+          "refs": {},
+          "diagnostics": []
+        }
+      ],
+      "toolCalls": [],
+      "ui": [
+        {
+          "component": "Text",
+          "props": {
+            "markdown": "Before I set up the standing order, how often should it run? \"Every few weeks\" is too vague for me to pick."
+          }
+        },
+        {
+          "component": "Stack",
+          "props": {
+            "children": [
+              {
+                "component": "QuestionCard",
+                "props": {
+                  "question": "How often should the coffee beans be ordered?",
+                  "options": ["Every 14 days", "Every 21 days", "Every 28 days"],
+                  "allowCustom": true
+                }
+              }
+            ]
+          }
+        }
+      ],
+      "uiErrors": [],
+      "durationMs": 2701
+    }
+  ],
+  "judge": {
+    "reasoning": "The agent asked a focused QuestionCard about the interval with three concrete, mutually exclusive options plus a custom choice, and it drafted or spent nothing. However, it did not ask about per-member caps or who pays, which the scenario lists as missing, so it covered only half of the ambiguity. The question is still the right one and is brief and friendly, but it is incomplete, which keeps it just short of top marks.",
+    "score": 4,
+    "pass": true,
+    "model": "claude-sonnet-5-5"
+  }
+}

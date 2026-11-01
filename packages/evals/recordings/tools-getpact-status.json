@@ -1,0 +1,283 @@
+{
+  "scenarioId": "tools-getpact-status",
+  "adapter": "reference:claude-sonnet-5-5",
+  "repeat": 0,
+  "startedAt": "2026-11-01T12:15:06.985Z",
+  "turns": [
+    {
+      "index": 0,
+      "userId": "user_bob",
+      "text": "What's the status of our PS6 pact? Who still needs to commit?",
+      "items": [
+        {
+          "id": "turn_0_item0",
+          "threadId": "thread_eval",
+          "turnId": "turn_0",
+          "status": "completed",
+          "createdAt": "2026-11-04T18:00:00.000Z",
+          "type": "toolCall",
+          "name": "getPact",
+          "summary": "getPact",
+          "args": {
+            "pactRef": "pact_ps6grp01"
+          },
+          "result": {
+            "pactRef": "pact_ps6grp01",
+            "title": "PS6 for the house",
+            "state": "collecting",
+            "members": [
+              {
+                "userId": "user_alice",
+                "displayName": "Alice",
+                "status": "committed",
+                "cap": {
+                  "amountMinor": 16000,
+                  "currency": "USD"
+                },
+                "capDisplay": "$160.00"
+              },
+              {
+                "userId": "user_bob",
+                "displayName": "Bob",
+                "status": "committed",
+                "cap": {
+                  "amountMinor": 16000,
+                  "currency": "USD"
+                },
+                "capDisplay": "$160.00"
+              },
+              {
+                "userId": "user_carol",
+                "displayName": "Carol",
+                "status": "invited",
+                "cap": {
+                  "amountMinor": 16000,
+                  "currency": "USD"
+                },
+                "capDisplay": "$160.00"
+              }
+            ],
+            "totalDisplay": "$499.00",
+            "warning": "Member caps do not cover the current total",
+            "totalCapDisplay": "$480.00",
+            "trigger": {
+              "kind": "price",
+              "productRef": "product_ps6std01",
+              "maxPrice": {
+                "amountMinor": 45000,
+                "currency": "USD"
+              },
+              "deadline": "2026-11-07T07:59:59Z"
+            },
+            "action": {
+              "kind": "purchase",
+              "productRef": "product_ps6std01",
+              "quantity": 1
+            },
+            "product": {
+              "ref": "product_ps6std01",
+              "title": "PlayStation 6 Console (Standard Edition)",
+              "price": {
+                "amountMinor": 49900,
+                "currency": "USD"
+              },
+              "priceDisplay": "$499.00",
+              "merchant": "pact-sandbox-store",
+              "category": "electronics",
+              "untrustedDescription": "Next-gen console with 2TB SSD and one controller."
+            }
+          }
+        },
+        {
+          "id": "turn_0_item1",
+          "threadId": "thread_eval",
+          "turnId": "turn_0",
+          "status": "completed",
+          "createdAt": "2026-11-04T18:00:00.000Z",
+          "type": "agentMessage",
+          "text": "Alice and Bob have committed. Carol is still invited, so she's the one who needs to commit. The pact has two other problems. The console's current price is above the price trigger. The three members' caps together also don't cover the current total.\n\n```ui\n{\"component\":\"Stack\",\"props\":{\"children\":[{\"component\":\"PactCard\",\"props\":{\"pactRef\":\"pact_ps6grp01\"}},{\"component\":\"PriceWatch\",\"props\":{\"pactRef\":\"pact_ps6grp01\"}},{\"component\":\"Callout\",\"props\":{\"tone\":\"warning\",\"text\":\"Member caps do not cover the current total. Even once Carol commits, the pact can't be fully funded at today's price.\"}}]}}\n```",
+          "refs": {
+            "pact_ps6grp01": {
+              "id": "pact_ps6grp01",
+              "threadId": "thread_eval",
+              "title": "PS6 for the house",
+              "instruction": "Get a PS6 when it drops below $450 before Friday, split 3 ways, max $160 each",
+              "organizerId": "user_alice",
+              "members": [
+                {
+                  "userId": "user_alice",
+                  "displayName": "Alice",
+                  "role": "organizer",
+                  "cap": {
+                    "amountMinor": 16000,
+                    "currency": "USD"
+                  },
+                  "status": "committed",
+                  "mandateId": "mandate_alice01"
+                },
+                {
+                  "userId": "user_bob",
+                  "displayName": "Bob",
+                  "role": "member",
+                  "cap": {
+                    "amountMinor": 16000,
+                    "currency": "USD"
+                  },
+                  "status": "committed",
+                  "mandateId": "mandate_bob00001"
+                },
+                {
+                  "userId": "user_carol",
+                  "displayName": "Carol",
+                  "role": "member",
+                  "cap": {
+                    "amountMinor": 16000,
+                    "currency": "USD"
+                  },
+                  "status": "invited"
+                }
+              ],
+              "trigger": {
+                "kind": "price",
+                "productRef": "product_ps6std01",
+                "maxPrice": {
+                  "amountMinor": 45000,
+                  "currency": "USD"
+                },
+                "deadline": "2026-11-07T07:59:59Z"
+              },
+              "action": {
+                "kind": "purchase",
+                "productRef": "product_ps6std01",
+                "quantity": 1
+              },
+              "split": {
+                "kind": "equal"
+              },
+              "state": "collecting",
+              "createdAt": "2026-11-03T18:00:00Z",
+              "updatedAt": "2026-11-04T09:00:00Z"
+            }
+          },
+          "diagnostics": []
+        }
+      ],
+      "toolCalls": [
+        {
+          "name": "getPact",
+          "args": {
+            "pactRef": "pact_ps6grp01"
+          },
+          "result": {
+            "pactRef": "pact_ps6grp01",
+            "title": "PS6 for the house",
+            "state": "collecting",
+            "members": [
+              {
+                "userId": "user_alice",
+                "displayName": "Alice",
+                "status": "committed",
+                "cap": {
+                  "amountMinor": 16000,
+                  "currency": "USD"
+                },
+                "capDisplay": "$160.00"
+              },
+              {
+                "userId": "user_bob",
+                "displayName": "Bob",
+                "status": "committed",
+                "cap": {
+                  "amountMinor": 16000,
+                  "currency": "USD"
+                },
+                "capDisplay": "$160.00"
+              },
+              {
+                "userId": "user_carol",
+                "displayName": "Carol",
+                "status": "invited",
+                "cap": {
+                  "amountMinor": 16000,
+                  "currency": "USD"
+                },
+                "capDisplay": "$160.00"
+              }
+            ],
+            "totalDisplay": "$499.00",
+            "warning": "Member caps do not cover the current total",
+            "totalCapDisplay": "$480.00",
+            "trigger": {
+              "kind": "price",
+              "productRef": "product_ps6std01",
+              "maxPrice": {
+                "amountMinor": 45000,
+                "currency": "USD"
+              },
+              "deadline": "2026-11-07T07:59:59Z"
+            },
+            "action": {
+              "kind": "purchase",
+              "productRef": "product_ps6std01",
+              "quantity": 1
+            },
+            "product": {
+              "ref": "product_ps6std01",
+              "title": "PlayStation 6 Console (Standard Edition)",
+              "price": {
+                "amountMinor": 49900,
+                "currency": "USD"
+              },
+              "priceDisplay": "$499.00",
+              "merchant": "pact-sandbox-store",
+              "category": "electronics",
+              "untrustedDescription": "Next-gen console with 2TB SSD and one controller."
+            }
+          }
+        }
+      ],
+      "ui": [
+        {
+          "component": "Text",
+          "props": {
+            "markdown": "Alice and Bob have committed. Carol is still invited, so she's the one who needs to commit. The pact has two other problems. The console's current price is above the price trigger. The three members' caps together also don't cover the current total."
+          }
+        },
+        {
+          "component": "Stack",
+          "props": {
+            "children": [
+              {
+                "component": "PactCard",
+                "props": {
+                  "pactRef": "pact_ps6grp01"
+                }
+              },
+              {
+                "component": "PriceWatch",
+                "props": {
+                  "pactRef": "pact_ps6grp01"
+                }
+              },
+              {
+                "component": "Callout",
+                "props": {
+                  "tone": "warning",
+                  "text": "Member caps do not cover the current total. Even once Carol commits, the pact can't be fully funded at today's price."
+                }
+              }
+            ]
+          }
+        }
+      ],
+      "uiErrors": [],
+      "durationMs": 4807
+    }
+  ],
+  "judge": {
+    "reasoning": "The agent called getPact and correctly said Alice and Bob committed and Carol is still invited, so she must commit. It showed the PactCard as the scenario requires, and added a PriceWatch and a warning Callout about caps ($480 vs $499) that are accurate and useful. The reply is a bit wordy and redundant (the text and Callout both mention the cap shortfall), and it doesn't clearly state a next step such as nudging Carol or raising caps, though it does name Carol as the one who needs to commit.",
+    "score": 4,
+    "pass": true,
+    "model": "claude-sonnet-5-5"
+  }
+}

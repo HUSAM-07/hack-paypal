@@ -1,0 +1,26 @@
+{
+  "name": "@pact/evals",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "vitest run --passWithNoTests",
+    "evals": "tsx src/cli.ts"
+  },
+  "dependencies": {
+    "@ai-sdk/anthropic": "^4.0.94",
+    "@pact/catalog": "*",
+    "@pact/policy": "*",
+    "@pact/protocol": "*",
+    "ai": "^7.0.159",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.6",
+    "tsx": "^4.23.15"
+  }
+}
