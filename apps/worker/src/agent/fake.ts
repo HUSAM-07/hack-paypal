@@ -37,7 +37,11 @@ interface Plan {
 }
 
 function afterUser(m: ChatMessage & { role: "user" }, req: StreamRequest): Plan {
-  const text = m.content.toLowerCase();
+  // Rules read only what the member said, not the per-turn <context> block.
+  const said = /<member_message[^>]*>([\s\S]*?)<\/member_message>/.exec(m.content)?.[1];
+  const text = (said ?? m.content).toLowerCase();
+  const approval = /^<approval_result[^>]*>([\s\S]*)<\/approval_result>/.exec(m.content)?.[1];
+  if (approval) return spendReply(String((JSON.parse(approval) as { status?: string }).status));
   if (text.includes("explode")) return { throws: true };
   if (text.includes("slowly")) {
     return { slow: true, text: Array.from({ length: 60 }, (_, i) => `word${i}`).join(" ") };
@@ -61,7 +65,7 @@ function afterUser(m: ChatMessage & { role: "user" }, req: StreamRequest): Plan 
           name: "draftPact",
           input: {
             title: "Group purchase",
-            instruction: m.content.slice(0, 1000),
+            instruction: (said ?? m.content).slice(0, 1000),
             trigger: { kind: "manual" },
             action: { kind: "purchase", productRef: ref, quantity: 1 },
           },
@@ -115,25 +119,29 @@ function afterTools(m: ChatMessage & { role: "tool" }, history: ChatMessage[]): 
       return {
         text: `Drafted it.\n\`\`\`openui-lang\nroot = Stack([card])\ncard = PactCard("${String(out.pactRef)}")\n\`\`\``,
       };
-    case "requestSpend": {
-      const status = String(out.status);
-      const tone = status === "executed" ? "success" : status === "denied" ? "warning" : "info";
-      const line =
-        status === "executed"
-          ? "Done, the purchase went through."
-          : status === "denied"
-            ? "The policy engine blocked that spend."
-            : status === "declined"
-              ? "Okay, I won't buy it."
-              : "That approval is no longer valid.";
-      return {
-        text: `\`\`\`openui-lang\nroot = Stack([c])\nc = Callout("${tone}", "${line}")\n\`\`\``,
-      };
-    }
+    case "requestSpend":
+      return spendReply(String(out.status));
     default:
       void history;
       return { text: "Done." };
   }
+}
+
+function spendReply(status: string): Plan {
+  const tone = status === "executed" ? "success" : status === "denied" ? "warning" : "info";
+  const line =
+    status === "executed"
+      ? "Done, the purchase went through."
+      : status === "denied"
+        ? "The policy engine blocked that spend."
+        : status === "awaiting_approval"
+          ? "Nothing is charged until you approve it in the sheet."
+          : status === "declined"
+            ? "Okay, I won't buy it."
+            : "That approval is no longer valid.";
+  return {
+    text: `\`\`\`openui-lang\nroot = Stack([c])\nc = Callout("${tone}", "${line}")\n\`\`\``,
+  };
 }
 
 function latestRef(messages: ChatMessage[], kind: string): string | undefined {

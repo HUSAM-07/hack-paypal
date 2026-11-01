@@ -191,3 +191,18 @@ export async function searchChannel3(apiKey: string, q: SearchQuery): Promise<Pr
   }
   return out.slice(0, q.limit);
 }
+
+/** Channel3 when a key is configured, the offline fixtures otherwise (or when it fails). */
+export async function defaultProductSearch(
+  channel3Key: string | undefined,
+  q: SearchQuery,
+): Promise<{ source: string; products: Product[] }> {
+  if (channel3Key) {
+    try {
+      return { source: "channel3", products: await searchChannel3(channel3Key, q) };
+    } catch (err) {
+      console.warn("channel3 unavailable, using fixtures", (err as Error).message);
+    }
+  }
+  return { source: "fixture", products: searchFixtures(q) };
+}

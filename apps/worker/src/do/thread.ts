@@ -23,11 +23,24 @@ import {
 } from "@pact/protocol";
 import { ZodError, z } from "zod";
 import { providerFor } from "../agent";
-import { analyzeAgentText, CATALOG_VERSION, type StoredRef, systemPrompt } from "../agent/catalog";
+import {
+  type AnalyzedMessage,
+  analyzeAgentText,
+  CATALOG_VERSION,
+  formatMoney,
+  type StoredRef,
+  systemPrompt,
+} from "../agent/catalog";
+import { contextBlock, knownAmounts, memberMessage } from "../agent/context";
+import { runAgentLoop } from "../agent/loop";
+import { defaultProductSearch } from "../agent/products";
 import type { ChatMessage, ToolCall, ToolResult } from "../agent/provider";
+import { validTimeZone } from "../agent/time";
 import {
   type Member,
+  type PactRefData,
   runTool,
+  spendResult,
   TOOL_DEFS,
   type ToolContext,
   ToolError,
@@ -54,8 +67,6 @@ interface PendingApproval {
   turnId: string;
   approverId: string;
   call: ToolCall;
-  /** Results of sibling tool calls from the same step, replayed to the model on resume. */
-  siblingResults: ToolResult[];
   intent: SpendIntent;
   mandateId?: string;
   stepUp: boolean;
@@ -80,6 +91,16 @@ interface Call {
 }
 
 type Handler = (call: Call, params: never) => Promise<unknown> | unknown;
+
+/** How an approval the model already narrated ended; it arrives as a host message. */
+function approvalResult(a: PendingApproval, output: unknown): string {
+  const result = {
+    description: a.intent.description,
+    amountDisplay: formatMoney(a.intent.amount),
+    ...(output as Record<string, unknown>),
+  };
+  return `<approval_result approval_id="${a.approvalId}">${JSON.stringify(result)}</approval_result>`;
+}
 
 export class ThreadDO extends DurableObject<Env> {
   private sql: SqlStorage;
@@ -453,11 +474,13 @@ export class ThreadDO extends DurableObject<Env> {
     const author = members.find((m) => m.userId === authorId);
     const diagnostics = this.meta("pendingDiagnostics");
     this.deleteMeta("pendingDiagnostics");
-    // Member text is untrusted: wrap it so the model can tell data from instructions.
-    const safe = (s: string) => s.replaceAll("</member_message", "<\\/member_message");
-    let content = `<member_message author="${safe(author?.displayName ?? "member")}" user_id="${authorId}">\n${safe(text)}\n</member_message>`;
-    if (uiState)
-      content += `\n<ui_state>${safe(JSON.stringify(uiState)).slice(0, 4000)}</ui_state>`;
+    let content = `${contextBlock({
+      now: new Date(),
+      timeZone: validTimeZone(this.env.TIMEZONE),
+      members,
+      pacts: this.threadPacts(),
+      speakerId: authorId,
+    })}\n${memberMessage(author, authorId, text, uiState)}`;
     if (diagnostics) content = `<ui_diagnostics>${diagnostics}</ui_diagnostics>\n${content}`;
     this.appendMessage({ role: "user", content });
     await this.loop(turnId, authorId, members, signal);
@@ -475,10 +498,7 @@ export class ThreadDO extends DurableObject<Env> {
     this.sql.exec("UPDATE turns SET status = 'running' WHERE id = ?", a.turnId);
     defer(() => {
       this.emit("turn/started", { threadId, turnId: a.turnId, authorId: approverId });
-      this.appendMessage({
-        role: "tool",
-        results: [...a.siblingResults, { callId: a.call.id, name: a.call.name, output }],
-      });
+      this.appendMessage({ role: "user", content: approvalResult(a, output) });
       this.ctx.waitUntil(
         this.members().then((members) =>
           this.loop(a.turnId, a.intent.userId, members, abort.signal),
@@ -521,112 +541,92 @@ export class ThreadDO extends DurableObject<Env> {
     members: Member[],
     signal: AbortSignal,
   ): Promise<"completed" | "interrupted" | "awaitingApproval"> {
-    const provider = providerFor(this.env);
-    for (let step = 0; step < MAX_STEPS; step++) {
-      let text = "";
-      let item: (Item & { type: "agentMessage" }) | undefined;
-      const calls: ToolCall[] = [];
-      const stream = provider.stream({
+    let item: (Item & { type: "agentMessage" }) | undefined;
+    const end = await runAgentLoop(
+      {
+        provider: providerFor(this.env),
         system: systemPrompt(),
-        messages: this.loadMessages(),
         tools: TOOL_DEFS,
-        signal,
-      });
-      try {
-        for await (const ev of stream) {
-          if (signal.aborted) break;
-          if (ev.type === "text") {
-            if (!item) {
-              item = {
-                ...this.base(turnId, "inProgress"),
-                type: "agentMessage",
-                text: "",
-                refs: {},
-                diagnostics: [],
-              };
-              this.emitItem("item/started", item);
-            }
-            text += ev.delta;
-            this.emit(
-              "item/agentMessage/delta",
-              { threadId: item.threadId, itemId: item.id, delta: ev.delta },
-              item.id,
-            );
-          } else if (ev.type === "toolCall") {
-            calls.push(ev.call);
-          }
-        }
-      } catch (err) {
-        if (!signal.aborted) {
-          if (item) this.completeAgentMessage(item, text, "failed");
-          throw err;
-        }
+        maxSteps: MAX_STEPS,
+        messages: () => this.loadMessages(),
+        append: (m) => this.appendMessage(m),
+        startMessage: () => {
+          item = {
+            ...this.base(turnId, "inProgress"),
+            type: "agentMessage",
+            text: "",
+            refs: {},
+            diagnostics: [],
+          };
+          this.emitItem("item/started", item);
+        },
+        delta: (delta) => {
+          if (!item) return;
+          this.emit(
+            "item/agentMessage/delta",
+            { threadId: item.threadId, itemId: item.id, delta },
+            item.id,
+          );
+        },
+        analyze: (text) =>
+          analyzeAgentText(text, this.loadRefs(), knownAmounts(this.loadMessages())),
+        finishMessage: (text, analysis, status, rejected) => {
+          if (item) this.completeAgentMessage(item, text, analysis, status, rejected);
+          item = undefined;
+        },
+        executeTool: (call, paused) => this.executeTool(call, turnId, userId, members, paused),
+      },
+      signal,
+    );
+    if (end.paused) return "awaitingApproval";
+    switch (end.status) {
+      case "stepLimit": {
+        const notice = {
+          ...this.base(turnId, "completed"),
+          type: "systemNotice" as const,
+          level: "warning" as const,
+          text: "The agent stopped after too many steps.",
+        };
+        this.emitItem("item/started", notice);
+        this.emitItem("item/completed", notice);
+        return "completed";
       }
-      if (item) this.completeAgentMessage(item, text, signal.aborted ? "failed" : "completed");
-      if (signal.aborted) {
-        if (text) this.appendMessage({ role: "assistant", text, toolCalls: [] });
-        return "interrupted";
-      }
-      this.appendMessage({ role: "assistant", text, toolCalls: calls });
-      if (calls.length === 0) return "completed";
-
-      const results: ToolResult[] = [];
-      let pause: PendingApproval | undefined;
-      for (const call of calls) {
-        if (signal.aborted) {
-          results.push({
-            callId: call.id,
-            name: call.name,
-            output: { error: "interrupted" },
-            isError: true,
-          });
-          continue;
-        }
-        const r = await this.executeTool(call, turnId, userId, members, pause !== undefined);
-        if ("pause" in r) pause = r.pause;
-        else results.push(r.result);
-      }
-      if (pause) {
-        pause.siblingResults = results;
-        this.sql.exec(
-          "INSERT INTO approvals (id, status, json) VALUES (?, 'pending', ?)",
-          pause.approvalId,
-          JSON.stringify(pause),
-        );
-        return "awaitingApproval";
-      }
-      this.appendMessage({ role: "tool", results });
-      if (signal.aborted) return "interrupted";
+      default:
+        return end.status;
     }
-    const notice = {
-      ...this.base(turnId, "completed"),
-      type: "systemNotice" as const,
-      level: "warning" as const,
-      text: "The agent stopped after too many steps.",
-    };
-    this.emitItem("item/started", notice);
-    this.emitItem("item/completed", notice);
-    return "completed";
   }
 
+  /**
+   * A rejected message (invalid UI the model is about to resend) completes as failed
+   * with no text, so clients drop what they streamed and nothing broken is stored.
+   */
   private completeAgentMessage(
     item: Item & { type: "agentMessage" },
     text: string,
+    analysis: AnalyzedMessage,
     status: "completed" | "failed",
+    rejected: boolean,
   ) {
     const refs = this.loadRefs();
-    const analysis = analyzeAgentText(text, refs);
     const used: Record<string, unknown> = {};
     for (const id of analysis.usedRefs) used[id] = refs.get(id);
-    const done = {
-      ...item,
-      status,
-      text,
-      refs: used,
-      diagnostics: analysis.diagnostics,
-      ...(analysis.fallbackMarkdown ? { fallbackMarkdown: analysis.fallbackMarkdown } : {}),
-    };
-    if (analysis.diagnostics.length) {
+    const done = rejected
+      ? {
+          ...item,
+          status: "failed" as const,
+          text: "",
+          refs: {},
+          diagnostics: analysis.diagnostics,
+        }
+      : {
+          ...item,
+          status,
+          text,
+          refs: used,
+          diagnostics: analysis.diagnostics,
+          ...(analysis.fallbackMarkdown ? { fallbackMarkdown: analysis.fallbackMarkdown } : {}),
+        };
+    if (!rejected && analysis.diagnostics.length) {
       this.setMeta("pendingDiagnostics", JSON.stringify(analysis.diagnostics).slice(0, 4000));
     }
     this.emitItem("item/completed", done);
@@ -643,7 +643,7 @@ export class ThreadDO extends DurableObject<Env> {
     userId: string,
     members: Member[],
     alreadyPaused: boolean,
-  ): Promise<{ result: ToolResult } | { pause: PendingApproval }> {
+  ): Promise<{ result: ToolResult; paused?: boolean }> {
     const item = {
       ...this.base(turnId, "inProgress"),
       type: "toolCall" as const,
@@ -694,7 +694,7 @@ export class ThreadDO extends DurableObject<Env> {
     toolItem: Item & { type: "toolCall" },
     outcome: ToolOutcome & { kind: "spend" },
     turnId: string,
-  ): Promise<{ result: ToolResult } | { pause: PendingApproval }> {
+  ): Promise<{ result: ToolResult; paused?: boolean }> {
     const { intent, decision } = outcome;
     const finish = (output: unknown) => {
       this.emitItem("item/completed", {
@@ -707,7 +707,8 @@ export class ThreadDO extends DurableObject<Env> {
     };
 
     if (decision.outcome === "allow") {
-      return finish(await this.executeSpend(intent, decision.mandateId, turnId, "mandate"));
+      const charged = await this.executeSpend(intent, decision.mandateId, turnId, "mandate");
+      return finish(spendResult(intent, decision, "executed", charged));
     }
     if (decision.outcome === "deny") {
       const notice = {
@@ -718,7 +719,7 @@ export class ThreadDO extends DurableObject<Env> {
       };
       this.emitItem("item/started", notice);
       this.emitItem("item/completed", notice);
-      return finish({ status: "denied", reasons: decision.reasons });
+      return finish(spendResult(intent, decision, "denied"));
     }
 
     const threshold = Number(this.env.STEP_UP_ABOVE_MINOR || "0");
@@ -731,25 +732,30 @@ export class ThreadDO extends DurableObject<Env> {
       turnId,
       approverId: intent.userId,
       call,
-      siblingResults: [],
       intent,
       ...(decision.mandateId ? { mandateId: decision.mandateId } : {}),
       stepUp,
       ...(stepUp ? { challenge: b64url(crypto.getRandomValues(new Uint8Array(32))) } : {}),
       expiresAt: new Date(Date.now() + APPROVAL_TTL_MS).toISOString(),
     };
+    // Stored now, not at turn end: the model still narrates the pending approval, and a
+    // failure while it does must not orphan an approval the member can already see.
+    this.sql.exec(
+      "INSERT INTO approvals (id, status, json) VALUES (?, 'pending', ?)",
+      approval.approvalId,
+      JSON.stringify(approval),
+    );
+    const output = spendResult(intent, decision, "awaiting_approval", {
+      approvalId: approval.approvalId,
+    });
     this.emitItem("item/completed", {
       ...toolItem,
       status: "completed",
       summary: outcome.summary,
-      result: {
-        status: "awaitingApproval",
-        approvalId: approval.approvalId,
-        reasons: decision.reasons,
-      },
+      result: output,
     });
     this.emitItem("item/started", this.approvalItem(approval));
-    return { pause: approval };
+    return { result: { callId: call.id, name: call.name, output }, paused: true };
   }
 
   private approvalItem(a: PendingApproval, decision?: "approved" | "denied" | "expired"): Item {
@@ -778,7 +784,7 @@ export class ThreadDO extends DurableObject<Env> {
     this.emitItem("item/completed", this.approvalItem(a, decision));
   }
 
-  /** A new turn cancels approvals left hanging, so the model history stays well-formed. */
+  /** A new turn cancels approvals left hanging, and tells the model they expired. */
   private supersedePendingApprovals(): void {
     for (const row of this.sql
       .exec<{ json: string }>("SELECT json FROM approvals WHERE status = 'pending'")
@@ -786,11 +792,8 @@ export class ThreadDO extends DurableObject<Env> {
       const a = JSON.parse(row.json) as PendingApproval;
       this.settleApproval(a, "expired");
       this.appendMessage({
-        role: "tool",
-        results: [
-          ...a.siblingResults,
-          { callId: a.call.id, name: a.call.name, output: { status: "superseded" } },
-        ],
+        role: "user",
+        content: approvalResult(a, { status: "expired", reason: "superseded by a new message" }),
       });
     }
   }
@@ -845,11 +848,14 @@ export class ThreadDO extends DurableObject<Env> {
       );
     };
     return {
-      env: this.env,
       threadId,
       turnId,
       userId,
       members,
+      timeZone: validTimeZone(this.env.TIMEZONE),
+      now: () => new Date(),
+      newId,
+      searchProducts: (q) => defaultProductSearch(this.env.CHANNEL3_API_KEY, q),
       putRef: (prefix, data) => {
         const id = newId(prefix);
         put(id, data);
@@ -989,6 +995,14 @@ export class ThreadDO extends DurableObject<Env> {
 
   private appendMessage(m: ChatMessage): void {
     this.sql.exec("INSERT INTO messages (json) VALUES (?)", JSON.stringify(m));
+  }
+
+  /** Pacts drafted in this thread; listed in the turn context and resolvable as refs. */
+  private threadPacts(): PactRefData["pact"][] {
+    return this.sql
+      .exec<{ json: string }>("SELECT json FROM refs WHERE kind = 'pact' ORDER BY rowid")
+      .toArray()
+      .map((r) => (JSON.parse(r.json) as PactRefData).pact);
   }
 
   private loadRefs(): Map<string, StoredRef> {

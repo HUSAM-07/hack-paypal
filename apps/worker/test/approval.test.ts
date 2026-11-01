@@ -48,6 +48,13 @@ describe("approvals", () => {
     // Amount comes from the product ref (cheapest match), never from model text.
     expect(approval.amount.amountMinor).toBe(7_999);
     expect(c.items("paymentEvent")).toHaveLength(0);
+    // The model saw status awaiting_approval and told the member before the turn paused.
+    const spend = c.items("toolCall").find((i) => i.name === "requestSpend") as {
+      result: { status: string; amountDisplay: string };
+    };
+    expect(spend.result).toMatchObject({ status: "awaiting_approval", amountDisplay: "$79.99" });
+    const narrated = c.items("agentMessage").at(-1) as { text: string };
+    expect(narrated.text).toContain("until you approve");
 
     const res = await c.call("approval/respond", {
       threadId,
@@ -209,7 +216,7 @@ describe("policy", () => {
     const spend = c.items("toolCall").find((i) => i.name === "requestSpend") as {
       result: { status: string; reasons: string[] };
     };
-    expect(spend.result).toEqual({ status: "denied", reasons: ["merchant_denied"] });
+    expect(spend.result).toMatchObject({ status: "denied", reasons: ["merchant_denied"] });
     expect(c.items("systemNotice")[0]).toMatchObject({ level: "warning" });
     expect(c.items("approvalRequest", "item/started")).toHaveLength(0);
     expect(c.items("paymentEvent")).toHaveLength(0);

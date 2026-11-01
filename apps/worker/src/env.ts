@@ -14,6 +14,8 @@ export interface Env {
   MODEL_ID: string;
   RP_NAME: string;
   STEP_UP_ABOVE_MINOR: string;
+  /** IANA zone for "Now" and local defaults (tomorrow 9am); America/Los_Angeles if unset. */
+  TIMEZONE?: string;
 
   // Secrets / per-environment (.dev.vars or `wrangler secret put`).
   ANTHROPIC_API_KEY?: string;

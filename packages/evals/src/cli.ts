@@ -1,17 +1,19 @@
 /**
  * npm run evals -- [--tags redteam,p2p] [--ids a,b] [--concurrency 4] [--repeat 3]
- *                  [--dry] [--record] [--no-judge] [--model id] [--out dir]
+ *                  [--adapter reference|worker] [--dry] [--record] [--no-judge] [--model id] [--out dir]
  *                  [--min-overall 0.9] [--min-redteam 1]
  *
  * --dry     grade the committed recordings; no API key or network needed (CI).
  * --from    with --dry, grade transcripts from another dir (e.g. a live run's transcripts/).
  * --record  also write each passing live transcript to recordings/ as a golden.
+ * --adapter worker  run the real worker agent (prompt, tools, loop) instead of the reference.
  * Exits 1 when a threshold is missed, 2 on a usage or setup error.
  */
 import { readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { parseArgs } from "node:util";
 import { referenceAdapter } from "./adapters/reference";
+import { workerAdapter } from "./adapters/worker";
 import { anthropicKey } from "./env";
 import { anthropicJudge } from "./graders/judge";
 import { loadScenarios, PACKAGE_ROOT, RECORDING_DIR } from "./harness";
@@ -24,6 +26,7 @@ const { values: args } = parseArgs({
     ids: { type: "string" },
     concurrency: { type: "string", default: "4" },
     repeat: { type: "string", default: "1" },
+    adapter: { type: "string", default: "reference" },
     dry: { type: "boolean", default: false },
     record: { type: "boolean", default: false },
     "no-judge": { type: "boolean", default: false },
@@ -93,7 +96,15 @@ if (args.dry) {
     );
     process.exit(2);
   }
-  result = await runLive(referenceAdapter({ apiKey, model: args.model }), {
+  if (args.adapter !== "reference" && args.adapter !== "worker") {
+    console.error(`unknown --adapter ${args.adapter} (reference or worker)`);
+    process.exit(2);
+  }
+  const adapter =
+    args.adapter === "worker"
+      ? workerAdapter({ apiKey, model: args.model })
+      : referenceAdapter({ apiKey, model: args.model });
+  result = await runLive(adapter, {
     scenarios,
     concurrency: Number(args.concurrency),
     repeat: Number(args.repeat),
