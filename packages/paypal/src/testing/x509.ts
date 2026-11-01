@@ -78,7 +78,8 @@ export async function makeTestCert(opts: { notBefore: Date; notAfter: Date }): P
     true,
     ["sign", "verify"],
   )) as CryptoKeyPair;
-  const spki = new Uint8Array(await crypto.subtle.exportKey("spki", kp.publicKey));
+  // Cast: workers-types widens exportKey to ArrayBuffer | JsonWebKey; "spki" is always bytes.
+  const spki = new Uint8Array((await crypto.subtle.exportKey("spki", kp.publicKey)) as ArrayBuffer);
   const sha256WithRSA = seq(oid("1.2.840.113549.1.1.11"), nul());
   const name = seq(set(seq(oid("2.5.4.3"), utf8("messageverificationcerts.sandbox.paypal.com"))));
   const tbs = seq(

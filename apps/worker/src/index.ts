@@ -3,6 +3,8 @@ import { auth } from "./auth/routes";
 import { sessionUser } from "./auth/session";
 import { allowedOrigins, type Env } from "./env";
 import { newId } from "./ids";
+import { payments } from "./payments/routes";
+import { webhooks } from "./payments/webhooks";
 import { ipRateLimit, originAllowed, securityHeaders } from "./security";
 
 export { PactDO } from "./do/pact";
@@ -16,6 +18,10 @@ app.use("/api/auth/*", ipRateLimit);
 
 app.get("/api/health", (c) => c.json({ ok: true }));
 app.route("/api/auth", auth);
+// Before `payments`: PayPal calls this without a session, and the first matching
+// handler wins, so payments' session middleware never sees webhook requests.
+app.route("/api/paypal/webhooks", webhooks);
+app.route("/api", payments);
 
 /**
  * GET /ws?thread=<threadId|new>: upgrade to the thread's Durable Object.

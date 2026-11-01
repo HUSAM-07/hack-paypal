@@ -76,7 +76,9 @@ export function clearSessionCookie(c: Context<{ Bindings: Env }>): void {
   deleteCookie(c, SESSION_COOKIE, { path: "/" });
 }
 
-export async function sessionUser(c: Context<{ Bindings: Env }>): Promise<string | null> {
+export async function sessionUser<E extends { Bindings: Env }>(
+  c: Context<E>,
+): Promise<string | null> {
   return verifySession(c.env.SESSION_SECRET, getCookie(c, SESSION_COOKIE));
 }
 

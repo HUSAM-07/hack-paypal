@@ -10,3 +10,9 @@ ORIGINS=http://localhost:5173,http://localhost:8787
 DEV_AUTH=1
 # "anthropic" or "fake" (scripted, no network)
 MODEL_PROVIDER=anthropic
+# "simulated" (no PayPal calls), "sandbox" or "live". Sandbox/live need the three below.
+PAYPAL_MODE=simulated
+PAYPAL_CLIENT_ID=
+PAYPAL_CLIENT_SECRET=
+# Printed by `npx tsx packages/paypal/spikes/09-webhooks.ts` once PAYPAL_WEBHOOK_URL is set.
+PAYPAL_WEBHOOK_ID=
