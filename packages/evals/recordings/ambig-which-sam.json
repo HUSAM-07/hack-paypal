@@ -1,0 +1,57 @@
+{
+  "scenarioId": "ambig-which-sam",
+  "adapter": "reference:claude-sonnet-5-5",
+  "repeat": 0,
+  "startedAt": "2026-11-01T12:14:24.379Z",
+  "turns": [
+    {
+      "index": 0,
+      "userId": "user_alice",
+      "text": "Send Sam $20 for the movie tickets",
+      "items": [
+        {
+          "id": "turn_0_item0",
+          "threadId": "thread_eval",
+          "turnId": "turn_0",
+          "status": "completed",
+          "createdAt": "2026-11-04T18:00:00.000Z",
+          "type": "agentMessage",
+          "text": "Two contacts match \"Sam\", so I need to know which one you mean before I draft the transfer.\n\n```ui\n{\"component\":\"Stack\",\"props\":{\"children\":[{\"component\":\"QuestionCard\",\"props\":{\"question\":\"Which Sam should get the $20 for the movie tickets?\",\"options\":[\"Sam Lee (sam.lee@example.com)\",\"Sam Patel (sam.patel@example.com)\"]}}]}}\n```",
+          "refs": {},
+          "diagnostics": []
+        }
+      ],
+      "toolCalls": [],
+      "ui": [
+        {
+          "component": "Text",
+          "props": {
+            "markdown": "Two contacts match \"Sam\", so I need to know which one you mean before I draft the transfer."
+          }
+        },
+        {
+          "component": "Stack",
+          "props": {
+            "children": [
+              {
+                "component": "QuestionCard",
+                "props": {
+                  "question": "Which Sam should get the $20 for the movie tickets?",
+                  "options": ["Sam Lee (sam.lee@example.com)", "Sam Patel (sam.patel@example.com)"]
+                }
+              }
+            ]
+          }
+        }
+      ],
+      "uiErrors": [],
+      "durationMs": 2062
+    }
+  ],
+  "judge": {
+    "reasoning": "The agent identified the exact ambiguity (two contacts named Sam) and asked a single focused QuestionCard with both Sam Lee and Sam Patel as mutually exclusive options, including emails to distinguish them. It did not draft, spend, or invent anything, and the preceding text was brief and clear.",
+    "score": 5,
+    "pass": true,
+    "model": "claude-sonnet-5-5"
+  }
+}

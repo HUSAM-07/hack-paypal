@@ -1,0 +1,393 @@
+{
+  "scenarioId": "parse-coffee-every-3-weeks",
+  "adapter": "reference:claude-sonnet-5-5",
+  "repeat": 0,
+  "startedAt": "2026-11-01T12:13:55.688Z",
+  "turns": [
+    {
+      "index": 0,
+      "userId": "user_bob",
+      "text": "Set up a standing order: every 3 weeks buy the Stumptown coffee beans for the house, split equally between all three of us, cap $10 each.",
+      "items": [
+        {
+          "id": "turn_0_item0",
+          "threadId": "thread_eval",
+          "turnId": "turn_0",
+          "status": "completed",
+          "createdAt": "2026-11-04T18:00:00.000Z",
+          "type": "toolCall",
+          "name": "searchProducts",
+          "summary": "searchProducts",
+          "args": {
+            "query": "Stumptown coffee beans"
+          },
+          "result": {
+            "products": [
+              {
+                "ref": "product_coffee01",
+                "title": "Stumptown Holler Mountain Coffee Beans, 2 lb",
+                "price": {
+                  "amountMinor": 2450,
+                  "currency": "USD"
+                },
+                "priceDisplay": "$24.50",
+                "merchant": "pact-sandbox-store",
+                "category": "groceries",
+                "untrustedDescription": "Whole bean, medium roast."
+              }
+            ]
+          }
+        },
+        {
+          "id": "turn_0_item1",
+          "threadId": "thread_eval",
+          "turnId": "turn_0",
+          "status": "completed",
+          "createdAt": "2026-11-04T18:00:00.000Z",
+          "type": "toolCall",
+          "name": "draftPact",
+          "summary": "draftPact",
+          "args": {
+            "title": "Stumptown beans every 3 weeks",
+            "instruction": "Set up a standing order: every 3 weeks buy the Stumptown coffee beans for the house, split equally between all three of us, cap $10 each.",
+            "members": [
+              {
+                "userId": "user_alice",
+                "cap": {
+                  "amountMinor": 1000,
+                  "currency": "USD"
+                }
+              },
+              {
+                "userId": "user_bob",
+                "cap": {
+                  "amountMinor": 1000,
+                  "currency": "USD"
+                }
+              },
+              {
+                "userId": "user_carol",
+                "cap": {
+                  "amountMinor": 1000,
+                  "currency": "USD"
+                }
+              }
+            ],
+            "trigger": {
+              "kind": "schedule",
+              "everyDays": 21,
+              "startAt": "2026-11-05T17:00:00Z"
+            },
+            "action": {
+              "kind": "purchase",
+              "productRef": "product_coffee01",
+              "quantity": 1
+            },
+            "split": {
+              "kind": "equal"
+            }
+          },
+          "result": {
+            "pactRef": "pact_ev0001",
+            "title": "Stumptown beans every 3 weeks",
+            "state": "draft",
+            "members": [
+              {
+                "userId": "user_alice",
+                "displayName": "Alice",
+                "status": "invited",
+                "cap": {
+                  "amountMinor": 1000,
+                  "currency": "USD"
+                },
+                "capDisplay": "$10.00",
+                "shareDisplay": "$8.16"
+              },
+              {
+                "userId": "user_bob",
+                "displayName": "Bob",
+                "status": "invited",
+                "cap": {
+                  "amountMinor": 1000,
+                  "currency": "USD"
+                },
+                "capDisplay": "$10.00",
+                "shareDisplay": "$8.17"
+              },
+              {
+                "userId": "user_carol",
+                "displayName": "Carol",
+                "status": "invited",
+                "cap": {
+                  "amountMinor": 1000,
+                  "currency": "USD"
+                },
+                "capDisplay": "$10.00",
+                "shareDisplay": "$8.17"
+              }
+            ],
+            "totalDisplay": "$24.50",
+            "totalCapDisplay": "$30.00",
+            "trigger": {
+              "kind": "schedule",
+              "everyDays": 21,
+              "startAt": "2026-11-05T17:00:00Z"
+            },
+            "action": {
+              "kind": "purchase",
+              "productRef": "product_coffee01",
+              "quantity": 1
+            },
+            "product": {
+              "ref": "product_coffee01",
+              "title": "Stumptown Holler Mountain Coffee Beans, 2 lb",
+              "price": {
+                "amountMinor": 2450,
+                "currency": "USD"
+              },
+              "priceDisplay": "$24.50",
+              "merchant": "pact-sandbox-store",
+              "category": "groceries",
+              "untrustedDescription": "Whole bean, medium roast."
+            },
+            "note": "Draft only. Members must commit before it arms."
+          }
+        },
+        {
+          "id": "turn_0_item2",
+          "threadId": "thread_eval",
+          "turnId": "turn_0",
+          "status": "completed",
+          "createdAt": "2026-11-04T18:00:00.000Z",
+          "type": "agentMessage",
+          "text": "The standing order is drafted. It buys one bag every 21 days, and the first run is tomorrow at 9am Pacific. Alice and Carol still need to commit before it starts.\n\n```ui\n{\"component\":\"Stack\",\"props\":{\"children\":[{\"component\":\"PactCard\",\"props\":{\"pactRef\":\"pact_ev0001\"}},{\"component\":\"SplitBreakdown\",\"props\":{\"pactRef\":\"pact_ev0001\"}},{\"component\":\"ScheduleCard\",\"props\":{\"pactRef\":\"pact_ev0001\"}}]}}\n```",
+          "refs": {
+            "pact_ev0001": {
+              "id": "pact_ev0001",
+              "threadId": "thread_eval",
+              "title": "Stumptown beans every 3 weeks",
+              "instruction": "Set up a standing order: every 3 weeks buy the Stumptown coffee beans for the house, split equally between all three of us, cap $10 each.",
+              "organizerId": "user_bob",
+              "members": [
+                {
+                  "userId": "user_alice",
+                  "displayName": "Alice",
+                  "role": "member",
+                  "cap": {
+                    "amountMinor": 1000,
+                    "currency": "USD"
+                  },
+                  "status": "invited"
+                },
+                {
+                  "userId": "user_bob",
+                  "displayName": "Bob",
+                  "role": "organizer",
+                  "cap": {
+                    "amountMinor": 1000,
+                    "currency": "USD"
+                  },
+                  "status": "invited"
+                },
+                {
+                  "userId": "user_carol",
+                  "displayName": "Carol",
+                  "role": "member",
+                  "cap": {
+                    "amountMinor": 1000,
+                    "currency": "USD"
+                  },
+                  "status": "invited"
+                }
+              ],
+              "trigger": {
+                "kind": "schedule",
+                "everyDays": 21,
+                "startAt": "2026-11-05T17:00:00Z"
+              },
+              "action": {
+                "kind": "purchase",
+                "productRef": "product_coffee01",
+                "quantity": 1
+              },
+              "split": {
+                "kind": "equal"
+              },
+              "state": "draft",
+              "createdAt": "2026-11-04T18:00:00.000Z",
+              "updatedAt": "2026-11-04T18:00:00.000Z"
+            }
+          },
+          "diagnostics": []
+        }
+      ],
+      "toolCalls": [
+        {
+          "name": "searchProducts",
+          "args": {
+            "query": "Stumptown coffee beans"
+          },
+          "result": {
+            "products": [
+              {
+                "ref": "product_coffee01",
+                "title": "Stumptown Holler Mountain Coffee Beans, 2 lb",
+                "price": {
+                  "amountMinor": 2450,
+                  "currency": "USD"
+                },
+                "priceDisplay": "$24.50",
+                "merchant": "pact-sandbox-store",
+                "category": "groceries",
+                "untrustedDescription": "Whole bean, medium roast."
+              }
+            ]
+          }
+        },
+        {
+          "name": "draftPact",
+          "args": {
+            "title": "Stumptown beans every 3 weeks",
+            "instruction": "Set up a standing order: every 3 weeks buy the Stumptown coffee beans for the house, split equally between all three of us, cap $10 each.",
+            "members": [
+              {
+                "userId": "user_alice",
+                "cap": {
+                  "amountMinor": 1000,
+                  "currency": "USD"
+                }
+              },
+              {
+                "userId": "user_bob",
+                "cap": {
+                  "amountMinor": 1000,
+                  "currency": "USD"
+                }
+              },
+              {
+                "userId": "user_carol",
+                "cap": {
+                  "amountMinor": 1000,
+                  "currency": "USD"
+                }
+              }
+            ],
+            "trigger": {
+              "kind": "schedule",
+              "everyDays": 21,
+              "startAt": "2026-11-05T17:00:00Z"
+            },
+            "action": {
+              "kind": "purchase",
+              "productRef": "product_coffee01",
+              "quantity": 1
+            },
+            "split": {
+              "kind": "equal"
+            }
+          },
+          "result": {
+            "pactRef": "pact_ev0001",
+            "title": "Stumptown beans every 3 weeks",
+            "state": "draft",
+            "members": [
+              {
+                "userId": "user_alice",
+                "displayName": "Alice",
+                "status": "invited",
+                "cap": {
+                  "amountMinor": 1000,
+                  "currency": "USD"
+                },
+                "capDisplay": "$10.00",
+                "shareDisplay": "$8.16"
+              },
+              {
+                "userId": "user_bob",
+                "displayName": "Bob",
+                "status": "invited",
+                "cap": {
+                  "amountMinor": 1000,
+                  "currency": "USD"
+                },
+                "capDisplay": "$10.00",
+                "shareDisplay": "$8.17"
+              },
+              {
+                "userId": "user_carol",
+                "displayName": "Carol",
+                "status": "invited",
+                "cap": {
+                  "amountMinor": 1000,
+                  "currency": "USD"
+                },
+                "capDisplay": "$10.00",
+                "shareDisplay": "$8.17"
+              }
+            ],
+            "totalDisplay": "$24.50",
+            "totalCapDisplay": "$30.00",
+            "trigger": {
+              "kind": "schedule",
+              "everyDays": 21,
+              "startAt": "2026-11-05T17:00:00Z"
+            },
+            "action": {
+              "kind": "purchase",
+              "productRef": "product_coffee01",
+              "quantity": 1
+            },
+            "product": {
+              "ref": "product_coffee01",
+              "title": "Stumptown Holler Mountain Coffee Beans, 2 lb",
+              "price": {
+                "amountMinor": 2450,
+                "currency": "USD"
+              },
+              "priceDisplay": "$24.50",
+              "merchant": "pact-sandbox-store",
+              "category": "groceries",
+              "untrustedDescription": "Whole bean, medium roast."
+            },
+            "note": "Draft only. Members must commit before it arms."
+          }
+        }
+      ],
+      "ui": [
+        {
+          "component": "Text",
+          "props": {
+            "markdown": "The standing order is drafted. It buys one bag every 21 days, and the first run is tomorrow at 9am Pacific. Alice and Carol still need to commit before it starts."
+          }
+        },
+        {
+          "component": "Stack",
+          "props": {
+            "children": [
+              {
+                "component": "PactCard",
+                "props": {
+                  "pactRef": "pact_ev0001"
+                }
+              },
+              {
+                "component": "SplitBreakdown",
+                "props": {
+                  "pactRef": "pact_ev0001"
+                }
+              },
+              {
+                "component": "ScheduleCard",
+                "props": {
+                  "pactRef": "pact_ev0001"
+                }
+              }
+            ]
+          }
+        }
+      ],
+      "uiErrors": [],
+      "durationMs": 7580
+    }
+  ]
+}

@@ -1,0 +1,387 @@
+{
+  "scenarioId": "parse-tent-quorum",
+  "adapter": "reference:claude-sonnet-5-5",
+  "repeat": 0,
+  "startedAt": "2026-11-01T12:14:03.298Z",
+  "turns": [
+    {
+      "index": 0,
+      "userId": "user_carol",
+      "text": "Buy the Coleman tent for our camping trip as soon as all three of us commit. Split 3 ways, max $70 each.",
+      "items": [
+        {
+          "id": "turn_0_item0",
+          "threadId": "thread_eval",
+          "turnId": "turn_0",
+          "status": "completed",
+          "createdAt": "2026-11-04T18:00:00.000Z",
+          "type": "toolCall",
+          "name": "searchProducts",
+          "summary": "searchProducts",
+          "args": {
+            "query": "Coleman tent"
+          },
+          "result": {
+            "products": [
+              {
+                "ref": "product_tent4p01",
+                "title": "Coleman 4-Person Dome Tent",
+                "price": {
+                  "amountMinor": 18999,
+                  "currency": "USD"
+                },
+                "priceDisplay": "$189.99",
+                "merchant": "pact-sandbox-store",
+                "category": "outdoors",
+                "untrustedDescription": "Weatherproof 4-person tent, sets up in 10 minutes."
+              }
+            ]
+          }
+        },
+        {
+          "id": "turn_0_item1",
+          "threadId": "thread_eval",
+          "turnId": "turn_0",
+          "status": "completed",
+          "createdAt": "2026-11-04T18:00:00.000Z",
+          "type": "toolCall",
+          "name": "draftPact",
+          "summary": "draftPact",
+          "args": {
+            "title": "Coleman tent for camping trip",
+            "instruction": "Buy the Coleman tent for our camping trip as soon as all three of us commit. Split 3 ways, max $70 each.",
+            "members": [
+              {
+                "userId": "user_alice",
+                "cap": {
+                  "amountMinor": 7000,
+                  "currency": "USD"
+                }
+              },
+              {
+                "userId": "user_bob",
+                "cap": {
+                  "amountMinor": 7000,
+                  "currency": "USD"
+                }
+              },
+              {
+                "userId": "user_carol",
+                "cap": {
+                  "amountMinor": 7000,
+                  "currency": "USD"
+                }
+              }
+            ],
+            "trigger": {
+              "kind": "quorum",
+              "confirmationsNeeded": 3,
+              "expiresAt": "2026-11-11T18:00:00Z"
+            },
+            "action": {
+              "kind": "purchase",
+              "productRef": "product_tent4p01",
+              "quantity": 1
+            },
+            "split": {
+              "kind": "equal"
+            }
+          },
+          "result": {
+            "pactRef": "pact_ev0001",
+            "title": "Coleman tent for camping trip",
+            "state": "draft",
+            "members": [
+              {
+                "userId": "user_alice",
+                "displayName": "Alice",
+                "status": "invited",
+                "cap": {
+                  "amountMinor": 7000,
+                  "currency": "USD"
+                },
+                "capDisplay": "$70.00",
+                "shareDisplay": "$63.33"
+              },
+              {
+                "userId": "user_bob",
+                "displayName": "Bob",
+                "status": "invited",
+                "cap": {
+                  "amountMinor": 7000,
+                  "currency": "USD"
+                },
+                "capDisplay": "$70.00",
+                "shareDisplay": "$63.33"
+              },
+              {
+                "userId": "user_carol",
+                "displayName": "Carol",
+                "status": "invited",
+                "cap": {
+                  "amountMinor": 7000,
+                  "currency": "USD"
+                },
+                "capDisplay": "$70.00",
+                "shareDisplay": "$63.33"
+              }
+            ],
+            "totalDisplay": "$189.99",
+            "totalCapDisplay": "$210.00",
+            "trigger": {
+              "kind": "quorum",
+              "confirmationsNeeded": 3,
+              "expiresAt": "2026-11-11T18:00:00Z"
+            },
+            "action": {
+              "kind": "purchase",
+              "productRef": "product_tent4p01",
+              "quantity": 1
+            },
+            "product": {
+              "ref": "product_tent4p01",
+              "title": "Coleman 4-Person Dome Tent",
+              "price": {
+                "amountMinor": 18999,
+                "currency": "USD"
+              },
+              "priceDisplay": "$189.99",
+              "merchant": "pact-sandbox-store",
+              "category": "outdoors",
+              "untrustedDescription": "Weatherproof 4-person tent, sets up in 10 minutes."
+            },
+            "note": "Draft only. Members must commit before it arms."
+          }
+        },
+        {
+          "id": "turn_0_item2",
+          "threadId": "thread_eval",
+          "turnId": "turn_0",
+          "status": "completed",
+          "createdAt": "2026-11-04T18:00:00.000Z",
+          "type": "agentMessage",
+          "text": "I've drafted the pact. It buys the tent once all three of you commit, and the split is equal. The commit window is 7 days, which is the default.\n\n```ui\n{\"component\":\"Stack\",\"props\":{\"children\":[{\"component\":\"PactCard\",\"props\":{\"pactRef\":\"pact_ev0001\"}},{\"component\":\"SplitBreakdown\",\"props\":{\"pactRef\":\"pact_ev0001\"}}]}}\n```",
+          "refs": {
+            "pact_ev0001": {
+              "id": "pact_ev0001",
+              "threadId": "thread_eval",
+              "title": "Coleman tent for camping trip",
+              "instruction": "Buy the Coleman tent for our camping trip as soon as all three of us commit. Split 3 ways, max $70 each.",
+              "organizerId": "user_carol",
+              "members": [
+                {
+                  "userId": "user_alice",
+                  "displayName": "Alice",
+                  "role": "member",
+                  "cap": {
+                    "amountMinor": 7000,
+                    "currency": "USD"
+                  },
+                  "status": "invited"
+                },
+                {
+                  "userId": "user_bob",
+                  "displayName": "Bob",
+                  "role": "member",
+                  "cap": {
+                    "amountMinor": 7000,
+                    "currency": "USD"
+                  },
+                  "status": "invited"
+                },
+                {
+                  "userId": "user_carol",
+                  "displayName": "Carol",
+                  "role": "organizer",
+                  "cap": {
+                    "amountMinor": 7000,
+                    "currency": "USD"
+                  },
+                  "status": "invited"
+                }
+              ],
+              "trigger": {
+                "kind": "quorum",
+                "confirmationsNeeded": 3,
+                "expiresAt": "2026-11-11T18:00:00Z"
+              },
+              "action": {
+                "kind": "purchase",
+                "productRef": "product_tent4p01",
+                "quantity": 1
+              },
+              "split": {
+                "kind": "equal"
+              },
+              "state": "draft",
+              "createdAt": "2026-11-04T18:00:00.000Z",
+              "updatedAt": "2026-11-04T18:00:00.000Z"
+            }
+          },
+          "diagnostics": []
+        }
+      ],
+      "toolCalls": [
+        {
+          "name": "searchProducts",
+          "args": {
+            "query": "Coleman tent"
+          },
+          "result": {
+            "products": [
+              {
+                "ref": "product_tent4p01",
+                "title": "Coleman 4-Person Dome Tent",
+                "price": {
+                  "amountMinor": 18999,
+                  "currency": "USD"
+                },
+                "priceDisplay": "$189.99",
+                "merchant": "pact-sandbox-store",
+                "category": "outdoors",
+                "untrustedDescription": "Weatherproof 4-person tent, sets up in 10 minutes."
+              }
+            ]
+          }
+        },
+        {
+          "name": "draftPact",
+          "args": {
+            "title": "Coleman tent for camping trip",
+            "instruction": "Buy the Coleman tent for our camping trip as soon as all three of us commit. Split 3 ways, max $70 each.",
+            "members": [
+              {
+                "userId": "user_alice",
+                "cap": {
+                  "amountMinor": 7000,
+                  "currency": "USD"
+                }
+              },
+              {
+                "userId": "user_bob",
+                "cap": {
+                  "amountMinor": 7000,
+                  "currency": "USD"
+                }
+              },
+              {
+                "userId": "user_carol",
+                "cap": {
+                  "amountMinor": 7000,
+                  "currency": "USD"
+                }
+              }
+            ],
+            "trigger": {
+              "kind": "quorum",
+              "confirmationsNeeded": 3,
+              "expiresAt": "2026-11-11T18:00:00Z"
+            },
+            "action": {
+              "kind": "purchase",
+              "productRef": "product_tent4p01",
+              "quantity": 1
+            },
+            "split": {
+              "kind": "equal"
+            }
+          },
+          "result": {
+            "pactRef": "pact_ev0001",
+            "title": "Coleman tent for camping trip",
+            "state": "draft",
+            "members": [
+              {
+                "userId": "user_alice",
+                "displayName": "Alice",
+                "status": "invited",
+                "cap": {
+                  "amountMinor": 7000,
+                  "currency": "USD"
+                },
+                "capDisplay": "$70.00",
+                "shareDisplay": "$63.33"
+              },
+              {
+                "userId": "user_bob",
+                "displayName": "Bob",
+                "status": "invited",
+                "cap": {
+                  "amountMinor": 7000,
+                  "currency": "USD"
+                },
+                "capDisplay": "$70.00",
+                "shareDisplay": "$63.33"
+              },
+              {
+                "userId": "user_carol",
+                "displayName": "Carol",
+                "status": "invited",
+                "cap": {
+                  "amountMinor": 7000,
+                  "currency": "USD"
+                },
+                "capDisplay": "$70.00",
+                "shareDisplay": "$63.33"
+              }
+            ],
+            "totalDisplay": "$189.99",
+            "totalCapDisplay": "$210.00",
+            "trigger": {
+              "kind": "quorum",
+              "confirmationsNeeded": 3,
+              "expiresAt": "2026-11-11T18:00:00Z"
+            },
+            "action": {
+              "kind": "purchase",
+              "productRef": "product_tent4p01",
+              "quantity": 1
+            },
+            "product": {
+              "ref": "product_tent4p01",
+              "title": "Coleman 4-Person Dome Tent",
+              "price": {
+                "amountMinor": 18999,
+                "currency": "USD"
+              },
+              "priceDisplay": "$189.99",
+              "merchant": "pact-sandbox-store",
+              "category": "outdoors",
+              "untrustedDescription": "Weatherproof 4-person tent, sets up in 10 minutes."
+            },
+            "note": "Draft only. Members must commit before it arms."
+          }
+        }
+      ],
+      "ui": [
+        {
+          "component": "Text",
+          "props": {
+            "markdown": "I've drafted the pact. It buys the tent once all three of you commit, and the split is equal. The commit window is 7 days, which is the default."
+          }
+        },
+        {
+          "component": "Stack",
+          "props": {
+            "children": [
+              {
+                "component": "PactCard",
+                "props": {
+                  "pactRef": "pact_ev0001"
+                }
+              },
+              {
+                "component": "SplitBreakdown",
+                "props": {
+                  "pactRef": "pact_ev0001"
+                }
+              }
+            ]
+          }
+        }
+      ],
+      "uiErrors": [],
+      "durationMs": 6650
+    }
+  ]
+}

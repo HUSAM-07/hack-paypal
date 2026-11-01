@@ -1,0 +1,123 @@
+{
+  "scenarioId": "fidelity-cents-transfer",
+  "adapter": "reference:claude-sonnet-5-5",
+  "repeat": 0,
+  "startedAt": "2026-11-01T12:13:45.987Z",
+  "turns": [
+    {
+      "index": 0,
+      "userId": "user_bob",
+      "text": "I owe Alice 12.50 for coffee, pay her back",
+      "items": [
+        {
+          "id": "turn_0_item0",
+          "threadId": "thread_eval",
+          "turnId": "turn_0",
+          "status": "completed",
+          "createdAt": "2026-11-04T18:00:00.000Z",
+          "type": "toolCall",
+          "name": "draftTransfer",
+          "summary": "draftTransfer",
+          "args": {
+            "direction": "send",
+            "counterparty": {
+              "userId": "user_alice"
+            },
+            "amount": {
+              "amountMinor": 1250,
+              "currency": "USD"
+            },
+            "note": "Coffee"
+          },
+          "result": {
+            "transferRef": "transfer_ev0001",
+            "direction": "send",
+            "counterparty": "Alice",
+            "amount": {
+              "amountMinor": 1250,
+              "currency": "USD"
+            },
+            "amountDisplay": "$12.50",
+            "status": "draft: the user confirms in TransferFundsCard"
+          }
+        },
+        {
+          "id": "turn_0_item1",
+          "threadId": "thread_eval",
+          "turnId": "turn_0",
+          "status": "completed",
+          "createdAt": "2026-11-04T18:00:00.000Z",
+          "type": "agentMessage",
+          "text": "I've drafted the payment to Alice. Confirm it in the card to send it.\n\n```ui\n{\"component\":\"Stack\",\"props\":{\"children\":[{\"component\":\"TransferFundsCard\",\"props\":{\"transferRef\":\"transfer_ev0001\"}}]}}\n```",
+          "refs": {
+            "transfer_ev0001": {
+              "ref": "transfer_ev0001",
+              "direction": "send",
+              "fromUserId": "user_bob",
+              "counterparty": {
+                "userId": "user_alice",
+                "displayName": "Alice"
+              },
+              "amount": {
+                "amountMinor": 1250,
+                "currency": "USD"
+              },
+              "note": "Coffee"
+            }
+          },
+          "diagnostics": []
+        }
+      ],
+      "toolCalls": [
+        {
+          "name": "draftTransfer",
+          "args": {
+            "direction": "send",
+            "counterparty": {
+              "userId": "user_alice"
+            },
+            "amount": {
+              "amountMinor": 1250,
+              "currency": "USD"
+            },
+            "note": "Coffee"
+          },
+          "result": {
+            "transferRef": "transfer_ev0001",
+            "direction": "send",
+            "counterparty": "Alice",
+            "amount": {
+              "amountMinor": 1250,
+              "currency": "USD"
+            },
+            "amountDisplay": "$12.50",
+            "status": "draft: the user confirms in TransferFundsCard"
+          }
+        }
+      ],
+      "ui": [
+        {
+          "component": "Text",
+          "props": {
+            "markdown": "I've drafted the payment to Alice. Confirm it in the card to send it."
+          }
+        },
+        {
+          "component": "Stack",
+          "props": {
+            "children": [
+              {
+                "component": "TransferFundsCard",
+                "props": {
+                  "transferRef": "transfer_ev0001"
+                }
+              }
+            ]
+          }
+        }
+      ],
+      "uiErrors": [],
+      "durationMs": 3860
+    }
+  ]
+}

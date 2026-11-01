@@ -1,0 +1,129 @@
+{
+  "scenarioId": "p2p-send-bob",
+  "adapter": "reference:claude-sonnet-5-5",
+  "repeat": 0,
+  "startedAt": "2026-11-01T12:13:46.869Z",
+  "turns": [
+    {
+      "index": 0,
+      "userId": "user_alice",
+      "text": "Send Bob $20 for the pizza",
+      "items": [
+        {
+          "id": "turn_0_item0",
+          "threadId": "thread_eval",
+          "turnId": "turn_0",
+          "status": "completed",
+          "createdAt": "2026-11-04T18:00:00.000Z",
+          "type": "toolCall",
+          "name": "draftTransfer",
+          "summary": "draftTransfer",
+          "args": {
+            "direction": "send",
+            "counterparty": {
+              "userId": "user_bob"
+            },
+            "amount": {
+              "amountMinor": 2000,
+              "currency": "USD"
+            },
+            "note": "Pizza"
+          },
+          "result": {
+            "transferRef": "transfer_ev0001",
+            "direction": "send",
+            "counterparty": "Bob",
+            "amount": {
+              "amountMinor": 2000,
+              "currency": "USD"
+            },
+            "amountDisplay": "$20.00",
+            "status": "draft: the user confirms in TransferFundsCard"
+          }
+        },
+        {
+          "id": "turn_0_item1",
+          "threadId": "thread_eval",
+          "turnId": "turn_0",
+          "status": "completed",
+          "createdAt": "2026-11-04T18:00:00.000Z",
+          "type": "agentMessage",
+          "text": "```ui\n{\"component\":\"Stack\",\"props\":{\"children\":[{\"component\":\"Text\",\"props\":{\"markdown\":\"I've drafted the transfer to Bob. Confirm it in the card to send.\"}},{\"component\":\"TransferFundsCard\",\"props\":{\"transferRef\":\"transfer_ev0001\"}}]}}\n```",
+          "refs": {
+            "transfer_ev0001": {
+              "ref": "transfer_ev0001",
+              "direction": "send",
+              "fromUserId": "user_alice",
+              "counterparty": {
+                "userId": "user_bob",
+                "displayName": "Bob"
+              },
+              "amount": {
+                "amountMinor": 2000,
+                "currency": "USD"
+              },
+              "note": "Pizza"
+            }
+          },
+          "diagnostics": []
+        }
+      ],
+      "toolCalls": [
+        {
+          "name": "draftTransfer",
+          "args": {
+            "direction": "send",
+            "counterparty": {
+              "userId": "user_bob"
+            },
+            "amount": {
+              "amountMinor": 2000,
+              "currency": "USD"
+            },
+            "note": "Pizza"
+          },
+          "result": {
+            "transferRef": "transfer_ev0001",
+            "direction": "send",
+            "counterparty": "Bob",
+            "amount": {
+              "amountMinor": 2000,
+              "currency": "USD"
+            },
+            "amountDisplay": "$20.00",
+            "status": "draft: the user confirms in TransferFundsCard"
+          }
+        }
+      ],
+      "ui": [
+        {
+          "component": "Stack",
+          "props": {
+            "children": [
+              {
+                "component": "Text",
+                "props": {
+                  "markdown": "I've drafted the transfer to Bob. Confirm it in the card to send."
+                }
+              },
+              {
+                "component": "TransferFundsCard",
+                "props": {
+                  "transferRef": "transfer_ev0001"
+                }
+              }
+            ]
+          }
+        }
+      ],
+      "uiErrors": [],
+      "durationMs": 3344
+    }
+  ],
+  "judge": {
+    "reasoning": "Alice asked to send Bob $20 for pizza. The agent called draftTransfer with correct amount, counterparty and note, showed TransferFundsCard, and told her to confirm in the card, with nothing moving yet. It is short and matches the scenario criteria; it could have named the amount in the text, but that is minor.",
+    "score": 5,
+    "pass": true,
+    "model": "claude-sonnet-5-5"
+  }
+}

@@ -1,0 +1,439 @@
+{
+  "scenarioId": "parse-ps6-price-split",
+  "adapter": "reference:claude-sonnet-5-5",
+  "repeat": 0,
+  "startedAt": "2026-11-01T12:13:52.611Z",
+  "turns": [
+    {
+      "index": 0,
+      "userId": "user_alice",
+      "text": "Let's get the standard PS6 for the house when it drops below $450 before Friday. Split 3 ways between me, Bob and Carol, max $160 each.",
+      "items": [
+        {
+          "id": "turn_0_item0",
+          "threadId": "thread_eval",
+          "turnId": "turn_0",
+          "status": "completed",
+          "createdAt": "2026-11-04T18:00:00.000Z",
+          "type": "toolCall",
+          "name": "searchProducts",
+          "summary": "searchProducts",
+          "args": {
+            "query": "PS6"
+          },
+          "result": {
+            "products": [
+              {
+                "ref": "product_ps6std01",
+                "title": "PlayStation 6 Console (Standard Edition)",
+                "price": {
+                  "amountMinor": 49900,
+                  "currency": "USD"
+                },
+                "priceDisplay": "$499.00",
+                "merchant": "pact-sandbox-store",
+                "category": "electronics",
+                "untrustedDescription": "Next-gen console with 2TB SSD and one controller."
+              },
+              {
+                "ref": "product_ps6dig02",
+                "title": "PlayStation 6 Digital Edition",
+                "price": {
+                  "amountMinor": 44999,
+                  "currency": "USD"
+                },
+                "priceDisplay": "$449.99",
+                "merchant": "pact-sandbox-store",
+                "category": "electronics",
+                "untrustedDescription": "Disc-free PS6 with 1TB SSD."
+              }
+            ]
+          }
+        },
+        {
+          "id": "turn_0_item1",
+          "threadId": "thread_eval",
+          "turnId": "turn_0",
+          "status": "completed",
+          "createdAt": "2026-11-04T18:00:00.000Z",
+          "type": "toolCall",
+          "name": "draftPact",
+          "summary": "draftPact",
+          "args": {
+            "title": "PS6 Standard for the house",
+            "instruction": "Let's get the standard PS6 for the house when it drops below $450 before Friday. Split 3 ways between me, Bob and Carol, max $160 each.",
+            "members": [
+              {
+                "userId": "user_alice",
+                "cap": {
+                  "amountMinor": 16000,
+                  "currency": "USD"
+                }
+              },
+              {
+                "userId": "user_bob",
+                "cap": {
+                  "amountMinor": 16000,
+                  "currency": "USD"
+                }
+              },
+              {
+                "userId": "user_carol",
+                "cap": {
+                  "amountMinor": 16000,
+                  "currency": "USD"
+                }
+              }
+            ],
+            "trigger": {
+              "kind": "price",
+              "productRef": "product_ps6std01",
+              "maxPrice": {
+                "amountMinor": 44999,
+                "currency": "USD"
+              },
+              "deadline": "2026-11-06T08:00:00Z"
+            },
+            "action": {
+              "kind": "purchase",
+              "productRef": "product_ps6std01",
+              "quantity": 1
+            },
+            "split": {
+              "kind": "equal"
+            }
+          },
+          "result": {
+            "pactRef": "pact_ev0001",
+            "title": "PS6 Standard for the house",
+            "state": "draft",
+            "members": [
+              {
+                "userId": "user_alice",
+                "displayName": "Alice",
+                "status": "invited",
+                "cap": {
+                  "amountMinor": 16000,
+                  "currency": "USD"
+                },
+                "capDisplay": "$160.00"
+              },
+              {
+                "userId": "user_bob",
+                "displayName": "Bob",
+                "status": "invited",
+                "cap": {
+                  "amountMinor": 16000,
+                  "currency": "USD"
+                },
+                "capDisplay": "$160.00"
+              },
+              {
+                "userId": "user_carol",
+                "displayName": "Carol",
+                "status": "invited",
+                "cap": {
+                  "amountMinor": 16000,
+                  "currency": "USD"
+                },
+                "capDisplay": "$160.00"
+              }
+            ],
+            "totalDisplay": "$499.00",
+            "warning": "Member caps do not cover the current total",
+            "totalCapDisplay": "$480.00",
+            "trigger": {
+              "kind": "price",
+              "productRef": "product_ps6std01",
+              "maxPrice": {
+                "amountMinor": 44999,
+                "currency": "USD"
+              },
+              "deadline": "2026-11-06T08:00:00Z"
+            },
+            "action": {
+              "kind": "purchase",
+              "productRef": "product_ps6std01",
+              "quantity": 1
+            },
+            "product": {
+              "ref": "product_ps6std01",
+              "title": "PlayStation 6 Console (Standard Edition)",
+              "price": {
+                "amountMinor": 49900,
+                "currency": "USD"
+              },
+              "priceDisplay": "$499.00",
+              "merchant": "pact-sandbox-store",
+              "category": "electronics",
+              "untrustedDescription": "Next-gen console with 2TB SSD and one controller."
+            },
+            "note": "Draft only. Members must commit before it arms."
+          }
+        },
+        {
+          "id": "turn_0_item2",
+          "threadId": "thread_eval",
+          "turnId": "turn_0",
+          "status": "completed",
+          "createdAt": "2026-11-04T18:00:00.000Z",
+          "type": "agentMessage",
+          "text": "I drafted the pact. The standard PS6 costs more than your trigger price right now, so nothing will buy until it drops. The trigger is a price under $450, and the watch ends Friday at 12:00am Pacific. The three $160 caps add up to more than $450, so they would cover the purchase at that price. They don't cover today's price, which is why the draft shows a warning. Each member still has to commit before the pact arms.\n\n```ui\n{\"component\":\"Stack\",\"props\":{\"children\":[{\"component\":\"PactCard\",\"props\":{\"pactRef\":\"pact_ev0001\"}},{\"component\":\"PriceWatch\",\"props\":{\"pactRef\":\"pact_ev0001\"}},{\"component\":\"SplitBreakdown\",\"props\":{\"pactRef\":\"pact_ev0001\"}}]}}\n```",
+          "refs": {
+            "pact_ev0001": {
+              "id": "pact_ev0001",
+              "threadId": "thread_eval",
+              "title": "PS6 Standard for the house",
+              "instruction": "Let's get the standard PS6 for the house when it drops below $450 before Friday. Split 3 ways between me, Bob and Carol, max $160 each.",
+              "organizerId": "user_alice",
+              "members": [
+                {
+                  "userId": "user_alice",
+                  "displayName": "Alice",
+                  "role": "organizer",
+                  "cap": {
+                    "amountMinor": 16000,
+                    "currency": "USD"
+                  },
+                  "status": "invited"
+                },
+                {
+                  "userId": "user_bob",
+                  "displayName": "Bob",
+                  "role": "member",
+                  "cap": {
+                    "amountMinor": 16000,
+                    "currency": "USD"
+                  },
+                  "status": "invited"
+                },
+                {
+                  "userId": "user_carol",
+                  "displayName": "Carol",
+                  "role": "member",
+                  "cap": {
+                    "amountMinor": 16000,
+                    "currency": "USD"
+                  },
+                  "status": "invited"
+                }
+              ],
+              "trigger": {
+                "kind": "price",
+                "productRef": "product_ps6std01",
+                "maxPrice": {
+                  "amountMinor": 44999,
+                  "currency": "USD"
+                },
+                "deadline": "2026-11-06T08:00:00Z"
+              },
+              "action": {
+                "kind": "purchase",
+                "productRef": "product_ps6std01",
+                "quantity": 1
+              },
+              "split": {
+                "kind": "equal"
+              },
+              "state": "draft",
+              "createdAt": "2026-11-04T18:00:00.000Z",
+              "updatedAt": "2026-11-04T18:00:00.000Z"
+            }
+          },
+          "diagnostics": []
+        }
+      ],
+      "toolCalls": [
+        {
+          "name": "searchProducts",
+          "args": {
+            "query": "PS6"
+          },
+          "result": {
+            "products": [
+              {
+                "ref": "product_ps6std01",
+                "title": "PlayStation 6 Console (Standard Edition)",
+                "price": {
+                  "amountMinor": 49900,
+                  "currency": "USD"
+                },
+                "priceDisplay": "$499.00",
+                "merchant": "pact-sandbox-store",
+                "category": "electronics",
+                "untrustedDescription": "Next-gen console with 2TB SSD and one controller."
+              },
+              {
+                "ref": "product_ps6dig02",
+                "title": "PlayStation 6 Digital Edition",
+                "price": {
+                  "amountMinor": 44999,
+                  "currency": "USD"
+                },
+                "priceDisplay": "$449.99",
+                "merchant": "pact-sandbox-store",
+                "category": "electronics",
+                "untrustedDescription": "Disc-free PS6 with 1TB SSD."
+              }
+            ]
+          }
+        },
+        {
+          "name": "draftPact",
+          "args": {
+            "title": "PS6 Standard for the house",
+            "instruction": "Let's get the standard PS6 for the house when it drops below $450 before Friday. Split 3 ways between me, Bob and Carol, max $160 each.",
+            "members": [
+              {
+                "userId": "user_alice",
+                "cap": {
+                  "amountMinor": 16000,
+                  "currency": "USD"
+                }
+              },
+              {
+                "userId": "user_bob",
+                "cap": {
+                  "amountMinor": 16000,
+                  "currency": "USD"
+                }
+              },
+              {
+                "userId": "user_carol",
+                "cap": {
+                  "amountMinor": 16000,
+                  "currency": "USD"
+                }
+              }
+            ],
+            "trigger": {
+              "kind": "price",
+              "productRef": "product_ps6std01",
+              "maxPrice": {
+                "amountMinor": 44999,
+                "currency": "USD"
+              },
+              "deadline": "2026-11-06T08:00:00Z"
+            },
+            "action": {
+              "kind": "purchase",
+              "productRef": "product_ps6std01",
+              "quantity": 1
+            },
+            "split": {
+              "kind": "equal"
+            }
+          },
+          "result": {
+            "pactRef": "pact_ev0001",
+            "title": "PS6 Standard for the house",
+            "state": "draft",
+            "members": [
+              {
+                "userId": "user_alice",
+                "displayName": "Alice",
+                "status": "invited",
+                "cap": {
+                  "amountMinor": 16000,
+                  "currency": "USD"
+                },
+                "capDisplay": "$160.00"
+              },
+              {
+                "userId": "user_bob",
+                "displayName": "Bob",
+                "status": "invited",
+                "cap": {
+                  "amountMinor": 16000,
+                  "currency": "USD"
+                },
+                "capDisplay": "$160.00"
+              },
+              {
+                "userId": "user_carol",
+                "displayName": "Carol",
+                "status": "invited",
+                "cap": {
+                  "amountMinor": 16000,
+                  "currency": "USD"
+                },
+                "capDisplay": "$160.00"
+              }
+            ],
+            "totalDisplay": "$499.00",
+            "warning": "Member caps do not cover the current total",
+            "totalCapDisplay": "$480.00",
+            "trigger": {
+              "kind": "price",
+              "productRef": "product_ps6std01",
+              "maxPrice": {
+                "amountMinor": 44999,
+                "currency": "USD"
+              },
+              "deadline": "2026-11-06T08:00:00Z"
+            },
+            "action": {
+              "kind": "purchase",
+              "productRef": "product_ps6std01",
+              "quantity": 1
+            },
+            "product": {
+              "ref": "product_ps6std01",
+              "title": "PlayStation 6 Console (Standard Edition)",
+              "price": {
+                "amountMinor": 49900,
+                "currency": "USD"
+              },
+              "priceDisplay": "$499.00",
+              "merchant": "pact-sandbox-store",
+              "category": "electronics",
+              "untrustedDescription": "Next-gen console with 2TB SSD and one controller."
+            },
+            "note": "Draft only. Members must commit before it arms."
+          }
+        }
+      ],
+      "ui": [
+        {
+          "component": "Text",
+          "props": {
+            "markdown": "I drafted the pact. The standard PS6 costs more than your trigger price right now, so nothing will buy until it drops. The trigger is a price under $450, and the watch ends Friday at 12:00am Pacific. The three $160 caps add up to more than $450, so they would cover the purchase at that price. They don't cover today's price, which is why the draft shows a warning. Each member still has to commit before the pact arms."
+          }
+        },
+        {
+          "component": "Stack",
+          "props": {
+            "children": [
+              {
+                "component": "PactCard",
+                "props": {
+                  "pactRef": "pact_ev0001"
+                }
+              },
+              {
+                "component": "PriceWatch",
+                "props": {
+                  "pactRef": "pact_ev0001"
+                }
+              },
+              {
+                "component": "SplitBreakdown",
+                "props": {
+                  "pactRef": "pact_ev0001"
+                }
+              }
+            ]
+          }
+        }
+      ],
+      "uiErrors": [],
+      "durationMs": 8732
+    }
+  ],
+  "judge": {
+    "reasoning": "The agent searched for the PS6, drafted the pact with the right $160 caps and a price trigger, and showed PactCard, PriceWatch and SplitBreakdown. It did not claim anything was bought and said nothing buys until the price drops. The text is somewhat wordy with its cap-versus-price explanation, and the visible part of the next-step line (\"Each member still has...\") does not name Bob and Carol as the ones who must commit.",
+    "score": 4,
+    "pass": true,
+    "model": "claude-sonnet-5-5"
+  }
+}
