@@ -62,8 +62,35 @@ describe("authorize", () => {
   });
 
   it("never funds another pact with a pact-scoped mandate", () => {
-    const d = authorize(intent(1_000, { pactId: "p2" }), [mandate({ pactId: "p1" })], [], NOW);
-    expect(d).toMatchObject({ outcome: "deny", reasons: ["wrong_pact"] });
+    const m = mandate({ pactId: "p1" });
+    // A present human is asked, as if no mandate existed; unattended is denied.
+    expect(authorize(intent(1_000, { pactId: "p2" }), [m], [], NOW)).toEqual({
+      outcome: "needs_approval",
+      reasons: ["no_mandate"],
+    });
+    expect(authorize(intent(1_000), [m], [], NOW).outcome).toBe("needs_approval");
+    expect(
+      authorize(intent(1_000, { pactId: "p2", initiatedBy: "schedule" }), [m], [], NOW),
+    ).toEqual({ outcome: "deny", reasons: ["no_mandate"] });
+  });
+
+  it("property: a pact-scoped mandate never allows a spend outside its pact", () => {
+    fc.assert(
+      fc.property(
+        fc.integer({ min: 1, max: 10_000 }),
+        fc.option(fc.constantFrom("p2", "p3"), { nil: undefined }),
+        fc.constantFrom("user", "agent", "schedule") as fc.Arbitrary<SpendIntent["initiatedBy"]>,
+        (a, pactId, initiatedBy) => {
+          const d = authorize(
+            intent(a, { initiatedBy, ...(pactId ? { pactId } : {}) }),
+            [mandate({ pactId: "p1" })],
+            [],
+            NOW,
+          );
+          expect(d.outcome).not.toBe("allow");
+        },
+      ),
+    );
   });
 
   it("prefers the pact-scoped mandate over a global one", () => {

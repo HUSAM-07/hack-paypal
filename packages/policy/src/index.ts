@@ -85,9 +85,13 @@ export function authorize(
   now: Date = new Date(),
 ): PolicyDecision {
   const unattended = intent.initiatedBy === "schedule";
-  // Pact-scoped mandates first: the most specific permission wins.
+  // A mandate scoped to another pact says nothing about this spend, so it isn't a
+  // candidate (rather than a hard `wrong_pact` deny that would block a present human).
+  // Pact-scoped mandates go first: the most specific permission wins.
   const candidates = mandates
-    .filter((m) => m.userId === intent.userId)
+    .filter(
+      (m) => m.userId === intent.userId && (m.pactId === undefined || m.pactId === intent.pactId),
+    )
     .sort((a, b) => Number(b.pactId !== undefined) - Number(a.pactId !== undefined));
 
   if (candidates.length === 0) {
