@@ -1,0 +1,12 @@
+# Copy to .dev.vars (gitignored). Never commit real values.
+ANTHROPIC_API_KEY=
+CHANNEL3_API_KEY=
+# 32+ random bytes, e.g. `openssl rand -base64 32`
+SESSION_SECRET=
+# WebAuthn relying party. Must match the origin the browser loads.
+RP_ID=localhost
+ORIGINS=http://localhost:5173,http://localhost:8787
+# Enables POST /api/auth/dev-login (passwordless test users). Never set in production.
+DEV_AUTH=1
+# "anthropic" or "fake" (scripted, no network)
+MODEL_PROVIDER=anthropic
