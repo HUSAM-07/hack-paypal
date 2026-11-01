@@ -1,0 +1,7 @@
+# Static-asset headers (Cloudflare Workers assets / Pages). No inline scripts anywhere,
+# so script-src needs no 'unsafe-inline' or nonces; PayPal is the only third-party origin.
+/*
+  Content-Security-Policy: default-src 'self'; script-src 'self' https://*.paypal.com https://*.paypalobjects.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self'; connect-src 'self' wss: https://*.paypal.com; frame-src https://*.paypal.com; base-uri 'none'; object-src 'none'; form-action 'self'; frame-ancestors 'none'
+  Referrer-Policy: strict-origin-when-cross-origin
+  X-Content-Type-Options: nosniff
+  Permissions-Policy: camera=(), microphone=(), geolocation=(), publickey-credentials-get=(self)
