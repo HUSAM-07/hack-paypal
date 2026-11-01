@@ -1,0 +1,31 @@
+{
+  "name": "@pact/worker",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "cf-typegen": "wrangler types --include-runtime false",
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "vitest run",
+    "test:live": "LIVE=1 vitest run test/live.test.ts"
+  },
+  "dependencies": {
+    "@ai-sdk/anthropic": "^4.0.94",
+    "@openuidev/lang-core": "^1.0.2",
+    "@pact/catalog": "*",
+    "@pact/policy": "*",
+    "@pact/protocol": "*",
+    "@simplewebauthn/server": "^14.0.3",
+    "ai": "^7.0.159",
+    "hono": "^4.13.16",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@cloudflare/vitest-plugin": "^1.4.11",
+    "@cloudflare/workers-types": "^5.20261101.1",
+    "@types/node": "^26.6.6",
+    "wrangler": "^4.156.0"
+  }
+}
