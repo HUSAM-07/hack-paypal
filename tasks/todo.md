@@ -51,4 +51,9 @@ Each runs in its own worktree. Shared contracts land first (protocol + catalog s
 5. **Landing page** (starts Phase 2)
 
 ## Review
-_(filled in at the end)_
+**2026-11-01, integration round 1**
+- Merged into main: protocol/policy/catalog base, `packages/paypal`, `apps/worker`, `packages/evals`, `apps/web`, agent hardening (eval findings), PayPal wiring. 234 tests, lint, typecheck, eval gate green.
+- Web runs against the real worker (`dev:live`): passkey/dev sign-in, per-thread sockets, approval → charge → resumed turn, replay, wallet. Verified in the browser with the fake model and simulated PayPal.
+- Fixed: pact-scoped mandates hard-denied unrelated spends (`341f0d2`).
+- Blocked: Anthropic key hit its usage limit (returns 2026-12-01, after the deadline): raise the limit or add an OpenRouter key. No PayPal sandbox credentials yet, so nothing has run against the sandbox.
+- Open: nothing triggers `PactDO.settle()` yet (price/schedule/quorum alarms); full live eval suite unmeasured (red-team 98% ×3); landing page; deploy.
