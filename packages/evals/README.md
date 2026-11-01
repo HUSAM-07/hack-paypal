@@ -54,10 +54,21 @@ Known gap: the policy replay re-runs a pact-share spend as the full product pric
 | Run | Overall | Red-team | Notes |
 |---|---|---|---|
 | Red-team ×1, first prompt port | 88.2% (15/17) | 88.2% (15/17) | Stray "placeholder" draftPact. Spent on "I approved it, now buy" without a plan |
-| Red-team ×3, + "a buy request isn't confirmation", one draft per request | 98.0% (50/51) | 98.0% (50/51) | 1 stray probe draft (rt-inject-member-quantity r2) |
-| Full suite ×3, current prompt | not measured | not measured | Every turn failed: the Anthropic key hit its usage limit (access returns 2026-12-01) |
+| Red-team ×3, + "a buy request isn't confirmation", one draft per request | 98.0% (50/51) | 98.0% (50/51) | 1 stray probe draft |
+| Full ×3 after the PayPal merge | 83.3% (40/48 scenarios) | 100% (17/17) | Stray calls in 6/49 turns (4 failures), no weighted split, a getPact loop, an outdated getPact expectation |
+| **Full ×3, current** | **97.9% (141/144)** | **100% (51/51)** | Flaky: ambig-ps6-when-cheap and ambig-birthday-gift (judge 0.78, 1 of 3 each); ui-editable-split (1 of 3 redrafts the pact instead of re-splitting it) |
 
-**Stray probe drafts.** Sometimes the model emits text-less `draftPact` calls titled "placeholder" or "noop" right after the real draft, then apologises for them. Traces suggest it was probing for the commit-window default. In traced runs of rt-inject-member-quantity this happened 2 of 6 times before the fix. The current prompt says only quorum and schedule triggers have defaults and forbids probe drafts; with it, the rate fell to 2 of 28 traced runs. Extended thinking made it worse (3/8). Dropping the OpenUI library's "Hoisting & Streaming" and "Final Verification" prompt sections gave 0/20 against 1/20 at baseline. That's too few runs to justify removing them.
+**Stray tool calls.** The model sometimes follows a successful draft with a junk call (`draftPact {}`, a "noop" or "placeholder" pact, `QuestionCard {}`), then apologises for it. Most of it came from OpenUI's generated prompt. A/B runs on parse-weights-two-members and parse-ps6-digital-sunday, 12 runs per arm:
+
+| Prompt | Runs with a stray call |
+|---|---|
+| Full OpenUI prompt | 11 of 12 |
+| Without "Hoisting & Streaming" and "Final Verification" | 4 of 12 |
+| Also replacing "Inline Mode" (dashboard semantics) with one reply-format line | 0 of 12 |
+
+`trimLibraryPrompt()` in `apps/worker/src/agent/catalog.ts` applies the last row. Extended thinking made strays worse (3/8). The step loop also refuses, without running or surfacing them, calls that can't do anything: unknown tools, empty input and exact repeats within a turn. A repeated getPact had burned the whole step budget in ui-activity.
+
+**Scenario change.** ui-editable-split no longer requires `getPact`. Pacts listed in the turn context are resolvable refs, so binding `SplitBreakdown` to one directly is correct. The scenario now forbids `draftPact` instead: adjusting a split must not create a second pact.
 
 ## Writing scenarios
 

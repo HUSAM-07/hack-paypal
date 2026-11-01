@@ -1,10 +1,12 @@
 import type { Pact } from "@pact/protocol";
 import { describe, expect, it } from "vitest";
-import { analyzeAgentText, parseUiNodes, type StoredRef } from "../src/agent/catalog";
+import { analyzeAgentText, parseUiNodes, type StoredRef, systemPrompt } from "../src/agent/catalog";
 import { contextBlock, knownAmounts } from "../src/agent/context";
+import { runAgentLoop } from "../src/agent/loop";
 import type { Product } from "../src/agent/products";
+import type { ChatMessage, ModelProvider } from "../src/agent/provider";
 import { formatLocal, tomorrowAt } from "../src/agent/time";
-import { runTool, type ToolContext } from "../src/agent/tools";
+import { type PactRefData, runTool, TOOL_DEFS, type ToolContext } from "../src/agent/tools";
 import { priceTriggerMet } from "../src/do/pact";
 
 const NOW = new Date("2026-11-04T18:00:00.000Z"); // Wednesday 10am in Los Angeles
@@ -96,6 +98,74 @@ describe("tools", () => {
       "$166.34",
     ]);
     expect(c.refs.get(view.pactRef)?.kind).toBe("pact");
+  });
+
+  it("gives a price watch the product and its current price, as the web's PriceWatch needs", async () => {
+    const c = ctx();
+    const out = await runTool(
+      "draftPact",
+      {
+        title: "PS6",
+        instruction: "PS6 under $450 before Friday",
+        trigger: {
+          kind: "price",
+          productRef: "product_ps6std01",
+          maxPriceMinor: 45_000,
+          deadline: "2026-11-06T08:00:00Z",
+        },
+        action: { kind: "purchase", productRef: "product_ps6std01" },
+      },
+      c,
+    );
+    const ref = (out as { output: { pactRef: string } }).output.pactRef;
+    const data = c.refs.get(ref)?.data as PactRefData;
+    expect(data.product?.title).toBe("PlayStation 6");
+    expect(data.watch).toEqual({
+      current: ps6.price,
+      history: [{ at: NOW.toISOString(), price: ps6.price }],
+      checkedAt: NOW.toISOString(),
+    });
+    expect(data.nextRuns).toBeUndefined();
+  });
+
+  it("lists upcoming runs for a schedule pact", async () => {
+    const c = ctx();
+    const out = await runTool(
+      "draftPact",
+      {
+        title: "Coffee",
+        instruction: "every 3 weeks",
+        trigger: { kind: "schedule", everyDays: 21 },
+        action: { kind: "purchase", productRef: "product_ps6std01" },
+      },
+      c,
+    );
+    const ref = (out as { output: { pactRef: string } }).output.pactRef;
+    const data = c.refs.get(ref)?.data as PactRefData;
+    expect(data.nextRuns?.slice(0, 2)).toEqual([
+      "2026-11-05T17:00:00.000Z",
+      "2026-11-26T17:00:00.000Z",
+    ]);
+    expect(data.watch).toBeUndefined();
+  });
+
+  it("drafts a weighted split from member weights", async () => {
+    const out = await runTool(
+      "draftPact",
+      {
+        title: "Fryer",
+        instruction: "I pay two thirds, Bob one third",
+        trigger: { kind: "quorum" },
+        action: { kind: "collect", totalMinor: 12_900 },
+        members: [
+          { userId: "user_alice", capMinor: 10_000, weight: 2 },
+          { userId: "user_bob", capMinor: 5_000, weight: 1 },
+        ],
+      },
+      ctx(),
+    );
+    const view = (out as { output: { members: { shareDisplay: string }[] } }).output;
+    expect(view.members.map((m) => m.shareDisplay)).toEqual(["$86.00", "$43.00"]);
   });
 
   it("defaults a quorum commit window to 7 days and honors per-member caps", async () => {
@@ -219,5 +289,65 @@ describe("parseUiNodes", () => {
       props: { pactRef: "pact_ps6grp01" },
     });
     expect(nodes.some((n) => n.component === "ApprovalSheet")).toBe(true);
+  });
+});
+
+describe("runAgentLoop", () => {
+  it("answers repeated, empty and unknown tool calls without running them", async () => {
+    const calls: string[] = [];
+    let step = 0;
+    const provider: ModelProvider = {
+      name: "loop",
+      async *stream() {
+        step++;
+        const junk = [
+          { name: "getPact", input: { pactRef: "pact_x0001" } },
+          { name: "getPact", input: { pactRef: "pact_x0001" } },
+          { name: "QuestionCard", input: {} },
+          { name: "draftPact", input: {} },
+        ][step - 1];
+        if (junk) yield { type: "toolCall", call: { id: `c${step}`, ...junk } };
+        else yield { type: "text", delta: "Done." };
+        yield { type: "finish", reason: "stop" };
+      },
+    };
+    const messages: ChatMessage[] = [{ role: "user", content: "status?" }];
+    const end = await runAgentLoop(
+      {
+        provider,
+        system: "",
+        tools: TOOL_DEFS,
+        maxSteps: 8,
+        messages: () => messages,
+        append: (m) => messages.push(m),
+        startMessage: () => {},
+        delta: () => {},
+        analyze: () => ({ diagnostics: [], usedRefs: [], fallbackMarkdown: "" }),
+        finishMessage: () => {},
+        executeTool: async (call) => {
+          calls.push(call.id);
+          return { result: { callId: call.id, name: call.name, output: {} } };
+        },
+      },
+      new AbortController().signal,
+    );
+    expect(end.status).toBe("completed");
+    expect(calls).toEqual(["c1"]);
+    const refusals = JSON.stringify(messages.filter((m) => m.role === "tool").slice(1));
+    expect(refusals).toContain("already called getPact");
+    expect(refusals).toContain("QuestionCard is not a tool");
+    expect(refusals).toContain("Empty draftPact call ignored");
+  });
+});
+
+describe("systemPrompt", () => {
+  it("keeps the OpenUI syntax and signatures but not its dashboard sections", () => {
+    const p = systemPrompt();
+    expect(p).toContain("## Component Signatures");
+    expect(p).toContain("PactCard(pactRef: string)");
+    expect(p).toContain("## Reply format");
+    for (const gone of ["Hoisting & Streaming", "Final Verification", "Inline Mode", "dashboard"]) {
+      expect(p).not.toContain(gone);
+    }
   });
 });

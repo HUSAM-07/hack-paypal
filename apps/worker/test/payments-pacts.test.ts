@@ -5,7 +5,9 @@ import {
   commitMember,
   mandateFor,
   maskEmail,
+  nextRuns,
   type PactRefData,
+  splitShares,
 } from "../src/payments/pacts";
 
 const NOW = new Date("2026-11-01T12:00:00.000Z");
@@ -116,6 +118,18 @@ describe("commitMember", () => {
     expect(two?.shares?.reduce((s, x) => s + x.share.amountMinor, 0)).toBe(9_001);
     expect(two?.pact.members.map((m) => m.mandateId)).toEqual(["mnd_a", "mnd_b"]);
   });
+  it("keeps watch/product/nextRuns and the weighted split when re-splitting", () => {
+    const d = {
+      ...data({ split: { kind: "weights", weights: { usr_a: 2, usr_b: 1 } } }),
+      nextRuns: ["2026-11-02T17:00:00.000Z"],
+    };
+    const next = commitMember(d, "usr_a", { cap: usd(9_001), mandateId: "mnd_a" }, NOW);
+    expect(next?.nextRuns).toEqual(["2026-11-02T17:00:00.000Z"]);
+    expect(next?.shares).toEqual([
+      { userId: "usr_a", share: usd(6_001) },
+      { userId: "usr_b", share: usd(3_000) },
+    ]);
+  });
   it("returns null when caps can no longer cover the total", () => {
     const d = data();
     d.pact.members[1] = { ...(d.pact.members[1] as Pact["members"][number]), cap: usd(1) };
@@ -127,4 +141,32 @@ it("maskEmail keeps just enough to recognise the account", () => {
   expect(maskEmail("jane@example.com")).toBe("j•••@example.com");
   expect(maskEmail(undefined)).toBeUndefined();
   expect(maskEmail("nope")).toBeUndefined();
+});
+
+describe("splitShares", () => {
+  it("honours fixed amounts only when they cover the total within caps", () => {
+    const fixed = data({
+      split: { kind: "fixed", amounts: { usr_a: usd(5_000), usr_b: usd(4_001) } },
+    });
+    expect(splitShares(fixed.pact, usd(9_001))?.map((s) => s.share.amountMinor)).toEqual([
+      5_000, 4_001,
+    ]);
+    expect(splitShares(fixed.pact, usd(9_002))).toBeNull();
+  });
+});
+
+describe("nextRuns", () => {
+  const t = { kind: "schedule" as const, everyDays: 21, startAt: "2026-11-05T17:00:00.000Z" };
+  it("lists upcoming runs from the start, skipping past ones", () => {
+    expect(nextRuns(t, NOW, 3)).toEqual([
+      "2026-11-05T17:00:00.000Z",
+      "2026-11-26T17:00:00.000Z",
+      "2026-12-17T17:00:00.000Z",
+    ]);
+    expect(nextRuns(t, new Date("2026-11-20T00:00:00Z"), 1)).toEqual(["2026-11-26T17:00:00.000Z"]);
+  });
+  it("stops at maxRuns and endAt", () => {
+    expect(nextRuns({ ...t, maxRuns: 2 }, NOW)).toHaveLength(2);
+    expect(nextRuns({ ...t, endAt: "2026-11-30T00:00:00.000Z" }, NOW)).toHaveLength(2);
+  });
 });
