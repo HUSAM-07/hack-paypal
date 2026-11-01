@@ -15,10 +15,11 @@ import { env, useMock } from "@/lib/env";
 import { createMockApi } from "@/mock/api";
 import { MockServer } from "@/mock/server";
 import { type ConnectionState, PactClient } from "@/protocol/client";
+import { type ProtocolClient, ThreadRouter } from "@/protocol/router";
 import { type StoreState, ThreadStore } from "@/protocol/store";
 
 export interface Runtime {
-  client: PactClient;
+  client: ProtocolClient;
   store: ThreadStore;
   api: PactApi;
   mock: MockServer | null;
@@ -31,11 +32,14 @@ declare global {
   }
 }
 
-/** Builds the runtime: the in-browser mock server unless `VITE_PACT_WS_URL` is set. */
+/**
+ * Builds the runtime: the in-browser mock server unless `VITE_PACT_WS_URL` is set. The
+ * mock multiplexes threads on one socket; the worker binds one socket per thread.
+ */
 export function createRuntime(opts: { speed?: number } = {}): Runtime {
   const store = new ThreadStore();
   let mock: MockServer | null = null;
-  let client: PactClient;
+  let client: ProtocolClient;
   if (useMock) {
     mock = new MockServer();
     mock.speed = opts.speed ?? 1;
@@ -43,7 +47,9 @@ export function createRuntime(opts: { speed?: number } = {}): Runtime {
     client = new PactClient({ connect: () => m.connect() });
     if (import.meta.env.DEV || import.meta.env.MODE === "test") window.__pactMock = mock;
   } else {
-    client = new PactClient({ connect: () => new WebSocket(env.wsUrl) });
+    client = new ThreadRouter({
+      url: (thread) => `${env.wsUrl}?thread=${encodeURIComponent(thread)}`,
+    });
   }
   client.onNotification((n) => store.apply(n));
   if (import.meta.env.DEV) window.__pactStore = store;

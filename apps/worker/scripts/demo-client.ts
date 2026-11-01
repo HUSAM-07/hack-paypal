@@ -1,12 +1,12 @@
 /**
  * Scripted protocol client for a running worker (`npm run dev -w @pact/worker`).
  *
- *   node apps/worker/scripts/demo-client.ts [http://localhost:8787]
+ *   node apps/worker/scripts/demo-client.ts [http://localhost:8790]
  *
  * Signs in with the DEV_AUTH test login, starts a thread, asks for headphones, then asks
  * to buy the cheapest one and approves the resulting approvalRequest.
  */
-const base = process.argv[2] ?? "http://localhost:8787";
+const base = process.argv[2] ?? "http://localhost:8790";
 
 // biome-ignore lint/suspicious/noExplicitAny: a throwaway client reads loosely typed frames
 type Loose = Record<string, any>;

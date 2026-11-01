@@ -1,3 +1,4 @@
+import { stepUpAssertion } from "./auth";
 import { useMock } from "./env";
 
 function b64urlToBytes(s: string): Uint8Array<ArrayBuffer> {
@@ -25,11 +26,16 @@ export class PasskeyError extends Error {}
  * matches `PublicKeyCredential.toJSON()` so the worker can verify it directly.
  * The mock server accepts a simulated assertion so the demo runs without a passkey.
  */
-export async function getAssertion(challenge: string): Promise<unknown> {
+export async function getAssertion(
+  challenge: string,
+  approval?: { threadId: string; approvalId: string },
+): Promise<unknown> {
   if (useMock) {
     await new Promise((r) => setTimeout(r, 1100));
     return { type: "mock-passkey", challenge };
   }
+  // The worker's options pin the approval's challenge and this account's credentials.
+  if (approval) return stepUpAssertion(approval.threadId, approval.approvalId);
   if (!("PublicKeyCredential" in window) || !navigator.credentials) {
     throw new PasskeyError("This browser doesn't support passkeys.");
   }

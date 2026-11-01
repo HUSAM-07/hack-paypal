@@ -102,6 +102,11 @@ export class ThreadStore {
       case "item/started":
       case "item/completed": {
         const item = n.params.item;
+        // The worker withdraws a message whose UI failed validation and resends a fixed one.
+        if (item.type === "agentMessage" && item.status === "failed" && item.text === "") {
+          this.removeItem(item.threadId, item.id);
+          return;
+        }
         this.patchThread(item.threadId, (t) => {
           // A server-echoed user message replaces its optimistic twin.
           let base = t;

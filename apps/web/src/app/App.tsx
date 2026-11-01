@@ -88,7 +88,13 @@ function findRef(thread: ThreadState | undefined, refId: string): Record<string,
 
 const MOCK_NAMES = Object.fromEntries(Object.entries(USERS).map(([id, u]) => [id, u.name]));
 
-export function App() {
+export function App({
+  me,
+  onSignOut,
+}: {
+  me?: { name: string; email: string };
+  onSignOut?: () => void;
+} = {}) {
   const { client } = useRuntime();
   const reduce = useReducedMotion();
   const [theme, toggleTheme] = useTheme();
@@ -125,7 +131,11 @@ export function App() {
   const thread = useThread(activeId);
   const send = useSendTurn(activeId);
   const viewerId = client.userId ?? "";
-  const nameFor = useNameFor(thread?.pacts ?? {}, useMock ? MOCK_NAMES : {});
+  const fallbackNames = useMemo(
+    () => (useMock ? MOCK_NAMES : viewerId ? { [viewerId]: "You" } : {}),
+    [viewerId],
+  );
+  const nameFor = useNameFor(thread?.pacts ?? {}, fallbackNames);
 
   const select = (id: string) => {
     setNavOpen(false);
@@ -211,8 +221,9 @@ export function App() {
       theme={theme}
       onToggleTheme={toggleTheme}
       connection={connection}
-      me={useMock && USERS.user_alex ? USERS.user_alex : { name: "You", email: "" }}
+      me={me ?? (useMock && USERS.user_alex ? USERS.user_alex : { name: "You", email: "" })}
       mock={useMock}
+      {...(onSignOut ? { onSignOut } : {})}
     />
   );
 

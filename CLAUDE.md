@@ -22,6 +22,8 @@ npm workspaces. Each package exports `./src/index.ts` directly; there's no build
 - `npm test`: Vitest across all workspaces
 - `npm run typecheck`
 - `npm run lint`: Biome. Use `npx biome check --write .` to fix.
+- Mock demo (no backend): `npm run dev -w @pact/web` → http://localhost:5180
+- Live stack: `cp apps/worker/.dev.vars.example apps/worker/.dev.vars` (fill it; `MODEL_PROVIDER=fake`, `PAYPAL_MODE=simulated` need no keys), `npx wrangler d1 migrations apply pact --local` in `apps/worker`, then `npm run dev -w @pact/worker` (port 8790) and `npm run dev:live -w @pact/web` (Vite proxies `/api` and `/ws` so cookies stay same-origin). Dev sign-in needs `DEV_AUTH=1`.
 
 ## Non-negotiable rules
 1. **Money is `Money {amountMinor:int, currency}`.** Never floats. Convert to PayPal strings only with `toPayPalValue`.

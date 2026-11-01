@@ -88,7 +88,10 @@ export function ApprovalSheet({
 
   const runPasskey = async () => {
     try {
-      const assertion = await getAssertion(item.challenge ?? "");
+      const assertion = await getAssertion(item.challenge ?? "", {
+        threadId: item.threadId,
+        approvalId: item.approvalId,
+      });
       await respond("approve", assertion);
     } catch (e) {
       setPhase("error");

@@ -7,7 +7,7 @@
     "./agent": "./src/agent/embed.ts"
   },
   "scripts": {
-    "dev": "wrangler dev",
+    "dev": "wrangler dev --port 8790",
     "deploy": "wrangler deploy",
     "cf-typegen": "wrangler types --include-runtime false",
     "typecheck": "tsc -p tsconfig.json",

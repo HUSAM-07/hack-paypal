@@ -17,7 +17,7 @@ PayPal sandbox credentials are missing. To run the spikes:
    (type: Merchant, name: Pact). Open the app and under "Features" tick:
    - Vault  (Save payment methods)
    - Payouts
-   - Log in with PayPal (add return URL http://localhost:8787/auth/paypal/callback,
+   - Log in with PayPal (add return URL http://localhost:8790/auth/paypal/callback,
      and tick "Email" + "PayPal account ID (payer ID)" under advanced settings)
 2. https://developer.paypal.com/dashboard/accounts → make sure you have:
    - the app's default Business account (the platform/merchant)

@@ -1,5 +1,5 @@
 import type { Thread } from "@pact/protocol";
-import { Moon, Plus, Sun, User, Users } from "lucide-react";
+import { LogOut, Moon, Plus, Sun, User, Users } from "lucide-react";
 import { motion, useReducedMotion } from "motion/react";
 import { Avatar } from "@/genui/primitives";
 import { SPRING_LAYOUT } from "@/lib/motion";
@@ -42,6 +42,7 @@ export function Sidebar({
   onNew,
   theme,
   onToggleTheme,
+  onSignOut,
   connection,
   me,
   mock,
@@ -52,6 +53,7 @@ export function Sidebar({
   onNew: () => void;
   theme: "dark" | "light";
   onToggleTheme: () => void;
+  onSignOut?: () => void;
   connection: ConnectionState;
   me: { name: string; email: string };
   mock: boolean;
@@ -150,6 +152,16 @@ export function Sidebar({
             {mock ? " · demo" : ""}
           </div>
         </div>
+        {onSignOut && (
+          <button
+            type="button"
+            onClick={onSignOut}
+            aria-label="Sign out"
+            className="flex size-8 items-center justify-center rounded-full text-muted-foreground transition-[background-color,color,transform] hover:bg-surface-2 hover:text-foreground active:scale-90"
+          >
+            <LogOut className="size-4" />
+          </button>
+        )}
       </div>
     </nav>
   );

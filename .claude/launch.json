@@ -6,6 +6,18 @@
       "runtimeExecutable": "npm",
       "runtimeArgs": ["run", "dev", "-w", "@pact/web"],
       "port": 5180
+    },
+    {
+      "name": "worker",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev", "-w", "@pact/worker"],
+      "port": 8790
+    },
+    {
+      "name": "web-live",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev:live", "-w", "@pact/web"],
+      "port": 5180
     }
   ]
 }

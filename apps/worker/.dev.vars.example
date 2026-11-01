@@ -5,7 +5,7 @@ CHANNEL3_API_KEY=
 SESSION_SECRET=
 # WebAuthn relying party. Must match the origin the browser loads.
 RP_ID=localhost
-ORIGINS=http://localhost:5173,http://localhost:8787
+ORIGINS=http://localhost:5180,http://localhost:5173,http://localhost:8790
 # Enables POST /api/auth/dev-login (passwordless test users). Never set in production.
 DEV_AUTH=1
 # "anthropic" or "fake" (scripted, no network)
