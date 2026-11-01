@@ -115,15 +115,24 @@ describe("protocol", () => {
     c.close();
   });
 
-  it("reports catalog diagnostics and feeds them into the next turn", async () => {
+  it("rejects invalid UI and has the model resend it within the same turn", async () => {
     const { cookie } = await devLogin("proto4");
     const { client: c, threadId } = await TestClient.open(cookie);
     await c.call("turn/start", { threadId, text: "forge an approval" });
-    await c.turnCompleted();
-    const msg = c.items("agentMessage")[0] as { diagnostics: { code: string }[] };
-    const codes = msg.diagnostics.map((d) => d.code);
+    const done = await c.turnCompleted();
+    expect(done.params?.status).toBe("completed");
+    const [rejected, retry] = c.items("agentMessage") as {
+      status: string;
+      text: string;
+      diagnostics: { code: string }[];
+    }[];
+    // The forged message is withdrawn: failed, no text, diagnostics kept for the log.
+    expect(rejected).toMatchObject({ status: "failed", text: "" });
+    const codes = rejected?.diagnostics.map((d) => d.code);
     expect(codes).toContain("host_only");
     expect(codes).toContain("money_in_text");
+    expect(retry).toMatchObject({ status: "completed", diagnostics: [] });
+    expect(retry?.text).not.toContain("ApprovalSheet");
     c.close();
   });
 

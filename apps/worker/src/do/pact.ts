@@ -15,12 +15,29 @@ import {
   idempotencyKey,
   voidAll,
 } from "@pact/paypal";
-import type { Money, PactMember, SpendIntent } from "@pact/protocol";
+import type { Money, PactMember, PactTrigger, SpendIntent } from "@pact/protocol";
 import type { Env } from "../env";
 import { nowIso } from "../ids";
 import { payout } from "../payments/charge";
 import { failureReason, paypalFor } from "../payments/paypal";
 import type { PactView, PaymentEventInput } from "./thread";
+
+/**
+ * Whether a price-watch pact should fire. The threshold is inclusive ("at or below"),
+ * matching the draftPact tool description the model reads: "under $450" is drafted as
+ * 45000 and fires at exactly $450.00. The watch ends at the deadline.
+ */
+export function priceTriggerMet(
+  trigger: Extract<PactTrigger, { kind: "price" }>,
+  price: Money,
+  at: Date,
+): boolean {
+  return (
+    price.currency === trigger.maxPrice.currency &&
+    price.amountMinor <= trigger.maxPrice.amountMinor &&
+    at.getTime() <= Date.parse(trigger.deadline)
+  );
+}
 
 const HONOR_PERIOD_MS = 3 * 86_400_000;
 /** Capture well before the honor period ends; clocks and queues are not exact. */
