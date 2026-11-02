@@ -156,7 +156,7 @@ export function Composer({
           onSubmit={submit}
           data-testid="composer"
           className={cn(
-            "relative flex rounded-[26px] bg-surface shadow-card transition-shadow focus-within:shadow-[0_0_0_1px_var(--border-strong),0_8px_24px_-12px_oklch(0_0_0/0.4)]",
+            "relative flex rounded-[26px] bg-surface shadow-card transition-shadow focus-within:shadow-[0_0_0_1px_var(--lav-400),0_12px_32px_-14px_oklch(0.45_0.15_285/0.45)]",
             multiline ? "flex-col gap-1 p-2.5" : "items-end gap-1 p-1.5",
           )}
         >

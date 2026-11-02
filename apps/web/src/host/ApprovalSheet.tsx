@@ -112,7 +112,7 @@ export function ApprovalSheet({
       aria-label={KIND_LABEL[item.kind]}
       data-testid="approval-sheet"
       className={cn(
-        "relative w-full overflow-hidden rounded-[22px] bg-surface p-4 shadow-card sm:p-5",
+        "relative w-full overflow-hidden rounded-[24px] bg-surface p-4 shadow-card sm:p-5",
         !decision && "ring-1 ring-warning/30",
       )}
     >

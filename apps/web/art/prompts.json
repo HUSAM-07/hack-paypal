@@ -1,0 +1,45 @@
+{
+  "model": "google/nano-banana-2.1",
+  "editModel": "google/nano-banana-2.1/edit",
+  "fallbackModel": "fal-ai/nano-banana-pro",
+  "fallbackEditModel": "fal-ai/nano-banana-pro/edit",
+  "cutoutModel": "fal-ai/birefnet/v2",
+  "resolution": "2K",
+  "styleReference": "watch",
+  "style": "soft glossy matte-clay 3D render, pastel lavender and periwinkle (#978eff, #bcbbff, #e5e5ff) with subtle white highlights, studio softbox lighting, gentle soft shadow, isometric three-quarter view, centered, generous empty margin, plain light background, no text, no letters, no numbers, no logos",
+  "referenceInstruction": "The attached image is a STYLE REFERENCE ONLY. Match its exact clay material, glossiness, pastel lavender color palette, softbox lighting, soft shadow, three-quarter camera angle, scale in frame and plain background. Do not include or copy the object shown in the reference.",
+  "assets": {
+    "watch": {
+      "aspect": "1:1",
+      "cutout": true,
+      "prompt": "A single chunky rounded price tag with a round hole near its narrow end and a short loop of soft string, completely blank smooth face with no markings, and a small separate chunky 3D arrow pointing straight down floating just beside the tag. One object group only, nothing else in the scene."
+    },
+    "schedule": {
+      "aspect": "1:1",
+      "cutout": true,
+      "prompt": "A single chunky desk calendar with two rounded binder rings on top, a thick rounded base, and a page face made of a simple grid of blank raised square tiles with one tile highlighted in deeper lavender. The tiles are completely blank: no numbers, no letters, no markings. One object only, nothing else in the scene."
+    },
+    "split": {
+      "aspect": "1:1",
+      "cutout": true,
+      "prompt": "A single thick round coin-like disc lying at a three-quarter angle so both its flat top face and its thick rounded edge are visible, smooth blank face with no engraving or symbols. The disc is cut into four equal pie wedges; three wedges stay together and exactly one wedge (the front-right quarter) is clearly pulled outward, away from the center, leaving a visible gap of about a fifth of the disc's radius. One object only, nothing else in the scene."
+    },
+    "send": {
+      "aspect": "1:1",
+      "cutout": true,
+      "prompt": "A single chunky folded paper plane with soft rounded edges, tilted upward as if taking off, smooth blank surfaces with no markings. One object only, nothing else in the scene."
+    },
+    "rails": {
+      "aspect": "16:9",
+      "cutout": true,
+      "prompt": "Three chunky rounded rectangular slabs standing side by side in a row like steps, increasing in height from left to right (short, medium, tall), each a slightly different shade of lavender from light to deeper periwinkle, smooth blank surfaces with no markings. Wide landscape composition, only these three blocks, nothing else in the scene."
+    },
+    "og": {
+      "aspect": "16:9",
+      "cutout": false,
+      "references": ["watch", "schedule", "split", "send"],
+      "referenceInstruction": "The attached images show four clay objects. Re-render these same four objects with the same material, colors and lighting.",
+      "prompt": "A wide social-card scene: a soft smooth lavender gradient background from very light #f3f2ff on the left to soft periwinkle #c9c6ff on the right. On the right half of the frame, a loose playful floating cluster of the four objects (blank price tag with a down arrow, desk calendar with blank tiles, coin split into wedges, paper plane) at slightly different sizes and angles, softly overlapping with gentle shadows. The left half of the frame is empty gradient with nothing in it. No text, no letters, no numbers, no logos anywhere."
+    }
+  }
+}

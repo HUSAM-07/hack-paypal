@@ -29,7 +29,7 @@ export function GenCard({
     <motion.section
       {...(reduce ? {} : blockEnter)}
       aria-label={label ?? (typeof title === "string" ? title : undefined)}
-      className={cn("w-full rounded-[22px] bg-surface p-4 shadow-card sm:p-5", className)}
+      className={cn("w-full rounded-[24px] bg-surface p-4 shadow-card sm:p-5", className)}
     >
       {(title || Icon) && (
         <header className="mb-3.5 flex items-center gap-2.5">
@@ -74,7 +74,7 @@ export function CardSkeleton({ lines = 3, label = "Loading" }: { lines?: number;
       role="status"
       aria-label={label}
       data-testid="ref-skeleton"
-      className="w-full rounded-[22px] bg-surface p-4 shadow-card sm:p-5"
+      className="w-full rounded-[24px] bg-surface p-4 shadow-card sm:p-5"
     >
       <div className="mb-4 flex items-center gap-2.5">
         <Skeleton className="size-7 rounded-[9px]" />

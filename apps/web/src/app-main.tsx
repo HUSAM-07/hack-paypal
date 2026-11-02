@@ -8,8 +8,15 @@ import { App } from "./app/App";
 import { createRuntime, RuntimeProvider } from "./app/runtime";
 import "./styles/globals.css";
 
-// The landing page is out of scope for now; everything routes into the app.
-if (!window.location.pathname.startsWith("/app")) window.history.replaceState(null, "", "/app");
+// After a deploy, an open tab may ask for chunks that no longer exist. Reload once to
+// pick up the new build; the session flag stops a loop if the chunk is really missing.
+window.addEventListener("vite:preloadError", (e) => {
+  if (sessionStorage.getItem("pact-reloaded")) return;
+  e.preventDefault();
+  sessionStorage.setItem("pact-reloaded", "1");
+  window.location.reload();
+});
+window.addEventListener("load", () => sessionStorage.removeItem("pact-reloaded"), { once: true });
 
 const speed = Number(new URLSearchParams(window.location.search).get("speed")) || 1;
 

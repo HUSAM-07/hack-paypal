@@ -44,7 +44,7 @@ function useTheme(): [Theme, () => void] {
       const saved = localStorage.getItem("pact-theme");
       if (saved === "light" || saved === "dark") return saved;
     } catch {}
-    return "dark";
+    return "light";
   });
   useEffect(() => {
     const root = document.documentElement;
@@ -52,7 +52,7 @@ function useTheme(): [Theme, () => void] {
     root.style.colorScheme = theme;
     document
       .querySelector('meta[name="theme-color"]')
-      ?.setAttribute("content", theme === "dark" ? "#0b0b0c" : "#fafafa");
+      ?.setAttribute("content", theme === "dark" ? "#0e0c12" : "#fafaf9");
     try {
       localStorage.setItem("pact-theme", theme);
     } catch {}

@@ -5,12 +5,13 @@ import { cn } from "@/lib/utils";
 
 // Pill buttons with a mechanical press (scale on :active) — cheap, interruptible, no JS.
 const buttonVariants = cva(
-  "inline-flex shrink-0 select-none items-center justify-center gap-2 whitespace-nowrap rounded-full font-medium outline-none transition-[background-color,color,box-shadow,transform,opacity] duration-150 ease-out active:scale-[0.97] disabled:pointer-events-none disabled:opacity-45 focus-visible:ring-2 focus-visible:ring-ring [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+  "inline-flex shrink-0 select-none items-center justify-center gap-2 whitespace-nowrap rounded-full font-medium tracking-[0.01em] outline-none transition-[background-color,color,box-shadow,transform,opacity] duration-150 ease-snappy active:scale-[0.96] disabled:pointer-events-none disabled:opacity-45 focus-visible:ring-2 focus-visible:ring-ring [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
   {
     variants: {
       variant: {
         default: "bg-primary text-primary-foreground hover:opacity-90",
         accent: "bg-accent text-accent-foreground hover:brightness-110",
+        soft: "bg-accent-soft text-accent-soft-foreground hover:bg-accent-soft/80",
         secondary: "bg-surface-2 text-foreground hover:bg-surface-3",
         outline:
           "bg-transparent text-foreground shadow-[inset_0_0_0_1px_var(--border-strong)] hover:bg-surface-2",
@@ -22,7 +23,7 @@ const buttonVariants = cva(
         default: "h-9 px-4 text-sm",
         sm: "h-8 px-3 text-[13px]",
         xs: "h-7 px-2.5 text-xs",
-        lg: "h-11 px-5 text-[15px]",
+        lg: "h-12 px-6 text-[17px]",
         icon: "size-9",
         "icon-sm": "size-8",
         "icon-xs": "size-7",

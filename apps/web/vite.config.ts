@@ -1,10 +1,26 @@
 /// <reference types="vitest/config" />
 import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";
-import { defineConfig } from "vite";
+import { defineConfig, type Plugin } from "vite";
 
-export default defineConfig({
-  plugins: [react(), tailwindcss()],
+/** Dev server: every /app route loads the app entry, as the worker does in production. */
+function appEntryRewrite(): Plugin {
+  return {
+    name: "pact-app-entry",
+    configureServer(server) {
+      server.middlewares.use((req, _res, next) => {
+        const path = req.url?.split("?")[0] ?? "";
+        if (path === "/app" || path.startsWith("/app/")) {
+          req.url = `/app.html${req.url?.slice(path.length) ?? ""}`;
+        }
+        next();
+      });
+    },
+  };
+}
+
+export default defineConfig(({ isSsrBuild }) => ({
+  plugins: [react(), tailwindcss(), appEntryRewrite()],
   resolve: { alias: { "@": new URL("./src", import.meta.url).pathname } },
   server: {
     port: 5180,
@@ -20,6 +36,16 @@ export default defineConfig({
     // CSP: no inline <script>; Vite already emits external module scripts only.
     modulePreload: { polyfill: false },
     sourcemap: false,
+    // Two pages: the landing never downloads app code, and vice versa. The SSR build
+    // (landing prerender) takes its entry from the CLI instead.
+    rollupOptions: isSsrBuild
+      ? {}
+      : {
+          input: {
+            index: new URL("./index.html", import.meta.url).pathname,
+            app: new URL("./app.html", import.meta.url).pathname,
+          },
+        },
   },
   test: {
     environment: "jsdom",
@@ -27,4 +53,4 @@ export default defineConfig({
     include: ["src/**/*.test.{ts,tsx}"],
     css: false,
   },
-});
+}));

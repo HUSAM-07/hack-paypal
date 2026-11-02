@@ -64,15 +64,15 @@ export function SignIn({ onSignedIn }: { onSignedIn: (m: Me) => void }) {
   };
 
   return (
-    <div className="flex min-h-dvh items-center justify-center bg-background px-4">
+    <div className="flex min-h-dvh items-center justify-center bg-gradient-to-b from-background via-lav-50 to-lav-100 px-4">
       <motion.div
         initial={reduce ? false : { opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.25, ease: [0.23, 1, 0.32, 1] }}
-        className="w-full max-w-[360px]"
+        className="w-full max-w-[400px] rounded-[32px] bg-surface p-8 shadow-pop sm:p-10"
       >
         <BrandMark className="mb-8" />
-        <h1 className="text-[22px] font-semibold tracking-tight">
+        <h1 className="display text-[30px]">
           {mode === "signin" ? "Sign in" : "Create your account"}
         </h1>
         <p className="mt-1.5 text-sm text-muted-foreground">
@@ -91,6 +91,7 @@ export function SignIn({ onSignedIn }: { onSignedIn: (m: Me) => void }) {
             >
               <Button
                 size="lg"
+                variant="accent"
                 className="w-full"
                 disabled={busy}
                 onClick={() => void run(signInWithPasskey)}
@@ -153,7 +154,13 @@ export function SignIn({ onSignedIn }: { onSignedIn: (m: Me) => void }) {
                   className={INPUT}
                 />
               </Field>
-              <Button type="submit" size="lg" className="w-full" disabled={busy || !validName}>
+              <Button
+                type="submit"
+                size="lg"
+                variant="accent"
+                className="w-full"
+                disabled={busy || !validName}
+              >
                 {busy ? <Loader2 className="animate-spin" /> : <KeyRound />}
                 Create passkey
               </Button>
@@ -184,7 +191,7 @@ export function SignIn({ onSignedIn }: { onSignedIn: (m: Me) => void }) {
 }
 
 const INPUT =
-  "h-11 w-full rounded-xl bg-surface-2 px-3.5 text-[15px] outline-none ring-1 ring-border transition-shadow focus:ring-2 focus:ring-ring";
+  "h-12 w-full rounded-2xl bg-surface-2 px-3.5 text-[15px] outline-none ring-1 ring-border transition-shadow focus:ring-2 focus:ring-ring";
 
 function Field({ label, hint, children }: { label: string; hint: string; children: ReactNode }) {
   return (

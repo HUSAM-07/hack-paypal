@@ -1,4 +1,4 @@
-import { Hono } from "hono";
+import { type Context, Hono } from "hono";
 import { auth } from "./auth/routes";
 import { sessionUser } from "./auth/session";
 import { allowedOrigins, type Env } from "./env";
@@ -12,6 +12,31 @@ export { ThreadDO } from "./do/thread";
 export { UserDO } from "./do/user";
 
 const app = new Hono<{ Bindings: Env }>();
+
+/**
+ * Every /app route loads the app's HTML entry (client-side routing takes over).
+ * Registered before the API security headers, whose `default-src 'none'` would block
+ * the page; asset `_headers` rules don't apply to worker responses, so the page's
+ * policy is set here and must match apps/web/public/_headers.
+ */
+const APP_PAGE_HEADERS: Record<string, string> = {
+  "Content-Security-Policy":
+    "default-src 'self'; script-src 'self' https://*.paypal.com https://*.paypalobjects.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self'; connect-src 'self' wss: https://*.paypal.com; frame-src https://*.paypal.com; base-uri 'none'; object-src 'none'; form-action 'self'; frame-ancestors 'none'",
+  "Referrer-Policy": "strict-origin-when-cross-origin",
+  "X-Content-Type-Options": "nosniff",
+  "Permissions-Policy":
+    "camera=(), microphone=(), geolocation=(), publickey-credentials-get=(self)",
+  "Cache-Control": "no-cache",
+};
+const appPage = async (c: Context<{ Bindings: Env }>) => {
+  // Assets serve app.html at its pretty URL (/app); asking for /app.html would redirect.
+  const res = await c.env.ASSETS.fetch(new URL("/app", c.req.url));
+  const out = new Response(res.body, res);
+  for (const [k, v] of Object.entries(APP_PAGE_HEADERS)) out.headers.set(k, v);
+  return out;
+};
+app.get("/app", appPage);
+app.get("/app/*", appPage);
 
 app.use("*", securityHeaders);
 app.use("/api/auth/*", ipRateLimit);

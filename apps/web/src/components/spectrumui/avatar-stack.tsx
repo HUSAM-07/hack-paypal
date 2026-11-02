@@ -226,7 +226,7 @@ export function AvatarStack({
                 animate={isActive ? { y: LIFT_Y, scale: LIFT_SCALE } : { y: 0, scale: 1 }}
                 transition={shouldReduceMotion ? INSTANT : SPRING_SNAPPY}
                 className={cn(
-                  "flex select-none items-center justify-center overflow-hidden rounded-full bg-neutral-100 font-medium text-neutral-600 ring-2 ring-white dark:bg-neutral-800 dark:text-neutral-300 dark:ring-neutral-900",
+                  "flex select-none items-center justify-center overflow-hidden rounded-full bg-accent-soft font-medium text-accent-soft-foreground ring-2 ring-surface",
                   "focus-visible:outline-hidden focus-visible:ring-neutral-950 dark:focus-visible:ring-neutral-300",
                   text,
                 )}
@@ -305,7 +305,7 @@ export function AvatarStack({
             onFocus={() => setRovingIndex(pillIndex)}
             transition={{ layout: layoutTransition }}
             className={cn(
-              "relative flex select-none items-center justify-center rounded-full bg-neutral-100 font-medium text-neutral-600 ring-2 ring-white dark:bg-neutral-800 dark:text-neutral-300 dark:ring-neutral-900",
+              "relative flex select-none items-center justify-center rounded-full bg-accent-soft font-medium text-accent-soft-foreground ring-2 ring-surface",
               "focus-visible:outline-hidden focus-visible:ring-neutral-950 dark:focus-visible:ring-neutral-300",
               text,
             )}
@@ -336,7 +336,7 @@ export function AvatarStack({
             layout
             transition={{ layout: layoutTransition }}
             className={cn(
-              "flex select-none items-center justify-center rounded-full bg-neutral-100 font-medium text-neutral-600 ring-2 ring-white dark:bg-neutral-800 dark:text-neutral-300 dark:ring-neutral-900",
+              "flex select-none items-center justify-center rounded-full bg-accent-soft font-medium text-accent-soft-foreground ring-2 ring-surface",
               text,
             )}
             style={{

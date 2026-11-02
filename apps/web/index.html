@@ -1,16 +1,28 @@
 <!doctype html>
-<html lang="en" class="dark">
+<html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-    <meta name="color-scheme" content="dark light" />
-    <meta name="theme-color" content="#0b0b0c" />
+    <meta name="color-scheme" content="light" />
+    <meta name="theme-color" content="#fafaf9" />
+    <title>Pact: money your group agrees on</title>
+    <meta
+      name="description"
+      content="Pact is a money agent for group chats. Watch prices, split purchases, run standing orders and send money over PayPal. Nothing moves without a passkey approval."
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Pact: money your group agrees on" />
+    <meta
+      property="og:description"
+      content="A money agent for group chats, built on PayPal. Nothing moves without your approval."
+    />
+    <meta property="og:image" content="/art/og.jpg" />
+    <meta name="twitter:card" content="summary_large_image" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <title>Pact</title>
-    <script src="/theme.js"></script>
+    <link rel="preload" href="/fonts/geist-latin-v1.woff2" as="font" type="font/woff2" crossorigin />
   </head>
   <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
+    <div id="root"><!--landing--></div>
+    <script type="module" src="/src/landing/main.tsx"></script>
   </body>
 </html>

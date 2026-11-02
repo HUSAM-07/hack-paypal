@@ -5,11 +5,14 @@
   "compatibility_date": "2026-10-28",
   "compatibility_flags": ["nodejs_compat"],
   "observability": { "enabled": true },
-  // The web SPA ships with the worker so cookies and sockets stay same-origin.
+  // The web app ships with the worker so cookies and sockets stay same-origin. The
+  // landing is the prerendered index.html; /app routes get app.html from the worker.
+  // No SPA fallback, so a stale chunk 404s instead of returning HTML.
   "assets": {
     "directory": "../web/dist",
-    "not_found_handling": "single-page-application",
-    "run_worker_first": ["/api/*", "/ws"]
+    "binding": "ASSETS",
+    "not_found_handling": "404-page",
+    "run_worker_first": ["/api/*", "/ws", "/app", "/app/*"]
   },
   "durable_objects": {
     "bindings": [

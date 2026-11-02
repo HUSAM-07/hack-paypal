@@ -34,7 +34,7 @@ Spec: [docs/spec.md](../docs/spec.md). Deadline: **Nov 12, 12:00pm PT**. Early c
 - [ ] Eval harness + 40 scenarios (parsing, tool choice, amount fidelity, red-team) gated in CI
 - [ ] Playwright multi-user E2E
 - [ ] Security pass: CSP, rate limits, Turnstile, step-up, audit log, secret scan
-- [ ] Landing page
+- [x] Landing page (prerendered, separate entry from the app)
 - [ ] OpenRouter provider adapter
 
 ## Phase 4 — Ship (Nov 10–12)
@@ -57,3 +57,10 @@ Each runs in its own worktree. Shared contracts land first (protocol + catalog s
 - Fixed: pact-scoped mandates hard-denied unrelated spends (`341f0d2`).
 - Blocked: Anthropic key hit its usage limit (returns 2026-12-01, after the deadline): raise the limit or add an OpenRouter key. No PayPal sandbox credentials yet, so nothing has run against the sandbox.
 - Open: nothing triggers `PactDO.settle()` yet (price/schedule/quorum alarms); full live eval suite unmeasured (red-team 98% ×3); landing page; deploy.
+
+### Round 2 (Nov 2–3)
+- Deployed to workers.dev (`npm run deploy -w @pact/worker`), invite-only sign-up (`INVITE_CODE`), simulated PayPal in production. Agent hardening merged: live evals 97.9% overall, 100% red-team ×3.
+- Redesign: light lavender theme (dark kept as a toggle), Geist, pill buttons, 24–32px cards; app restyled through the shared tokens in `apps/web/src/styles/tokens.css`.
+- Landing at `/`: prerendered HTML with inlined CSS and its own small Tailwind build; the app loads from `app.html`, served by the worker for `/app*`. Art generated with fal.ai (`apps/web/scripts/gen-art.ts`, `optimize-art.ts`), 4–12 KB AVIF each.
+- Lighthouse (local build): mobile 98/100/100/100 (LCP 2.1s on slow 4G, CLS 0, TBT 0); desktop 100/100/100/100 (LCP 0.5s).
+- Open: price/schedule/quorum alarms → `PactDO.settle()`; PayPal sandbox in-app checkout (needs a buyer login); webhooks; OpenRouter; README, demo video.

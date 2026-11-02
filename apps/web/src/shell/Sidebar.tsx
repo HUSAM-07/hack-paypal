@@ -19,7 +19,7 @@ export function BrandMark({ className }: { className?: string }) {
             strokeLinecap="round"
             strokeLinejoin="round"
           />
-          <circle cx="22.5" cy="22.5" r="2.5" fill="var(--success)" />
+          <circle cx="22.5" cy="22.5" r="2.5" fill="var(--lav-400)" />
         </svg>
       </span>
       <span className="text-[15px] font-semibold tracking-tight">Pact</span>

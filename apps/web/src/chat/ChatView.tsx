@@ -275,7 +275,7 @@ function renderBlock(
             <p
               data-testid="user-message"
               className={cn(
-                "max-w-[85%] whitespace-pre-wrap break-words rounded-[20px] rounded-br-md bg-surface-3 px-4 py-2.5 text-[15px] leading-6",
+                "max-w-[85%] whitespace-pre-wrap break-words rounded-[20px] rounded-br-md bg-accent text-accent-foreground px-4 py-2.5 text-[15px] leading-6",
                 b.item.status === "inProgress" && "opacity-70",
               )}
             >

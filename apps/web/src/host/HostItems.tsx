@@ -85,7 +85,7 @@ export function Receipt({
       {...(reduce ? {} : blockEnter)}
       aria-label="Receipt"
       data-testid="receipt"
-      className="relative w-full max-w-[420px] overflow-hidden rounded-[22px] bg-surface shadow-card"
+      className="relative w-full max-w-[420px] overflow-hidden rounded-[24px] bg-surface shadow-card"
     >
       <div className="p-4 sm:p-5">
         <header className="flex items-center gap-2.5">

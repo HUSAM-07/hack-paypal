@@ -7,6 +7,8 @@ export interface Env {
   USER: DurableObjectNamespace<UserDO>;
   PACT: DurableObjectNamespace<PactDO>;
   DB: D1Database;
+  /** The built web app (apps/web/dist). */
+  ASSETS: Fetcher;
   IP_LIMITER: RateLimit;
   USER_LIMITER: RateLimit;
 

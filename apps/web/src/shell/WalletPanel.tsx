@@ -124,7 +124,7 @@ export function WalletPanel({ embedded = false }: { embedded?: boolean }) {
         )}
       >
         <section>
-          <div className="relative overflow-hidden rounded-[22px] bg-gradient-to-br from-[#0b2a6b] via-[#0d3a8f] to-[#1757c2] p-4 text-white shadow-card">
+          <div className="relative overflow-hidden rounded-[24px] bg-gradient-to-br from-[#241a3d] via-[#3a2a6e] to-[#6a5cf0] p-4 text-white shadow-card">
             <div
               aria-hidden
               className="absolute -right-10 -top-10 size-36 rounded-full bg-white/10 blur-2xl"
@@ -138,7 +138,7 @@ export function WalletPanel({ embedded = false }: { embedded?: boolean }) {
               </span>
             </div>
             <div className="mt-6 text-lg font-extrabold italic tracking-tight">
-              Pay<span className="text-[#7fc0ff]">Pal</span>
+              Pay<span className="text-lav-200">Pal</span>
             </div>
             <div className="mt-0.5 text-sm text-white/80">
               {wallet ? wallet.funding.label.replace(/^PayPal · /, "") : "—"}

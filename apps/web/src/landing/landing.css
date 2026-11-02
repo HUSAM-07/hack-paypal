@@ -1,0 +1,103 @@
+/* Landing stylesheet: Tailwind scans only the landing, so this stays small enough to inline. */
+@import "tailwindcss" source(none);
+@import "../styles/tokens.css";
+@source "./";
+
+@layer components {
+  [data-reveal] {
+    transition:
+      opacity 1s var(--ease-swift),
+      transform 1.6s var(--ease-swift);
+    transition-delay: calc(var(--d, 0) * 1ms);
+  }
+  .reveal-ready [data-reveal]:not([data-in]) {
+    opacity: 0;
+    transform: translate3d(0, 28px, 0);
+  }
+
+  /* Hero entrance runs from first paint (prerendered), before any JS. */
+  .rise {
+    animation: rise 1.5s var(--ease-swift) both;
+    animation-delay: calc(var(--d, 0) * 1ms);
+  }
+  @keyframes rise {
+    from {
+      opacity: 0.001;
+      transform: translate3d(0, 36px, 0);
+    }
+  }
+  .phone-rise {
+    animation: phone-rise 1.8s var(--ease-swift) both;
+    animation-delay: calc(var(--d, 0) * 1ms);
+  }
+  @keyframes phone-rise {
+    from {
+      opacity: 0.001;
+      transform: translate3d(0, 120px, 0) scale(0.96);
+    }
+  }
+
+  /* Below-the-fold sections skip layout and paint until they approach the viewport. */
+  .lazy-section {
+    content-visibility: auto;
+    contain-intrinsic-size: auto 900px;
+  }
+
+  .nav[data-scrolled] {
+    background: oklch(0.985 0.001 106 / 0.78);
+    box-shadow: 0 1px 0 var(--border);
+    backdrop-filter: saturate(1.6) blur(16px);
+    -webkit-backdrop-filter: saturate(1.6) blur(16px);
+  }
+  .nav {
+    transition:
+      background-color 0.4s var(--ease-swift),
+      box-shadow 0.4s var(--ease-swift);
+  }
+
+  .text-glow {
+    background: linear-gradient(100deg, var(--lav-200) 0%, #fff 45%, var(--lav-400) 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .text-lav {
+    background: linear-gradient(100deg, var(--lav-600), var(--lav-400));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  /* FAQ: native <details>, height animates where the browser supports it. */
+  .faq {
+    interpolate-size: allow-keywords;
+  }
+  .faq::details-content {
+    block-size: 0;
+    overflow: hidden;
+    transition:
+      block-size 0.5s var(--ease-swift),
+      content-visibility 0.5s allow-discrete;
+  }
+  .faq[open]::details-content {
+    block-size: auto;
+  }
+  .faq summary::-webkit-details-marker {
+    display: none;
+  }
+  .faq .faq-icon {
+    transition: transform 0.5s var(--ease-snappy);
+  }
+  .faq[open] .faq-icon {
+    transform: rotate(45deg);
+  }
+
+  .range {
+    accent-color: var(--accent);
+  }
+
+  .bar {
+    transform-origin: left center;
+    transition: transform 0.8s var(--ease-swift);
+  }
+}

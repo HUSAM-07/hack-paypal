@@ -17,7 +17,7 @@ export function ProductImage({ product, className }: { product: ProductData; cla
   return (
     <div
       className={cn(
-        "relative flex aspect-square items-center justify-center overflow-hidden rounded-[14px] bg-gradient-to-b from-white to-neutral-100 dark:from-neutral-100 dark:to-neutral-300",
+        "relative flex aspect-square items-center justify-center overflow-hidden rounded-[14px] bg-gradient-to-b from-white to-lav-50 dark:from-lav-50 dark:to-lav-100",
         className,
       )}
     >
@@ -32,7 +32,7 @@ export function ProductImage({ product, className }: { product: ProductData; cla
           className="size-[78%] object-contain transition-transform duration-500 ease-out group-hover:scale-[1.04]"
         />
       ) : (
-        <Gamepad2 className="size-1/3 text-neutral-400" strokeWidth={1.4} />
+        <Gamepad2 className="size-1/3 text-lav-400" strokeWidth={1.4} />
       )}
     </div>
   );
