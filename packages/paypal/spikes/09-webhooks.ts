@@ -6,7 +6,7 @@
  */
 import { client, env, probe, rawToken } from "./_lib";
 
-const pp = client();
+client(); // loads .env and exits with setup steps when credentials are missing
 const url = env("PAYPAL_WEBHOOK_URL");
 const api = "https://api-m.sandbox.paypal.com";
 

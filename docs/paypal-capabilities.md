@@ -8,21 +8,21 @@ Sources:
 
 Base URL (sandbox): `https://api-m.sandbox.paypal.com`
 
-Everything marked **UNVERIFIED** still needs a hands-on sandbox run. The spikes in `packages/paypal/spikes/` do exactly that (see [Verification status](#verification-status-2026-11-01)); they could not run on 2026-11-01 because no sandbox credentials were in `.env`. That's Phase 0 in [tasks/todo.md](../tasks/todo.md).
+The spikes in `packages/paypal/spikes/` ran against the sandbox on 2026-11-02 (see [Verification status](#verification-status-2026-11-02)). **VERIFIED** marks an observed outcome. **UNVERIFIED** marks what still needs a run: `payee` routing (spike `05`, which needs a second business account and a second personal account) and webhooks (spike `09`, which needs a deployed worker URL). That's Phase 0 in [tasks/todo.md](../tasks/todo.md).
 
 ## Verdicts
 
 | Capability | Verdict | Use in Pact |
 |---|---|---|
 | Orders v2 (create / authorize / capture) | Works | Every charge |
-| `purchase_units[].payee` (pay another account) | **UNVERIFIED** (spike `05`, blocked on sandbox credentials): may fail with `PAYEE_NOT_CONSENTED`. Multiparty needs partner approval. | "Retailer" sandbox accounts; direct P2P |
-| Vault v3, save without purchase, then off-session (MIT) charge | Works with caveats. **UNVERIFIED** (spikes `02`–`04`, blocked on sandbox credentials): the app must tick *Vault*, and `NOT_ENABLED_TO_VAULT_PAYMENT_SOURCE` has been reported | Member mandates; standing orders |
+| `purchase_units[].payee` (pay another account) | **UNVERIFIED** (spike `05`, which needs `PAYPAL_SANDBOX_BUSINESS2_EMAIL` and `PAYPAL_SANDBOX_RECIPIENT_EMAIL`): may fail with `PAYEE_NOT_CONSENTED`. Multiparty needs partner approval. | "Retailer" sandbox accounts; direct P2P |
+| Vault v3, save without purchase, then off-session (MIT) charge | **VERIFIED** (spikes `02`–`04`) on a Merchant app with *Save payment methods* ticked. Setup token, then buyer approval, then payment token, then an off-session order that comes back `COMPLETED` on create. | Member mandates; standing orders |
 | Consumer-to-consumer send/request API | **Not available** | P2P is platform-mediated (below) |
-| Payouts (platform → email/phone/Venmo) | Works. **UNVERIFIED** (spike `01` checks token scopes, `06` sends; blocked on sandbox credentials): the app needs *Payouts* ticked (`AUTHORIZATION_ERROR` otherwise) | P2P "send", pact payouts |
+| Payouts (platform → email/phone/Venmo) | **VERIFIED** for the PayPal wallet (spike `06`): a batch to a personal email went `PENDING` → `SUCCESS`. **The Venmo wallet is rejected in sandbox** with `400 VALIDATION_ERROR` "Recipient wallet not supported in sandbox." | P2P "send", pact payouts |
 | Invoicing (request money, partial payments) | Works | P2P "request" for people not in the app |
-| Authorize → capture/void/reauthorize | Works. Auth valid 29 days, **3-day honor period** | All-or-nothing group split |
+| Authorize → capture/void/reauthorize | **VERIFIED** (spike `07`): an off-session AUTHORIZE via vault, then a partial capture (`PARTIALLY_CAPTURED`), then a void of the remainder (`VOIDED`). Auth valid 29 days, **3-day honor period** | All-or-nothing group split |
 | Webhooks + verification | Works. Self-verify is possible on Workers | Settlement reconciliation |
-| JS SDK v6 (one-time, save-payment, Venmo, Pay Later) | Works. Venmo eligibility in sandbox **UNVERIFIED**: needs a browser check in the web app; spike `08` only mints client tokens | In-chat approval cards |
+| JS SDK v6 (one-time, save-payment, Venmo, Pay Later) | Works. The client token is **VERIFIED** (spike `08`). Venmo and Pay Later eligibility are **UNVERIFIED** and need a browser check in the web app. | In-chat approval cards |
 | Log in with PayPal (userinfo: email, payer_id) | Works, no review needed in sandbox | Link each member's PayPal identity as a payout target |
 | `@paypal/agent-toolkit` on Workers | **Uncertain**: uses axios, Node `os`/`Buffer`; has no vault/payouts/webhooks | Don't depend on it. Write fetch-based tools, borrow its zod schemas |
 | Sandbox account creation API | Not available | Create accounts in the dashboard |
@@ -45,10 +45,10 @@ Everything marked **UNVERIFIED** still needs a hands-on sandbox run. The spikes 
 {"intent":"CAPTURE","purchase_units":[{"amount":{"currency_code":"USD","value":"25.00"},"custom_id":"<pactId>"}],
  "payment_source":{"paypal":{"vault_id":"<id>","stored_credential":{"payment_initiator":"MERCHANT","usage":"SUBSEQUENT","usage_pattern":"UNSCHEDULED_POSTPAID"}}}}
 ```
-**UNVERIFIED** (spike `04-off-session.ts`, blocked on sandbox credentials):
-- Does the order come back COMPLETED, or does it need a separate capture? `chargeMandate` handles both: it captures (or authorizes) only when create returns `APPROVED`, with the derived key `<requestId>:capture`.
-- Is `stored_credential` needed? `chargeMandate` sends MERCHANT/SUBSEQUENT/UNSCHEDULED_POSTPAID by default; `storedCredential: false` omits it. The spike tries both.
-- Does MIT need `PayPal-Client-Metadata-Id`? Supported as `clientMetadataId` on every call, not sent by default.
+**VERIFIED** (spike `04-off-session.ts`, 2026-11-02):
+- **The order comes back `COMPLETED` on create**, with the capture `COMPLETED` inside it, so no separate capture call is needed. Orders `3MR35233P1895802F` and `0MU285635J788590P`. `chargeMandate` still captures (or authorizes) when create returns `APPROVED`, using the derived key `<requestId>:capture`, to cover other accounts.
+- **`stored_credential` is not required.** The orders with and without it both completed. `chargeMandate` keeps sending MERCHANT/SUBSEQUENT/UNSCHEDULED_POSTPAID by default, because that's the correct MIT signal; `storedCredential: false` omits it.
+- **`PayPal-Client-Metadata-Id` is not needed for MIT.** It was never sent and charges still succeeded. It's available as `clientMetadataId`.
 
 ### Group split (all-or-nothing)
 1. Create one order per member with `intent:"AUTHORIZE"` and `custom_id=<pactId>`. Members with a mandate are authorized off-session; the others approve through v6.
@@ -82,44 +82,48 @@ Everything marked **UNVERIFIED** still needs a hands-on sandbox run. The spikes 
 
 ## Plumbing
 - **App token:** `POST /v1/oauth2/token` (client_credentials) gives `expires_in` of about 9h. Cache it with a margin.
-- **v6 client token:** `POST /v1/oauth2/token` with `grant_type=client_credentials&response_type=client_token&domains[]=…` (15 min). `clientId` alone is enough for one-time payments; the save flow samples use `clientToken`. **UNVERIFIED** in a browser. The v6 sample server (`server/node/src/routes/authRouteHandler.ts`) sends `response_type=client_token` plus optional `domains[]`, `target_customer_id` and `claims[]=vault_id:<id>`, with no `intent`; `clientToken()` mirrors that.
+- **v6 client token:** `POST /v1/oauth2/token` with `grant_type=client_credentials&response_type=client_token&domains[]=…` (15 min). `clientId` alone is enough for one-time payments; the save flow samples use `clientToken`. **VERIFIED** server-side (spike `08`): with no params it returns a JWT valid for 900s, and with `target_customer_id` it also returns 900s. **`domains[]=localhost&domains[]=example.com` is rejected with `401 invalid_domain`**, so omit `domains[]` locally and pass only the deployed web origin. The browser half is still **UNVERIFIED**. The v6 sample server (`server/node/src/routes/authRouteHandler.ts`) sends `response_type=client_token` plus optional `domains[]`, `target_customer_id` and `claims[]=vault_id:<id>`, with no `intent`; `clientToken()` mirrors that.
 - **SDK script:** `https://www.sandbox.paypal.com/web-sdk/v6/core`. Or `loadCoreSdkScript` from `@paypal/paypal-js/sdk-v6`. React: `@paypal/react-paypal-js` `/sdk-v6`.
-- **Headers on every mutating call:** `PayPal-Request-Id` (idempotency). Add `PayPal-Mock-Response: {"mock_application_codes":"INSTRUMENT_DECLINED"}` for negative tests on orders, authorizations, captures, and refunds.
+- **Headers on every mutating call:** `PayPal-Request-Id` (idempotency). Add `PayPal-Mock-Response: {"mock_application_codes":"<CODE>"}` for negative tests. Observed in spike `10`:
+  - **Order create:** `INSTRUMENT_DECLINED` gives `422 UNPROCESSABLE_ENTITY` with issue `INSTRUMENT_DECLINED`.
+  - **Authorization capture:** `INSTRUMENT_DECLINED` gives a **bare `403` with an empty body**, so use `TRANSACTION_REFUSED` there (`422` with issue `TRANSACTION_REFUSED`).
+  - **debug_id:** mocked error bodies carry a fixed `debug_id` (`70c28ae654da`). The `PayPal-Debug-Id` header is the real one.
 - **Payouts:** `sender_batch_id` must be unique for 30 days, and the rate limit is 400 POST/min. Mock failures go through `items[0].note` (e.g. `ERRPYO002`).
 - **Test cards:** Visa `4012888888881881`. Decline triggers go in the name field (`CCREJECT-REFUSED`, …).
 
 ## Hands-on verification order
 
-| # | Step | Spike | Status (2026-11-01) |
+| # | Step | Spike | Status (2026-11-02) |
 |---|---|---|---|
-| 1 | **App setup:** create the sandbox app, tick **Vault** + **Payouts** + **Log in with PayPal**, and get a token. | `01-token.ts` (token + feature scopes) | **UNVERIFIED**, blocked on sandbox credentials |
-| 2 | **Setup token:** `POST /v3/vault/setup-tokens`. Expect 201, not `NOT_ENABLED_TO_VAULT_PAYMENT_SOURCE`. If it fails, retry with a "Platform" app. | `02-setup-token.ts` | **UNVERIFIED**, blocked on sandbox credentials |
-| 3 | **Payment token:** approve with a sandbox personal account, then call `POST /v3/vault/payment-tokens`. | `03-payment-token.ts` (the buyer approves in a browser first) | **UNVERIFIED**, blocked on sandbox credentials |
-| 4 | **Off-session order:** with `vault_id`, both with and without `stored_credential`. Record the resulting status. | `04-off-session.ts` | **UNVERIFIED**, blocked on sandbox credentials |
-| 5 | **`payee` routing:** set `payee.email_address` to a second sandbox business account, then to a personal account, then try several payees in one order. | `05-payee.ts` (paid off-session with the vault token, so no browser needed) | **UNVERIFIED**, blocked on sandbox credentials |
-| 6 | **Payouts:** pay a sandbox personal email, then test the Venmo wallet. | `06-payouts.ts` (polls the batch to a final state) | **UNVERIFIED**, blocked on sandbox credentials |
-| 7 | **Authorizations:** AUTHORIZE, then partial capture with `final_capture:false`, then void. | `07-authorizations.ts` (also re-voids to record the "already voided" issue name) | **UNVERIFIED**, blocked on sandbox credentials |
-| 8 | **v6 save session:** compare `clientId` vs `clientToken`. Check Venmo and Pay Later eligibility. | `08-client-token.ts` (server half only) | **UNVERIFIED**: the token half is blocked on sandbox credentials; the browser half belongs to `apps/web` |
-| 9 | **Webhooks:** postback verification on real events, and self-verification on Workers with simulator events. | `09-webhooks.ts` (lists subscriptions; with `PAYPAL_WEBHOOK_URL` it subscribes and simulates) | **UNVERIFIED**: blocked on sandbox credentials and a deployed worker URL. The crypto is unit-tested. |
-| 10 | **Mock declines:** send `PayPal-Mock-Response` on a capture and on a vault MIT order. | `10-mock-declines.ts` | **UNVERIFIED**, blocked on sandbox credentials |
+| 1 | **App setup:** create the sandbox app, tick **Vault** + **Payouts** + **Log in with PayPal**, and get a token. | `01-token.ts` (token + feature scopes) | **VERIFIED** on "Default Application" (`APP-4LR40444F62452827`). Token returns 200 with `expires_in` 32400, and 29 scopes including vault, payouts, identity and invoicing. |
+| 2 | **Setup token:** `POST /v3/vault/setup-tokens`. Expect 201, not `NOT_ENABLED_TO_VAULT_PAYMENT_SOURCE`. If it fails, retry with a "Platform" app. | `02-setup-token.ts` | **VERIFIED**: 201 `PAYER_ACTION_REQUIRED` with an approve link (debug `f70462559c46e`). A Merchant app is enough. |
+| 3 | **Payment token:** approve with a sandbox personal account, then call `POST /v3/vault/payment-tokens`. | `03-payment-token.ts` (the buyer approves in a browser first) | **VERIFIED**: after approval the setup token is `APPROVED`, and creating the payment token returns 201 (debug `f8010115340d3`) with `customer.id`, payer email and payer id. Before consent it returns `422 PAYER_ACTION_REQUIRED`. |
+| 4 | **Off-session order:** with `vault_id`, both with and without `stored_credential`. Record the resulting status. | `04-off-session.ts` | **VERIFIED**: `COMPLETED` on create in both cases (`3MR35233P1895802F`, `0MU285635J788590P`) |
+| 5 | **`payee` routing:** set `payee.email_address` to a second sandbox business account, then to a personal account, then try several payees in one order. | `05-payee.ts` (paid off-session with the vault token, so no browser needed) | **UNVERIFIED**: needs a second business account and a second personal account (`PAYPAL_SANDBOX_BUSINESS2_EMAIL`, `PAYPAL_SANDBOX_RECIPIENT_EMAIL`) |
+| 6 | **Payouts:** pay a sandbox personal email, then test the Venmo wallet. | `06-payouts.ts` (polls the batch to a final state) | **VERIFIED** for PayPal: batch `7K5FQMHM6M66U` went `PENDING` → `SUCCESS` with the item `SUCCESS`. **Venmo: `400 VALIDATION_ERROR` "Recipient wallet not supported in sandbox."** |
+| 7 | **Authorizations:** AUTHORIZE, then partial capture with `final_capture:false`, then void. | `07-authorizations.ts` (also re-voids to record the "already voided" issue name) | **VERIFIED**: auth `98R12328AV423302P` is `CREATED` (expires +29d), a $2 capture leaves it `PARTIALLY_CAPTURED`, the void gives `VOIDED`, and a second void gives `422 PREVIOUSLY_VOIDED` (debug `f9144497c11c9`) |
+| 8 | **v6 save session:** compare `clientId` vs `clientToken`. Check Venmo and Pay Later eligibility. | `08-client-token.ts` (server half only) | **VERIFIED** server half: a JWT valid for 900s, with or without `target_customer_id`. `domains[]` with `localhost`/`example.com` gives `401 invalid_domain`. The browser half (`apps/web`) is **UNVERIFIED**. |
+| 9 | **Webhooks:** postback verification on real events, and self-verification on Workers with simulator events. | `09-webhooks.ts` (lists subscriptions; with `PAYPAL_WEBHOOK_URL` it subscribes and simulates) | **UNVERIFIED**: needs a deployed worker URL. The crypto is unit-tested. |
+| 10 | **Mock declines:** send `PayPal-Mock-Response` on a capture and on a vault MIT order. | `10-mock-declines.ts` | **VERIFIED**: on a vault MIT order `INSTRUMENT_DECLINED` gives `422 INSTRUMENT_DECLINED`. On an auth capture, `INSTRUMENT_DECLINED` gives a bare `403` (debug `ca543c3136d93`), while `TRANSACTION_REFUSED` gives `422 TRANSACTION_REFUSED`. |
 
-## Verification status (2026-11-01)
+## Verification status (2026-11-02)
 
-No sandbox step has run yet. `/Users/mohammedhusamuddin/codebase-core/hack-paypal/.env` had no `PAYPAL_CLIENT_ID` or `PAYPAL_CLIENT_SECRET`, and the spikes exit with code 2 and print the setup steps.
+**Setup used:**
+- **App:** the sandbox "Default Application" (Merchant), with *Save payment methods*, *Invoicing* and *Payouts* ticked.
+- **Accounts:** the default business account (the merchant) and the default personal account (the buyer). **Both are registered in AE.** USD charges, authorizations and payouts all worked regardless.
+- **Approval:** the buyer approved the vault agreement in a browser, logging in themselves.
+- **Spikes:** run from `packages/paypal` with `npx tsx spikes/0N-*.ts`. Observations go to the gitignored `spikes/results.json`, which holds no tokens, and vault and customer ids are masked.
 
-**To unblock:**
-- Create a sandbox app (Merchant) with **Vault**, **Payouts** and **Log in with PayPal** ticked.
-- Have one extra business account and two personal accounts.
-- Add to `.env`: `PAYPAL_CLIENT_ID`, `PAYPAL_CLIENT_SECRET`, `PAYPAL_SANDBOX_BUYER_EMAIL`, `PAYPAL_SANDBOX_RECIPIENT_EMAIL`, `PAYPAL_SANDBOX_BUSINESS2_EMAIL`. Optionally add `PAYPAL_SANDBOX_VENMO_PHONE` and `PAYPAL_WEBHOOK_URL`.
+**Confirmed for the package:**
+- **`chargeMandate`:** its "capture only if `APPROVED`" branch didn't trigger on this account. The order completes on create, and the flow returns `outcome: "succeeded"` either way.
+- **`voidAll`:** its "already released" set includes `PREVIOUSLY_VOIDED`, the issue PayPal actually returns. `AUTHORIZATION_VOIDED` and `AUTHORIZATION_EXPIRED` stay in the set as defensive cases.
+- **Errors:** `PayPalError` already reads the issue codes. A bare 403 surfaces as `code: "HTTP_403"` with no issues.
 
-**Then run, from `packages/paypal`:**
-- `npx tsx spikes/01-token.ts`
-- `spikes/02-setup-token.ts`. Open the printed approve URL and log in as the buyer yourself.
-- `spikes/03-payment-token.ts` through `10-mock-declines.ts`.
-
-Observations append to `spikes/results.json`, which is gitignored. It holds statuses, debug ids, order and batch ids, and masked vault ids, never tokens. Copy them into the table above.
-
-Also unverified, and recorded by `07`: the void error issue for an already-voided authorization. `voidAll` currently treats `PREVIOUSLY_VOIDED`, `AUTHORIZATION_VOIDED` and `AUTHORIZATION_EXPIRED` as "released".
+**Still open:**
+- **Spike `05`, `payee` routing:** create a second sandbox Business account and a second Personal account, preferably US. Set `PAYPAL_SANDBOX_BUSINESS2_EMAIL` and `PAYPAL_SANDBOX_RECIPIENT_EMAIL` in `.env`.
+- **Spike `09`, webhooks:** set `PAYPAL_WEBHOOK_URL` once the worker is deployed. It prints the `PAYPAL_WEBHOOK_ID` the worker needs.
+- **v6 browser flows:** check Venmo and Pay Later eligibility in `apps/web`. Payouts to Venmo can't be tested in sandbox at all.
+- **Log in with PayPal:** the identity scope is on the token, but no spike drives the OAuth redirect. It belongs to the worker's auth route.
 
 Already verified offline by unit tests (`npm test -w @pact/paypal`, 82 tests):
 - Request shapes and headers for every endpoint.
