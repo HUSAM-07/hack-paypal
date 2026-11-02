@@ -21,7 +21,7 @@ const app = new Hono<{ Bindings: Env }>();
  */
 const APP_PAGE_HEADERS: Record<string, string> = {
   "Content-Security-Policy":
-    "default-src 'self'; script-src 'self' https://*.paypal.com https://*.paypalobjects.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self'; connect-src 'self' wss: https://*.paypal.com; frame-src https://*.paypal.com; base-uri 'none'; object-src 'none'; form-action 'self'; frame-ancestors 'none'",
+    "default-src 'self'; script-src 'self' https://*.paypal.com https://*.paypalobjects.com https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self'; connect-src 'self' wss: https://*.paypal.com https://cloudflareinsights.com; frame-src https://*.paypal.com; base-uri 'none'; object-src 'none'; form-action 'self'; frame-ancestors 'none'",
   "Referrer-Policy": "strict-origin-when-cross-origin",
   "X-Content-Type-Options": "nosniff",
   "Permissions-Policy":
