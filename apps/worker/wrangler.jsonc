@@ -5,6 +5,12 @@
   "compatibility_date": "2026-10-28",
   "compatibility_flags": ["nodejs_compat"],
   "observability": { "enabled": true },
+  // The web SPA ships with the worker so cookies and sockets stay same-origin.
+  "assets": {
+    "directory": "../web/dist",
+    "not_found_handling": "single-page-application",
+    "run_worker_first": ["/api/*", "/ws"]
+  },
   "durable_objects": {
     "bindings": [
       { "name": "THREAD", "class_name": "ThreadDO" },
@@ -17,7 +23,7 @@
     {
       "binding": "DB",
       "database_name": "pact",
-      "database_id": "00000000-0000-0000-0000-000000000000",
+      "database_id": "e1003458-8946-4f7b-ba51-775092dd7243",
       "migrations_dir": "migrations"
     }
   ],
@@ -31,7 +37,11 @@
     "MODEL_PROVIDER": "anthropic",
     "MODEL_ID": "claude-sonnet-5-5",
     "RP_NAME": "Pact",
+    // Production origin; .dev.vars overrides both for local dev.
+    "RP_ID": "pact-worker.morrow-invitations.workers.dev",
+    "ORIGINS": "https://pact-worker.morrow-invitations.workers.dev",
     "STEP_UP_ABOVE_MINOR": "20000",
-    "PAYPAL_MODE": "sandbox"
+    // Simulated until the in-app sandbox checkout is verified with a real buyer login.
+    "PAYPAL_MODE": "simulated"
   }
 }
