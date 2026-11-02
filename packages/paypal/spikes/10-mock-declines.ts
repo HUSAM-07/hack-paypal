@@ -27,13 +27,16 @@ const auth = await chargeMandate(pp, {
 });
 const authorizationId = auth.authorization?.id;
 if (authorizationId) {
-  await probe("10-mock-declines", "authorization capture with INSTRUMENT_DECLINED", async () => {
-    const cap = await pp.authorizations.capture(
-      authorizationId,
-      {},
-      { requestId: rid("10", "cap"), mock: "INSTRUMENT_DECLINED" },
-    );
-    return { unexpected: "no error", status: cap.status };
-  });
+  // Sandbox answers INSTRUMENT_DECLINED on this endpoint with a bare 403; TRANSACTION_REFUSED is the code it honours.
+  for (const code of ["INSTRUMENT_DECLINED", "TRANSACTION_REFUSED"]) {
+    await probe("10-mock-declines", `authorization capture with ${code}`, async () => {
+      const cap = await pp.authorizations.capture(
+        authorizationId,
+        {},
+        { requestId: rid("10", `cap_${code}`), mock: code },
+      );
+      return { unexpected: "no error", status: cap.status };
+    });
+  }
   await pp.authorizations.void(authorizationId, { requestId: rid("10", "void") });
 }
