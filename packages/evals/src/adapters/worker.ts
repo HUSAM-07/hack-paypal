@@ -328,9 +328,9 @@ function product(p: WorldProduct): Product {
 
 function pactData(world: World, pact: Pact): PactRefData {
   const a = pact.action;
+  const p = a.kind === "purchase" ? world.products.find((x) => x.ref === a.productRef) : undefined;
   let total: Money;
   if (a.kind === "purchase") {
-    const p = world.products.find((x) => x.ref === a.productRef);
     // Budgeted like the worker's draftPact: price watches at the trigger price.
     const unit =
       pact.trigger.kind === "price"
@@ -338,7 +338,10 @@ function pactData(world: World, pact: Pact): PactRefData {
         : (p?.price.amountMinor ?? 0);
     total = { amountMinor: unit * a.quantity, currency: p?.price.currency ?? "USD" };
   } else total = a.kind === "collect" ? a.total : a.amount;
-  return pactRefData(pact, total);
+  return pactRefData(pact, total, {
+    now: new Date(world.now),
+    ...(p ? { product: product(p) } : {}),
+  });
 }
 
 /**

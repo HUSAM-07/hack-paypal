@@ -1,17 +1,84 @@
 /** Pure pact/mandate rules for the money endpoints. No I/O; unit-tested directly. */
-import { splitEqual } from "@pact/policy";
-import type { Mandate, Money, Pact } from "@pact/protocol";
+import { splitEqual, splitWeighted } from "@pact/policy";
+import type { Mandate, Money, Pact, PactTrigger } from "@pact/protocol";
+import type { Product } from "../agent/products";
 
+/** What a pact ref resolves to; the web's `PactData` schema reads exactly this. */
 export interface PactRefData {
   pact: Pact;
   total: Money;
   shares: { userId: string; share: Money }[] | null;
+  /** Price triggers: what PriceWatch renders. */
+  watch?: { current: Money; history: { at: string; price: Money }[]; checkedAt: string };
+  /** Purchase pacts: the product as its ref resolved when the pact was drafted. */
+  product?: Product;
+  /** Schedule triggers: upcoming run times (ISO), for ScheduleCard. */
+  nextRuns?: string[];
 }
 
 const DAY_MS = 86_400_000;
 const DEFAULT_MANDATE_DAYS = 90;
 /** States in which a member may still commit funding or pay a share. */
 const OPEN_STATES: ReadonlySet<Pact["state"]> = new Set(["draft", "collecting", "armed"]);
+
+/** Shares under the pact's split rule and each payer's cap; null when caps can't cover it. */
+export function splitShares(
+  pact: Pact,
+  total: Money,
+  payers: readonly Pact["members"][number][] = pact.members,
+): PactRefData["shares"] {
+  const split = pact.split;
+  let parts: Map<string, number> | null;
+  if (split.kind === "weights") {
+    parts = splitWeighted(
+      total.amountMinor,
+      payers.map((m) => ({
+        userId: m.userId,
+        weight: split.weights[m.userId] ?? 0,
+        capMinor: m.cap.amountMinor,
+      })),
+    );
+  } else if (split.kind === "fixed") {
+    const amounts = payers.map(
+      (m) => [m.userId, split.amounts[m.userId]?.amountMinor ?? 0] as const,
+    );
+    const fits = payers.every(
+      (m) => (split.amounts[m.userId]?.amountMinor ?? 0) <= m.cap.amountMinor,
+    );
+    const sum = amounts.reduce((s, [, a]) => s + a, 0);
+    parts = fits && sum === total.amountMinor ? new Map(amounts) : null;
+  } else {
+    parts = splitEqual(
+      total.amountMinor,
+      payers.map((m) => ({ userId: m.userId, capMinor: m.cap.amountMinor })),
+    );
+  }
+  if (!parts) return null;
+  return [...parts].map(([userId, amountMinor]) => ({
+    userId,
+    share: { amountMinor, currency: total.currency },
+  }));
+}
+
+/** The next `count` run times of a schedule at or after `now`, within maxRuns/endAt. */
+export function nextRuns(
+  trigger: Extract<PactTrigger, { kind: "schedule" }>,
+  now: Date,
+  count = 5,
+): string[] {
+  const start = Date.parse(trigger.startAt);
+  const step = trigger.everyDays * DAY_MS;
+  const end = trigger.endAt ? Date.parse(trigger.endAt) : Number.POSITIVE_INFINITY;
+  const first = Math.max(0, Math.ceil((now.getTime() - start) / step));
+  const out: string[] = [];
+  for (let i = first; out.length < count; i++) {
+    if (trigger.maxRuns !== undefined && i >= trigger.maxRuns) break;
+    const at = start + i * step;
+    if (at > end) break;
+    out.push(new Date(at).toISOString());
+  }
+  return out;
+}
 
 export function shareOf(data: PactRefData, userId: string): Money | undefined {
   return data.shares?.find((s) => s.userId === userId)?.share;
@@ -109,28 +176,17 @@ export function commitMember(
       ? { ...m, cap: commit.cap, mandateId: commit.mandateId, status: "committed" as const }
       : m,
   );
-  const shares = resplit(data.total, members);
+  const pact = { ...data.pact, members };
+  const payers = members.filter((m) => m.status !== "declined" && m.status !== "revoked");
+  const shares = splitShares(pact, data.total, payers);
   if (!shares) return null;
   const allIn = members.every((m) => m.status === "committed" || m.status === "declined");
   const state = allIn ? "armed" : "collecting";
   return {
-    total: data.total,
+    ...data,
     shares,
-    pact: { ...data.pact, members, state, updatedAt: now.toISOString() },
+    pact: { ...pact, state, updatedAt: now.toISOString() },
   };
-}
-
-function resplit(total: Money, members: Pact["members"]): PactRefData["shares"] {
-  const payers = members.filter((m) => m.status !== "declined" && m.status !== "revoked");
-  const parts = splitEqual(
-    total.amountMinor,
-    payers.map((m) => ({ userId: m.userId, capMinor: m.cap.amountMinor })),
-  );
-  if (!parts) return null;
-  return [...parts].map(([uid, amountMinor]) => ({
-    userId: uid,
-    share: { amountMinor, currency: total.currency },
-  }));
 }
 
 /** `j•••@example.com`: enough for a member to recognise their own account. */

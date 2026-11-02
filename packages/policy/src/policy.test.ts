@@ -1,7 +1,7 @@
 import type { Mandate, SpendIntent } from "@pact/protocol";
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
-import { authorize, type LedgerEntry, splitEqual } from "./index";
+import { authorize, type LedgerEntry, splitEqual, splitWeighted } from "./index";
 
 const NOW = new Date("2026-11-05T12:00:00Z");
 
@@ -201,6 +201,53 @@ describe("splitEqual", () => {
             sum += share;
           }
           expect(sum).toBe(total);
+        },
+      ),
+    );
+  });
+});
+
+describe("splitWeighted", () => {
+  it("splits two thirds / one third exactly", () => {
+    const parts = splitWeighted(12_900, [
+      { userId: "a", weight: 2, capMinor: 10_000 },
+      { userId: "b", weight: 1, capMinor: 5_000 },
+    ]);
+    expect(Object.fromEntries(parts ?? [])).toEqual({ a: 8_600, b: 4_300 });
+  });
+
+  it("moves the excess off a capped member, by weight", () => {
+    const parts = splitWeighted(9_000, [
+      { userId: "a", weight: 1, capMinor: 1_000 },
+      { userId: "b", weight: 1, capMinor: 10_000 },
+      { userId: "c", weight: 2, capMinor: 10_000 },
+    ]);
+    expect(Object.fromEntries(parts ?? [])).toEqual({ a: 1_000, b: 2_667, c: 5_333 });
+  });
+
+  it("returns null when caps can't cover the total", () => {
+    expect(splitWeighted(100, [{ userId: "a", weight: 1, capMinor: 99 }])).toBeNull();
+  });
+
+  it("always sums to the total and respects caps (property)", () => {
+    fc.assert(
+      fc.property(
+        fc.integer({ min: 0, max: 1_000_000 }),
+        fc.array(
+          fc.record({
+            weight: fc.integer({ min: 1, max: 10 }),
+            capMinor: fc.integer({ min: 0, max: 500_000 }),
+          }),
+          { minLength: 1, maxLength: 8 },
+        ),
+        (total, raw) => {
+          const members = raw.map((m, i) => ({ ...m, userId: `u${i}` }));
+          const parts = splitWeighted(total, members);
+          const capacity = members.reduce((s, m) => s + m.capMinor, 0);
+          if (capacity < total) return parts === null;
+          if (!parts) return false;
+          const sum = [...parts.values()].reduce((s, v) => s + v, 0);
+          return sum === total && members.every((m) => (parts.get(m.userId) ?? 0) <= m.capMinor);
         },
       ),
     );

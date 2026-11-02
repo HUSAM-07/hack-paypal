@@ -44,6 +44,30 @@ export interface LoopEnd {
   paused: boolean;
 }
 
+/**
+ * Calls that can't do anything are answered here, never executed or shown as tool
+ * items: an unknown tool (often a UI component called as one), an empty input, or an
+ * exact repeat this turn. The model sometimes emits these as filler; a repeat loop
+ * can burn the whole step budget without a reply.
+ */
+function malformed(
+  call: ToolCall,
+  tools: ToolDef[],
+  seen: ReadonlySet<string>,
+): string | undefined {
+  if (!tools.some((t) => t.name === call.name)) {
+    return `${call.name} is not a tool. UI components are written in openui-lang; reply to the member.`;
+  }
+  const input = call.input;
+  if (!input || (typeof input === "object" && Object.keys(input).length === 0)) {
+    return `Empty ${call.name} call ignored; nothing ran. Call a tool only with real arguments, or reply to the member.`;
+  }
+  if (seen.has(`${call.name}:${JSON.stringify(input)}`)) {
+    return `You already called ${call.name} with these arguments this turn. Use that result and reply to the member.`;
+  }
+  return undefined;
+}
+
 export function retryFeedback(diagnostics: readonly Diagnostic[]): string {
   return `<ui_diagnostics>${JSON.stringify(diagnostics).slice(0, 4000)}</ui_diagnostics>
 The host rejected your last message because of the problems above, so the members did not see it. Send the whole message again with them fixed. Don't repeat tool calls that already ran.`;
@@ -54,6 +78,9 @@ export async function runAgentLoop(host: AgentHost, signal: AbortSignal): Promis
   // and the host still has fallbackMarkdown for the member.
   let retried = false;
   let paused = false;
+  // Calls already run this turn, by name + input. A repeat can't learn anything new
+  // and is how a confused model burns its step budget without replying.
+  const seen = new Set<string>();
   for (let step = 0; step < host.maxSteps; step++) {
     let text = "";
     let started = false;
@@ -117,6 +144,18 @@ export async function runAgentLoop(host: AgentHost, signal: AbortSignal): Promis
         });
         continue;
       }
+      const refusal = malformed(call, host.tools, seen);
+      if (refusal) {
+        results.push({
+          callId: call.id,
+          name: call.name,
+          output: { error: refusal },
+          isError: true,
+        });
+        continue;
+      }
+      const key = `${call.name}:${JSON.stringify(call.input ?? null)}`;
+      seen.add(key);
       const r = await host.executeTool(call, paused);
       if (r.paused) paused = true;
       results.push(r.result);

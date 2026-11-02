@@ -153,3 +153,46 @@ export function splitEqual(
   }
   return remaining === 0 ? shares : null;
 }
+
+/**
+ * Split a total in proportion to weights without exceeding any member's cap. A member
+ * whose proportional part would pass their cap pays the cap, and the rest is re-divided
+ * among the others by weight. Cents left by rounding go to the largest remainders that
+ * still have headroom. Parts always sum exactly to the total; null when caps can't cover it.
+ */
+export function splitWeighted(
+  totalMinor: number,
+  members: readonly { userId: string; weight: number; capMinor: number }[],
+): Map<string, number> | null {
+  if (members.some((m) => !(m.weight > 0))) return null;
+  const shares = new Map<string, number>(members.map((m) => [m.userId, 0]));
+  let open = [...members];
+  let remaining = totalMinor;
+  // Each pass either settles everyone left or pins at least one member at their cap.
+  for (;;) {
+    const weight = open.reduce((s, m) => s + m.weight, 0);
+    const over = open.filter((m) => (remaining * m.weight) / weight > m.capMinor);
+    if (over.length === 0) break;
+    for (const m of over) {
+      shares.set(m.userId, m.capMinor);
+      remaining -= m.capMinor;
+    }
+    open = open.filter((m) => !over.includes(m));
+    if (open.length === 0) return remaining === 0 ? shares : null;
+  }
+  const weight = open.reduce((s, m) => s + m.weight, 0);
+  const exact = open.map((m) => ({ m, part: (remaining * m.weight) / weight }));
+  for (const { m, part } of exact) shares.set(m.userId, Math.floor(part));
+  let left = remaining - exact.reduce((s, { part }) => s + Math.floor(part), 0);
+  const byRemainder = [...exact].sort(
+    (a, b) => b.part - Math.floor(b.part) - (a.part - Math.floor(a.part)),
+  );
+  for (const { m } of byRemainder) {
+    if (left === 0) break;
+    if ((shares.get(m.userId) ?? 0) < m.capMinor) {
+      shares.set(m.userId, (shares.get(m.userId) ?? 0) + 1);
+      left -= 1;
+    }
+  }
+  return left === 0 ? shares : null;
+}
