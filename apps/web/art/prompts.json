@@ -4,42 +4,175 @@
   "fallbackModel": "fal-ai/nano-banana-pro",
   "fallbackEditModel": "fal-ai/nano-banana-pro/edit",
   "cutoutModel": "fal-ai/birefnet/v2",
-  "resolution": "2K",
-  "styleReference": "watch",
-  "style": "soft glossy matte-clay 3D render, pastel lavender and periwinkle (#978eff, #bcbbff, #e5e5ff) with subtle white highlights, studio softbox lighting, gentle soft shadow, isometric three-quarter view, centered, generous empty margin, plain light background, no text, no letters, no numbers, no logos",
-  "referenceInstruction": "The attached image is a STYLE REFERENCE ONLY. Match its exact clay material, glossiness, pastel lavender color palette, softbox lighting, soft shadow, three-quarter camera angle, scale in frame and plain background. Do not include or copy the object shown in the reference.",
+  "videoModel": "bytedance/seedance-2.0/fast/image-to-video",
+  "videoInput": { "resolution": "720p", "aspect_ratio": "16:9", "generate_audio": false },
+  "videoEndFrame": true,
+  "videoDurationString": true,
+  "videoStartKey": "image_url",
+  "resolution": "1K",
+  "styleReference": "bg-dawn",
+  "pricing": {
+    "google/nano-banana-2.1@1K": 0.044,
+    "google/nano-banana-2.1@2K": 0.063,
+    "google/nano-banana-2.1/edit@1K": 0.044,
+    "google/nano-banana-2.1/edit@2K": 0.063,
+    "fal-ai/nano-banana-pro": 0.15,
+    "fal-ai/nano-banana-pro/edit": 0.15,
+    "fal-ai/birefnet/v2": 0.0,
+    "bytedance/seedance-2.0/fast/image-to-video@second": 0.2419
+  },
+  "style": "Dreamy analog fine-art photograph shot on 35mm film: visible fine organic film grain, soft halation around highlights, slightly lifted blacks, low-key moody exposure that sits comfortably on a near-black page. Light palette limited to soft violet, lilac, dusk blue and muted sage green, with deep blue-black shadows. Shallow depth of field, gentle creamy bokeh, minimal calm composition with a single subject and generous negative space. Quiet, cinematic, original. Absolutely no text, letters, numbers, numerals, symbols, logos, brand marks, watermarks, signage, screens or user interfaces, and no human faces.",
+  "referenceInstruction": "The attached image is a STYLE REFERENCE ONLY. Match its film grain, softness, halation, exposure, violet-lilac-dusk-blue-sage colour palette and lighting mood exactly. Do not copy its subject, scenery or composition.",
   "assets": {
-    "watch": {
-      "aspect": "1:1",
-      "cutout": true,
-      "prompt": "A single chunky rounded price tag with a round hole near its narrow end and a short loop of soft string, completely blank smooth face with no markings, and a small separate chunky 3D arrow pointing straight down floating just beside the tag. One object group only, nothing else in the scene."
-    },
-    "schedule": {
-      "aspect": "1:1",
-      "cutout": true,
-      "prompt": "A single chunky desk calendar with two rounded binder rings on top, a thick rounded base, and a page face made of a simple grid of blank raised square tiles with one tile highlighted in deeper lavender. The tiles are completely blank: no numbers, no letters, no markings. One object only, nothing else in the scene."
-    },
-    "split": {
-      "aspect": "1:1",
-      "cutout": true,
-      "prompt": "A single thick round coin-like disc lying at a three-quarter angle so both its flat top face and its thick rounded edge are visible, smooth blank face with no engraving or symbols. The disc is cut into four equal pie wedges; three wedges stay together and exactly one wedge (the front-right quarter) is clearly pulled outward, away from the center, leaving a visible gap of about a fifth of the disc's radius. One object only, nothing else in the scene."
-    },
-    "send": {
-      "aspect": "1:1",
-      "cutout": true,
-      "prompt": "A single chunky folded paper plane with soft rounded edges, tilted upward as if taking off, smooth blank surfaces with no markings. One object only, nothing else in the scene."
-    },
-    "rails": {
+    "bg-dawn": {
+      "kind": "backdrop",
       "aspect": "16:9",
-      "cutout": true,
-      "prompt": "Three chunky rounded rectangular slabs standing side by side in a row like steps, increasing in height from left to right (short, medium, tall), each a slightly different shade of lavender from light to deeper periwinkle, smooth blank surfaces with no markings. Wide landscape composition, only these three blocks, nothing else in the scene."
+      "resolution": "2K",
+      "prompt": "A wide cinematic landscape: a misty lavender pine forest at first light. Soft fog fills the valley, a few slender tree silhouettes stand on the right third, fading into haze. The horizon and treeline sit in the lower third of the frame. The centre and left of the frame are quiet, empty, softly glowing pale violet mist and sky with nothing in them. Faint dawn glow, very calm."
+    },
+    "bg-bloom": {
+      "kind": "backdrop",
+      "aspect": "16:9",
+      "resolution": "2K",
+      "prompt": "A wide cinematic landscape: a low field of pale violet wildflowers under a soft overcast lilac sky. The flowers fill only the bottom third of the frame, in the foreground slightly out of focus, a few taller stems on the right. The centre and left of the frame are an empty, quiet, overcast lilac sky with nothing in it. Muted sage green stems, dusky light."
+    },
+    "bg-dusk": {
+      "kind": "backdrop",
+      "aspect": "16:9",
+      "resolution": "2K",
+      "prompt": "A wide cinematic landscape: a perfectly still lake at dusk under a blue-violet sky. A thin dark line of distant low shore sits in the lower third of the frame with faint soft reflections on the glassy water below it. The centre and left of the frame are an empty, quiet gradient sky with nothing in it. Deep dusk blue fading to lilac near the horizon."
+    },
+    "bg-night": {
+      "kind": "backdrop",
+      "aspect": "16:9",
+      "resolution": "2K",
+      "prompt": "A wide cinematic landscape: a soft night sky over low rolling hills. Deep indigo sky, a faint violet-lilac glow just above the horizon, the dark silhouette of gentle hills in the lower third. A very sparse scattering of faint stars. The centre and left of the frame are quiet, empty, dark sky with nothing in it. Very calm and very dark overall."
+    },
+    "c-search": {
+      "kind": "card",
+      "aspect": "4:3",
+      "prompt": "Close still life: a single round magnifying glass with a plain dark handle resting on soft rumpled fabric, bathed in violet light, the lens catching a soft highlight."
+    },
+    "c-edit": {
+      "kind": "card",
+      "aspect": "4:3",
+      "prompt": "Close still life: an open notebook with completely blank pages and a plain wooden pencil lying across it on a table, soft dusk light falling across the paper. The pages are empty: no writing, no lines of text."
+    },
+    "c-group": {
+      "kind": "card",
+      "aspect": "4:3",
+      "prompt": "Top-down still life: three plain matching ceramic coffee cups on saucers arranged on a small round table, soft lilac light, gentle shadows. The cups are plain and unmarked."
+    },
+    "c-target": {
+      "kind": "card",
+      "aspect": "4:3",
+      "prompt": "Still life: a single blank paper price tag with a small reinforced hole hanging from a thin thread, slowly turning, against a soft out-of-focus violet background. The tag is completely blank."
+    },
+    "c-deadline": {
+      "kind": "card",
+      "aspect": "4:3",
+      "prompt": "Still life: a single glass hourglass with pale sand standing on a windowsill at dusk, soft blue-violet window light behind it, the sand mid-flow."
+    },
+    "c-check": {
+      "kind": "card",
+      "aspect": "4:3",
+      "prompt": "Still life: a pair of plain dark binoculars resting on a stone ledge, facing out towards a misty valley that falls away softly out of focus behind them, dusk-blue haze."
+    },
+    "c-hold": {
+      "kind": "card",
+      "aspect": "4:3",
+      "prompt": "Close still life: two relaxed human hands entering from the left and right edges of the frame, palms down with natural anatomy and five fingers each, hovering just above a smooth dark river stone without touching it or each other. Hands and wrists only, no arms beyond the wrist, no faces. Soft violet light."
+    },
+    "c-quorum": {
+      "kind": "card",
+      "aspect": "4:3",
+      "prompt": "Still life: exactly four identical plain brass keys on a single round key ring, fanned out evenly so all four keys are clearly separate and visible, lying flat on a dark surface in soft violet light. Exactly four keys, no more and no fewer. The keys are plain and unmarked."
+    },
+    "c-weights": {
+      "kind": "card",
+      "aspect": "4:3",
+      "prompt": "Still life: an antique brass balance scale with two shallow pans, perfectly level, softly lit by dim lilac light against a dark background. Plain and unmarked."
+    },
+    "c-cap": {
+      "kind": "card",
+      "aspect": "4:3",
+      "prompt": "Still life: a small clear glass jar half full of plain blank coins, closed with a cork lid, on a dark table in soft violet light. The coins have no engravings or markings."
+    },
+    "c-end": {
+      "kind": "card",
+      "aspect": "4:3",
+      "prompt": "Still life: a minimal round wall clock with a completely plain blank face and two slender hands, no numerals, no tick marks and no markings of any kind, on a softly lit wall at dusk with violet light."
+    },
+    "c-revoke": {
+      "kind": "card",
+      "aspect": "4:3",
+      "prompt": "Still life: a single open brass padlock with its shackle unlocked, lying on deep violet velvet, soft light. Plain and unmarked."
+    },
+    "c-request": {
+      "kind": "card",
+      "aspect": "4:3",
+      "prompt": "Still life: a plain cream paper envelope closed with a round lilac wax seal, the seal completely smooth and blank with no emblem or marks, lying on a dark surface in soft dusk light."
+    },
+    "c-payback": {
+      "kind": "card",
+      "aspect": "4:3",
+      "prompt": "Still life: two small white folded paper boats floating side by side on perfectly still dark water, faint reflections, soft dusk-blue and violet light."
+    },
+    "c-payout": {
+      "kind": "card",
+      "aspect": "4:3",
+      "prompt": "Still life: a single white folded paper airplane just landing on a wooden table in soft lilac light, gentle shadow beneath it, the background out of focus."
+    },
+    "c-rails": {
+      "kind": "wide",
+      "aspect": "16:9",
+      "resolution": "2K",
+      "prompt": "A wide cinematic scene: two parallel railway tracks running straight ahead and vanishing into soft lilac fog, low camera close to the rails, the vanishing point near the centre, faint sage green grass between the sleepers, everything beyond the middle dissolving into luminous mist."
+    },
+    "v-watch": {
+      "kind": "video",
+      "aspect": "16:9",
+      "prompt": "A single blank paper price tag on a short loop of thread floating in mid-air among soft violet and lilac clouds, centred in the frame, seen from slightly below. The tag is completely blank.",
+      "video": {
+        "prompt": "The blank price tag drifts slowly downward through the soft clouds while turning very gently on its thread; the clouds drift slowly upward past it. Slow, calm, dreamy motion, steady camera, grainy film look. Continuous, even motion from start to end with no cuts."
+      }
+    },
+    "v-split": {
+      "kind": "video",
+      "aspect": "16:9",
+      "prompt": "A single thick blank coin with no engravings or markings floating in dark space, softly glowing with lilac light from within, faint thin seams dividing it into four equal wedges, centred in the frame.",
+      "video": {
+        "prompt": "The glowing coin slowly separates along its seams into four wedges that float gently apart, hang for a moment, then drift slowly back together into a whole coin. Slow, calm, weightless motion, steady camera, grainy film look. Continuous, even motion from start to end with no cuts."
+      }
+    },
+    "v-schedule": {
+      "kind": "video",
+      "aspect": "16:9",
+      "prompt": "A small stack of blank pale paper pages bound along the top edge, like a wall calendar with completely empty pages, resting on a windowsill at dusk, the top pages slightly lifted by a breeze. The pages are blank: no numbers, no grid, no writing.",
+      "video": {
+        "prompt": "The blank pages lift and turn gently one after another in a soft breeze, then settle back. Slow, calm motion, locked-off camera, dusk light, grainy film look. Continuous, even motion from start to end with no cuts."
+      }
+    },
+    "v-send": {
+      "kind": "video",
+      "aspect": "16:9",
+      "prompt": "A single white folded paper airplane gliding through soft violet clouds at dusk, centred slightly left of the middle, wings level, seen from the side.",
+      "video": {
+        "prompt": "The paper airplane glides steadily and gently bobs on the air while the violet clouds drift slowly past behind it, as if the camera is flying alongside. Slow, calm, dreamy motion, grainy film look. Continuous, even motion from start to end with no cuts."
+      }
+    },
+    "v-approve": {
+      "kind": "video",
+      "aspect": "16:9",
+      "prompt": "A soft glowing pattern of concentric curved ridges like a fingerprint whorl, made of faint lilac light, resting just beneath the surface of a sheet of dark glass, centred, surrounded by darkness. Abstract, no hand visible.",
+      "video": {
+        "prompt": "A slow gentle ripple of light pulses outward through the glowing fingerprint-like rings on the dark glass, brightening softly and then fading back. Calm, slow breathing rhythm, locked-off camera, grainy film look. Continuous, even motion from start to end with no cuts."
+      }
     },
     "og": {
+      "kind": "og",
       "aspect": "16:9",
-      "cutout": false,
-      "references": ["watch", "schedule", "split", "send"],
-      "referenceInstruction": "The attached images show four clay objects. Re-render these same four objects with the same material, colors and lighting.",
-      "prompt": "A wide social-card scene: a soft smooth lavender gradient background from very light #f3f2ff on the left to soft periwinkle #c9c6ff on the right. On the right half of the frame, a loose playful floating cluster of the four objects (blank price tag with a down arrow, desk calendar with blank tiles, coin split into wedges, paper plane) at slightly different sizes and angles, softly overlapping with gentle shadows. The left half of the frame is empty gradient with nothing in it. No text, no letters, no numbers, no logos anywhere."
+      "prompt": "A wide cinematic landscape in the same place and light as the reference: a misty lavender pine forest at first light, a few slender tree silhouettes standing only on the right side of the frame, fading into haze. The entire left half of the frame is empty, quiet, softly glowing pale violet mist with nothing in it. Horizon in the lower third."
     }
   }
 }

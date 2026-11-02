@@ -1,14 +1,19 @@
 /**
- * Turns the raw fal renders into web-ready landing art.
+ * Turns the raw fal renders into web-ready landing media.
  *
- *   npx tsx apps/web/scripts/optimize-art.ts
+ *   npx tsx apps/web/scripts/optimize-art.ts [--only bg-dawn,v-send] [--skip-video]
  *
- * Objects: trim transparent edges, pad to a centered square (or 16:9 for rails), then export
- * AVIF + WebP at two widths to public/art/<name>-<width>.<ext>. AVIF quality steps down until the
- * 2x file fits its byte budget. The OG card is exported as a single 1200x630 mozjpeg.
- * Also writes src/landing/art.ts with the intrinsic sizes for the page code.
+ * Stills (backdrops, cards, wide cards): cover-crop to the target aspect, then export AVIF at
+ * every width plus one WebP fallback to public/art/<name>-<width>.<ext>. AVIF quality steps down
+ * per file until it fits its byte budget (film grain hides the loss).
+ * Videos: art/raw/<name>.mp4 becomes a seamless 1280x720 H.264 loop at public/video/<name>.mp4,
+ * with CRF stepped up until it fits VIDEO_MAX_BYTES, plus a poster from its first frame.
+ * The OG card is exported as a single 1200x630 mozjpeg.
+ * Also writes src/landing/art.ts with the 1x intrinsic sizes for the page code.
  */
-import { mkdirSync, statSync, writeFileSync } from "node:fs";
+import { execFileSync } from "node:child_process";
+import { existsSync, mkdirSync, mkdtempSync, rmSync, statSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import sharp from "sharp";
@@ -17,116 +22,326 @@ const here = dirname(fileURLToPath(import.meta.url));
 const webDir = resolve(here, "..");
 const rawDir = join(webDir, "art", "raw");
 const outDir = join(webDir, "public", "art");
+const videoDir = join(webDir, "public", "video");
 const manifestFile = join(webDir, "src", "landing", "art.ts");
+
+const FFMPEG = process.env.FFMPEG ?? "ffmpeg";
+const FFPROBE = process.env.FFPROBE ?? "ffprobe";
 
 interface Spec {
   /** Output aspect ratio, width / height. */
   aspect: number;
-  /** [1x, 2x] widths. */
-  widths: [number, number];
-  /** Byte budget for the 2x AVIF. */
-  maxAvifBytes: number;
+  /** Export widths, smallest first. */
+  widths: number[];
+  /** 1x display width written to the manifest. */
+  display: number;
+  /** Widths that also get a WebP fallback. */
+  webp: number[];
+  /** AVIF byte budget per width. */
+  maxAvif: Record<number, number>;
 }
 
-const square = (): Spec => ({ aspect: 1, widths: [200, 400], maxAvifBytes: 25_000 });
+const backdrop = (): Spec => ({
+  aspect: 16 / 9,
+  widths: [1280, 1920],
+  display: 1920,
+  webp: [1280],
+  maxAvif: { 1280: 60_000, 1920: 110_000 },
+});
+const card = (): Spec => ({
+  aspect: 4 / 3,
+  widths: [480, 960],
+  display: 480,
+  webp: [480],
+  maxAvif: { 480: 14_000, 960: 35_000 },
+});
+const poster = (): Spec => ({
+  aspect: 16 / 9,
+  widths: [1280],
+  display: 1280,
+  webp: [1280],
+  maxAvif: { 1280: 60_000 },
+});
 
-const specs: Record<string, Spec> = {
-  watch: square(),
-  schedule: square(),
-  split: square(),
-  send: square(),
-  rails: { aspect: 16 / 9, widths: [560, 1120], maxAvifBytes: 60_000 },
+const stills: Record<string, Spec> = {
+  "bg-dawn": backdrop(),
+  "bg-bloom": backdrop(),
+  "bg-dusk": backdrop(),
+  "bg-night": backdrop(),
+  "c-search": card(),
+  "c-edit": card(),
+  "c-group": card(),
+  "c-target": card(),
+  "c-deadline": card(),
+  "c-check": card(),
+  "c-hold": card(),
+  "c-quorum": card(),
+  "c-weights": card(),
+  "c-cap": card(),
+  "c-end": card(),
+  "c-revoke": card(),
+  "c-request": card(),
+  "c-payback": card(),
+  "c-payout": card(),
+  "c-rails": {
+    aspect: 16 / 9,
+    widths: [960, 1920],
+    display: 960,
+    webp: [960],
+    maxAvif: { 960: 40_000, 1920: 110_000 },
+  },
 };
 
-const AVIF_START = 55;
-const AVIF_FLOOR = 30;
-const WEBP_QUALITY = 78;
-/** Breathing room around the trimmed object, as a fraction of its larger side. */
-const MARGIN = 0.03;
-/** Alpha at or below this is matting noise: cleared so it neither bloats files nor skews the trim. */
-const ALPHA_NOISE = 8;
+const videos = ["v-watch", "v-split", "v-schedule", "v-send", "v-approve"] as const;
 
-/** Trims to the opaque bounding box and pads to `aspect`, keeping the object centered. */
-async function frame(file: string, aspect: number): Promise<sharp.Sharp> {
-  const { data, info } = await sharp(file)
-    .ensureAlpha()
-    .raw()
-    .toBuffer({ resolveWithObject: true });
-  const { width, height } = info;
+const AVIF_START = 70;
+const AVIF_FLOOR = 24;
+const WEBP_QUALITY = 74;
 
-  let minX = width;
-  let minY = height;
-  let maxX = -1;
-  let maxY = -1;
-  for (let y = 0; y < height; y++) {
-    for (let x = 0; x < width; x++) {
-      const i = (y * width + x) * 4;
-      if (data[i + 3] <= ALPHA_NOISE) {
-        data[i] = data[i + 1] = data[i + 2] = data[i + 3] = 0;
-        continue;
-      }
-      if (x < minX) minX = x;
-      if (x > maxX) maxX = x;
-      if (y < minY) minY = y;
-      if (y > maxY) maxY = y;
-    }
+const VIDEO_W = 1280;
+const VIDEO_H = 720;
+const VIDEO_FPS = 24;
+const VIDEO_MAX_BYTES = 1_200_000;
+const CRF_START = 18;
+const CRF_CEIL = 34;
+/** Crossfade length used to hide the seam when a clip does not return to its first frame. */
+const XFADE = 0.4;
+/** Mean per-channel difference (0-255) between last and first frame below which a clip already loops. */
+const NATIVE_LOOP_DIFF = 6;
+/** A frame step counts as a jump when it exceeds JUMP_MIN and JUMP_RATIO x the median step. */
+const JUMP_MIN = 4;
+const JUMP_RATIO = 8;
+/** Dissolve length laid over a jump. */
+const JUMP_XFADE = 0.25;
+
+const args = process.argv.slice(2);
+const onlyIdx = args.indexOf("--only");
+const only = onlyIdx >= 0 ? new Set((args[onlyIdx + 1] ?? "").split(",")) : null;
+const skipVideo = args.includes("--skip-video");
+const wanted = (name: string) => !only || only.has(name);
+
+/** AVIF at the highest quality (from AVIF_START down) that fits `max` bytes. */
+async function fitAvif(img: Buffer, max: number): Promise<{ buf: Buffer; quality: number }> {
+  let quality = AVIF_START;
+  let buf = await sharp(img).avif({ quality, effort: 6 }).toBuffer();
+  while (buf.length > max && quality > AVIF_FLOOR) {
+    quality -= 3;
+    buf = await sharp(img).avif({ quality, effort: 6 }).toBuffer();
   }
-  if (maxX < 0) throw new Error(`${file} is fully transparent`);
+  return { buf, quality };
+}
 
-  const w = maxX - minX + 1;
-  const h = maxY - minY + 1;
-  const pad = Math.round(Math.max(w, h) * MARGIN);
-  let outW = w + pad * 2;
-  let outH = h + pad * 2;
-  if (outW / outH < aspect) outW = Math.round(outH * aspect);
-  else outH = Math.round(outW / aspect);
+async function exportStill(name: string, spec: Spec, source = join(rawDir, `${name}.png`)) {
+  for (const w of spec.widths) {
+    const h = Math.round(w / spec.aspect);
+    const img = await sharp(source)
+      .resize({ width: w, height: h, fit: "cover", position: "centre", kernel: "lanczos3" })
+      .png()
+      .toBuffer();
+    const max = spec.maxAvif[w] ?? Number.POSITIVE_INFINITY;
+    const { buf, quality } = await fitAvif(img, max);
+    writeFileSync(join(outDir, `${name}-${w}.avif`), buf);
+    let line = `${name}-${w}: avif ${buf.length} B (q${quality})`;
+    if (buf.length > max) line += "  ⚠ over budget";
+    if (spec.webp.includes(w)) {
+      const webp = await sharp(img).webp({ quality: WEBP_QUALITY, effort: 6 }).toBuffer();
+      writeFileSync(join(outDir, `${name}-${w}.webp`), webp);
+      line += `, webp ${webp.length} B`;
+    }
+    console.log(line);
+  }
+}
 
-  const left = Math.floor((outW - w) / 2);
-  const top = Math.floor((outH - h) / 2);
-  const cropped = await sharp(data, { raw: { width, height, channels: 4 } })
-    .extract({ left: minX, top: minY, width: w, height: h })
-    .png()
-    .toBuffer();
-  return sharp(cropped).extend({
-    left,
-    right: outW - w - left,
-    top,
-    bottom: outH - h - top,
-    background: { r: 0, g: 0, b: 0, alpha: 0 },
+function ff(args: string[]) {
+  execFileSync(FFMPEG, ["-hide_banner", "-loglevel", "error", "-y", ...args], {
+    stdio: "inherit",
   });
 }
 
-async function exportObject(name: string, spec: Spec) {
-  const framed = await (await frame(join(rawDir, `${name}-cut.png`), spec.aspect)).png().toBuffer();
-  const resized = await Promise.all(
-    spec.widths.map((w) =>
-      sharp(framed)
-        .resize({ width: w, height: Math.round(w / spec.aspect), kernel: "lanczos3" })
-        .png()
-        .toBuffer(),
-    ),
+function duration(file: string): number {
+  const out = execFileSync(FFPROBE, [
+    "-v",
+    "error",
+    "-show_entries",
+    "format=duration",
+    "-of",
+    "csv=p=0",
+    file,
+  ]);
+  return Number(out.toString().trim());
+}
+
+/** Mean absolute per-channel difference between two frames, on a small downscale. */
+async function frameDiff(a: string, b: string): Promise<number> {
+  const load = (f: string) =>
+    sharp(f).resize(160, 90, { fit: "fill" }).removeAlpha().raw().toBuffer();
+  const [x, y] = await Promise.all([load(a), load(b)]);
+  let sum = 0;
+  for (let i = 0; i < x.length; i++) sum += Math.abs((x[i] ?? 0) - (y[i] ?? 0));
+  return sum / x.length;
+}
+
+/** Re-encodes to a lossless H.264 intermediate (`-vf` or `-filter_complex` given in `filter`). */
+function lossless(input: string, filter: string[], out: string) {
+  ff(["-i", input, "-an", ...filter, "-c:v", "libx264", "-qp", "0", "-preset", "ultrafast", out]);
+}
+
+/** Mean absolute per-channel difference between consecutive frames, on a 160x90 downscale. */
+function adjacentDiffs(file: string): number[] {
+  const [w, h] = [160, 90];
+  const raw = execFileSync(
+    FFMPEG,
+    [
+      "-loglevel",
+      "error",
+      "-i",
+      file,
+      "-vf",
+      `scale=${w}:${h}`,
+      "-f",
+      "rawvideo",
+      "-pix_fmt",
+      "rgb24",
+      "-",
+    ],
+    { maxBuffer: 256 * 1024 * 1024 },
   );
-  const big = resized[1];
-  if (!big) throw new Error("missing 2x render");
-
-  let quality = AVIF_START;
-  let bigAvif = await sharp(big).avif({ quality, effort: 6 }).toBuffer();
-  while (bigAvif.length > spec.maxAvifBytes && quality > AVIF_FLOOR) {
-    quality -= 4;
-    bigAvif = await sharp(big).avif({ quality, effort: 6 }).toBuffer();
+  const size = w * h * 3;
+  const diffs: number[] = [];
+  for (let off = size; off + size <= raw.length; off += size) {
+    let sum = 0;
+    for (let i = 0; i < size; i++)
+      sum += Math.abs((raw[off + i] ?? 0) - (raw[off - size + i] ?? 0));
+    diffs.push(sum / size);
   }
+  return diffs;
+}
 
-  for (const [i, w] of spec.widths.entries()) {
-    const img = resized[i];
-    if (!img) continue;
-    const avif = i === 1 ? bigAvif : await sharp(img).avif({ quality, effort: 6 }).toBuffer();
-    const webp = await sharp(img).webp({ quality: WEBP_QUALITY, effort: 6 }).toBuffer();
-    writeFileSync(join(outDir, `${name}-${w}.avif`), avif);
-    writeFileSync(join(outDir, `${name}-${w}.webp`), webp);
-    console.log(
-      `${name}-${w}: avif ${avif.length} B (q${quality}), webp ${webp.length} B` +
-        (i === 1 && avif.length > spec.maxAvifBytes ? "  ⚠ over budget" : ""),
+/**
+ * Frame indices where the model cut or jumped (e.g. a sudden camera reposition while steering
+ * toward the end frame): a single step far larger than the clip's typical motion.
+ */
+function findJumps(diffs: number[]): number[] {
+  const sorted = [...diffs].sort((a, b) => a - b);
+  const median = sorted[sorted.length >> 1] ?? 0;
+  return diffs
+    .map((d, i) => ({ d, frame: i + 1 }))
+    .filter(({ d }) => d > JUMP_MIN && d > median * JUMP_RATIO)
+    .map(({ frame }) => frame);
+}
+
+/**
+ * Normalises the raw clip to 1280x720@24 (lossless intermediate), dissolves across any sudden
+ * jumps, then makes it loop: if the last frame already matches the first, the duplicate final
+ * frame is dropped; otherwise the tail crossfades into the head (the output starts XFADE in).
+ */
+async function loopClip(name: string, work: string): Promise<{ file: string; mode: string }> {
+  const src = join(rawDir, `${name}.mp4`);
+  let clip = join(work, "norm.mkv");
+  lossless(
+    src,
+    [
+      "-vf",
+      `scale=${VIDEO_W}:${VIDEO_H}:force_original_aspect_ratio=increase:flags=lanczos,crop=${VIDEO_W}:${VIDEO_H},fps=${VIDEO_FPS},format=yuv420p`,
+    ],
+    clip,
+  );
+
+  // Later jumps first, so the earlier indices stay valid as each dissolve shortens the clip.
+  const jumps = findJumps(adjacentDiffs(clip)).sort((a, b) => b - a);
+  for (const [i, frame] of jumps.entries()) {
+    const t = frame / VIDEO_FPS;
+    const next = join(work, `smooth-${i}.mkv`);
+    lossless(
+      clip,
+      [
+        "-filter_complex",
+        [
+          `[0:v]trim=end=${t.toFixed(4)},setpts=PTS-STARTPTS[a]`,
+          `[0:v]trim=start=${t.toFixed(4)},setpts=PTS-STARTPTS[b]`,
+          `[a][b]xfade=transition=fade:duration=${JUMP_XFADE}:offset=${(t - JUMP_XFADE).toFixed(4)},format=yuv420p`,
+        ].join(";"),
+      ],
+      next,
     );
+    clip = next;
+  }
+  const smoothed = jumps.length ? `, dissolved jump(s) at frame ${jumps.join(", ")}` : "";
+
+  const d = duration(clip);
+  const first = join(work, "first.png");
+  const last = join(work, "last.png");
+  ff(["-i", clip, "-frames:v", "1", first]);
+  ff(["-sseof", "-0.1", "-i", clip, "-update", "1", last]);
+  const diff = await frameDiff(first, last);
+
+  const out = join(work, "loop.mkv");
+  if (diff <= NATIVE_LOOP_DIFF) {
+    const frames = Math.round(d * VIDEO_FPS) - 1;
+    lossless(clip, ["-frames:v", String(frames)], out);
+    return { file: out, mode: `native (end≈start, diff ${diff.toFixed(1)})${smoothed}` };
+  }
+  lossless(
+    clip,
+    [
+      "-filter_complex",
+      [
+        `[0:v]trim=start=${XFADE},setpts=PTS-STARTPTS[body]`,
+        `[0:v]trim=end=${XFADE},setpts=PTS-STARTPTS[head]`,
+        `[body][head]xfade=transition=fade:duration=${XFADE}:offset=${(d - 2 * XFADE).toFixed(3)},format=yuv420p`,
+      ].join(";"),
+    ],
+    out,
+  );
+  return { file: out, mode: `crossfade ${XFADE}s (end↔start diff ${diff.toFixed(1)})${smoothed}` };
+}
+
+async function exportVideo(name: string) {
+  const src = join(rawDir, `${name}.mp4`);
+  if (!existsSync(src)) {
+    console.warn(`${name}: no raw video, skipped`);
+    return;
+  }
+  const work = mkdtempSync(join(tmpdir(), `pact-${name}-`));
+  try {
+    const { file: loop, mode } = await loopClip(name, work);
+    const out = join(videoDir, `${name}.mp4`);
+    let crf = CRF_START;
+    for (;;) {
+      ff([
+        "-i",
+        loop,
+        "-an",
+        "-c:v",
+        "libx264",
+        "-preset",
+        "slow",
+        "-profile:v",
+        "high",
+        "-pix_fmt",
+        "yuv420p",
+        "-crf",
+        String(crf),
+        "-g",
+        String(VIDEO_FPS * 2),
+        "-movflags",
+        "+faststart",
+        out,
+      ]);
+      if (statSync(out).size <= VIDEO_MAX_BYTES || crf >= CRF_CEIL) break;
+      crf += 1;
+    }
+    const size = statSync(out).size;
+    console.log(
+      `${name}.mp4: ${size} B (crf ${crf}), loop ${mode}` +
+        (size > VIDEO_MAX_BYTES ? "  ⚠ over budget" : ""),
+    );
+
+    const frame = join(work, "poster.png");
+    ff(["-i", out, "-frames:v", "1", frame]);
+    await exportStill(`${name}-poster`, poster(), frame);
+  } finally {
+    rmSync(work, { recursive: true, force: true });
   }
 }
 
@@ -140,19 +355,26 @@ async function exportOg() {
 }
 
 function writeManifest() {
-  const lines = Object.entries(specs).map(([name, spec]) => {
-    const [w] = spec.widths;
+  const entry = (name: string, spec: Spec) => {
+    const w = spec.display;
     const h = Math.round(w / spec.aspect);
-    return `  ${name}: { w: ${w}, h: ${h}, widths: [${spec.widths.join(", ")}] },`;
-  });
+    return `  "${name}": { w: ${w}, h: ${h}, widths: [${spec.widths.join(", ")}] },`;
+  };
+  const lines = [
+    ...Object.entries(stills).map(([name, spec]) => entry(name, spec)),
+    ...videos.map((v) => entry(`${v}-poster`, poster())),
+  ];
   const src = [
     "// Generated by scripts/optimize-art.ts. Do not edit by hand.",
-    "// Files live at /art/<name>-<width>.avif and .webp; w/h are the 1x intrinsic size.",
+    "// Images live at /art/<name>-<width>.avif (every width) and .webp (smallest width);",
+    "// w/h are the 1x display size. Videos live at /video/<name>.mp4 with /art/<name>-poster-*.",
     "export const art = {",
     ...lines,
     "} as const;",
     "",
     "export type ArtName = keyof typeof art;",
+    "",
+    `export const videos = [${videos.map((v) => `"${v}"`).join(", ")}] as const;`,
     "",
   ].join("\n");
   mkdirSync(dirname(manifestFile), { recursive: true });
@@ -162,8 +384,14 @@ function writeManifest() {
 
 async function main() {
   mkdirSync(outDir, { recursive: true });
-  for (const [name, spec] of Object.entries(specs)) await exportObject(name, spec);
-  await exportOg();
+  mkdirSync(videoDir, { recursive: true });
+  for (const [name, spec] of Object.entries(stills)) {
+    if (wanted(name)) await exportStill(name, spec);
+  }
+  if (!skipVideo) {
+    for (const name of videos) if (wanted(name)) await exportVideo(name);
+  }
+  if (wanted("og")) await exportOg();
   writeManifest();
 }
 

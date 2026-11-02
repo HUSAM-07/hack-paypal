@@ -3,101 +3,211 @@
 @import "../styles/tokens.css";
 @source "./";
 
+@layer base {
+  html,
+  body {
+    height: auto;
+    background: #090909;
+    color: #fff;
+  }
+  html {
+    scroll-behavior: smooth;
+  }
+  body {
+    overscroll-behavior: auto;
+  }
+}
+
 @layer components {
+  /* Reveal on scroll (motion.ts sets data-in). */
   [data-reveal] {
     transition:
-      opacity 1s var(--ease-swift),
-      transform 1.6s var(--ease-swift);
+      opacity 1.1s var(--ease-swift),
+      transform 1.6s var(--ease-swift),
+      filter 1.1s var(--ease-swift);
     transition-delay: calc(var(--d, 0) * 1ms);
   }
   .reveal-ready [data-reveal]:not([data-in]) {
     opacity: 0;
-    transform: translate3d(0, 28px, 0);
+    transform: translate3d(0, 40px, 0);
+    filter: blur(6px);
   }
 
-  /* Hero entrance runs from first paint (prerendered), before any JS. */
-  .rise {
-    animation: rise 1.5s var(--ease-swift) both;
-    animation-delay: calc(var(--d, 0) * 1ms);
+  .topbar {
+    background: linear-gradient(to bottom, rgb(9 9 9 / 0.75), rgb(9 9 9 / 0));
   }
-  @keyframes rise {
+
+  .popover {
+    opacity: 0;
+    transform: translateY(6px) scale(0.98);
+    pointer-events: none;
+    transition:
+      opacity 0.2s var(--ease-out-strong),
+      transform 0.35s var(--ease-snappy);
+  }
+  .chapter-pill .popover {
+    transform: translate(-50%, 6px) scale(0.98);
+  }
+  .popover[data-open] {
+    opacity: 1;
+    transform: none;
+    pointer-events: auto;
+  }
+  .chapter-pill .popover[data-open] {
+    transform: translate(-50%, 0);
+  }
+
+  .chapter-pill {
+    opacity: 0;
+    translate: 0 24px;
+    pointer-events: none;
+    transition:
+      opacity 0.5s var(--ease-swift),
+      translate 0.8s var(--ease-swift);
+  }
+  .chapter-pill[data-shown] {
+    opacity: 1;
+    translate: 0 0;
+    pointer-events: auto;
+  }
+
+  /* Hero: the ring and the exit bar fade out over the first part of the scroll. */
+  .hero-ring {
+    opacity: calc(1 - var(--hero, 0) * 1.7);
+    transform: translate3d(0, calc(var(--hero, 0) * -14svh), 0)
+      scale(calc(1 - var(--hero, 0) * 0.12));
+  }
+  .hero-exit {
+    opacity: calc(1 - var(--hero, 0) * 5);
+  }
+  [data-hero-gone] .hero-ring,
+  [data-hero-gone] .hero-exit {
+    visibility: hidden;
+  }
+
+  .ring-stage {
+    --ring-size: clamp(56px, 11vw, 176px);
+    --slot: calc(var(--ring-size) * 0.56);
+    perspective: calc(var(--ring-size) * 9);
+    height: calc(var(--ring-size) * 1.6);
+    width: 100%;
+  }
+  .ring-tilt {
+    position: relative;
+    height: 100%;
+    transform-style: preserve-3d;
+    transform: rotateX(-12deg) rotateZ(-5deg) rotateY(var(--ring-scroll, 0deg));
+  }
+  .ring-spin {
+    position: absolute;
+    left: 50%;
+    top: 0;
+    width: 0;
+    height: 100%;
+    transform-style: preserve-3d;
+    animation: ring-spin 36s linear infinite;
+  }
+  @keyframes ring-spin {
     from {
-      opacity: 0.001;
-      transform: translate3d(0, 36px, 0);
+      rotate: y 0deg;
+    }
+    to {
+      rotate: y -360deg;
     }
   }
-  .phone-rise {
-    animation: phone-rise 1.8s var(--ease-swift) both;
-    animation-delay: calc(var(--d, 0) * 1ms);
-  }
-  @keyframes phone-rise {
-    from {
-      opacity: 0.001;
-      transform: translate3d(0, 120px, 0) scale(0.96);
-    }
-  }
-
-  /* Below-the-fold sections skip layout and paint until they approach the viewport. */
-  .lazy-section {
-    content-visibility: auto;
-    contain-intrinsic-size: auto 900px;
+  .ring-char {
+    position: absolute;
+    top: 0;
+    left: calc(var(--slot) / -2);
+    width: var(--slot);
+    text-align: center;
+    font-size: var(--ring-size);
+    line-height: 1;
+    font-weight: 400;
+    letter-spacing: -0.02em;
+    color: rgb(255 255 255 / 0.94);
+    transform: rotateY(var(--a)) translateZ(calc(var(--slots) * var(--slot) / 6.2832));
+    text-shadow: 0 2px 30px rgb(9 9 9 / 0.35);
   }
 
-  .nav[data-scrolled] {
-    background: oklch(0.985 0.001 106 / 0.78);
-    box-shadow: 0 1px 0 var(--border);
-    backdrop-filter: saturate(1.6) blur(16px);
-    -webkit-backdrop-filter: saturate(1.6) blur(16px);
+  .chapter-title {
+    font-size: clamp(64px, 11vw, 176px);
+    line-height: 0.9;
+    letter-spacing: -0.075em;
+    font-weight: 400;
+    margin-left: -0.05em;
   }
-  .nav {
-    transition:
-      background-color 0.4s var(--ease-swift),
-      box-shadow 0.4s var(--ease-swift);
-  }
-
-  .text-glow {
-    background: linear-gradient(100deg, var(--lav-200) 0%, #fff 45%, var(--lav-400) 100%);
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
-  }
-  .text-lav {
-    background: linear-gradient(100deg, var(--lav-600), var(--lav-400));
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
+  .feature-title {
+    font-size: clamp(36px, 4.6vw, 68px);
+    line-height: 0.98;
+    letter-spacing: -0.045em;
+    font-weight: 400;
   }
 
-  /* FAQ: native <details>, height animates where the browser supports it. */
-  .faq {
-    interpolate-size: allow-keywords;
+  /* Scene layer: photos paint first; the canvas fades over them once it draws. */
+  .scene-img {
+    opacity: 0;
+    transition: opacity 1.2s var(--ease-out-strong);
   }
-  .faq::details-content {
-    block-size: 0;
-    overflow: hidden;
-    transition:
-      block-size 0.5s var(--ease-swift),
-      content-visibility 0.5s allow-discrete;
+  .scene-layer[data-scene="0"] [data-scene-img="0"],
+  .scene-layer[data-scene="1"] [data-scene-img="1"],
+  .scene-layer[data-scene="2"] [data-scene-img="2"],
+  .scene-layer[data-scene="3"] [data-scene-img="3"] {
+    opacity: 1;
   }
-  .faq[open]::details-content {
-    block-size: auto;
+  .scene-canvas {
+    opacity: 0;
+    transition: opacity 0.9s var(--ease-out-strong);
   }
-  .faq summary::-webkit-details-marker {
+  .scene-canvas[data-ready] {
+    opacity: 1;
+  }
+  .scene-canvas[data-ready] ~ .scene-grain {
     display: none;
   }
-  .faq .faq-icon {
-    transition: transform 0.5s var(--ease-snappy);
+  .scene-grain {
+    opacity: 0.22;
+    mix-blend-mode: overlay;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    animation: grain 0.6s steps(3) infinite;
   }
-  .faq[open] .faq-icon {
-    transform: rotate(45deg);
+  @keyframes grain {
+    33% {
+      transform: translate(-3%, 2%);
+    }
+    66% {
+      transform: translate(2%, -3%);
+    }
+  }
+
+  .media-frame[data-playing] .video-play {
+    display: none;
+  }
+  .media-frame[data-playing] .video-pause {
+    display: block;
+  }
+
+  /* Chapter bodies skip layout and paint until they approach the viewport. */
+  section[data-chapter] > div:last-child {
+    content-visibility: auto;
+    contain-intrinsic-size: auto 1800px;
   }
 
   .range {
     accent-color: var(--accent);
   }
-
   .bar {
     transform-origin: left center;
     transition: transform 0.8s var(--ease-swift);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ring-spin,
+  .scene-grain {
+    animation: none;
+  }
+  html {
+    scroll-behavior: auto;
   }
 }

@@ -1,9 +1,7 @@
-import { art } from "./art";
-
-export type ArtName = Exclude<keyof typeof art, "og">;
+import { type ArtName, art } from "./art";
 
 /** Generated 3D art as AVIF with a WebP fallback; fixed dimensions so nothing shifts. */
-export function Art({
+export function ArtImage({
   name,
   sizes,
   className,
