@@ -59,7 +59,7 @@ Each runs in its own worktree. Shared contracts land first (protocol + catalog s
 - Open: nothing triggers `PactDO.settle()` yet (price/schedule/quorum alarms); full live eval suite unmeasured (red-team 98% ×3); landing page; deploy.
 
 ### Round 2 (Nov 2–3)
-- Deployed to workers.dev (`npm run deploy -w @pact/worker`), invite-only sign-up (`INVITE_CODE`), simulated PayPal in production. Agent hardening merged: live evals 97.9% overall, 100% red-team ×3.
+- Deployed to https://caaash.shipwith.si (`npm run deploy -w @pact/worker`; workers.dev is off), invite-only sign-up (`INVITE_CODE`), simulated PayPal in production. Agent hardening merged: live evals 97.9% overall, 100% red-team ×3.
 - Redesign: light lavender theme (dark kept as a toggle), Geist, pill buttons, 24–32px cards; app restyled through the shared tokens in `apps/web/src/styles/tokens.css`.
 - Landing at `/`: prerendered HTML with inlined CSS and its own small Tailwind build; the app loads from `app.html`, served by the worker for `/app*`. Art generated with fal.ai (`apps/web/scripts/gen-art.ts`, `optimize-art.ts`), 4–12 KB AVIF each.
 - Lighthouse (local build): mobile 98/100/100/100 (LCP 2.1s on slow 4G, CLS 0, TBT 0); desktop 100/100/100/100 (LCP 0.5s).
