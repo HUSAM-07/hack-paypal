@@ -25,6 +25,8 @@ export interface Env {
   /** Comma-separated origins allowed for WebAuthn and WebSocket upgrades. */
   ORIGINS: string;
   DEV_AUTH?: string;
+  /** When set, creating an account requires this code. Unset means open sign-up. */
+  INVITE_CODE?: string;
 
   /**
    * "sandbox" | "live" call PayPal; "simulated" fakes charges locally so dev and tests

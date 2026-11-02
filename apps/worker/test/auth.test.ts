@@ -2,10 +2,14 @@ import { describe, expect, it } from "vitest";
 import { VirtualAuthenticator } from "./helpers/authenticator";
 import { api, cookieFrom } from "./helpers/client";
 
-async function register(username: string, authr: VirtualAuthenticator) {
+async function register(
+  username: string,
+  authr: VirtualAuthenticator,
+  inviteCode: string | null = "test-invite",
+) {
   const optsRes = await api("/api/auth/register/options", {
     method: "POST",
-    body: JSON.stringify({ username }),
+    body: JSON.stringify({ username, ...(inviteCode === null ? {} : { inviteCode }) }),
   });
   if (!optsRes.ok) return optsRes;
   const opts = (await optsRes.json()) as Parameters<VirtualAuthenticator["register"]>[0];
@@ -61,6 +65,17 @@ describe("passkey auth", () => {
       body: JSON.stringify({ response: await authr.assert(challenge) }),
     });
     expect(replay.status).toBe(400);
+  });
+
+  it("requires the invite code to create an account", async () => {
+    const authr = await VirtualAuthenticator.create();
+    const missing = await register("carol", authr, null);
+    expect(missing.status).toBe(403);
+    expect(await missing.json()).toEqual({ error: "invite_required" });
+    expect((await register("carol", authr, "test-invitE")).status).toBe(403);
+    expect((await register("carol", authr)).status).toBe(200);
+    // A taken username still answers 403 without the invite, so it can't be probed.
+    expect((await register("carol", await VirtualAuthenticator.create(), "nope")).status).toBe(403);
   });
 
   it("rejects forged session cookies", async () => {

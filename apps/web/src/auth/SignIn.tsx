@@ -18,6 +18,7 @@ const USERNAME = /^[a-z0-9_.-]{3,32}$/;
 function explain(e: unknown): string {
   if (e instanceof AuthError) {
     if (e.message === "username_taken") return "That username is taken.";
+    if (e.message === "invite_required") return "That invite code isn't valid.";
     if (e.message === "verification_failed") return "The passkey couldn't be verified.";
     if (e.status === 429) return "Too many attempts. Wait a minute and try again.";
     return e.message;
@@ -32,7 +33,11 @@ type Mode = "signin" | "create";
 
 export function SignIn({ onSignedIn }: { onSignedIn: (m: Me) => void }) {
   const reduce = useReducedMotion();
-  const [mode, setMode] = useState<Mode>("signin");
+  // An invite link (`/app?invite=…`) opens straight on sign-up with the code filled in.
+  const [invite, setInvite] = useState(
+    () => new URLSearchParams(window.location.search).get("invite") ?? "",
+  );
+  const [mode, setMode] = useState<Mode>(invite ? "create" : "signin");
   const [username, setUsername] = useState("");
   const [displayName, setDisplayName] = useState("");
   const [busy, setBusy] = useState(false);
@@ -52,7 +57,10 @@ export function SignIn({ onSignedIn }: { onSignedIn: (m: Me) => void }) {
   const validName = USERNAME.test(username);
   const create = (e: FormEvent) => {
     e.preventDefault();
-    if (validName) void run(() => registerPasskey(username, displayName.trim() || undefined));
+    if (validName)
+      void run(() =>
+        registerPasskey(username, displayName.trim() || undefined, invite.trim() || undefined),
+      );
   };
 
   return (
@@ -131,6 +139,17 @@ export function SignIn({ onSignedIn }: { onSignedIn: (m: Me) => void }) {
                   onChange={(e) => setDisplayName(e.target.value)}
                   autoComplete="name"
                   maxLength={60}
+                  className={INPUT}
+                />
+              </Field>
+              <Field label="Invite code" hint="Pact is invite-only during the preview">
+                <input
+                  value={invite}
+                  onChange={(e) => setInvite(e.target.value)}
+                  autoComplete="off"
+                  autoCapitalize="none"
+                  spellCheck={false}
+                  maxLength={128}
                   className={INPUT}
                 />
               </Field>

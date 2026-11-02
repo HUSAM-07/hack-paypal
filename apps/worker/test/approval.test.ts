@@ -132,7 +132,7 @@ describe("approvals", () => {
     const authr = await VirtualAuthenticator.create();
     const optsRes = await api("/api/auth/register/options", {
       method: "POST",
-      body: JSON.stringify({ username: "stepup1", displayName: "Step" }),
+      body: JSON.stringify({ username: "stepup1", displayName: "Step", inviteCode: "test-invite" }),
     });
     const flow = cookieFrom(optsRes, "pact_flow");
     const regOpts = (await optsRes.json()) as Parameters<VirtualAuthenticator["register"]>[0];

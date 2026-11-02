@@ -26,6 +26,7 @@ const Username = z
 const RegisterOptionsBody = z.object({
   username: Username,
   displayName: z.string().min(1).max(80).optional(),
+  inviteCode: z.string().max(128).optional(),
 });
 const VerifyBody = z.object({ response: z.record(z.string(), z.unknown()) });
 const StepUpBody = z.object({
@@ -88,11 +89,26 @@ async function parseBody<T extends z.ZodType>(c: C, schema: T): Promise<z.infer<
   return parsed.success ? parsed.data : null;
 }
 
+/**
+ * Sign-up is invite-only when INVITE_CODE is set, since every account spends model
+ * credits. Comparing digests keeps the check constant-time whatever the input length.
+ */
+async function inviteAccepted(env: Env, code: string | undefined): Promise<boolean> {
+  if (!env.INVITE_CODE) return true;
+  const digest = (s: string) => crypto.subtle.digest("SHA-256", new TextEncoder().encode(s));
+  const [given, expected] = await Promise.all([digest(code ?? ""), digest(env.INVITE_CODE)]);
+  return crypto.subtle.timingSafeEqual(given, expected);
+}
+
 export const auth = new Hono<{ Bindings: Env }>();
 
 auth.post("/register/options", async (c) => {
   const body = await parseBody(c, RegisterOptionsBody);
   if (!body) return c.json({ error: "invalid_request" }, 400);
+  // Before the username lookup, so people without an invite can't probe for usernames.
+  if (!(await inviteAccepted(c.env, body.inviteCode))) {
+    return c.json({ error: "invite_required" }, 403);
+  }
   const taken = await c.env.DB.prepare("SELECT 1 FROM users WHERE username = ?")
     .bind(body.username)
     .first();

@@ -44,10 +44,14 @@ export async function me(): Promise<Me | null> {
 }
 
 /** Creates an account bound to a new passkey on this device. */
-export async function registerPasskey(username: string, displayName?: string): Promise<Me> {
+export async function registerPasskey(
+  username: string,
+  displayName?: string,
+  inviteCode?: string,
+): Promise<Me> {
   const optionsJSON = await post<Parameters<typeof startRegistration>[0]["optionsJSON"]>(
     "/api/auth/register/options",
-    { username, ...(displayName ? { displayName } : {}) },
+    { username, ...(displayName ? { displayName } : {}), ...(inviteCode ? { inviteCode } : {}) },
   );
   const response = await startRegistration({ optionsJSON });
   return post<Me>("/api/auth/register/verify", { response });

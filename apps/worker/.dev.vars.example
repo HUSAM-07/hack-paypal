@@ -16,3 +16,5 @@ PAYPAL_CLIENT_ID=
 PAYPAL_CLIENT_SECRET=
 # Printed by `npx tsx packages/paypal/spikes/09-webhooks.ts` once PAYPAL_WEBHOOK_URL is set.
 PAYPAL_WEBHOOK_ID=
+# When set, creating an account needs this code (share /app?invite=<code>). Empty = open.
+INVITE_CODE=

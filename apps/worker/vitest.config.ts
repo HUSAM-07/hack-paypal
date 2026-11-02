@@ -31,6 +31,7 @@ export default defineConfig(async () => ({
           RP_ID: "localhost",
           ORIGINS: "http://localhost:5173",
           DEV_AUTH: "1",
+          INVITE_CODE: "test-invite",
           // Tests that exercise PayPal switch to sandbox via setPayPalTestOverrides().
           PAYPAL_MODE: "simulated",
           PAYPAL_CLIENT_ID: "test-client-id",
