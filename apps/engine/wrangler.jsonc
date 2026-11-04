@@ -1,0 +1,13 @@
+{
+  "$schema": "../../node_modules/wrangler/config-schema.json",
+  "name": "cited-engine",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-10-28",
+  "compatibility_flags": ["nodejs_compat"],
+  // Local D1 only for now; the real database_id is set when the engine is deployed.
+  "d1_databases": [{ "binding": "DB", "database_name": "cited", "database_id": "local" }],
+  "vars": {
+    "PAYPAL_MODE": "simulated",
+    "MODEL_PROVIDER": "fake"
+  }
+}

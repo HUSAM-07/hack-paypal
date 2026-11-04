@@ -15,7 +15,8 @@
     "test": "npm run test --workspaces --if-present",
     "lint": "biome check .",
     "format": "biome format --write .",
-    "evals": "npm run evals -w @pact/evals --"
+    "evals": "npm run evals -w @pact/evals --",
+    "dev:cited": "node scripts/dev-cited.mjs"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.6.4",
