@@ -8,11 +8,16 @@
   },
   "scripts": {
     "dev": "tsx watch src/dev.ts",
+    "run:sessions": "tsx src/cli.ts",
     "typecheck": "tsc -p tsconfig.json",
     "test": "vitest run"
   },
   "dependencies": {
+    "@cited/catalogue-mcp": "*",
+    "@cited/shops": "*",
     "@hono/node-server": "^1.19.0",
+    "@modelcontextprotocol/sdk": "^1.32.2",
+    "@pact/protocol": "*",
     "hono": "^4.13.16"
   },
   "devDependencies": {
