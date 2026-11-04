@@ -1,4 +1,5 @@
 import { Hono } from "hono";
+import { api } from "./api";
 import type { Env } from "./env";
 import { webhooks } from "./webhooks";
 
@@ -6,6 +7,7 @@ import { webhooks } from "./webhooks";
 export const app = new Hono<{ Bindings: Env }>();
 
 app.route("/webhooks", webhooks);
+app.route("/api", api);
 
 app.get("/health", (c) =>
   c.json({
