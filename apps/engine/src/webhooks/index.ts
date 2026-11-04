@@ -6,8 +6,13 @@
 import { parseWebhookEvent, verifyWebhookSelf } from "@pact/paypal";
 import { fromPayPalValue, type Money } from "@pact/protocol";
 import { Hono } from "hono";
+import { applyVoids } from "../credits";
 import type { Env } from "../env";
+import { applyBatchStatus } from "../payouts";
 import { type CaptureFacts, readItems, recordCapture, shopOf } from "./join";
+
+/** Programme deposits are Orders v2 captures too; they are money in, not sales. */
+const isDeposit = (customId: string | undefined) => !!customId?.startsWith("cited-dep:");
 
 const MAX_BODY = 256 * 1024;
 
@@ -79,7 +84,7 @@ async function dispatch(env: Env, eventId: string, type: string, r: Raw): Promis
     case "CHECKOUT.ORDER.APPROVED": {
       const orderId = str(r.id);
       const unit = obj((Array.isArray(r.purchase_units) ? r.purchase_units : [])[0]);
-      if (!orderId || !unit) return true;
+      if (!orderId || !unit || isDeposit(str(unit.custom_id))) return true;
       await env.DB.prepare(
         `INSERT INTO orders (order_id, custom_id, shop_id, items_json, approved_at)
          VALUES (?, ?, ?, ?, ?)
@@ -107,6 +112,7 @@ async function dispatch(env: Env, eventId: string, type: string, r: Raw): Promis
         items: readItems(r.items),
       };
       const customId = str(r.custom_id);
+      if (isDeposit(customId)) return true;
       const amount = money(r.amount);
       if (customId) facts.customId = customId;
       if (amount) facts.amount = amount;
@@ -148,6 +154,15 @@ async function dispatch(env: Env, eventId: string, type: string, r: Raw): Promis
       });
       return true;
     }
+    case "PAYMENT.PAYOUTSBATCH.PROCESSING":
+    case "PAYMENT.PAYOUTSBATCH.SUCCESS":
+    case "PAYMENT.PAYOUTSBATCH.DENIED": {
+      const header = obj(r.batch_header);
+      const batchId = str(header?.payout_batch_id);
+      const status = str(header?.batch_status);
+      if (batchId && status) await applyBatchStatus(env, batchId, status);
+      return true;
+    }
     default:
       return false;
   }
@@ -182,4 +197,5 @@ async function storeRefund(
       now(),
     )
     .run();
+  await applyVoids(env, x.captureId);
 }

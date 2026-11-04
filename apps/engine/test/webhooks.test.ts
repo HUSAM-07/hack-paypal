@@ -77,7 +77,9 @@ const sale = (captureId: string) =>
 
 describe("capture join", () => {
   it("joins a cross-shop sale (test shown at Northwind, paid at Lumen) to its arm", async () => {
-    await e.DB.prepare("INSERT INTO agent_sessions VALUES (?, ?, ?)")
+    await e.DB.prepare(
+      "INSERT INTO agent_sessions (session_id, model, created_at) VALUES (?, ?, ?)",
+    )
       .bind("sess1", "gpt", "now")
       .run();
     const token = await signPassport(body(), KEY);
