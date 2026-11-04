@@ -1,0 +1,6 @@
+i6r1 forced (2 runs) T 41/56 P 16/54 lift +0.436 se 0.086 w 0.49
+i6r3 forced T 22/32 P 10/32 lift +0.375 se 0.116 w 0.28
+i7r1 abstain-allowed T 13/26 P 12/25 lift +0.020 se 0.140 w 0.23
+ALL RUNS stratified +0.324 95% [+0.203,+0.446] 80%LB +0.272
+projected extra completed Winix purchases per 200 exposed sessions 54 fee 8% x 95.99 = 414.68 refund 585.32
+abstain-allowed run alone: T (13, 26) P (12, 25)

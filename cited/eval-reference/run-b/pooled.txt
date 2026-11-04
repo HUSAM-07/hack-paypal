@@ -1,0 +1,8 @@
+pooled T (41, 56) P (16, 54) C (11, 36) T-P +0.436 95% [+0.268,+0.604] 80%LB +0.364
+P-C -0.009 95% [-0.203,+0.184]
+gpt-5.6-luna T (8, 23) P (4, 22) lift +0.17
+gemini-3.5-flash T (23, 23) P (11, 22) lift +0.50
+claude-sonnet-5-5 T (10, 10) P (1, 10) lift +0.90
+stratified +0.436 95% [+0.293,+0.579] 80%LB +0.375
+units/200 exposed sessions 75 fee 8% of $95.99 -> 575.94
+T Winix at Lumen 25 41 late-days Lumen 22 22
