@@ -20,13 +20,13 @@
 **60-second demo:**
 1. Winix and Levoit fund the purifier programme.
 2. Exposed agent buys Winix at Lumen; held-out buys Levoit.
-3. Day 30: $391.64 to HouseFresh, $608.36 of Winix's $1,000 returns; Levoit pays $0. A refund voids one credit.
+3. A buyer returns one Winix and that pending credit is voided ($7.68). Day 30: $383.96 to HouseFresh, $616.04 of Winix's $1,000 returns; Levoit pays $0.
 4. Analyst: "Clear-winner purifier tests move agents +94pp when the rival is priced alike; close verdicts pay $0. Raise the purifier cap." Maya approves.
 
 **Evidence** (`packages/evals/results/cited*`, each pre-registered in `packages/evals/scenarios/cited`; GPT/Gemini/Sonnet):
 - *Measured, price-matched (headline; Levoit priced like Winix at every shop):* purifiers, 147 forced-buy sessions, Winix share exposed 57/57 (100%), placebo 3/54 (6%), nothing 3/36 (8%). Lift +94pp (80% bound +90.3pp), positive in all three models (GPT +89, Gemini +100, Sonnet +94). Agents otherwise default to Levoit and flip when shown a test that names Winix, so this mostly measures deference to an explicit verdict. With Levoit $4 cheaper: +96pp (bound +92.6pp). Abstain allowed: +82pp (bound +77.2pp); among buyers +92pp (bound +86.3pp); Gemini declines more without the test.
 - *Measured, Winix already cheaper (catalogue prices):* 147 sessions, share 100% / 76% / 69%, lift +24pp (bound +18.8pp), Sonnet 0 (it bought Winix anyway). Price decided most picks, so exposure had little to add. Abstain allowed: +14pp, but 0 among buyers (bound −4.2pp). Narrow verdict (81): lift 0, bound −6.0pp, $0; QuietMax won every arm on price, so this is weak evidence.
-- *Derived:* 57 exposed sales (one per exposed agent) × 90.3% (90.3pp/100%) = 51 units × $95.99 × 8% = $391.64; $608.36 of the $1,000 deposit returns. (Winix-cheaper study: 37 units of 200 sales, $284.13.)
+- *Derived:* 57 exposed sales (one per exposed agent) × 90.3% (90.3pp/100%) = 51 units × $95.99 × 8% = $391.64 credited; one refund voids one credit (−$7.68), so $383.96 is paid and $616.04 of the $1,000 deposit returns. (Winix-cheaper study: 37 units of 200 sales, $284.13.)
 - *Scripted:* Lumen's $4 discount, the $1,000 deposit, equal Winix and Levoit prices.
 
 **Closest:** Honey, impact.com pay per click; Comet Plus/ProRata per citation. None pays on randomised purchase holdouts.

@@ -38,9 +38,9 @@ numbers come out of the real pipeline. Two runs with one seed give byte-identica
 
 **The refund beat.** A void only applies to a *pending* credit (rule 5), so the order matters:
 
-- `--refund before-payout` (default): the refund voids one credit first. The ledger still shows
-  $391.64 credited, but HouseFresh is paid $383.96 and $616.04 returns.
-- `--refund after-payout`: the card's $391.64 is paid and $608.36 returned exactly; the late refund
+- `--refund before-payout` (default, matches the card): the refund voids one credit first. $391.64
+  credited, −$7.68 voided, $383.96 paid to HouseFresh, $616.04 returned.
+- `--refund after-payout`: $391.64 is paid and $608.36 returned; the late refund
   can't claw back a paid credit and shows as a review flag.
 
 ### Flags
