@@ -1,8 +1,11 @@
 import { Hono } from "hono";
 import type { Env } from "./env";
+import { webhooks } from "./webhooks";
 
 /** Skeleton: webhooks, arm-checkout join, credit ledger, payouts, refunds, Studio read API. */
 export const app = new Hono<{ Bindings: Env }>();
+
+app.route("/webhooks", webhooks);
 
 app.get("/health", (c) =>
   c.json({
