@@ -7,6 +7,7 @@ const apps = [
   ["shops", "@cited/shops", 8802],
   ["agents", "@cited/agents", 8803],
   ["studio", "@cited/studio", 8804],
+  ["console", "@cited/console", 8805],
 ];
 
 const env = {
