@@ -5,7 +5,7 @@ import { call, e, LEVOIT, PRICE, seedExperiment, WINIX } from "./helpers";
 type Json = Record<string, any>;
 
 describe("CITED demo money flow (simulated PayPal)", () => {
-  it("funds both brands, credits 102 Winix units, pays HouseFresh and returns the rest", async () => {
+  it("funds both brands, credits 51 Winix units, pays HouseFresh and returns the rest", async () => {
     await call("POST", "/brands", {
       brandId: "winix",
       name: "Winix",
@@ -44,25 +44,25 @@ describe("CITED demo money flow (simulated PayPal)", () => {
     // 2. Sales and sessions arrive, then the engine credits what the test caused.
     await seedExperiment();
     const lift = await call<Json>("GET", "/lift/winix");
-    expect(lift.json.exposedSales).toBe(200);
-    expect(lift.json.causedUnits).toBe(102);
-    expect(lift.json.lowerBound).toBeGreaterThan(0.37);
+    expect(lift.json.exposedSales).toBe(57);
+    expect(lift.json.causedUnits).toBe(51);
+    expect(lift.json.lowerBound).toBeGreaterThan(0.9);
     expect(lift.json.perModel).toHaveLength(3);
     const rival = await call<Json>("GET", "/lift/levoit");
     expect(rival.json.causedUnits).toBe(0);
     expect(rival.json.lowerBound).toBeLessThan(0);
 
     const rec = await call<Json>("POST", "/credits/recompute");
-    expect(rec.json.created).toBe(102);
+    expect(rec.json.created).toBe(51);
     expect(rec.json.brands).toMatchObject([
       { brandId: "levoit", causedUnits: 0, newCredits: 0 },
-      { brandId: "winix", causedUnits: 102, newCredits: 102 },
+      { brandId: "winix", causedUnits: 51, newCredits: 51 },
     ]);
     expect((await call<Json>("POST", "/credits/recompute")).json.created).toBe(0);
 
     const before = await call<Json>("GET", "/credits");
     expect(before.json.creators).toHaveLength(1);
-    expect(before.json.creators[0].totals).toEqual({ pending: 78_328, voided: 0, paid: 0 });
+    expect(before.json.creators[0].totals).toEqual({ pending: 39_164, voided: 0, paid: 0 });
 
     // Nothing is paid inside the 30-day hold.
     expect(((await call<Json>("POST", "/payouts/run")).json as Json).status).toBe("nothing_due");
@@ -77,10 +77,10 @@ describe("CITED demo money flow (simulated PayPal)", () => {
       receiver: "HOUSEFRESH-PP",
       recipient_type: "PAYPAL_ID",
     });
-    expect(batch?.items[0]?.amount).toEqual({ amountMinor: 78_328, currency: "USD" });
+    expect(batch?.items[0]?.amount).toEqual({ amountMinor: 39_164, currency: "USD" });
 
     const paid = await call<Json>("GET", "/credits");
-    expect(paid.json.creators[0].totals).toEqual({ pending: 0, voided: 0, paid: 78_328 });
+    expect(paid.json.creators[0].totals).toEqual({ pending: 0, voided: 0, paid: 39_164 });
     expect(paid.json.creators[0].credits[0].payoutStatus).toBe("SUCCESS");
 
     // A retry (credits reset after a crash that lost the DB write) reuses the batch, no second payout.
@@ -88,17 +88,17 @@ describe("CITED demo money flow (simulated PayPal)", () => {
     const retry = await call<Json>("POST", "/payouts/run");
     expect(retry.json.senderBatchId).toBe(day30.json.payout.senderBatchId);
     expect(mock?.state.batches.size).toBe(1);
-    expect((await call<Json>("GET", "/credits")).json.creators[0].totals.paid).toBe(78_328);
+    expect((await call<Json>("GET", "/credits")).json.creators[0].totals.paid).toBe(39_164);
 
     // 4. End of cycle: unspent deposits go back through captures/{id}/refund.
     const close = await call<Json>("POST", "/cycle/close");
     const byBrand = Object.fromEntries(close.json.brands.map((b: Json) => [b.brandId, b]));
-    expect(byBrand.winix).toMatchObject({ spent: 78_328, returnedNow: 21_672, reserved: 0 });
+    expect(byBrand.winix).toMatchObject({ spent: 39_164, returnedNow: 60_836, reserved: 0 });
     expect(byBrand.levoit).toMatchObject({ spent: 0, returnedNow: 100_000 });
     const refunded = [...(mock?.state.captures.values() ?? [])]
       .map((c) => c.refunded)
       .sort((a, b) => a - b);
-    expect(refunded).toEqual([21_672, 100_000]);
+    expect(refunded).toEqual([60_836, 100_000]);
     expect(
       (await call<Json>("POST", "/cycle/close")).json.brands.map((b: Json) => b.returnedNow),
     ).toEqual([0, 0]);
@@ -111,8 +111,8 @@ describe("CITED demo money flow (simulated PayPal)", () => {
     const winix = deposits.json.brands.find((b: Json) => b.brandId === "winix");
     expect(winix).toMatchObject({
       deposited: 100_000,
-      spent: 78_328,
-      returned: 21_672,
+      spent: 39_164,
+      returned: 60_836,
       available: 0,
     });
     expect(winix.refunds).toHaveLength(1);
@@ -121,7 +121,7 @@ describe("CITED demo money flow (simulated PayPal)", () => {
     const caused = await call<Json>("GET", "/caused-units");
     expect(caused.json.skus).toMatchObject([
       { brandId: "levoit", causedUnits: 0 },
-      { brandId: "winix", causedUnits: 102, exposedSales: 200 },
+      { brandId: "winix", causedUnits: 51, exposedSales: 57 },
     ]);
     const j = await call<Json>("GET", "/journeys?limit=200");
     const trip = j.json.journeys.find(
@@ -138,8 +138,8 @@ describe("CITED demo money flow (simulated PayPal)", () => {
       { creatorId: "housefresh", amountMinor: expect.any(Number), state: "paid" },
     ]);
     const sh = await call<Json>("GET", "/shapley");
-    expect(sh.json.sales).toHaveLength(102);
-    expect(sh.json.sales.reduce((a: number, s: Json) => a + s.totalMinor, 0)).toBe(78_328);
+    expect(sh.json.sales).toHaveLength(51);
+    expect(sh.json.sales.reduce((a: number, s: Json) => a + s.totalMinor, 0)).toBe(39_164);
     expect((await call<Json>("GET", "/payouts")).json.batches).toHaveLength(1);
   });
 });

@@ -28,9 +28,10 @@ export const PRICE = 9599; // $95.99 at Lumen
 const MODELS = ["gpt", "gemini", "sonnet"] as const;
 
 /**
- * Seed the pre-registered purifier experiment's shape: 56 exposed / 54 placebo / 36 held-out
- * sessions across three models. Winix buyers are 5+18+18 exposed and 2+7+7 placebo, which
- * the lift maths turns into 51% of 200 exposed sales = 102 caused units.
+ * Seed the price-matched purifier study's shape (packages/evals/results/cited-price-matched):
+ * 19 exposed / 18 placebo / 12 held-out sessions per model. Every exposed session bought Winix
+ * (57/57); placebo Winix buyers are GPT 2, Gemini 0, Sonnet 1 (3/54). Each buyer makes one sale,
+ * so 57 exposed sales; the lift maths credits 90.3% of them = 51 caused units.
  */
 export async function seedExperiment(): Promise<void> {
   const stmts: D1PreparedStatement[] = [];
@@ -59,10 +60,10 @@ export async function seedExperiment(): Promise<void> {
       ),
     );
 
-  const exposedSessions = [19, 19, 18];
+  const exposedSessions = [19, 19, 19];
   const placeboSessions = [18, 18, 18];
-  const winixExposed = [5, 18, 18];
-  const winixPlacebo = [2, 7, 7];
+  const winixExposed = [19, 19, 19];
+  const winixPlacebo = [2, 0, 1];
   let n = 0;
   let exposedBuyers = 0;
   MODELS.forEach((model, m) => {
@@ -79,20 +80,17 @@ export async function seedExperiment(): Promise<void> {
     }
     for (let i = 0; i < 12; i++) session(`n-${model}-${i}`, model, "none");
   });
-  // 200 exposed Winix sales spread over the 41 exposed Winix buyers (36×5 + 5×4).
-  let k = 0;
+  // One exposed Winix sale per exposed buyer.
   MODELS.forEach((model, m) => {
-    for (let i = 0; i < (winixExposed[m] as number); i++) {
-      const count = k++ < 36 ? 5 : 4;
-      for (let j = 0; j < count; j++) sale(++n, `x-${model}-${i}`, model, "test", WINIX);
-    }
+    for (let i = 0; i < (winixExposed[m] as number); i++)
+      sale(++n, `x-${model}-${i}`, model, "test", WINIX);
   });
   // Exposed sessions that did not buy Winix bought the rival.
   MODELS.forEach((model, m) => {
     for (let i = winixExposed[m] as number; i < (exposedSessions[m] as number); i++)
       sale(++n, `x-${model}-${i}`, model, "test", LEVOIT);
   });
-  expectLength(exposedBuyers, 41);
+  expectLength(exposedBuyers, 57);
   for (let i = 0; i < stmts.length; i += 50) await e.DB.batch(stmts.slice(i, i + 50));
 }
 

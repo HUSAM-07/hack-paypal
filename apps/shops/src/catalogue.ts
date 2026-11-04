@@ -1,4 +1,4 @@
-import { type Money, UPC_LEVOIT_CORE300, UPC_WINIX_A230 } from "@pact/protocol";
+import { DEMO_SHOP_PRICES, type Money, UPC_LEVOIT_CORE300, UPC_WINIX_A230 } from "@pact/protocol";
 
 /** The one product + price table. The catalogue MCP imports this so its prices match the shops. */
 export const SHOP_IDS = ["northwind", "lumen", "megamart"] as const;
@@ -36,25 +36,30 @@ export const PRODUCTS: Product[] = [
   },
 ];
 
+const pricesFor = (shop: ShopId): Record<string, Money> =>
+  Object.fromEntries(
+    Object.entries(DEMO_SHOP_PRICES[shop]).map(([upc, minor]) => [upc, usd(minor)]),
+  );
+
 export const SHOPS: Record<ShopId, Shop> = {
   northwind: {
     id: "northwind",
     name: "Northwind",
     tagline: "Considered goods for the home",
-    prices: { [UPC_WINIX_A230]: usd(9999), [UPC_LEVOIT_CORE300]: usd(9999) },
+    prices: pricesFor("northwind"),
   },
-  // $4 under Northwind on the Winix: where exposed agents end up paying in the demo.
+  // $4 under Northwind: where exposed agents end up paying in the demo.
   lumen: {
     id: "lumen",
     name: "Lumen",
     tagline: "Everyday home essentials",
-    prices: { [UPC_WINIX_A230]: usd(9599), [UPC_LEVOIT_CORE300]: usd(9799) },
+    prices: pricesFor("lumen"),
   },
   megamart: {
     id: "megamart",
     name: "MegaMart",
     tagline: "Everything under one roof",
-    prices: { [UPC_WINIX_A230]: usd(10499), [UPC_LEVOIT_CORE300]: usd(9499) },
+    prices: pricesFor("megamart"),
   },
 };
 

@@ -59,12 +59,12 @@ describe("refunds, top-ups and access", () => {
       voidReason: "refund",
     });
     expect(after.totals.voided).toBe(first?.amountMinor);
-    expect(after.totals.pending).toBe(78_328 - first?.amountMinor);
+    expect(after.totals.pending).toBe(39_164 - first?.amountMinor);
 
     // Pay at day 30: the voided credit is not paid, and its money goes back with the rest.
     await call("POST", "/clock/advance", { to: "2026-12-02T00:00:00.000Z" });
     const paid = (await call<Json>("GET", "/credits")).json.creators[0].totals;
-    expect(paid.paid).toBe(78_328 - first?.amountMinor);
+    expect(paid.paid).toBe(39_164 - first?.amountMinor);
     const close = (await call<Json>("POST", "/cycle/close", { brandIds: ["winix"] })).json
       .brands[0];
     expect(close.returnedNow).toBe(100_000 - paid.paid);

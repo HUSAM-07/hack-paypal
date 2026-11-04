@@ -1,5 +1,6 @@
 import {
   airlabWinixTest,
+  DEMO_SHOP_PRICES,
   housefreshPlacebo,
   housefreshWinixTest,
   type Money,
@@ -18,33 +19,19 @@ export interface Listing {
 
 const usd = (amountMinor: number): Money => ({ amountMinor, currency: "USD" });
 
-/** Lumen is $4 cheaper on Winix: the scripted cross-shop moment. */
-const ALL_LISTINGS: Listing[] = [
-  { shopId: "northwind", upc: UPC_WINIX_A230, brand: "Winix", name: "A230", price: usd(9999) },
-  { shopId: "lumen", upc: UPC_WINIX_A230, brand: "Winix", name: "A230", price: usd(9599) },
-  { shopId: "megamart", upc: UPC_WINIX_A230, brand: "Winix", name: "A230", price: usd(10299) },
-  {
-    shopId: "northwind",
-    upc: UPC_LEVOIT_CORE300,
-    brand: "Levoit",
-    name: "Core 300",
-    price: usd(10999),
-  },
-  {
-    shopId: "lumen",
-    upc: UPC_LEVOIT_CORE300,
-    brand: "Levoit",
-    name: "Core 300",
-    price: usd(10799),
-  },
-  {
-    shopId: "megamart",
-    upc: UPC_LEVOIT_CORE300,
-    brand: "Levoit",
-    name: "Core 300",
-    price: usd(11299),
-  },
+const BRANDS = [
+  { upc: UPC_WINIX_A230, brand: "Winix", name: "A230" } as const,
+  { upc: UPC_LEVOIT_CORE300, brand: "Levoit", name: "Core 300" } as const,
 ];
+
+/** Prices come from the shared demo table, so the catalogue and the shops always agree. */
+const ALL_LISTINGS: Listing[] = BRANDS.flatMap((b) =>
+  (Object.keys(DEMO_SHOP_PRICES) as (keyof typeof DEMO_SHOP_PRICES)[]).map((shopId) => ({
+    shopId,
+    ...b,
+    price: usd(DEMO_SHOP_PRICES[shopId][b.upc]),
+  })),
+);
 
 /**
  * Ranking depends only on the query and the listings (price, then shop, then UPC).

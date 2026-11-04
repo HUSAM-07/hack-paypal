@@ -27,13 +27,13 @@ open http://localhost:3000  # Northwind (Shopify), Lumen (WooCommerce), MegaMart
 
 ## (a2) Number provenance
 
-Measured, price-matched headline: 147 sessions, Winix share 57/57, 3/54, 3/36, lift +94pp, bound +90.3pp (abstain-allowed +82pp; buyers only +92pp). Measured, Winix cheaper: 147 sessions, 57/57, 41/54, 25/36, lift +24pp, bound +18.8pp; narrow verdict 81 sessions, bound −6.0pp, $0. Derived: 50 exposed sales → 45 units, $345.56, refund $654.44. Scripted: Lumen's $4 discount, 50 exposed sales, the $1,000 deposit, equal Winix and Levoit prices, the Maya approval. Sources: `packages/evals/results/cited/summary.md`, `packages/evals/results/cited-price-matched/summary.md`.
+Measured, price-matched headline: 147 sessions, Winix share 57/57, 3/54, 3/36, lift +94pp, bound +90.3pp (abstain-allowed +82pp; buyers only +92pp). Measured, Winix cheaper: 147 sessions, 57/57, 41/54, 25/36, lift +24pp, bound +18.8pp; narrow verdict 81 sessions, bound −6.0pp, $0. Derived: 57 exposed sales → 51 units, $391.64, refund $608.36. Scripted: Lumen's $4 discount, the $1,000 deposit, equal Winix and Levoit prices, the Maya approval. Sources: `packages/evals/results/cited/summary.md`, `packages/evals/results/cited-price-matched/summary.md`.
 
 **Demo prices (to match the headline study):** Levoit Core 300 priced the same as Winix A230 in every shop: Northwind $99.99, Lumen $95.99, MegaMart $102.99. Today `apps/catalogue-mcp/src/listings.ts` lists Levoit at $109.99 / $107.99 / $112.99 and must change (the shops and any demo seed too). Lumen stays $4 cheaper than Northwind for both brands, so the cross-shop moment is unchanged.
 
 ## (b) 3-minute demo script
 
-**0:00-0:20 Hook.** A PayPal notification: $345.56 lands in HouseFresh's account. "HouseFresh tested two bedroom purifiers. AI agents read the test and bought dozens more of the winner. Nobody clicked a link."
+**0:00-0:20 Hook.** A PayPal notification: $391.64 lands in HouseFresh's account. "HouseFresh tested two bedroom purifiers. AI agents read the test and bought dozens more of the winner. Nobody clicked a link."
 
 **0:20-0:50 Money beat.** Winix and Levoit each join the purifier programme, and each pays only for its own extra sales. Neither tells HouseFresh what to say. Two agents get the same request: "Small bedroom purifier, light sleeper, around $100, just buy it." One is shown the test and buys the Winix. The other sees everything except the test and buys the Levoit. The order never changes. A buyer returns one Winix, and that commission disappears.
 
@@ -41,6 +41,6 @@ Measured, price-matched headline: 147 sessions, Winix share 57/57, 3/54, 3/36, l
 
 **1:20-1:50 Proof.** "147 agent sessions, Winix and Levoit priced the same. Agents shown the test chose the Winix 94 points more often than agents shown other content from the same creator. When the Winix was already the cheaper one, the lift was a smaller 24 points. A close-verdict test moved nothing, and paid nothing."
 
-**1:50-2:40 AG Studio.** Maya, Winix's brand manager, sees "+45 extra Winix": only the sales the test caused. Winix pays $345.56 to HouseFresh; $654.44 returns. Levoit's sales didn't lift, so Levoit pays nothing. Her analyst agent, using the built-in Data and Chart agents, says: "Tests with a clear winner move agents 94 points; close verdicts pay nothing. Raise the purifier budget." Maya approves. Money buys honest tests, never a better spot. Like an affiliate link, it pays only when the product sells, but only for sales the test caused.
+**1:50-2:40 AG Studio.** Maya, Winix's brand manager, sees "+51 extra Winix": only the sales the test caused. Winix pays $391.64 to HouseFresh; $608.36 returns. Levoit's sales didn't lift, so Levoit pays nothing. Her analyst agent, using the built-in Data and Chart agents, says: "Tests with a clear winner move agents 94 points; close verdicts pay nothing. Raise the purifier budget." Maya approves. Money buys honest tests, never a better spot. Like an affiliate link, it pays only when the product sells, but only for sales the test caused.
 
 **2:40-3:00 Close.** "Agents read. Now the people they read get paid for what they prove, through PayPal."

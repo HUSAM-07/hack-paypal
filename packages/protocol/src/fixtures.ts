@@ -22,3 +22,14 @@ export const fixtures: VerifiedTest[] = [
   airlabWinixTest,
   narrowCloseTest,
 ];
+
+/**
+ * Demo shop prices, shared by the catalogue MCP and the shops so they never disagree.
+ * Levoit is priced the same as Winix in every shop, matching the price-matched eval
+ * (packages/evals/results/cited-price-matched). Lumen is $4 under Northwind for both.
+ */
+export const DEMO_SHOP_PRICES = {
+  northwind: { [UPC_WINIX_A230]: 9999, [UPC_LEVOIT_CORE300]: 9999 },
+  lumen: { [UPC_WINIX_A230]: 9599, [UPC_LEVOIT_CORE300]: 9599 },
+  megamart: { [UPC_WINIX_A230]: 10299, [UPC_LEVOIT_CORE300]: 10299 },
+} as const satisfies Record<string, Record<string, number>>;

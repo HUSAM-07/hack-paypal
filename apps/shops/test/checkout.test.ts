@@ -122,7 +122,7 @@ describe("storefronts", () => {
     }
     expect(html.northwind).toContain("$99.99");
     expect(html.lumen).toContain("$95.99");
-    expect(html.megamart).toContain("$104.99");
+    expect(html.megamart).toContain("$102.99");
     expect(new Set(Object.values(html).map((h) => h.match(/<style>([^<]*)/)?.[1])).size).toBe(3);
     expect((await app.request("/lumen")).status).toBe(200);
     expect((await app.request("/nope")).status).toBe(404);
