@@ -89,9 +89,13 @@ for (const d of priceSet ? PRICE_DESIGNS : DESIGNS) {
     d.study === "purifier"
       ? { amountMinor: 9599, currency: "USD" as const }
       : { amountMinor: 9299, currency: "USD" as const };
-  const dv = derive(recs, target, MODELS, unit, 200, { amountMinor: 100000, currency: "USD" });
+  const exposedSales = priceSet ? 50 : 200;
+  const dv = derive(recs, target, MODELS, unit, exposedSales, {
+    amountMinor: 100000,
+    currency: "USD",
+  });
   lines.push(
-    `Derived chain (200 exposed sales at ${money(unit)}, $1,000 deposit): attributable fraction ${pct(dv.fraction, 1)} (lower bound ${pp(a.lift.lowerBound)} / exposed rate ${pct(a.lift.exposedRate, 1)}), credited units **${dv.units}**, commission **${money(dv.commission)}**, refund **${money(dv.refund)}**.`,
+    `Derived chain (${exposedSales} exposed sales at ${money(unit)}, $1,000 deposit): attributable fraction ${pct(dv.fraction, 1)} (lower bound ${pp(a.lift.lowerBound)} / exposed rate ${pct(a.lift.exposedRate, 1)}), credited units **${dv.units}**, commission **${money(dv.commission)}**, refund **${money(dv.refund)}**.`,
     "",
   );
   json[`${key}-derived`] = dv;
