@@ -1,0 +1,13 @@
+{
+  "id": "hf-winix-a230-vs-levoit-core300",
+  "kind": "test",
+  "creatorId": "housefresh",
+  "category": "air-purifier",
+  "skus": [
+    { "upc": "100000000001", "brand": "Winix", "name": "A230" },
+    { "upc": "100000000002", "brand": "Levoit", "name": "Core 300" }
+  ],
+  "verdictUpc": "100000000001",
+  "summary": "Both purifiers were run in the same sealed test room against the same smoke and dust loads. The Winix A230 cleared the room faster and held its lead at the lowest fan speed, while the Levoit Core 300 trailed on the higher-pollution runs. Recommendation: Winix A230.",
+  "disclosure": "Sample test data for the CITED demo. HouseFresh may earn a commission from CITED when an agent purchase follows this test; the commission never affects the verdict."
+}

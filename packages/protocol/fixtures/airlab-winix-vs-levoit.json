@@ -1,0 +1,13 @@
+{
+  "id": "airlab-winix-a230-vs-levoit-core300",
+  "kind": "test",
+  "creatorId": "airlab",
+  "category": "air-purifier",
+  "skus": [
+    { "upc": "100000000001", "brand": "Winix", "name": "A230" },
+    { "upc": "100000000002", "brand": "Levoit", "name": "Core 300" }
+  ],
+  "verdictUpc": "100000000001",
+  "summary": "AirLab measured particle removal for both units in a 30 square metre living space, repeating each run three times. The Winix A230 removed particles more quickly at matched fan settings, and the gap held across runs. Recommendation: Winix A230.",
+  "disclosure": "Sample test data for the CITED demo. AirLab may earn a commission from CITED when an agent purchase follows this test; the commission never affects the verdict."
+}
