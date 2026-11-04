@@ -20,8 +20,8 @@
 Dashboards: AG Studio (including Master-Detail cross-store journey & Shapley split table). `eval/`: two pre-registered evals (226 sessions, three models).
 
 ```
-cp .env.example .env        # PayPal sandbox + LLM keys
-docker compose up
+cp .env.example .env        # PayPal sandbox + LLM keys (or PAYPAL_MODE=simulated)
+npm install && npm run dev:cited
 open http://localhost:3000  # Northwind (Shopify), Lumen (WooCommerce), MegaMart
 ```
 

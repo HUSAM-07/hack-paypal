@@ -9,14 +9,18 @@ Locked card: [`CITED-card.md`](CITED-card.md). Judge packet (README intro and vi
 - **Submit:** Wed 11 Nov. The hard deadline is Thu 12 Nov, 12:00 PT.
 - That leaves 2 build weeks.
 
-## What gets built (one repo, `docker compose up`)
+## Stack (decided 5 Nov)
+
+TypeScript throughout, in this monorepo, reusing the placeholder's `packages/protocol`, `packages/paypal` and `packages/evals`. Cloudflare Workers + D1 for the engine. One command: `npm run dev:cited`. See [`../../CLAUDE.md`](../../CLAUDE.md) for the layout. This replaces the earlier Go + docker compose plan.
+
+## What gets built
 
 | # | Component | What it does | Owner |
 |---|---|---|---|
 | 1 | **Catalogue MCP server** (mock Store Sync) | `search_product` returns listings across 3 shops. It attaches HouseFresh's test (plus co-exposed Creator B / AirLab), the placebo article, or nothing, per session arm, and issues a signed **Agent Affiliate Passport** (`session_id`, `arm`, `creators_seen`, `stores_viewed`). The schedule is 50/50 for 7 days, then a 5% holdout. Ranking is identical across arms. | Agents/MCP |
 | 2 | **Shopper agents** | GPT, Gemini and Sonnet agents (via an OpenAI-compatible LLM gateway) get a buyer request, call the catalogue, carry their Agent Affiliate Passport across shops, and check out at the shop they choose. | Agents/MCP |
 | 3 | **3 mock shops** | Northwind (Shopify-style), Lumen (WooCommerce-style) and MegaMart, each with PayPal checkout. Lumen is $4 cheaper on Winix. Checkout stamps the Agent Affiliate Passport into PayPal Orders v2 `purchase_units[].custom_id`. | Full-stack |
-| 4 | **Attribution engine** (Go) | Joins each arm to its checkout in real time via PayPal `custom_id` and `items[].upc` (no mocked join). Computes the attributable fraction per model at the 80% lower bound. Splits co-exposed sales across multiple affiliates (HouseFresh + AirLab) by Shapley value. Runs a credit ledger with a 30-day hold, using a demo time-travel clock. Refund and dispute webhooks void credits. | Fintech |
+| 4 | **Attribution engine** (`packages/attribution` + `apps/engine`) | Joins each arm to its checkout in real time via PayPal `custom_id` and `items[].upc` (no mocked join). Computes the attributable fraction per model at the 80% lower bound. Splits co-exposed sales across multiple affiliates (HouseFresh + AirLab) by Shapley value. Runs a credit ledger with a 30-day hold, using a demo time-travel clock. Refund and dispute webhooks void credits. | Fintech |
 | 5 | **PayPal money flows** | Brand deposit = Orders v2 capture. Creator payout = multi-recipient batch Payouts to `PAYPAL_ID` (splitting commission across co-exposed affiliates). Unspent deposit = `captures/{id}/refund`. Webhooks: `CHECKOUT.ORDER.APPROVED`, `PAYMENT.CAPTURE.REFUNDED` and disputes. | Fintech |
 | 6 | **AG Studio dashboards** | The brand view has 3 bespoke widgets: an arm strip, a "+102 extra Winix" tile and a deposit meter. The creator view shows pending, voided and paid credits. **Affiliate Journey & Shapley Split view (AG Grid Master-Detail):** expandable PayPal order rows showing cross-store price hops (Northwind $99.99 → Lumen $95.99), co-exposed affiliates read, and exact Shapley payout splits. A custom **Analyst agent** delegates to the built-in Data and Chart agents. | Full-stack |
 | 7 | **`eval/`** | Re-runs the 2 pre-registered evals in-repo: 146 purifier sessions and 80 narrow-verdict sessions, across 3 models. These are the "Measured" numbers on the card. | Agents/MCP |
@@ -32,7 +36,7 @@ Locked card: [`CITED-card.md`](CITED-card.md). Judge packet (README intro and vi
 
 ## Week 1 (27 Oct – 2 Nov): get every piece working alone
 
-1. **Day 1:** repo skeleton and docker compose. Get the PayPal sandbox app and AG Studio trial set up (you do both).
+1. **Day 1:** repo skeleton and `npm run dev:cited`. Get the PayPal sandbox app and AG Studio trial set up (you do both).
 2. **Days 1–3:** catalogue MCP server and shopper agents. One agent buys end to end in sandbox.
 3. **Days 1–3:** attribution engine maths with unit tests (fraction, lower bound, Shapley, voids).
 4. **Days 2–4:** 3 shops with PayPal checkout, plus deposit, payout and refund in sandbox.

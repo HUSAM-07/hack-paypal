@@ -2,7 +2,7 @@
 
 Every build task for CITED, from [spec/BUILD-PLAN.md](spec/BUILD-PLAN.md), [spec/CITED-card.md](spec/CITED-card.md) and [spec/CITED-packet.md](spec/CITED-packet.md). Each row is a GitHub issue (label `cited`, milestone **CITED feature freeze**).
 
-**Decision (5 Nov):** we ship CITED; Pact is a placeholder. B1 decides whether CITED reuses this repo's TS/Cloudflare scaffolding (e.g. `packages/paypal`, `packages/evals`) or follows the build plan's Go + docker layout.
+**Decision (5 Nov):** we ship CITED; Pact is a placeholder. Stack: TypeScript in this monorepo, reusing `packages/protocol`, `packages/paypal` and `packages/evals` (layout in the root `CLAUDE.md`). Contract types are in `packages/protocol/src/cited.ts`.
 
 **Dates:** feature freeze Mon 9 Nov · video Tue 10 Nov · submit Wed 11 Nov · hard deadline Thu 12 Nov, 12:00 PT.
 
@@ -12,7 +12,7 @@ Owners are suggestions from the build plan (Agents/MCP, Fintech, Full-stack). Ti
 
 | | ID | Task | Owner | Depends on | Issue |
 |---|---|---|---|---|---|
-| [ ] | B1 | Repo skeleton and one-command `docker compose up` | Fintech | — | [#1](https://github.com/HUSAM-07/hack-paypal/issues/1) |
+| [ ] | B1 | Repo skeleton and one-command `npm run dev:cited` | Fintech | — | [#1](https://github.com/HUSAM-07/hack-paypal/issues/1) |
 | [ ] | B2 | PayPal sandbox apps and accounts | Fintech | — | [#2](https://github.com/HUSAM-07/hack-paypal/issues/2) |
 | [ ] | B3 | PayPal mock layer from the official OpenAPI specs (env toggle) | Fintech | B1 [#1](https://github.com/HUSAM-07/hack-paypal/issues/1) | [#3](https://github.com/HUSAM-07/hack-paypal/issues/3) |
 | [ ] | B4 | Creator content fixtures as structured verified-test objects | Agents/MCP | — | [#4](https://github.com/HUSAM-07/hack-paypal/issues/4) |
