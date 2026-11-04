@@ -2,7 +2,7 @@
 
 PayPal's affiliate network, rebuilt for AI agents: it pays creators on proven lift, not last-click cookies.
 
-This folder holds the CITED specs. It sits beside the Pact code and doesn't change it.
+**CITED is the product we're shipping.** The Pact code elsewhere in this repo is a placeholder. This folder holds the CITED specs.
 
 | File | What it is |
 |---|---|
