@@ -11,7 +11,9 @@
     "test": "vitest run --passWithNoTests",
     "evals": "tsx src/cli.ts",
     "cited:run": "tsx src/cited/run.ts --out results/cited",
-    "cited:summarize": "tsx src/cited/summarize.ts results/cited"
+    "cited:summarize": "tsx src/cited/summarize.ts results/cited",
+    "cited:run:price": "tsx src/cited/run.ts --set price-matched",
+    "cited:summarize:price": "tsx src/cited/summarize.ts results/cited-price-matched price-matched"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^4.0.94",

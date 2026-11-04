@@ -15,6 +15,27 @@ import {
 
 export type StudyId = "purifier" | "narrow";
 export type EvalArm = "test" | "placebo" | "none";
+/** Levoit price relative to Winix per shop. "catalogue" leaves the catalogue prices as they are. */
+export type PriceCondition = "catalogue" | "parity" | "levoit-cheaper";
+const LEVOIT_UPC = "100000000002";
+
+function applyPrice(listings: Listing[], price: PriceCondition): Listing[] {
+  if (price === "catalogue") return listings;
+  const winix = new Map(listings.filter((l) => l.upc === UPC_WINIX_A230).map((l) => [l.shopId, l]));
+  const out = listings.map((l) => {
+    const w = winix.get(l.shopId);
+    if (l.upc !== LEVOIT_UPC || !w) return l;
+    const amountMinor = price === "parity" ? w.price.amountMinor : w.price.amountMinor - 400;
+    return { ...l, price: { ...l.price, amountMinor } };
+  });
+  // Same ordering rule as the catalogue: price, then shop, then UPC.
+  return out.sort(
+    (a, b) =>
+      a.price.amountMinor - b.price.amountMinor ||
+      a.shopId.localeCompare(b.shopId) ||
+      a.upc.localeCompare(b.upc),
+  );
+}
 
 /** The brand whose purchase share is the outcome in each study. */
 export const TARGET_UPC: Record<StudyId, string> = {
@@ -65,8 +86,14 @@ function contentFor(study: StudyId, arm: EvalArm): VerifiedTest[] {
 }
 
 /** The payload shape `search_product` returns: { listings, creatorContent, passport }. */
-export function cataloguePayload(study: StudyId, arm: EvalArm, sessionId: string) {
-  const listings = study === "purifier" ? searchListings(SEARCH_QUERY) : rankNarrow();
+export function cataloguePayload(
+  study: StudyId,
+  arm: EvalArm,
+  sessionId: string,
+  price: PriceCondition = "catalogue",
+) {
+  const listings =
+    study === "purifier" ? applyPrice(searchListings(SEARCH_QUERY), price) : rankNarrow();
   return {
     listings,
     creatorContent: contentFor(study, arm),

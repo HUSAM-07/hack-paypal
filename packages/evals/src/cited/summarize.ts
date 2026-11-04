@@ -2,9 +2,10 @@
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { type Analysis, analyze, derive, type SessionRecord } from "./analyze";
-import { DESIGNS, MODELS } from "./design";
+import { DESIGNS, MODELS, PRICE_DESIGNS } from "./design";
 import { TARGET_UPC } from "./world";
 
+const priceSet = process.argv[3] === "price-matched";
 const dir = process.argv[2] ?? "results/cited";
 const records = readFileSync(join(dir, "results.jsonl"), "utf8")
   .split("\n")
@@ -18,7 +19,7 @@ const money = (m: { amountMinor: number }) => `$${(m.amountMinor / 100).toFixed(
 const lines: string[] = [
   "# CITED eval summary",
   "",
-  "Generated from `results.jsonl` by `src/cited/summarize.ts`. Pre-registration: `scenarios/cited/PREREGISTRATION.md`.",
+  `Generated from \`results.jsonl\` by \`src/cited/summarize.ts\`. Pre-registration: \`scenarios/cited/PREREGISTRATION${priceSet ? "-PRICE-MATCHED" : ""}.md\`.`,
   "",
 ];
 const json: { [k: string]: unknown } = {};
@@ -50,10 +51,12 @@ function section(title: string, a: Analysis, basis: string, buyersOnly = false) 
   );
 }
 
-for (const d of DESIGNS) {
-  const recs = records.filter((r) => r.study === d.study && r.variant === d.variant);
+for (const d of priceSet ? PRICE_DESIGNS : DESIGNS) {
+  const recs = records.filter(
+    (r) => r.study === d.study && r.variant === d.variant && r.price === d.price,
+  );
   const target = TARGET_UPC[d.study];
-  const key = `${d.study}-${d.variant}`;
+  const key = `${d.study}${d.price ? `-${d.price}` : ""}-${d.variant}`;
   lines.push(`## ${key} (${recs.length} sessions)`, "");
   const a = analyze(recs, target, MODELS);
   section(

@@ -1,4 +1,4 @@
-import type { EvalArm, StudyId } from "./world";
+import type { EvalArm, PriceCondition, StudyId } from "./world";
 
 export type Variant = "forced" | "abstain";
 
@@ -13,6 +13,8 @@ export interface CellSizes {
 
 export interface Design {
   study: StudyId;
+  /** Absent means catalogue prices. */
+  price?: PriceCondition;
   variant: Variant;
   /** Sessions per model and arm. */
   perModel: CellSizes;
@@ -24,8 +26,19 @@ export const DESIGNS: Design[] = [
   { study: "narrow", variant: "forced", perModel: { test: 10, placebo: 10, none: 7 } },
 ];
 
+const PM: CellSizes = { test: 19, placebo: 18, none: 12 };
+export const PRICE_SEED = 20261106;
+/** Price-matched purifier study: Levoit at parity with Winix, and Levoit $4 cheaper. */
+export const PRICE_DESIGNS: Design[] = [
+  { study: "purifier", price: "parity", variant: "forced", perModel: PM },
+  { study: "purifier", price: "parity", variant: "abstain", perModel: PM },
+  { study: "purifier", price: "levoit-cheaper", variant: "forced", perModel: PM },
+  { study: "purifier", price: "levoit-cheaper", variant: "abstain", perModel: PM },
+];
+
 export interface Session {
   id: string;
+  price?: PriceCondition;
   study: StudyId;
   variant: Variant;
   model: string;
@@ -56,7 +69,8 @@ export function plan(designs: Design[] = DESIGNS, seed = SEED): Session[] {
         const start = Math.floor(rand() * 4);
         for (let k = 0; k < n; k++) {
           out.push({
-            id: `${d.study}-${d.variant}-${model}-${arm}-${k}`,
+            id: `${d.study}-${d.price ? `${d.price}-` : ""}${d.variant}-${model}-${arm}-${k}`,
+            ...(d.price ? { price: d.price } : {}),
             study: d.study,
             variant: d.variant,
             model,

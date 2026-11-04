@@ -15,6 +15,7 @@ export interface Outcome {
 
 export interface SessionRecord {
   id: string;
+  price?: "catalogue" | "parity" | "levoit-cheaper";
   study: StudyId;
   variant: Variant;
   model: string;
