@@ -27,7 +27,7 @@ Every number comes from a committed, pre-registered eval ([`packages/evals/resul
 
 - **Measured, price-matched (headline; Levoit priced like Winix at every shop):** purifiers, 147 forced-buy sessions. Winix share: exposed 57/57 (100%), placebo 3/54 (6%), nothing 3/36 (8%). Lift +94pp (80% lower bound +90.3pp), positive in all three models. Agents otherwise default to Levoit and flip when shown a test that names Winix, so this mostly measures deference to an explicit verdict. With Levoit $4 cheaper: +96pp (bound +92.6pp). Abstain allowed: +82pp (bound +77.2pp).
 - **Measured, Winix already cheaper (catalogue prices):** 147 sessions, share 100% / 76% / 69%, lift +24pp (bound +18.8pp). Price decided most picks, so exposure had little to add. Narrow verdict (81 sessions): lift 0, bound −6.0pp, $0.
-- **Derived:** 57 exposed sales × 90.3% = 51 caused units × $95.99 × 8% = $391.64 credited. In the demo one refund voids one credit (−$7.67), so $383.97 is paid to the creator at day 30 and $616.03 of the $1,000 deposit returns; Levoit pays $0.
+- **Derived:** 57 exposed sales × 90.3% = 51 caused units × $95.99 × 8% = $391.64 credited. In the demo one refund voids one credit (−$7.68), so $383.96 is paid to the creator at day 30 and $616.04 of the $1,000 deposit returns; Levoit pays $0.
 - **Scripted:** Lumen's $4 discount, the $1,000 deposit, equal Winix and Levoit prices, the Analyst approval.
 
 Full details and caveats: [`cited/spec/CITED-card.md`](cited/spec/CITED-card.md).

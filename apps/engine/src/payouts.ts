@@ -63,7 +63,7 @@ export async function runPayouts(env: Env): Promise<PayoutRun> {
     recipient_type: "PAYPAL_ID" as const,
     receiver: p.receiver,
     amount: p.line.gross,
-    sender_item_id: `${p.line.creatorId}-${senderBatchId.slice(6, 14)}`.slice(0, 63),
+    sender_item_id: senderItemId(p.line.creatorId, senderBatchId),
     note: "CITED: commission on sales your test caused",
   }));
   run.items = payable.map((p) => ({
@@ -167,6 +167,29 @@ export async function applyBatchStatus(
     return;
   }
   await setPayoutStatus(env, paypalBatchId, status);
+}
+
+/** Deterministic per-creator item id inside a batch (the console mirrors this rule). */
+export function senderItemId(creatorId: string, senderBatchId: string): string {
+  return `${creatorId}-${senderBatchId.slice(6, 14)}`.slice(0, 63);
+}
+
+/**
+ * PayPal's payout_item_id per sender_item_id for one batch. Best-effort: the read API must
+ * still answer if PayPal is unreachable, so failures return an empty map.
+ */
+export async function payoutItemIds(env: Env, paypalBatchId: string): Promise<Map<string, string>> {
+  try {
+    const { paypal } = getPayPal(env);
+    const batch = await paypal.payouts.getBatch(paypalBatchId, { page_size: 100 });
+    return new Map(
+      batch.items
+        .filter((i) => i.payout_item.sender_item_id)
+        .map((i) => [i.payout_item.sender_item_id as string, i.payout_item_id]),
+    );
+  } catch {
+    return new Map();
+  }
 }
 
 /** Poll PayPal for batches that have not finished and store their status on the ledger. */

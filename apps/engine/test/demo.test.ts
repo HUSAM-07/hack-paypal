@@ -89,6 +89,8 @@ describe("CITED demo money flow (simulated PayPal)", () => {
     expect(retry.json.senderBatchId).toBe(day30.json.payout.senderBatchId);
     expect(mock?.state.batches.size).toBe(1);
     expect((await call<Json>("GET", "/credits")).json.creators[0].totals.paid).toBe(39_164);
+    const payouts = await call<Json>("GET", "/payouts");
+    expect(payouts.json.batches[0].items[0].payoutItemId).toEqual(expect.any(String));
 
     // 4. End of cycle: unspent deposits go back through captures/{id}/refund.
     const close = await call<Json>("POST", "/cycle/close");

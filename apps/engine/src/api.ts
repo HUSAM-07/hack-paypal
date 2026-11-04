@@ -10,7 +10,7 @@ import { brandBalances, loadStoredCredits, recomputeCredits } from "./credits";
 import { closeCycle } from "./cycle";
 import type { Env } from "./env";
 import { brandLiftData, evaluateBrand } from "./lift";
-import { refreshPayouts, runPayouts } from "./payouts";
+import { payoutItemIds, refreshPayouts, runPayouts, senderItemId } from "./payouts";
 import { getPayPal } from "./paypal";
 import { captureDeposit, getBrand, listBrands, requestDeposit, upsertBrand } from "./programme";
 
@@ -497,15 +497,25 @@ api.get("/payouts", async (c) => {
       "SELECT * FROM payout_batches ORDER BY created_at, sender_batch_id",
     ).all<Row>()
   ).results;
-  return c.json({
-    batches: rows.map((r) => ({
-      senderBatchId: r.sender_batch_id,
+  const batches = [];
+  for (const r of rows) {
+    const senderBatchId = r.sender_batch_id as string;
+    const ids = r.paypal_batch_id
+      ? await payoutItemIds(c.env, r.paypal_batch_id as string)
+      : new Map<string, string>();
+    const items = (JSON.parse(r.items_json as string) as { creatorId: string }[]).map((i) => {
+      const payoutItemId = ids.get(senderItemId(i.creatorId, senderBatchId));
+      return payoutItemId ? { ...i, payoutItemId } : i;
+    });
+    batches.push({
+      senderBatchId,
       paypalBatchId: r.paypal_batch_id,
       status: r.status,
-      items: JSON.parse(r.items_json as string),
+      items,
       createdAt: r.created_at,
-    })),
-  });
+    });
+  }
+  return c.json({ batches });
 });
 
 /** Simulated only: what the PayPal mock holds, so a run can check the ledger against it. */
