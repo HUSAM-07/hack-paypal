@@ -1,0 +1,12 @@
+{
+  "id": "narrow-quietmax-vs-breezeline",
+  "kind": "test",
+  "creatorId": "housefresh",
+  "category": "air-purifier",
+  "skus": [
+    { "upc": "100000000004", "brand": "QuietMax", "name": "QM-5" },
+    { "upc": "100000000005", "brand": "Breezeline", "name": "BL-8" }
+  ],
+  "summary": "The two purifiers finished within measurement noise of each other on particle removal, noise and running cost. The test names no winner and suggests choosing on price or room size.",
+  "disclosure": "Sample test data for the CITED demo. HouseFresh may earn a commission from CITED when an agent purchase follows this test; no verdict is given, so none is expected here."
+}
