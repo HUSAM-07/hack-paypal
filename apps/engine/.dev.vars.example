@@ -1,0 +1,16 @@
+# Copy to .dev.vars (gitignored) for `npm run dev -w @cited/engine`. Placeholders only.
+# With nothing set the engine runs in simulated mode with no keys (see wrangler.jsonc).
+
+# simulated | sandbox
+PAYPAL_MODE=simulated
+MODEL_PROVIDER=fake
+
+# Needed only when PAYPAL_MODE=sandbox.
+PAYPAL_CLIENT_ID=
+PAYPAL_CLIENT_SECRET=
+PAYPAL_WEBHOOK_ID=
+
+# Same value as the catalogue's PASSPORT_SIGNING_KEY. Without it every sale is unattributed.
+PASSPORT_KEY=
+# Bearer token for /api. Unset = open in simulated mode, 503 otherwise.
+ENGINE_API_TOKEN=

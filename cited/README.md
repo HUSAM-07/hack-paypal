@@ -17,10 +17,10 @@ PayPal's affiliate network, rebuilt for AI agents: it pays creators on proven li
 
 ## Running CITED
 
-Tracked in [issue #1](https://github.com/HUSAM-07/hack-paypal/issues/1). Needs Node 22+.
+Needs Node 22+. The root [README](../README.md) has the full run, config and eval instructions; variables are in [`.env.example`](../.env.example).
 
 ```bash
-npm install
+npm ci
 npm run dev:cited   # starts every app; PAYPAL_MODE=simulated and MODEL_PROVIDER=fake, no keys needed
 ```
 
