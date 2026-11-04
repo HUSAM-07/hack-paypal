@@ -595,12 +595,11 @@ export function createMockPayPal(opts: MockPayPalOptions = {}) {
         o.status = "COMPLETED";
         o.updateTime = t;
         for (const cid of o.captureIds) {
-          emit(
-            "PAYMENT.CAPTURE.COMPLETED",
-            "capture",
-            "Payment completed for the order.",
-            captureJson(captures.get(cid) as StoredCapture),
-          );
+          emit("PAYMENT.CAPTURE.COMPLETED", "capture", "Payment completed for the order.", {
+            ...captureJson(captures.get(cid) as StoredCapture),
+            // Real capture webhooks carry the order id here; consumers join sales on it.
+            supplementary_data: { related_ids: { order_id: o.id } },
+          });
         }
         return ok(orderJson(o), 201);
       },

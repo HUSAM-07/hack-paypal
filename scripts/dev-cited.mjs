@@ -9,7 +9,13 @@ const apps = [
   ["studio", "@cited/studio", 8804],
 ];
 
-const env = { ...process.env, PAYPAL_MODE: "simulated", MODEL_PROVIDER: "fake" };
+const env = {
+  ...process.env,
+  PAYPAL_MODE: "simulated",
+  MODEL_PROVIDER: "fake",
+  // The shops' PayPal mock delivers its webhooks here.
+  ENGINE_URL: "http://localhost:8800",
+};
 const children = apps.map(([name, workspace, port]) => {
   const child = spawn("npm", ["run", "dev", "-w", workspace], {
     env,

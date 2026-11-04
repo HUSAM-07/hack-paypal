@@ -25,7 +25,13 @@ export class ShopperSession {
   constructor(
     private readonly ep: Endpoints,
     private readonly sessionRef: string,
-    private readonly opts: { coExposed?: boolean } = {},
+    private readonly opts: {
+      coExposed?: boolean;
+      /** Demo only: the catalogue honours it in simulated mode so a seeded run picks its arms. */
+      sessionId?: string;
+      /** Called after every search, once the passport (and so the arm) is known. */
+      onPassport?: () => Promise<void>;
+    } = {},
   ) {}
 
   private async mcp(): Promise<Client> {
@@ -49,6 +55,7 @@ export class ShopperSession {
         ...(args.shopId ? { shopId: args.shopId } : {}),
         // Only the first search can start a co-exposed session; later ones carry the passport.
         ...(this.searches === 0 && this.opts.coExposed ? { coExposed: true } : {}),
+        ...(this.searches === 0 && this.opts.sessionId ? { sessionId: this.opts.sessionId } : {}),
       },
     });
     if (res.isError) throw new Error(`search_product failed: ${JSON.stringify(res.content)}`);
@@ -57,6 +64,7 @@ export class ShopperSession {
     this.searches++;
     this.passport = out.passport;
     this.lastSearch = out;
+    await this.opts.onPassport?.();
     return out;
   }
 

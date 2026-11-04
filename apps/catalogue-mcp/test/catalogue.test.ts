@@ -131,3 +131,16 @@ describe("search_product", () => {
     expect((await verifyPassport(passport, KEY)).ok).toBe(true);
   });
 });
+
+describe("demo session ids", () => {
+  it("honours a caller-chosen session id only when allowed", async () => {
+    const open = createCatalogue({ seed: "s", passportKey: "k", allowSessionId: true });
+    const shut = createCatalogue({ seed: "s", passportKey: "k" });
+    const a = await open.search({ query: "air purifier", sessionId: "demo-1" });
+    const b = await open.search({ query: "air purifier", sessionId: "demo-1" });
+    expect(a.passport.split("|")[1]).toBe("demo-1");
+    expect(a.passport).toBe(b.passport); // same id, same arm, same passport
+    const c = await shut.search({ query: "air purifier", sessionId: "demo-1" });
+    expect(c.passport.split("|")[1]).not.toBe("demo-1");
+  });
+});

@@ -43,9 +43,15 @@ export function readItems(items: unknown): OrderItem[] {
   return out;
 }
 
-/** ShortId-safe shop id from a purchase unit: merchant id, else reference id. */
+/** ShortId-safe shop id from a purchase unit: reference id, else merchant id. */
 export function shopOf(unit: Raw | undefined): string {
-  const raw = str(obj(unit?.payee)?.merchant_id) ?? str(unit?.reference_id) ?? "unknown";
+  // A merchant-chosen reference id (our shops set it to the shop id) beats PayPal's "default".
+  const ref = str(unit?.reference_id);
+  const raw =
+    (ref && ref !== "default" ? ref : undefined) ??
+    str(obj(unit?.payee)?.merchant_id) ??
+    ref ??
+    "unknown";
   return raw.replace(/[^A-Za-z0-9_-]/g, "").slice(0, 24) || "unknown";
 }
 

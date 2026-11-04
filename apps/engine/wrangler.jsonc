@@ -8,6 +8,9 @@
   "d1_databases": [{ "binding": "DB", "database_name": "cited", "database_id": "local" }],
   "vars": {
     "PAYPAL_MODE": "simulated",
-    "MODEL_PROVIDER": "fake"
+    "MODEL_PROVIDER": "fake",
+    // Same published dev key the catalogue signs with in simulated mode (not a secret).
+    // Deployments override it with a wrangler secret.
+    "PASSPORT_KEY": "cited-dev-passport-key"
   }
 }

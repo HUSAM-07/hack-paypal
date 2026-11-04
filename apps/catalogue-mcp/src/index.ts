@@ -18,6 +18,7 @@ function passportKey(): string {
 export const catalogue = createCatalogue({
   seed: process.env.CATALOGUE_SEED ?? "cited-demo",
   passportKey: passportKey(),
+  allowSessionId: paypalMode() === "simulated",
 });
 
 export const app = new Hono();

@@ -10,7 +10,9 @@
     "dev": "tsx watch src/dev.ts",
     "run:sessions": "tsx src/cli.ts",
     "typecheck": "tsc -p tsconfig.json",
-    "test": "vitest run"
+    "test": "vitest run",
+    "demo": "tsx src/demo-cli.ts",
+    "e2e": "vitest run test/e2e.test.ts"
   },
   "dependencies": {
     "@cited/catalogue-mcp": "*",

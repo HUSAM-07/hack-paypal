@@ -6,6 +6,8 @@ export interface FakeAgentOptions {
   browseShop?: string;
   /** Chance (0-1) it buys at the shop it browsed even when another shop is cheaper. Default 0.2. */
   loyalty?: number;
+  /** What it buys when no creator test is shown (a scripted stand-in for a model's own taste). */
+  baselineUpc?: string;
 }
 
 const SHOPS = ["northwind", "lumen", "megamart"];
@@ -31,7 +33,10 @@ export class FakeAgent implements ShopperAgent {
     const wanted = verdict?.verdictUpc
       ? found.listings.find((l) => l.upc === verdict.verdictUpc && affordable(l))
       : undefined;
-    const pick = wanted ?? found.listings.find(affordable);
+    const baseline = this.opts.baselineUpc
+      ? found.listings.find((l) => l.upc === this.opts.baselineUpc && affordable(l))
+      : undefined;
+    const pick = wanted ?? baseline ?? found.listings.find(affordable);
     if (!pick) return { reason: "nothing within budget", steps: 1 };
 
     const sameProduct = found.listings.filter((l) => l.upc === pick.upc);

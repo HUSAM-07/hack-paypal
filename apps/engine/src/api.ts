@@ -11,6 +11,7 @@ import { closeCycle } from "./cycle";
 import type { Env } from "./env";
 import { brandLiftData, evaluateBrand } from "./lift";
 import { refreshPayouts, runPayouts } from "./payouts";
+import { getPayPal } from "./paypal";
 import { captureDeposit, getBrand, listBrands, requestDeposit, upsertBrand } from "./programme";
 
 export const api = new Hono<{ Bindings: Env }>();
@@ -503,6 +504,37 @@ api.get("/payouts", async (c) => {
       status: r.status,
       items: JSON.parse(r.items_json as string),
       createdAt: r.created_at,
+    })),
+  });
+});
+
+/** Simulated only: what the PayPal mock holds, so a run can check the ledger against it. */
+api.get("/mock/state", (c) => {
+  const { mock } = getPayPal(c.env);
+  if (!mock) return c.json({ error: "not_available" }, 404);
+  const { captures, refunds, batches } = mock.state;
+  return c.json({
+    captures: [...captures.values()].map((x) => ({
+      id: x.id,
+      orderId: x.orderId,
+      amount: x.amount,
+      refunded: x.refunded,
+    })),
+    refunds: [...refunds.values()].map((x) => ({
+      id: x.id,
+      captureId: x.captureId,
+      amount: x.amount,
+    })),
+    batches: [...batches.values()].map((b) => ({
+      id: b.id,
+      senderBatchId: (b.header as Record<string, unknown>).sender_batch_id ?? null,
+      status: b.status,
+      items: b.items.map((i) => ({
+        receiver: (i.req as Record<string, unknown>).receiver,
+        recipientType: (i.req as Record<string, unknown>).recipient_type,
+        amount: i.amount,
+        status: i.status,
+      })),
     })),
   });
 });

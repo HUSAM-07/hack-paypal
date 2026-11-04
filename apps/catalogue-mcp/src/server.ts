@@ -17,6 +17,10 @@ export function createMcpServer(catalogue: Catalogue): McpServer {
         passport: z.string().max(127).optional(),
         shopId: z.string().max(24).optional(),
         coExposed: z.boolean().optional(),
+        sessionId: z
+          .string()
+          .regex(/^[A-Za-z0-9_-]{1,24}$/)
+          .optional(),
       },
     },
     async (args) => {

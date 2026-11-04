@@ -19,6 +19,10 @@ export interface RunOptions {
   fake?: FakeAgentOptions;
   /** Start the catalogue session co-exposed to a second creator. */
   coExposed?: boolean;
+  /** Demo only: fixed catalogue session id. */
+  sessionId?: string;
+  /** Product category reported to the engine. */
+  category?: string;
 }
 
 export function providerFromEnv(
@@ -41,12 +45,44 @@ function buildAgent(o: RunOptions): {
   return { agent: new LlmAgent(cfg, model), model, provider };
 }
 
+/**
+ * Tell the engine this session exists and which arm it got (the catalogue's job in production:
+ * lift needs the sessions that bought nothing too). Safe to repeat: the engine upserts.
+ */
+export async function reportSession(
+  ep: Endpoints,
+  session: ShopperSession,
+  model: string,
+  category: string,
+): Promise<void> {
+  const body = session.passportBody();
+  if (!ep.engineUrl || !body) return;
+  const f = ep.engineFetch ?? fetch;
+  const res = await f(`${ep.engineUrl}/api/sessions`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({
+      sessionId: body.sessionId,
+      model,
+      arm: body.arm,
+      category,
+      creatorsSeen: body.creatorsSeen,
+      storesViewed: body.storesViewed,
+    }),
+  });
+  if (!res.ok) throw new Error(`engine rejected session ${body.sessionId}: ${res.status}`);
+}
+
 /** One shopping session, start to finish, as one structured record. Never throws. */
 export async function runSession(o: RunOptions): Promise<RunRecord> {
   const request = o.request ?? DEFAULT_REQUEST;
   const key = `${o.seed}:${o.runIndex}`;
   const { agent, model, provider } = buildAgent(o);
-  const session = new ShopperSession(o.endpoints, key, { coExposed: o.coExposed ?? false });
+  const session: ShopperSession = new ShopperSession(o.endpoints, key, {
+    coExposed: o.coExposed ?? false,
+    ...(o.sessionId ? { sessionId: o.sessionId } : {}),
+    onPassport: () => reportSession(o.endpoints, session, model, o.category ?? "purifier"),
+  });
 
   let outcome: AgentOutcome = { reason: null, steps: 0 };
   let error: string | undefined;

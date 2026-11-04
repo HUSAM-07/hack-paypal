@@ -15,6 +15,8 @@ import { creatorContent, type Listing, searchListings } from "./listings";
 export interface CatalogueOptions {
   seed: string;
   passportKey: string;
+  /** Honour a caller-chosen sessionId. Simulated demos only: a real caller could otherwise pick its arm. */
+  allowSessionId?: boolean;
   clock?: DemoClock;
   schedule?: HoldoutSchedule;
   /** When the housefresh Winix test went live; the schedule's day 0. */
@@ -26,6 +28,8 @@ export interface SearchInput {
   passport?: string | undefined;
   /** Start a new session that is also exposed to a second creator (AirLab). Ignored for existing passports. */
   coExposed?: boolean | undefined;
+  /** Demo only: pick the session id (so a seeded run is reproducible). Ignored unless allowed. */
+  sessionId?: string | undefined;
   /** Shop the agent is browsing, recorded as a store viewed. */
   shopId?: string | undefined;
 }
@@ -50,7 +54,8 @@ export function createCatalogue(opts: CatalogueOptions) {
       verified?.ok === true
         ? verified.body
         : newSession(
-            crypto.randomUUID().replaceAll("-", "").slice(0, 20),
+            (opts.allowSessionId && input.sessionId) ||
+              crypto.randomUUID().replaceAll("-", "").slice(0, 20),
             input.coExposed ?? false,
           );
     if (input.shopId) body = addStoreViewed(body, input.shopId);

@@ -1,9 +1,13 @@
-import { createPayPal, type PayPalClient } from "@pact/paypal";
+import {
+  createPayPal,
+  createPayPalFromEnv,
+  type MockPayPal,
+  type PayPalClient,
+} from "@pact/paypal";
 import { Hono } from "hono";
 import { isShopId, PRODUCTS, productBySlug, SHOP_IDS, SHOPS } from "./catalogue";
 import { CheckoutError, captureOrder, createOrder } from "./checkout";
 import { homePage, productPage } from "./pages";
-import { simulatedPayPal } from "./simulated-paypal";
 
 export * from "./catalogue";
 export { simulatedPayPal } from "./simulated-paypal";
@@ -16,28 +20,45 @@ export interface ShopsOptions {
   env?: Env;
   /** Inject a PayPal client (tests). Otherwise built from env: simulated unless PAYPAL_MODE=sandbox. */
   paypal?: PayPalClient;
+  /** Simulated only: where the PayPal mock delivers webhooks (the engine). Default: env ENGINE_URL. */
+  engineUrl?: string;
+  /** Simulated only: the mock to use (tests, in-process demos). */
+  mock?: MockPayPal;
 }
 
-function buildPayPal(env: Env): PayPalClient {
+function buildPayPal(env: Env, o: ShopsOptions): { paypal: PayPalClient; mock?: MockPayPal } {
   if (env.PAYPAL_MODE === "sandbox") {
-    return createPayPal({
-      env: "sandbox",
-      clientId: env.PAYPAL_CLIENT_ID ?? "",
-      clientSecret: env.PAYPAL_CLIENT_SECRET ?? "",
-    });
+    return {
+      paypal: createPayPal({
+        env: "sandbox",
+        clientId: env.PAYPAL_CLIENT_ID ?? "",
+        clientSecret: env.PAYPAL_CLIENT_SECRET ?? "",
+      }),
+    };
   }
-  return createPayPal({
-    env: "sandbox",
-    clientId: "simulated",
-    clientSecret: "simulated",
-    fetch: simulatedPayPal().fetch,
-  });
+  // Simulated: the shared stateful PayPal mock, so captures, refunds and disputes emit the same
+  // signed webhooks the engine receives from PayPal.
+  if (o.mock) {
+    const paypal = createPayPal({
+      env: "sandbox",
+      clientId: "mock-client-id",
+      clientSecret: "mock-client-secret",
+      fetch: o.mock.fetch,
+    });
+    return { paypal, mock: o.mock };
+  }
+  const sim = createPayPalFromEnv({ PAYPAL_MODE: "simulated" });
+  const engine = o.engineUrl ?? env.ENGINE_URL;
+  if (sim.mock && engine) sim.mock.registerWebhook(`${engine.replace(/\/$/, "")}/webhooks/paypal`);
+  return { paypal: sim.paypal, ...(sim.mock ? { mock: sim.mock } : {}) };
 }
 
 /** Northwind, Lumen and MegaMart: HTML storefronts for humans plus a JSON checkout API for agents. */
 export function createShopsApp(opts: ShopsOptions = {}) {
   const env = opts.env ?? (process.env as Env);
-  const paypal = opts.paypal ?? buildPayPal(env);
+  const built = opts.paypal ? { paypal: opts.paypal } : buildPayPal(env, opts);
+  const { paypal } = built;
+  const mock = "mock" in built ? built.mock : undefined;
   const deps = { paypal, passportSecret: env.PASSPORT_SECRET };
   const sandbox = env.PAYPAL_MODE === "sandbox";
   const app = new Hono();
@@ -115,7 +136,49 @@ export function createShopsApp(opts: ShopsOptions = {}) {
    */
   app.post("/:shop/api/orders/:orderId/capture", async (c) => {
     if (!shopFor(c.req.param("shop"))) return c.notFound();
-    return c.json(await captureOrder(deps, c.req.param("orderId")));
+    const orderId = c.req.param("orderId");
+    // Simulated: the buyer approves at PayPal (webhook), then the shop captures (webhook).
+    mock?.approveOrder(orderId);
+    const out = await captureOrder(deps, orderId);
+    await mock?.flush();
+    return c.json(out);
+  });
+
+  /** Simulated only: the captures the shops' PayPal mock holds, to check the engine's ledger against. */
+  app.get("/mock/state", (c) => {
+    if (!mock) return c.json({ error: { code: "not_available", message: "simulated only" } }, 404);
+    return c.json({
+      captures: [...mock.state.captures.values()].map((x) => ({
+        id: x.id,
+        orderId: x.orderId,
+        amount: x.amount,
+        refunded: x.refunded,
+        customId: x.customId ?? null,
+      })),
+      webhooksDelivered: mock.events.length,
+      failedDeliveries: mock.failedDeliveries,
+    });
+  });
+
+  /**
+   * Simulated only: a buyer returns an order. Full refund unless `amountMinor` is given. The mock
+   * emits PAYMENT.CAPTURE.REFUNDED to the engine, which voids the pending credit.
+   */
+  app.post("/mock/captures/:captureId/refund", async (c) => {
+    if (!mock) return c.json({ error: { code: "not_available", message: "simulated only" } }, 404);
+    const captureId = c.req.param("captureId");
+    const body = (await c.req.json().catch(() => ({}))) as { amountMinor?: number };
+    const capture = mock.state.captures.get(captureId);
+    if (!capture) return c.json({ error: { code: "unknown_capture", message: captureId } }, 404);
+    const amount =
+      typeof body.amountMinor === "number"
+        ? { amountMinor: body.amountMinor, currency: capture.amount.currency }
+        : undefined;
+    const refund = await paypal.captures.refund(captureId, amount ? { amount } : {}, {
+      requestId: `cited-refund-${captureId}-${amount?.amountMinor ?? "full"}`,
+    });
+    await mock.flush();
+    return c.json({ refundId: refund.id, status: refund.status });
   });
 
   return app;

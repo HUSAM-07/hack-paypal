@@ -65,4 +65,7 @@ export interface Endpoints {
   catalogueFetch?: typeof fetch;
   shopsUrl: string;
   shopsFetch?: typeof fetch;
+  /** Engine admin API; when set, every session is reported to it so lift sees the non-buyers. */
+  engineUrl?: string;
+  engineFetch?: typeof fetch;
 }

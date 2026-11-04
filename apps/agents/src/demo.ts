@@ -1,0 +1,686 @@
+/**
+ * The scripted demo: plays every beat of cited/spec/CITED-packet.md against the live local stack
+ * (engine, catalogue, shops), in order, from a seed. Each beat emits events; see README.md.
+ *
+ * The 147 sessions follow the shape of the price-matched study (19 exposed, 18 placebo, 12 held-out
+ * per model; Winix buyers 57/57, 3/54, 3/36). Under the fake provider the agents' choices are
+ * scripted to that shape, so the card's numbers (57 sales → 51 units → $391.64) come out of the real
+ * pipeline, not out of the script. With real models the numbers are whatever the models do.
+ */
+import { type Arm, DEMO_SHOP_PRICES, UPC_LEVOIT_CORE300, UPC_WINIX_A230 } from "@pact/protocol";
+import { runSession } from "./run";
+import { ShopperSession } from "./session";
+import { type Endpoints, MODEL_FAMILIES, type ModelFamily, type RunRecord } from "./types";
+
+export const BEATS = [
+  "fund",
+  "exposed",
+  "heldout",
+  "study",
+  "credits",
+  "refund",
+  "jump",
+  "payout",
+  "return",
+  "analyst",
+  "checks",
+] as const;
+export type BeatId = (typeof BEATS)[number];
+
+/** One line of the event stream. `seq` starts at 1; there are no wall-clock fields, so a seed replays byte for byte. */
+export interface DemoEvent {
+  v: 1;
+  seq: number;
+  type: "run.start" | "beat.start" | "line" | "session" | "numbers" | "beat.end" | "run.end";
+  beat?: BeatId;
+  /** Human sentence for `line`, `beat.start` and `beat.end`. */
+  text?: string;
+  data?: Record<string, unknown>;
+}
+
+export interface DemoOptions {
+  engineUrl: string;
+  catalogueUrl: string;
+  shopsUrl: string;
+  seed: string;
+  provider: "fake" | "openai-compatible";
+  /** Where the refund beat sits. See README. */
+  refund: "before-payout" | "after-payout";
+  emit: (e: DemoEvent) => void | Promise<void>;
+  /** Pause between beats (ms), for a live screen. */
+  pace?: number;
+}
+
+export interface Check {
+  name: string;
+  ok: boolean;
+  detail: string;
+}
+
+export interface DemoResult {
+  numbers: {
+    sessions: number;
+    purchased: number;
+    exposedSales: number;
+    causedUnits: number;
+    creditedMinor: number;
+    paidMinor: number;
+    returnedMinor: number;
+    levoitCausedUnits: number;
+    liftPoints: number;
+  };
+  checks: Check[];
+  /** True when every number on the card was reproduced (fake provider only). */
+  matchesCard: boolean;
+}
+
+/** The study's shape, per model in MODEL_FAMILIES order. */
+export const PLAN = {
+  exposed: [19, 19, 19],
+  placebo: [18, 18, 18],
+  none: [12, 12, 12],
+  /** Placebo sessions that buy the Winix anyway (3/54). */
+  placeboWinix: [2, 0, 1],
+  /** Held-out sessions that buy the Winix anyway (3/36). */
+  noneWinix: [1, 1, 1],
+};
+
+/** The card: what the pipeline must reproduce. */
+export const CARD = {
+  sessions: 147,
+  exposedSales: 57,
+  causedUnits: 51,
+  creditedMinor: 39_164,
+  returnedMinor: 60_836,
+  deposit: 100_000,
+};
+
+const SHOPS = ["northwind", "lumen", "megamart"] as const;
+const REQUEST = "Small bedroom purifier, light sleeper, around $100, just buy it";
+const CATEGORY = "purifier";
+
+export const usd = (minor: number): string =>
+  `${minor < 0 ? "-" : ""}$${(Math.abs(minor) / 100).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+type Json = Record<string, any>;
+
+function tag(seed: string): string {
+  let h = 2166136261;
+  for (const ch of seed) h = Math.imul(h ^ ch.charCodeAt(0), 16777619);
+  return (h >>> 0).toString(36).slice(0, 6);
+}
+
+interface Slot {
+  id: string;
+  arm: Arm;
+  model: ModelFamily;
+  index: number;
+  buysWinix: boolean;
+  browse: string;
+}
+
+export async function runDemo(o: DemoOptions): Promise<DemoResult> {
+  let seq = 0;
+  const emit = async (e: Omit<DemoEvent, "v" | "seq">) => {
+    await o.emit({ v: 1, seq: ++seq, ...e } as DemoEvent);
+  };
+  const line = (beat: BeatId, text: string, data?: Record<string, unknown>) =>
+    emit({ type: "line", beat, text, ...(data ? { data } : {}) });
+  const numbers = (beat: BeatId, data: Record<string, unknown>) =>
+    emit({ type: "numbers", beat, data });
+  const beat = async (b: BeatId, title: string, body: () => Promise<void>) => {
+    await emit({ type: "beat.start", beat: b, text: title });
+    await body();
+    await emit({ type: "beat.end", beat: b });
+    if (o.pace) await new Promise((r) => setTimeout(r, o.pace));
+  };
+
+  const eng = async (method: "GET" | "POST", path: string, body?: unknown): Promise<Json> => {
+    const res = await fetch(`${o.engineUrl}/api${path}`, {
+      method,
+      ...(body === undefined
+        ? {}
+        : { body: JSON.stringify(body), headers: { "content-type": "application/json" } }),
+    });
+    const json = (await res.json()) as Json;
+    if (!res.ok)
+      throw new Error(`engine ${method} ${path} → ${res.status} ${JSON.stringify(json)}`);
+    return json;
+  };
+  const shops = async (path: string, init?: RequestInit): Promise<Json> => {
+    const res = await fetch(`${o.shopsUrl}${path}`, init);
+    const json = (await res.json()) as Json;
+    if (!res.ok) throw new Error(`shops ${path} → ${res.status} ${JSON.stringify(json)}`);
+    return json;
+  };
+
+  const ep: Endpoints = {
+    catalogueUrl: o.catalogueUrl,
+    shopsUrl: o.shopsUrl,
+    engineUrl: o.engineUrl,
+  };
+  const fake = o.provider === "fake";
+  const checks: Check[] = [];
+  const check = (name: string, ok: boolean, detail: string) => checks.push({ name, ok, detail });
+
+  await emit({
+    type: "run.start",
+    text: "CITED demo",
+    data: { seed: o.seed, provider: o.provider, refund: o.refund, beats: [...BEATS] },
+  });
+
+  // ── Setup, then Beat 1: the brands fund the category programme ──
+  await beat("fund", "Winix and Levoit fund the purifier programme", async () => {
+    await eng("POST", "/brands", {
+      brandId: "winix",
+      name: "Winix",
+      category: CATEGORY,
+      upc: UPC_WINIX_A230,
+    });
+    await eng("POST", "/brands", {
+      brandId: "levoit",
+      name: "Levoit",
+      category: CATEGORY,
+      upc: UPC_LEVOIT_CORE300,
+    });
+    await eng("POST", "/creators", {
+      creatorId: "housefresh",
+      name: "HouseFresh",
+      paypalId: "HOUSEFRESH-PP",
+    });
+    await eng("POST", "/listings", {
+      listings: (Object.keys(DEMO_SHOP_PRICES) as (keyof typeof DEMO_SHOP_PRICES)[]).flatMap(
+        (shopId) =>
+          [UPC_WINIX_A230, UPC_LEVOIT_CORE300].map((upc) => ({
+            shopId,
+            upc,
+            priceMinor: (DEMO_SHOP_PRICES[shopId] as Record<string, number>)[upc],
+            currency: "USD",
+          })),
+      ),
+    });
+    for (const [brandId, name] of [
+      ["winix", "Winix"],
+      ["levoit", "Levoit"],
+    ] as const) {
+      const d = await eng("POST", `/brands/${brandId}/deposits`, { amountMinor: CARD.deposit });
+      await line(
+        "fund",
+        `${name} deposits ${usd(CARD.deposit)} into the purifier programme (Orders v2 capture ${d.captureId}). It pays only for its own lifted units; it never sees or buys a verdict.`,
+        { brandId, amountMinor: CARD.deposit, captureId: d.captureId },
+      );
+    }
+    await line(
+      "fund",
+      "Lumen sells both purifiers $4.00 cheaper than Northwind. Levoit is priced the same as Winix in every shop.",
+      { prices: DEMO_SHOP_PRICES },
+    );
+  });
+
+  // ── Choose the sessions: the catalogue is stateless, so probing ids to land each on its arm is free ──
+  const t = tag(o.seed);
+  const need: Record<Arm, number> = {
+    test: PLAN.exposed.reduce((a, b) => a + b, 0),
+    placebo: PLAN.placebo.reduce((a, b) => a + b, 0),
+    none: PLAN.none.reduce((a, b) => a + b, 0),
+  };
+  const pool: Record<Arm, string[]> = { test: [], placebo: [], none: [] };
+  for (
+    let n = 0;
+    pool.test.length < need.test ||
+    pool.placebo.length < need.placebo ||
+    pool.none.length < need.none;
+    n++
+  ) {
+    if (n > 20_000) throw new Error("could not find session ids for every arm");
+    const id = `${t}-${n.toString(36)}`;
+    const probe = new ShopperSession(ep, `probe-${id}`, { sessionId: id });
+    try {
+      await probe.search({ query: "air purifier" });
+    } finally {
+      await probe.close();
+    }
+    const arm = probe.passportBody()?.arm;
+    if (arm && pool[arm].length < need[arm]) pool[arm].push(id);
+  }
+
+  const slots: Slot[] = [];
+  const counts: Record<Arm, number[]> = {
+    test: PLAN.exposed,
+    placebo: PLAN.placebo,
+    none: PLAN.none,
+  };
+  const cursor: Record<Arm, number> = { test: 0, placebo: 0, none: 0 };
+  const longest = Math.max(...PLAN.exposed, ...PLAN.placebo, ...PLAN.none);
+  for (let i = 0; i < longest; i++) {
+    MODEL_FAMILIES.forEach((model, m) => {
+      for (const arm of ["test", "placebo", "none"] as const) {
+        const total = counts[arm][m] as number;
+        if (i >= total) continue;
+        const winixBuyers =
+          arm === "placebo" ? PLAN.placeboWinix[m] : arm === "none" ? PLAN.noneWinix[m] : total;
+        slots.push({
+          id: pool[arm][cursor[arm]++] as string,
+          arm,
+          model,
+          index: i,
+          buysWinix: arm === "test" ? true : i >= total - (winixBuyers as number),
+          browse: SHOPS[(i + m) % SHOPS.length] as string,
+        });
+      }
+    });
+  }
+  const heroExposed = slots.find((s) => s.arm === "test" && s.model === "gpt") as Slot;
+  const heroHeld = slots.find((s) => s.arm === "none" && s.model === "gpt" && !s.buysWinix) as Slot;
+  heroExposed.browse = "northwind";
+  const ordered = [
+    heroExposed,
+    heroHeld,
+    ...slots.filter((s) => s !== heroExposed && s !== heroHeld),
+  ];
+
+  const records = new Map<string, RunRecord>();
+  const play = async (s: Slot): Promise<RunRecord> => {
+    const r = await runSession({
+      endpoints: ep,
+      seed: o.seed,
+      runIndex: records.size,
+      family: s.model,
+      provider: o.provider,
+      request: REQUEST,
+      sessionId: s.id,
+      category: CATEGORY,
+      fake: {
+        browseShop: s.browse,
+        loyalty: 0,
+        ...(s.arm === "test"
+          ? {}
+          : { baselineUpc: s.buysWinix ? UPC_WINIX_A230 : UPC_LEVOIT_CORE300 }),
+      },
+    });
+    if (r.status === "error") throw new Error(`session ${s.id} failed: ${r.error}`);
+    records.set(s.id, r);
+    await emit({ type: "session", data: sessionData(r) });
+    return r;
+  };
+
+  let heroSale: RunRecord | undefined;
+  await beat("exposed", "An exposed agent browses Northwind and pays at Lumen", async () => {
+    const r = await play(heroExposed);
+    heroSale = r;
+    const nw = DEMO_SHOP_PRICES.northwind[UPC_WINIX_A230];
+    const lu = DEMO_SHOP_PRICES.lumen[UPC_WINIX_A230];
+    await line(
+      "exposed",
+      `"${REQUEST}" → ${r.model} (arm: ${r.arm}) saw HouseFresh's test, browsed ${r.storesViewed.join(", ")} at ${usd(nw)} and paid at ${r.shop} for ${usd(r.total?.amountMinor ?? 0)}: ${r.product?.name}. Saved ${usd(nw - lu)}. Same listings, same order as any other agent; only the test was added.`,
+      { sessionId: r.sessionId, orderId: r.orderId, captureId: r.captureId, savedMinor: nw - lu },
+    );
+  });
+  await beat(
+    "heldout",
+    "A held-out agent sees everything except the test and buys Levoit",
+    async () => {
+      const r = await play(heroHeld);
+      await line(
+        "heldout",
+        `Same request → ${r.model} (arm: ${r.arm}), same listings in the same order, no test: bought ${r.product?.name} at ${r.shop} for ${usd(r.total?.amountMinor ?? 0)}.`,
+        { sessionId: r.sessionId, orderId: r.orderId },
+      );
+    },
+  );
+
+  await beat(
+    "study",
+    `The other ${ordered.length - 2} sessions: three models, three arms`,
+    async () => {
+      let done = 2;
+      for (const s of ordered.slice(2)) {
+        await play(s);
+        done++;
+        if (done % 25 === 0 || done === ordered.length) {
+          await line("study", `${done}/${ordered.length} sessions played`, { done });
+        }
+      }
+      const all = [...records.values()];
+      const by = (arm: Arm, upc: string) =>
+        all.filter((r) => r.arm === arm && r.product?.upc === upc).length;
+      const n = (arm: Arm) => all.filter((r) => r.arm === arm).length;
+      const rows = (["test", "placebo", "none"] as const).map((arm) => ({
+        arm,
+        sessions: n(arm),
+        winix: by(arm, UPC_WINIX_A230),
+        levoit: by(arm, UPC_LEVOIT_CORE300),
+      }));
+      await numbers("study", { sessions: all.length, byArm: rows });
+      await line(
+        "study",
+        `Winix share: shown the test ${rows[0]?.winix}/${rows[0]?.sessions}; same-creator placebo ${rows[1]?.winix}/${rows[1]?.sessions}; held out ${rows[2]?.winix}/${rows[2]?.sessions}.`,
+      );
+    },
+  );
+
+  // ── Credits: only what the test caused ──
+  let creditedMinor = 0;
+  let causedUnits = 0;
+  let exposedSales = 0;
+  let levoitUnits = -1;
+  let liftPoints = 0;
+  await beat("credits", "The engine credits only the sales the test caused", async () => {
+    const rec = await eng("POST", "/credits/recompute");
+    const winix = await eng("GET", "/lift/winix");
+    const levoit = await eng("GET", "/lift/levoit");
+    const hf = (await eng("GET", "/credits")).creators.find(
+      (c: Json) => c.creatorId === "housefresh",
+    );
+    exposedSales = winix.exposedSales;
+    causedUnits = winix.causedUnits;
+    levoitUnits = levoit.causedUnits;
+    liftPoints = Math.round(winix.lift * 100);
+    creditedMinor = hf?.totals.pending ?? 0;
+    await numbers("credits", {
+      exposedSales,
+      causedUnits,
+      attributableFraction: winix.attributableFraction,
+      liftPoints,
+      lowerBound: winix.lowerBound,
+      credits: rec.created,
+      creditedMinor,
+      levoitCausedUnits: levoitUnits,
+      levoitLowerBound: levoit.lowerBound,
+    });
+    await line(
+      "credits",
+      `Winix: ${exposedSales} exposed sales → ${causedUnits} caused units (lift +${liftPoints} points, attributable fraction ${(winix.attributableFraction * 100).toFixed(1)}% at the 80% lower bound) → ${usd(creditedMinor)} credited to HouseFresh, held 30 days.`,
+    );
+    await line(
+      "credits",
+      `Levoit: lift bound ${(levoit.lowerBound * 100).toFixed(1)} points → ${levoitUnits} caused units → ${usd(0)}. Levoit pays nothing, and its brand manager never asked HouseFresh for a better verdict.`,
+    );
+  });
+
+  const refundOne = async (): Promise<{ captureId: string; amountMinor: number }> => {
+    const captureId = heroSale?.captureId as string;
+    const before = (await eng("GET", "/credits")).creators[0].credits.find(
+      (c: Json) => c.captureId === captureId,
+    );
+    await shops(`/mock/captures/${captureId}/refund`, { method: "POST" });
+    return { captureId, amountMinor: before?.amountMinor ?? 0 };
+  };
+
+  let voidedMinor = 0;
+  const doRefund = async () => {
+    const r = await refundOne();
+    const creds = (await eng("GET", "/credits")) as Json;
+    const hf = creds.creators[0];
+    const voided = hf.credits.filter((c: Json) => c.state === "voided");
+    voidedMinor = hf.totals.voided;
+    await numbers("refund", {
+      captureId: r.captureId,
+      voidedCredits: voided.length,
+      voidedMinor,
+      reviewFlags: creds.reviewFlags.length,
+      creditStates: hf.totals,
+    });
+    return { creds, voided };
+  };
+
+  if (o.refund === "before-payout") {
+    await beat("refund", "A buyer returns one Winix and that commission disappears", async () => {
+      const { voided } = await doRefund();
+      await line(
+        "refund",
+        `The exposed buyer returns the Winix (capture ${heroSale?.captureId}). PayPal's refund webhook voids ${voided.length} pending credit (${usd(voidedMinor)}) before it can be paid.`,
+      );
+      check("one refund voids exactly one credit", voided.length === 1, `${voided.length} voided`);
+    });
+  }
+
+  await beat("jump", "Day 30: the hold ends", async () => {
+    const r = await eng("POST", "/clock/advance", { days: 30 });
+    const { now: _now, ...payout } = r.payout as Json;
+    await numbers("jump", { days: 30, payout });
+    await line(
+      "jump",
+      "The demo clock jumps 30 days. Holds end; refunds and disputes have had their window.",
+    );
+  });
+
+  let paidMinor = 0;
+  await beat("payout", "HouseFresh is paid, in one batch, through PayPal Payouts", async () => {
+    const payouts = await eng("GET", "/payouts");
+    const credits = await eng("GET", "/credits");
+    const hf = credits.creators[0];
+    paidMinor = hf.totals.paid;
+    const batch = payouts.batches[0];
+    await numbers("payout", {
+      batches: payouts.batches.length,
+      senderBatchId: batch?.senderBatchId,
+      items: batch?.items,
+      paidMinor,
+      pendingMinor: hf.totals.pending,
+      voidedMinor: hf.totals.voided,
+    });
+    await line(
+      "payout",
+      `${usd(paidMinor)} lands in HouseFresh's PayPal account (PAYPAL_ID, batch ${batch?.senderBatchId}, status ${batch?.status})${voidedMinor ? `: ${usd(creditedMinor)} credited − ${usd(voidedMinor)} voided by the refund` : ""}. Nobody clicked a link.`,
+    );
+  });
+
+  let returned: Json = { brands: [] };
+  await beat("return", "Unspent deposits go back to the brands", async () => {
+    returned = await eng("POST", "/cycle/close");
+    const rows = returned.brands.map((b: Json) => ({
+      brandId: b.brandId,
+      spentMinor: b.spent,
+      returnedMinor: b.returnedNow,
+    }));
+    await numbers("return", { brands: rows });
+    for (const r of rows) {
+      await line(
+        "return",
+        `${r.brandId === "winix" ? "Winix" : "Levoit"}: paid ${usd(r.spentMinor)}, ${usd(r.returnedMinor)} returned through captures/{id}/refund.`,
+        r,
+      );
+    }
+  });
+
+  if (o.refund === "after-payout") {
+    await beat("refund", "A buyer returns one Winix after the payout", async () => {
+      const { creds } = await doRefund();
+      await line(
+        "refund",
+        `The credit was already paid, so it is not clawed back: it appears as ${creds.reviewFlags.length} review flag for a person.`,
+      );
+      check(
+        "a refund after payout is flagged, not clawed back",
+        creds.reviewFlags.length === 1,
+        `${creds.reviewFlags.length} flags`,
+      );
+    });
+  }
+
+  await beat("analyst", "The Analyst recommends; Maya approves", async () => {
+    const w = await eng("GET", "/lift/winix");
+    const points = Math.round(w.lift * 100);
+    await line(
+      "analyst",
+      `Analyst: "Tests with a clear winner move agents ${points} points; close verdicts pay nothing. Raise the purifier budget."`,
+      {
+        liftPoints: points,
+        closeVerdict: { boundPoints: -6.0, source: "packages/evals/results/cited/summary.md" },
+      },
+    );
+    const top = await eng("POST", "/approvals/analyst-1/approve", {
+      brandId: "winix",
+      amountMinor: 50_000,
+    });
+    await line(
+      "analyst",
+      `Maya approves: Winix adds ${usd(50_000)} to the programme (scripted amount; capture ${top.captureId}). Money buys honest tests, never a better spot.`,
+      { approval: "analyst-1", brandId: "winix", amountMinor: 50_000 },
+    );
+  });
+
+  // ── The ledger and PayPal must agree ──
+  await beat("checks", "Ledger and PayPal agree", async () => {
+    const [deposits, credits, payouts, mock, shopMock, journeys] = await Promise.all([
+      eng("GET", "/deposits"),
+      eng("GET", "/credits"),
+      eng("GET", "/payouts"),
+      eng("GET", "/mock/state"),
+      shops("/mock/state"),
+      eng("GET", "/journeys?limit=200"),
+    ]);
+    const hf = credits.creators[0];
+    const mockBatchTotal = mock.batches.reduce(
+      (a: number, b: Json) =>
+        a + b.items.reduce((x: number, i: Json) => x + i.amount.amountMinor, 0),
+      0,
+    );
+    check(
+      "payout: ledger paid == PayPal batch total",
+      hf.totals.paid === mockBatchTotal && mock.batches.length === 1,
+      `ledger ${usd(hf.totals.paid)}, PayPal ${usd(mockBatchTotal)} in ${mock.batches.length} batch`,
+    );
+    const item = mock.batches[0]?.items[0];
+    check(
+      "payout goes to HouseFresh's PAYPAL_ID",
+      item?.receiver === "HOUSEFRESH-PP" && item?.recipientType === "PAYPAL_ID",
+      `${item?.recipientType} ${item?.receiver}`,
+    );
+    check(
+      "payout: one batch, same id in ledger and PayPal",
+      payouts.batches.length === 1 &&
+        payouts.batches[0].senderBatchId === mock.batches[0]?.senderBatchId,
+      `${payouts.batches[0]?.senderBatchId}`,
+    );
+    const depositedMock = new Map<string, Json>(mock.captures.map((c: Json) => [c.id, c]));
+    for (const b of deposits.brands as Json[]) {
+      const funded = b.deposits.filter((d: Json) => d.status === "captured");
+      const inMock = funded.reduce(
+        (a: number, d: Json) => a + (depositedMock.get(d.captureId)?.amount.amountMinor ?? 0),
+        0,
+      );
+      const refundedMock = funded.reduce(
+        (a: number, d: Json) => a + (depositedMock.get(d.captureId)?.refunded ?? 0),
+        0,
+      );
+      check(
+        `${b.brandId}: deposits in ledger == captures in PayPal`,
+        inMock === b.deposited,
+        `${usd(b.deposited)} vs ${usd(inMock)}`,
+      );
+      check(
+        `${b.brandId}: returned in ledger == refunded in PayPal`,
+        refundedMock === b.returned,
+        `${usd(b.returned)} vs ${usd(refundedMock)}`,
+      );
+      check(
+        `${b.brandId}: spent + returned + reserved + available == deposited`,
+        b.spent + b.returned + b.reserved + b.available === b.deposited,
+        `${usd(b.deposited)}`,
+      );
+    }
+    const sales = shopMock.captures as Json[];
+    const attributed = (journeys.journeys as Json[]).flatMap((j) => j.items as Json[]);
+    check(
+      "sales: every shop capture reached the engine through a webhook",
+      attributed.length === sales.length && shopMock.failedDeliveries.length === 0,
+      `${attributed.length} attributed / ${sales.length} captured, ${shopMock.failedDeliveries.length} failed deliveries`,
+    );
+    check(
+      "sales: engine amounts == PayPal amounts",
+      attributed.reduce((a, i) => a + i.amountMinor, 0) ===
+        sales.reduce((a, s) => a + s.amount.amountMinor, 0),
+      `${usd(attributed.reduce((a, i) => a + i.amountMinor, 0))}`,
+    );
+    const refunded = sales.filter((s) => s.refunded > 0).length;
+    const voided = hf.credits.filter((c: Json) => c.state === "voided").length;
+    check(
+      "one refund at the shop == one voided credit in the ledger",
+      refunded === 1 &&
+        (o.refund === "after-payout" ? credits.reviewFlags.length === 1 : voided === 1),
+      `${refunded} refunded, ${voided} voided, ${credits.reviewFlags.length} flagged`,
+    );
+    check(
+      "every session purchased",
+      [...records.values()].every((r) => r.status === "purchased"),
+      `${[...records.values()].filter((r) => r.status === "purchased").length}/${records.size}`,
+    );
+    check(
+      "no credit paid inside its hold",
+      hf.credits.every((c: Json) => c.state !== "paid" || c.payoutBatchId),
+      "all paid credits carry a batch id",
+    );
+
+    const levoitReturned =
+      (returned.brands as Json[]).find((b) => b.brandId === "levoit")?.returnedNow ?? 0;
+    check(
+      "Levoit pays $0 and gets the whole deposit back",
+      levoitUnits === 0 && levoitReturned === CARD.deposit,
+      `${usd(levoitReturned)} returned`,
+    );
+    await numbers("checks", { checks });
+    for (const c of checks)
+      await line("checks", `${c.ok ? "ok  " : "FAIL"} ${c.name}: ${c.detail}`);
+  });
+
+  const returnedMinor =
+    (returned.brands as Json[]).find((b) => b.brandId === "winix")?.returnedNow ?? 0;
+  const result: DemoResult = {
+    numbers: {
+      sessions: records.size,
+      purchased: [...records.values()].filter((r) => r.status === "purchased").length,
+      exposedSales,
+      causedUnits,
+      creditedMinor,
+      paidMinor,
+      returnedMinor,
+      levoitCausedUnits: levoitUnits,
+      liftPoints,
+    },
+    checks,
+    matchesCard: false,
+  };
+  if (fake) {
+    const expectPaid =
+      o.refund === "before-payout" ? CARD.creditedMinor - voidedMinor : CARD.creditedMinor;
+    const cardOk =
+      records.size === CARD.sessions &&
+      exposedSales === CARD.exposedSales &&
+      causedUnits === CARD.causedUnits &&
+      creditedMinor === CARD.creditedMinor &&
+      levoitUnits === 0 &&
+      paidMinor === expectPaid &&
+      returnedMinor === CARD.deposit - expectPaid;
+    result.matchesCard = cardOk;
+    check(
+      "numbers match the card (57 → 51 → $391.64; Levoit $0)",
+      cardOk,
+      `${exposedSales} → ${causedUnits} → ${usd(creditedMinor)}`,
+    );
+  }
+  await emit({
+    type: "run.end",
+    text: checks.every((c) => c.ok) ? "ok" : "failed",
+    data: { ...result.numbers, matchesCard: result.matchesCard, checks },
+  });
+  return result;
+}
+
+function sessionData(r: RunRecord): Record<string, unknown> {
+  return {
+    sessionId: r.sessionId,
+    model: r.model,
+    arm: r.arm,
+    storesViewed: r.storesViewed,
+    shop: r.shop,
+    product: r.product?.name ?? null,
+    upc: r.product?.upc ?? null,
+    totalMinor: r.total?.amountMinor ?? null,
+    orderId: r.orderId,
+    captureId: r.captureId,
+    reason: r.reason,
+    status: r.status,
+  };
+}
