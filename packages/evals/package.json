@@ -9,10 +9,13 @@
   "scripts": {
     "typecheck": "tsc -p tsconfig.json",
     "test": "vitest run --passWithNoTests",
-    "evals": "tsx src/cli.ts"
+    "evals": "tsx src/cli.ts",
+    "cited:run": "tsx src/cited/run.ts --out results/cited",
+    "cited:summarize": "tsx src/cited/summarize.ts results/cited"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^4.0.94",
+    "@pact/attribution": "*",
     "@pact/catalog": "*",
     "@pact/policy": "*",
     "@pact/protocol": "*",
