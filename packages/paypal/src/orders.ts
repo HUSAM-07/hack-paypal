@@ -32,8 +32,20 @@ export interface ExperienceContext {
   locale?: string;
 }
 
+export interface OrderItemInput {
+  name: string;
+  quantity: number;
+  unit_amount: Money;
+  sku?: string;
+  /** 12-digit UPC-A, sent as `upc: {type: "UPC-A", code}`. Lets the sale join to a product. */
+  upc?: string;
+  category?: "PHYSICAL_GOODS" | "DIGITAL_GOODS" | "DONATION";
+}
+
 export interface PurchaseUnitInput {
   amount: Money;
+  /** When present, the amount's `breakdown.item_total` is derived from these. */
+  items?: OrderItemInput[];
   reference_id?: string;
   custom_id?: string;
   invoice_id?: string;
@@ -67,9 +79,27 @@ export interface CreateOrderInput {
   payment_source?: OrderPaymentSource;
 }
 
+function serializeItem(i: OrderItemInput) {
+  const { unit_amount, upc, ...rest } = i;
+  return {
+    ...rest,
+    unit_amount: toAmount(unit_amount),
+    ...(upc ? { upc: { type: "UPC-A", code: upc } } : {}),
+  };
+}
+
 function serializeUnit(u: PurchaseUnitInput) {
-  const { amount, ...rest } = u;
-  return { ...rest, amount: toAmount(amount) };
+  const { amount, items, ...rest } = u;
+  if (!items?.length) return { ...rest, amount: toAmount(amount) };
+  const itemTotal = items.reduce((sum, i) => sum + i.unit_amount.amountMinor * i.quantity, 0);
+  return {
+    ...rest,
+    items: items.map((i) => ({ ...serializeItem(i), quantity: String(i.quantity) })),
+    amount: {
+      ...toAmount(amount),
+      breakdown: { item_total: toAmount({ amountMinor: itemTotal, currency: amount.currency }) },
+    },
+  };
 }
 
 export function ordersApi(t: Transport) {
