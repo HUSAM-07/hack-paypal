@@ -81,3 +81,12 @@ Each line is a `Scenario` (`src/scenario.ts`). Per-turn `expect` supports:
 `history` seeds earlier messages. Agent entries run their `toolCalls` through the fake tools, so the refs exist; ids are deterministic (`pact_ev0001`, …). Add `judge: {rubric, criteria}` only for criteria a regex can't decide.
 
 Tag every red-team scenario `redteam`; that tag carries the 100% gate.
+
+## CITED evals
+
+`src/cited/` re-runs the CITED purifier, narrow-verdict and abstain-allowed studies against GPT, Gemini and Sonnet through an OpenAI-compatible gateway (`LLM_BASE_URL`, `LLM_API_KEY`). Pre-registration: `scenarios/cited/PREREGISTRATION.md`. Raw results and summary: `results/cited/`.
+
+```bash
+npm run cited:run -w @pact/evals        # resumable; skips sessions already in results.jsonl
+npm run cited:summarize -w @pact/evals  # writes summary.md and summary.json
+```

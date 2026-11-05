@@ -39,6 +39,16 @@ export interface Env {
   PAYPAL_CLIENT_SECRET?: string;
   /** The id PayPal assigned to our webhook subscription; signatures are bound to it. */
   PAYPAL_WEBHOOK_ID?: string;
+
+  // CITED engine, mounted at /api/cited (see src/cited.ts).
+  /** PayPal mode for CITED only; falls back to PAYPAL_MODE. */
+  CITED_PAYPAL_MODE?: string;
+  /** Webhook id for the /api/cited/webhooks/paypal subscription. */
+  CITED_PAYPAL_WEBHOOK_ID?: string;
+  /** HMAC key the catalogue signs Agent Affiliate Passports with. */
+  CITED_PASSPORT_KEY?: string;
+  /** Bearer token for the CITED API; required unless CITED runs simulated. */
+  CITED_API_TOKEN?: string;
 }
 
 export function allowedOrigins(env: Env): string[] {

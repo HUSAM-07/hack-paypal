@@ -21,10 +21,12 @@ export {
   invoicePayerUrl,
   type NotifyInput,
 } from "./invoicing";
+export * from "./mock";
 export {
   type CaptureAuthorizationInput,
   type CreateOrderInput,
   type ExperienceContext,
+  type OrderItemInput,
   type OrderPaymentSource,
   orderApproveUrl,
   type PurchaseUnitInput,

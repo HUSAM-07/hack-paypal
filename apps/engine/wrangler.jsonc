@@ -1,0 +1,24 @@
+{
+  "$schema": "../../node_modules/wrangler/config-schema.json",
+  "name": "cited-engine",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-10-28",
+  "compatibility_flags": ["nodejs_compat"],
+  // Standalone for local dev and tests. Deployed, the engine runs inside pact-worker at
+  // /api/cited and shares its database, so the migrations live with the worker's.
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "cited",
+      "database_id": "local",
+      "migrations_dir": "../worker/migrations"
+    }
+  ],
+  "vars": {
+    "PAYPAL_MODE": "simulated",
+    "MODEL_PROVIDER": "fake",
+    // Same published dev key the catalogue signs with in simulated mode (not a secret).
+    // Deployments override it with a wrangler secret.
+    "PASSPORT_KEY": "cited-dev-passport-key"
+  }
+}

@@ -1,0 +1,29 @@
+{
+  "name": "@cited/engine",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./env": "./src/env.ts"
+  },
+  "scripts": {
+    "dev": "wrangler dev --port 8800",
+    "cf-typegen": "wrangler types --include-runtime false",
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "hono": "^4.13.16",
+    "@pact/attribution": "*",
+    "@pact/paypal": "*",
+    "@pact/protocol": "*",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^5.20261101.1",
+    "wrangler": "^4.156.0",
+    "@cloudflare/vitest-plugin": "^1.4.11",
+    "@types/node": "^26.6.6"
+  }
+}

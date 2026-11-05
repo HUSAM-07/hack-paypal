@@ -1,0 +1,25 @@
+{
+  "name": "@cited/shops",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./catalogue": "./src/catalogue.ts"
+  },
+  "scripts": {
+    "dev": "tsx watch src/dev.ts",
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@hono/node-server": "^1.19.0",
+    "@pact/paypal": "*",
+    "@pact/protocol": "*",
+    "hono": "^4.13.16"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.6",
+    "tsx": "^4.20.0"
+  }
+}
