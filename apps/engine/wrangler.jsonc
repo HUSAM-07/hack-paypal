@@ -4,8 +4,16 @@
   "main": "src/index.ts",
   "compatibility_date": "2026-10-28",
   "compatibility_flags": ["nodejs_compat"],
-  // Local D1 only for now; the real database_id is set when the engine is deployed.
-  "d1_databases": [{ "binding": "DB", "database_name": "cited", "database_id": "local" }],
+  // Standalone for local dev and tests. Deployed, the engine runs inside pact-worker at
+  // /api/cited and shares its database, so the migrations live with the worker's.
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "cited",
+      "database_id": "local",
+      "migrations_dir": "../worker/migrations"
+    }
+  ],
   "vars": {
     "PAYPAL_MODE": "simulated",
     "MODEL_PROVIDER": "fake",

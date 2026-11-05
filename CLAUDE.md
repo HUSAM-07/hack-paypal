@@ -12,18 +12,18 @@ Read these first:
 Brands fund a category programme. PayPal's agent catalogue (our mock of Store Sync) randomly shows AI shopping agents a creator's test, a placebo (other content from the same creator), or nothing; ranking never changes. The catalogue issues a signed **Agent Affiliate Passport**, the shop puts it in Orders v2 `purchase_units[].custom_id`, and the capture joins the sale to its arm, even at a different shop. The engine credits only the sales the test caused (attributable fraction at the 80% lower bound, Shapley split across co-exposed creators), holds credits 30 days, voids them on refunds and disputes, then pays creators by batch Payouts and refunds the unspent deposit. AG Studio shows it all to the brand and the creator.
 
 ## Layout
-CITED reuses this monorepo. The Pact code is a placeholder: reuse its pieces, don't extend Pact features.
+CITED reuses this monorepo. Pact is the codename: `pact-worker` is the one deployed Worker (https://caaash.shipwith.si), and CITED ships inside it. Don't extend the old Pact chat features.
 
 Existing, reused:
 - `packages/protocol`: **the contract.** `src/cited.ts` holds the CITED shapes (Arm, VerifiedTest, HoldoutSchedule, PassportBody, AttributedSale, Credit, ProgrammeDeposit, Money helpers). Change it only additively; if you must break it, say so in your report.
 - `packages/paypal`: fetch-based PayPal REST client for Workers (Orders, Payouts, webhooks with signature verification, fake-fetch testing). Add `items[].upc` to order items here (issue B9).
 - `packages/evals`: eval harness; reuse for the `eval/` re-run (issue B20).
-- `apps/worker`: Pact's Worker. Copy its Hono, D1 and webhook patterns; don't add CITED to it.
+- `apps/worker`: `pact-worker`, the deployed Worker. It mounts the CITED engine at `/api/cited` (`src/cited.ts`) and holds every D1 migration, the engine's included. Merging to `main` deploys it.
 
 New for CITED (create when the issue says so):
 - `packages/attribution`: pure functions only. Attributable fraction, lower bound, Shapley split, ledger rules. Property tests.
 - `apps/catalogue-mcp`: MCP server with `search_product`, arm assignment, passport issuing.
-- `apps/engine`: Worker (Hono + D1). Webhooks, the arm-checkout join, credit ledger, payouts, refunds, and the read API for AG Studio.
+- `apps/engine`: Hono + D1 app. Webhooks, the arm-checkout join, credit ledger, payouts, refunds, and the read API for AG Studio. Runs standalone for dev and tests; deployed inside `apps/worker` at `/api/cited`. Its migrations live in `apps/worker/migrations`. Deployed settings are `CITED_*` vars on the worker.
 - `apps/shops`: Northwind, Lumen and MegaMart storefronts with PayPal checkout.
 - `apps/agents`: shopper-agent runner (GPT, Gemini, Sonnet) and the one-command demo runner.
 - `apps/studio`: AG Studio dashboards and the custom Analyst agent.
@@ -37,6 +37,7 @@ npm workspaces. Each package exports `./src/index.ts` directly; no build step fo
 - `npm run lint`: Biome. Use `npx biome check --write .` to fix.
 - `PAYPAL_MODE=simulated` and `MODEL_PROVIDER=fake` run without keys. Keep every new app runnable that way.
 - Target (issue B1): `npm run dev:cited` starts every CITED app locally.
+- `CITED_ENGINE=worker npm run demo:cited`: the demo with the engine inside `pact-worker`, the way it is deployed. Run it before merging to `main`.
 
 ## Non-negotiable rules
 1. **Money is `Money {amountMinor:int, currency}`.** Never floats. Convert to PayPal strings only with `toPayPalValue`. Commission uses `commissionOn` (rounds down).

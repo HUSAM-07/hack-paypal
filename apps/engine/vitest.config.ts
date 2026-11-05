@@ -8,7 +8,9 @@ export default defineConfig(async () => ({
       wrangler: { configPath: "./wrangler.jsonc" },
       miniflare: {
         bindings: {
-          TEST_MIGRATIONS: await readD1Migrations(path.join(import.meta.dirname, "migrations")),
+          TEST_MIGRATIONS: await readD1Migrations(
+            path.join(import.meta.dirname, "../worker/migrations"),
+          ),
           PAYPAL_MODE: "simulated",
           MODEL_PROVIDER: "fake",
           PASSPORT_KEY: "test-passport-key",

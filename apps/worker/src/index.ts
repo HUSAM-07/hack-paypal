@@ -1,6 +1,7 @@
 import { type Context, Hono } from "hono";
 import { auth } from "./auth/routes";
 import { sessionUser } from "./auth/session";
+import { CITED_PREFIX, citedHandler } from "./cited";
 import { allowedOrigins, type Env } from "./env";
 import { newId } from "./ids";
 import { payments } from "./payments/routes";
@@ -46,6 +47,8 @@ app.route("/api/auth", auth);
 // Before `payments`: PayPal calls this without a session, and the first matching
 // handler wins, so payments' session middleware never sees webhook requests.
 app.route("/api/paypal/webhooks", webhooks);
+// CITED has its own auth (bearer token) and PayPal webhook, so it also goes before `payments`.
+app.all(`${CITED_PREFIX}/*`, citedHandler);
 app.route("/api", payments);
 
 /**

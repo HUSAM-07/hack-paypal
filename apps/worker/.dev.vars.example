@@ -18,3 +18,13 @@ PAYPAL_CLIENT_SECRET=
 PAYPAL_WEBHOOK_ID=
 # When set, creating an account needs this code (share /app?invite=<code>). Empty = open.
 INVITE_CODE=
+
+# --- CITED engine at /api/cited (src/cited.ts) ---
+# PayPal mode for CITED only; falls back to PAYPAL_MODE.
+CITED_PAYPAL_MODE=simulated
+# Id of the webhook subscribed to <origin>/api/cited/webhooks/paypal.
+CITED_PAYPAL_WEBHOOK_ID=
+# Same value as the catalogue's PASSPORT_SIGNING_KEY. wrangler.jsonc sets the public dev key.
+CITED_PASSPORT_KEY=
+# Bearer token for /api/cited/api; required unless CITED runs simulated.
+CITED_API_TOKEN=

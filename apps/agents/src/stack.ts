@@ -1,5 +1,5 @@
 import { type ChildProcess, spawn } from "node:child_process";
-import { mkdtempSync, rmSync } from "node:fs";
+import { mkdirSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -51,11 +51,21 @@ function run(cmd: string, args: string[], cwd: string): Promise<void> {
  * keyless (PAYPAL_MODE=simulated). A fresh database every time, so a run is reproducible.
  */
 export async function startStack(
-  o: { ports?: Partial<typeof DEFAULT_PORTS>; seed?: string; log?: (line: string) => void } = {},
+  o: {
+    ports?: Partial<typeof DEFAULT_PORTS>;
+    seed?: string;
+    log?: (line: string) => void;
+    /**
+     * "standalone" runs apps/engine on its own; "worker" runs it inside pact-worker at
+     * /api/cited, the way it is deployed. Default: env CITED_ENGINE, else standalone.
+     */
+    engine?: "standalone" | "worker";
+  } = {},
 ): Promise<Stack> {
   const ports = { ...DEFAULT_PORTS, ...o.ports };
+  const inWorker = (o.engine ?? process.env.CITED_ENGINE) === "worker";
   const urls: StackUrls = {
-    engineUrl: `http://localhost:${ports.engine}`,
+    engineUrl: `http://localhost:${ports.engine}${inWorker ? "/api/cited" : ""}`,
     catalogueUrl: `http://localhost:${ports.catalogue}`,
     shopsUrl: `http://localhost:${ports.shops}`,
   };
@@ -92,9 +102,12 @@ export async function startStack(
   };
 
   try {
-    const engineDir = join(root, "apps/engine");
+    const engineDir = join(root, inWorker ? "apps/worker" : "apps/engine");
+    const db = inWorker ? "pact" : "cited";
+    // The worker serves the web build as assets; an empty folder is enough for the API.
+    if (inWorker) mkdirSync(join(root, "apps/web/dist"), { recursive: true });
     const wrangler = (...a: string[]) => ["wrangler", ...a, "--persist-to", state];
-    await run("npx", wrangler("d1", "migrations", "apply", "cited", "--local"), engineDir);
+    await run("npx", wrangler("d1", "migrations", "apply", db, "--local"), engineDir);
     start("engine", "npx", wrangler("dev", "--port", String(ports.engine)), engineDir);
     start("catalogue", "npx", ["tsx", "src/dev.ts"], join(root, "apps/catalogue-mcp"), {
       PORT: String(ports.catalogue),
