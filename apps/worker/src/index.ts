@@ -2,6 +2,14 @@ import { type Context, Hono } from "hono";
 import { auth } from "./auth/routes";
 import { sessionUser } from "./auth/session";
 import { CITED_PREFIX, citedHandler } from "./cited";
+import {
+  CATALOGUE_PREFIX,
+  CONSOLE_PREFIX,
+  catalogueHandler,
+  consoleHandler,
+  SHOPS_PREFIX,
+  shopsHandler,
+} from "./cited-apps";
 import { allowedOrigins, type Env } from "./env";
 import { newId } from "./ids";
 import { payments } from "./payments/routes";
@@ -38,6 +46,16 @@ const appPage = async (c: Context<{ Bindings: Env }>) => {
 };
 app.get("/app", appPage);
 app.get("/app/*", appPage);
+
+// CITED demo apps: their pages set their own headers (inline CSS and scripts).
+for (const [prefix, handler] of [
+  [SHOPS_PREFIX, shopsHandler],
+  [CONSOLE_PREFIX, consoleHandler],
+  [CATALOGUE_PREFIX, catalogueHandler],
+] as const) {
+  app.all(prefix, handler);
+  app.all(`${prefix}/*`, handler);
+}
 
 app.use("*", securityHeaders);
 app.use("/api/auth/*", ipRateLimit);

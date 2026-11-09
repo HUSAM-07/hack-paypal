@@ -10,6 +10,7 @@ const { values } = parseArgs({
     "real-models": { type: "boolean", default: false },
     refund: { type: "string", default: "before-payout" },
     events: { type: "string" },
+    out: { type: "string" },
     serve: { type: "string" },
     pace: { type: "string", default: "0" },
     "use-running": { type: "boolean", default: false },
@@ -27,6 +28,7 @@ if (values.help) {
   --real-models       use GPT/Gemini/Sonnet through the gateway (LLM_BASE_URL, LLM_API_KEY); numbers will differ from the card
   --refund WHEN       before-payout (default; the void changes the payout) or after-payout (paid credit is flagged)
   --events FILE|-     write the JSONL event stream to FILE; "-" prints only JSONL on stdout
+  --out FILE          write every session's run record as JSONL (what the console reads)
   --serve PORT        also serve the stream as Server-Sent Events at http://localhost:PORT/events
   --pace MS           pause between beats, for a live screen
   --use-running       use an already running 'npm run dev:cited' stack (needs a fresh engine); else a private stack starts
@@ -116,6 +118,16 @@ try {
     emit,
     pace: Number(values.pace),
   });
+  if (values.out)
+    writeFileSync(
+      values.out,
+      result.records
+        .map(
+          (r) => `${JSON.stringify(r)}
+`,
+        )
+        .join(""),
+    );
   if (result.checks.some((c) => !c.ok)) code = 1;
   if (!values["real-models"] && !result.matchesCard) code = 1;
 } catch (e) {

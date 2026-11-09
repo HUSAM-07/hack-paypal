@@ -72,6 +72,8 @@ export interface DemoResult {
   checks: Check[];
   /** True when every number on the card was reproduced (fake provider only). */
   matchesCard: boolean;
+  /** Every session's run record, in play order (the console's side-by-side frame reads these). */
+  records: RunRecord[];
 }
 
 /** The study's shape, per model in MODEL_FAMILIES order. */
@@ -641,6 +643,7 @@ export async function runDemo(o: DemoOptions): Promise<DemoResult> {
     },
     checks,
     matchesCard: false,
+    records: [...records.values()],
   };
   if (fake) {
     const expectPaid =
