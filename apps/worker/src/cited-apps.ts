@@ -9,7 +9,7 @@ import { app as engine } from "@cited/engine";
 import { createShopsApp } from "@cited/shops";
 import { createMockPayPal } from "@pact/paypal";
 import type { Context } from "hono";
-import { citedEnv } from "./cited";
+import { CITED_PREFIX, citedEnv, serveEngine } from "./cited";
 import type { Env } from "./env";
 
 /**
@@ -17,9 +17,9 @@ import type { Env } from "./env";
  * engine, so a judge gets one clickable link. They call the engine in-process: a workers.dev
  * worker can't fetch its own account's workers.dev URLs (Cloudflare error 1042).
  *
- * Shops (with the simulated PayPal's orders) and the catalogue (its demo clock) keep state in
- * memory, and Cloudflare spreads requests over many isolates. Both therefore run inside one
- * Durable Object instance (CitedDemoDO), the only place that memory is shared.
+ * Shops and engine (each with a simulated PayPal's orders and captures) and the catalogue (its
+ * demo clock) keep state in memory, and Cloudflare spreads requests over many isolates. In
+ * simulated mode they therefore run inside one Durable Object instance (CitedDemoDO).
  */
 export const SHOPS_PREFIX = "/shops";
 export const CATALOGUE_PREFIX = "/catalogue";
@@ -96,6 +96,7 @@ export async function serveStatefulDemo(req: Request, env: Env, ctx: ExecCtx): P
   if (path === CATALOGUE_PREFIX || path.startsWith(`${CATALOGUE_PREFIX}/`)) {
     return catalogue.fetch(strip(req, CATALOGUE_PREFIX));
   }
+  if (path.startsWith(`${CITED_PREFIX}/`)) return serveEngine(req, env, ctx);
   return new Response("not found", { status: 404 });
 }
 

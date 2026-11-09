@@ -24,9 +24,27 @@ export function citedEnv(env: Env): EngineEnv {
   };
 }
 
-/** Hands /api/cited/* to the engine with the prefix stripped. */
-export function citedHandler(c: Context<{ Bindings: Env }>): Response | Promise<Response> {
-  const url = new URL(c.req.url);
+type Ctx = Context<{ Bindings: Env }>;
+
+/** Hands a /api/cited/* request to the engine with the prefix stripped. */
+export function serveEngine(
+  req: Request,
+  env: Env,
+  ctx: Ctx["executionCtx"],
+): Response | Promise<Response> {
+  const url = new URL(req.url);
   url.pathname = url.pathname.slice(CITED_PREFIX.length) || "/";
-  return engine.fetch(new Request(url, c.req.raw), citedEnv(c.env), c.executionCtx);
+  return engine.fetch(new Request(url, req), citedEnv(env), ctx);
+}
+
+/**
+ * Simulated PayPal lives in isolate memory (a deposit captured in one isolate can't be refunded
+ * from another), so in simulated mode the engine runs inside the one demo Durable Object.
+ * With real PayPal the state is PayPal's and D1's, and any isolate will do.
+ */
+export function citedHandler(c: Ctx): Response | Promise<Response> {
+  if ((c.env.CITED_PAYPAL_MODE ?? c.env.PAYPAL_MODE) === "simulated") {
+    return c.env.CITED_DEMO.get(c.env.CITED_DEMO.idFromName("demo")).fetch(c.req.raw);
+  }
+  return serveEngine(c.req.raw, c.env, c.executionCtx);
 }
