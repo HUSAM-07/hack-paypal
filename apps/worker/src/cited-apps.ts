@@ -17,20 +17,22 @@ import type { Env } from "./env";
  * engine, so a judge gets one clickable link. They call the engine in-process: a workers.dev
  * worker can't fetch its own account's workers.dev URLs (Cloudflare error 1042).
  *
- * Simulated PayPal keeps its orders in isolate memory, so a hosted checkout is best effort:
- * Cloudflare may serve "create order" and "capture" from different isolates.
+ * Shops (with the simulated PayPal's orders) and the catalogue (its demo clock) keep state in
+ * memory, and Cloudflare spreads requests over many isolates. Both therefore run inside one
+ * Durable Object instance (CitedDemoDO), the only place that memory is shared.
  */
 export const SHOPS_PREFIX = "/shops";
 export const CATALOGUE_PREFIX = "/catalogue";
 export const CONSOLE_PREFIX = "/console";
 
 type Ctx = Context<{ Bindings: Env }>;
+export type ExecCtx = Ctx["executionCtx"];
 
 /** Every mounted app's routes start at "/"; strip the prefix before handing the request over. */
-function strip(c: Ctx, prefix: string): Request {
-  const url = new URL(c.req.url);
+function strip(req: Request, prefix: string): Request {
+  const url = new URL(req.url);
   url.pathname = url.pathname.slice(prefix.length) || "/";
-  return new Request(url, c.req.raw);
+  return new Request(url, req);
 }
 
 /** Our apps' HTML uses root-relative links; mounted under a prefix they need it too. */
@@ -57,14 +59,14 @@ async function asDemoPage(res: Response, prefix: string): Promise<Response> {
 }
 
 /** The engine as a fetch function, so in-process callers keep their HTTP-shaped clients. */
-function engineFetch(env: Env, ctx: Ctx["executionCtx"]): typeof fetch {
+function engineFetch(env: Env, ctx: ExecCtx): typeof fetch {
   return async (input, init) =>
     engine.fetch(new Request(input, init), citedEnv(env), ctx) as Promise<Response>;
 }
 
 let shops: ReturnType<typeof createShopsApp> | undefined;
 
-function shopsFor(env: Env, ctx: Ctx["executionCtx"]) {
+function shopsFor(env: Env, ctx: ExecCtx) {
   if (shops) return shops;
   const mode = env.CITED_PAYPAL_MODE ?? env.PAYPAL_MODE;
   const shopEnv = {
@@ -85,15 +87,22 @@ function shopsFor(env: Env, ctx: Ctx["executionCtx"]) {
   return shops;
 }
 
-export async function shopsHandler(c: Ctx): Promise<Response> {
-  return asDemoPage(
-    await shopsFor(c.env, c.executionCtx).fetch(strip(c, SHOPS_PREFIX)),
-    SHOPS_PREFIX,
-  );
+/** Runs inside CitedDemoDO: the stateful demo apps, by path prefix. */
+export async function serveStatefulDemo(req: Request, env: Env, ctx: ExecCtx): Promise<Response> {
+  const path = new URL(req.url).pathname;
+  if (path === SHOPS_PREFIX || path.startsWith(`${SHOPS_PREFIX}/`)) {
+    return asDemoPage(await shopsFor(env, ctx).fetch(strip(req, SHOPS_PREFIX)), SHOPS_PREFIX);
+  }
+  if (path === CATALOGUE_PREFIX || path.startsWith(`${CATALOGUE_PREFIX}/`)) {
+    return catalogue.fetch(strip(req, CATALOGUE_PREFIX));
+  }
+  return new Response("not found", { status: 404 });
 }
 
-export function catalogueHandler(c: Ctx): Response | Promise<Response> {
-  return catalogue.fetch(strip(c, CATALOGUE_PREFIX));
+/** /shops/* and /catalogue/*: forwarded to the one demo Durable Object. */
+export function statefulDemoHandler(c: Ctx): Promise<Response> {
+  const ns = c.env.CITED_DEMO;
+  return ns.get(ns.idFromName("demo")).fetch(c.req.raw);
 }
 
 /** Run records live in D1 (cited_agent_runs), one JSONL line per row. */
@@ -116,5 +125,5 @@ export async function consoleHandler(c: Ctx): Promise<Response> {
     }),
     runs: d1RunSource(c.env.DB),
   });
-  return asDemoPage(await app.fetch(strip(c, CONSOLE_PREFIX)), CONSOLE_PREFIX);
+  return asDemoPage(await app.fetch(strip(c.req.raw, CONSOLE_PREFIX)), CONSOLE_PREFIX);
 }
