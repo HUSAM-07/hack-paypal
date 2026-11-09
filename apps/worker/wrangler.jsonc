@@ -5,7 +5,8 @@
   "compatibility_date": "2026-10-28",
   "compatibility_flags": ["nodejs_compat"],
   "observability": { "enabled": true },
-  "routes": [{ "pattern": "caaash.shipwith.si", "custom_domain": true }],
+  // Deployed to the team's own Cloudflare account on workers.dev.
+  "workers_dev": true,
   // The web app ships with the worker so cookies and sockets stay same-origin. The
   // landing is the prerendered index.html; /app routes get app.html from the worker.
   // No SPA fallback, so a stale chunk 404s instead of returning HTML.
@@ -27,7 +28,7 @@
     {
       "binding": "DB",
       "database_name": "pact",
-      "database_id": "e1003458-8946-4f7b-ba51-775092dd7243",
+      "database_id": "21de0d7d-9197-4260-a7e2-8453b7736e24",
       "migrations_dir": "migrations"
     }
   ],
@@ -43,8 +44,8 @@
     "RP_NAME": "Pact",
     // Production origin; .dev.vars overrides both for local dev. Passkeys are bound
     // to RP_ID, so only this host can sign people in.
-    "RP_ID": "caaash.shipwith.si",
-    "ORIGINS": "https://caaash.shipwith.si",
+    "RP_ID": "pact-worker.vincent-wesley-liem.workers.dev",
+    "ORIGINS": "https://pact-worker.vincent-wesley-liem.workers.dev",
     "STEP_UP_ABOVE_MINOR": "20000",
     // Simulated until the in-app sandbox checkout is verified with a real buyer login.
     "PAYPAL_MODE": "simulated",
