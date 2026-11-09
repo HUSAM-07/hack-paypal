@@ -33,4 +33,4 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
       - name: Smoke test
-        run: curl -fsS "${{ vars.DEPLOY_URL }}/api/cited/clock"
+        run: curl -fsS "${{ vars.DEPLOY_URL }}/api/cited/health"
