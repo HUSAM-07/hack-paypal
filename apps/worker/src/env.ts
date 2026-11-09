@@ -1,3 +1,4 @@
+import type { CitedDemoDO } from "./do/cited-demo";
 import type { PactDO } from "./do/pact";
 import type { ThreadDO } from "./do/thread";
 import type { UserDO } from "./do/user";
@@ -6,6 +7,8 @@ export interface Env {
   THREAD: DurableObjectNamespace<ThreadDO>;
   USER: DurableObjectNamespace<UserDO>;
   PACT: DurableObjectNamespace<PactDO>;
+  /** One instance: the CITED demo's in-memory state (shops' PayPal mock, catalogue clock). */
+  CITED_DEMO: DurableObjectNamespace<CitedDemoDO>;
   DB: D1Database;
   /** The built web app (apps/web/dist). */
   ASSETS: Fetcher;

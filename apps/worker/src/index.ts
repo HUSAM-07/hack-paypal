@@ -5,10 +5,9 @@ import { CITED_PREFIX, citedHandler } from "./cited";
 import {
   CATALOGUE_PREFIX,
   CONSOLE_PREFIX,
-  catalogueHandler,
   consoleHandler,
   SHOPS_PREFIX,
-  shopsHandler,
+  statefulDemoHandler,
 } from "./cited-apps";
 import { allowedOrigins, type Env } from "./env";
 import { newId } from "./ids";
@@ -16,6 +15,7 @@ import { payments } from "./payments/routes";
 import { webhooks } from "./payments/webhooks";
 import { ipRateLimit, originAllowed, securityHeaders } from "./security";
 
+export { CitedDemoDO } from "./do/cited-demo";
 export { PactDO } from "./do/pact";
 export { ThreadDO } from "./do/thread";
 export { UserDO } from "./do/user";
@@ -49,9 +49,9 @@ app.get("/app/*", appPage);
 
 // CITED demo apps: their pages set their own headers (inline CSS and scripts).
 for (const [prefix, handler] of [
-  [SHOPS_PREFIX, shopsHandler],
+  [SHOPS_PREFIX, statefulDemoHandler],
   [CONSOLE_PREFIX, consoleHandler],
-  [CATALOGUE_PREFIX, catalogueHandler],
+  [CATALOGUE_PREFIX, statefulDemoHandler],
 ] as const) {
   app.all(prefix, handler);
   app.all(`${prefix}/*`, handler);

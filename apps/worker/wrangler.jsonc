@@ -31,10 +31,14 @@
     "bindings": [
       { "name": "THREAD", "class_name": "ThreadDO" },
       { "name": "USER", "class_name": "UserDO" },
-      { "name": "PACT", "class_name": "PactDO" }
+      { "name": "PACT", "class_name": "PactDO" },
+      { "name": "CITED_DEMO", "class_name": "CitedDemoDO" }
     ]
   },
-  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["ThreadDO", "UserDO", "PactDO"] }],
+  "migrations": [
+    { "tag": "v1", "new_sqlite_classes": ["ThreadDO", "UserDO", "PactDO"] },
+    { "tag": "v2", "new_sqlite_classes": ["CitedDemoDO"] }
+  ],
   "d1_databases": [
     {
       "binding": "DB",
