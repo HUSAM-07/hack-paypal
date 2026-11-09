@@ -5,7 +5,13 @@ import { createCatalogue, DEFAULT_PUBLISHED_AT } from "../src/catalogue";
 import { DemoClock, testDay } from "../src/clock";
 
 const KEY = "test-key";
-const make = (seed = "seed") => createCatalogue({ seed, passportKey: KEY, clock: new DemoClock() });
+// Pin the clock to day 0: the real date moves the arm schedule and breaks sessionFor().
+const make = (seed = "seed") =>
+  createCatalogue({
+    seed,
+    passportKey: KEY,
+    clock: new DemoClock(() => DEFAULT_PUBLISHED_AT.getTime()),
+  });
 
 /** Find a session id that lands in the wanted arm on day 0. */
 function sessionFor(arm: Arm, seed = "seed", day = 0): string {
