@@ -106,7 +106,14 @@ export async function startStack(
     if (inWorker) mkdirSync(join(root, "apps/web/dist"), { recursive: true });
     const wrangler = (...a: string[]) => ["wrangler", ...a, "--persist-to", state];
     await run("npx", wrangler("d1", "migrations", "apply", db, "--local"), engineDir);
-    start("engine", "npx", wrangler("dev", "--port", String(ports.engine)), engineDir);
+    // Local and keyless on purpose: the explicit opt-in that a deployed worker never has.
+    const open = inWorker ? "CITED_OPEN_API:1" : "ENGINE_OPEN_API:1";
+    start(
+      "engine",
+      "npx",
+      wrangler("dev", "--port", String(ports.engine), "--var", open),
+      engineDir,
+    );
     start("catalogue", "npx", ["tsx", "src/dev.ts"], join(root, "apps/catalogue-mcp"), {
       PORT: String(ports.catalogue),
     });

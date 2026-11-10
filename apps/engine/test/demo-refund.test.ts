@@ -103,17 +103,23 @@ describe("refunds, top-ups and access", () => {
     ).toEqual([50_000, 100_000]);
   });
 
-  it("needs the API token when one is set, and refuses to run open outside simulated mode", async () => {
-    const withToken = { ...e, ENGINE_API_TOKEN: "s3cret" };
-    expect((await app.request("/api/clock", {}, withToken)).status).toBe(401);
-    const ok = await app.request(
-      "/api/clock",
-      { headers: { authorization: "Bearer s3cret" } },
-      withToken,
-    );
-    expect(ok.status).toBe(200);
-    expect((await app.request("/api/clock", {}, { ...e, PAYPAL_MODE: "sandbox" })).status).toBe(
-      503,
-    );
+  it("keeps reads public, needs the token for writes, and stays locked with no token", async () => {
+    const advance = { method: "POST", body: JSON.stringify({ days: 0 }) };
+    const withToken = { ...e, ENGINE_OPEN_API: undefined, ENGINE_API_TOKEN: "s3cret" };
+    expect((await app.request("/api/clock", {}, withToken)).status).toBe(200);
+    expect((await app.request("/api/clock/advance", advance, withToken)).status).toBe(401);
+    const bad = { ...advance, headers: { authorization: "Bearer nope" } };
+    expect((await app.request("/api/clock/advance", bad, withToken)).status).toBe(401);
+    // Past the gate, the body is checked ({days: 0} is invalid): nothing moves.
+    const ok = { ...advance, headers: { authorization: "Bearer s3cret" } };
+    expect((await app.request("/api/clock/advance", ok, withToken)).status).toBe(400);
+    // No token and no explicit opt-in: writes refuse in any PayPal mode; reads stay open.
+    const locked = { ...e, ENGINE_OPEN_API: undefined, ENGINE_API_TOKEN: undefined };
+    expect((await app.request("/api/clock/advance", advance, locked)).status).toBe(503);
+    expect((await app.request("/api/brands", { method: "POST" }, locked)).status).toBe(503);
+    expect((await app.request("/api/clock", {}, locked)).status).toBe(200);
+    // A token always wins over the opt-in.
+    const both = { ...withToken, ENGINE_OPEN_API: "1" };
+    expect((await app.request("/api/clock/advance", advance, both)).status).toBe(401);
   });
 });

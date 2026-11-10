@@ -56,8 +56,13 @@ export interface Env {
   AG_STUDIO_LICENSE_KEY?: string;
   /** Model for the Studio agents (default claude-sonnet-5-5). */
   CITED_STUDIO_MODEL?: string;
-  /** Bearer token for the CITED API; required unless CITED runs simulated. */
+  /**
+   * Bearer token for CITED writes from outside (engine write API, catalogue demo controls).
+   * Unset means those writes are refused, unless CITED_OPEN_API opens them for local dev.
+   */
   CITED_API_TOKEN?: string;
+  /** "1" opens CITED writes keylessly while no token is set. .dev.vars and tests only. */
+  CITED_OPEN_API?: string;
   /** Sandbox: the buyer's vaulted PayPal wallet the agents pay with (see AGENT-CHECKOUT.md). */
   CITED_BUYER_VAULT_ID?: string;
   /** Sandbox: each seller's PayPal account (merchant id or email), the orders' payee. */

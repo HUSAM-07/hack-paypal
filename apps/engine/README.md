@@ -8,9 +8,11 @@ All money is integer minor units (`amountMinor`) with a currency. Times are ISO 
 
 ## Auth
 
-Everything under `/api` needs `Authorization: Bearer $ENGINE_API_TOKEN`. With no token set
-it is open in `PAYPAL_MODE=simulated` and answers `503` otherwise. `/webhooks/paypal` is
-authenticated by PayPal's signature instead.
+Reads under `/api` (`GET`) are public. Writes need `Authorization: Bearer $ENGINE_API_TOKEN`
+(`401` without it). With no token set, writes answer `503` in every PayPal mode unless
+`ENGINE_OPEN_API=1` opts in to keyless writes (`npm run dev`, tests and the demo stack set it;
+the worker sets it only for its own in-process callers). A token always wins over the opt-in.
+`/webhooks/paypal` is authenticated by PayPal's signature instead.
 
 ## Money flow
 

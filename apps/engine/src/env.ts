@@ -8,6 +8,11 @@ export interface Env {
   PAYPAL_WEBHOOK_ID?: string | undefined;
   PAYPAL_CLIENT_ID?: string | undefined;
   PAYPAL_CLIENT_SECRET?: string | undefined;
-  /** Bearer token for the admin and read API. Required unless PAYPAL_MODE=simulated. */
+  /** Bearer token for the API's writes (reads are public). */
   ENGINE_API_TOKEN?: string | undefined;
+  /**
+   * "1" lets writes through without a token when none is set. Only local dev, tests and the
+   * worker's in-process callers set it; never a deployed config.
+   */
+  ENGINE_OPEN_API?: string | undefined;
 }

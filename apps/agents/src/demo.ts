@@ -57,6 +57,11 @@ export interface DemoOptions {
    * approving it from the script. For recording the dashboards; gives up after this many ms.
    */
   approveInStudioMs?: number;
+  /**
+   * Bearer token for a hosted engine's writes and the catalogue's demo controls (the worker's
+   * CITED_API_TOKEN). Local stacks run keyless and leave it unset.
+   */
+  apiToken?: string | undefined;
 }
 
 export interface Check {
@@ -203,12 +208,17 @@ export async function runDemo(o: DemoOptions): Promise<DemoResult> {
     if (o.pace) await new Promise((r) => setTimeout(r, o.pace));
   };
 
+  // A hosted engine locks its writes (and the catalogue its demo controls) behind this token.
+  const auth: Record<string, string> = o.apiToken ? { authorization: `Bearer ${o.apiToken}` } : {};
+  const headersFor = (body: unknown) => ({
+    ...auth,
+    ...(body === undefined ? {} : { "content-type": "application/json" }),
+  });
   const eng = async (method: "GET" | "POST", path: string, body?: unknown): Promise<Json> => {
     const res = await fetch(`${o.engineUrl}/api${path}`, {
       method,
-      ...(body === undefined
-        ? {}
-        : { body: JSON.stringify(body), headers: { "content-type": "application/json" } }),
+      headers: headersFor(body),
+      ...(body === undefined ? {} : { body: JSON.stringify(body) }),
     });
     const json = (await res.json()) as Json;
     if (!res.ok)
@@ -219,9 +229,8 @@ export async function runDemo(o: DemoOptions): Promise<DemoResult> {
   const cat = async (method: "GET" | "POST", path: string, body?: unknown): Promise<Json> => {
     const res = await fetch(`${o.catalogueUrl}${path}`, {
       method,
-      ...(body === undefined
-        ? {}
-        : { body: JSON.stringify(body), headers: { "content-type": "application/json" } }),
+      headers: headersFor(body),
+      ...(body === undefined ? {} : { body: JSON.stringify(body) }),
     });
     const json = (await res.json()) as Json;
     if (!res.ok) throw new Error(`catalogue ${path} → ${res.status} ${JSON.stringify(json)}`);
@@ -231,6 +240,16 @@ export async function runDemo(o: DemoOptions): Promise<DemoResult> {
   const ep: Endpoints = {
     catalogueUrl: o.catalogueUrl,
     engineUrl: o.engineUrl,
+    // Each session is reported to the engine's write API, so it carries the token too.
+    ...(o.apiToken
+      ? {
+          engineFetch: (input: RequestInfo | URL, init?: RequestInit) => {
+            const headers = new Headers(init?.headers);
+            headers.set("authorization", `Bearer ${o.apiToken}`);
+            return fetch(input, { ...init, headers });
+          },
+        }
+      : {}),
   };
   const fake = o.provider === "fake";
   const checks: Check[] = [];

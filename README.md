@@ -68,6 +68,16 @@ Every mutating call sets a deterministic `PayPal-Request-Id`. Mode is `simulated
 
 Defaults need no keys. [`.env.example`](.env.example) lists every variable (PayPal sandbox credentials and webhook id, `MODEL_PROVIDER`, LLM gateway, passport signing key, ports); the engine reads [`apps/engine/.dev.vars.example`](apps/engine/.dev.vars.example). Apps read `process.env`, so export what you change or run `node --env-file=.env <command>`. Checks: `npm test`, `npm run typecheck`, `npm run lint`.
 
+### Hosted worker
+
+Reads (`GET /api/cited/api/*`, `/studio`, `/console`), `/try`, `/mcp` and PayPal webhooks are public. Every CITED write from outside (the engine's write API and the catalogue's seller refunds, mock disputes and demo clock) needs `Authorization: Bearer $CITED_API_TOKEN`; with no token set they answer `503`, never open. Locally, `CITED_OPEN_API=1` (worker `.dev.vars`) or `ENGINE_OPEN_API=1` (standalone engine, set by `npm run dev`) opts in to keyless writes; no deployed config sets it.
+
+The deploy job pushes these GitHub secrets to the worker with `wrangler secret put`, each only when set:
+
+- `CITED_API_TOKEN`: bearer token for CITED writes; `reseed-hosted.yml` sends it too
+- `AG_STUDIO_LICENSE_KEY`: AG Studio licence key (watermark without it)
+- `ANTHROPIC_API_KEY`: model key for `/try` and the Studio agents (scripted without it)
+
 ## Architecture
 
 - `packages/protocol`: the shared contract (arms, passport, credits, `Money`).

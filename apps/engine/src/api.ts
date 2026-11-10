@@ -1,7 +1,8 @@
 /**
- * Admin and read API. Everything lives under /api and needs `Authorization: Bearer
- * $ENGINE_API_TOKEN`; in PAYPAL_MODE=simulated with no token set it is open for local demos.
- * Response shapes are documented in apps/engine/README.md.
+ * Admin and read API. Reads (GET/HEAD) are public: AG Studio, the console and the landing
+ * page show them. Writes need `Authorization: Bearer $ENGINE_API_TOKEN`; with no token they
+ * answer 503 unless ENGINE_OPEN_API=1, which only local dev, tests and the worker's own
+ * in-process callers set. Response shapes are documented in apps/engine/README.md.
  */
 import { LIVE_CATEGORY } from "@pact/protocol";
 import { Hono } from "hono";
@@ -24,14 +25,27 @@ function sameToken(a: string, b: string): boolean {
   return d === 0;
 }
 
+const READS = new Set(["GET", "HEAD", "OPTIONS"]);
+
+/**
+ * Fails closed: a write is allowed only with the right token, or when the caller opted in to
+ * an open API on purpose. A missing setting can never open it.
+ */
+export function writeDenied(
+  env: Pick<Env, "ENGINE_API_TOKEN" | "ENGINE_OPEN_API">,
+  method: string,
+  authorization: string | undefined,
+): { status: 401 | 503; error: string } | null {
+  if (READS.has(method.toUpperCase())) return null;
+  const token = env.ENGINE_API_TOKEN;
+  if (!token) return env.ENGINE_OPEN_API === "1" ? null : { status: 503, error: "writes_locked" };
+  const got = authorization?.replace(/^Bearer\s+/i, "") ?? "";
+  return sameToken(got, token) ? null : { status: 401, error: "unauthorized" };
+}
+
 api.use("*", async (c, next) => {
-  const token = c.env.ENGINE_API_TOKEN;
-  if (!token) {
-    if (c.env.PAYPAL_MODE !== "simulated") return c.json({ error: "api_unavailable" }, 503);
-    return next();
-  }
-  const got = c.req.header("authorization")?.replace(/^Bearer\s+/i, "") ?? "";
-  if (!sameToken(got, token)) return c.json({ error: "unauthorized" }, 401);
+  const denied = writeDenied(c.env, c.req.method, c.req.header("authorization"));
+  if (denied) return c.json({ error: denied.error }, denied.status);
   return next();
 });
 

@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { CITED_PREFIX, serveEngine } from "../cited";
+import { CITED_PREFIX, internalEngineFetch } from "../cited";
 import { DEMO_PAGE_CSP } from "../cited-apps";
 import type { Env } from "../env";
 import { newId } from "../ids";
@@ -114,12 +114,8 @@ live.post("/run", async (c) => {
   // The catalogue (and, simulated, the engine) live in the one demo Durable Object.
   const demo = env.CITED_DEMO.get(env.CITED_DEMO.idFromName("demo"));
   const toDemo: typeof fetch = (input, init) => demo.fetch(new Request(input, init));
-  const simulated = (env.CITED_PAYPAL_MODE ?? env.PAYPAL_MODE) === "simulated";
-  const engineFetch: typeof fetch = async (input, init) => {
-    const req = new Request(input, init);
-    if (env.CITED_API_TOKEN) req.headers.set("authorization", `Bearer ${env.CITED_API_TOKEN}`);
-    return simulated ? demo.fetch(req) : serveEngine(req, env, c.executionCtx);
-  };
+  // Server-side engine access: internal, so /try needs no token and never handles one.
+  const engineFetch = internalEngineFetch(env, c.executionCtx);
 
   const runId = newId("live");
   const enc = new TextEncoder();

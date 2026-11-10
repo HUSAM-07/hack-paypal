@@ -8,7 +8,7 @@
     "./env": "./src/env.ts"
   },
   "scripts": {
-    "dev": "wrangler dev --port 8800",
+    "dev": "wrangler dev --port 8800 --var ENGINE_OPEN_API:1",
     "cf-typegen": "wrangler types --include-runtime false",
     "typecheck": "tsc -p tsconfig.json",
     "test": "vitest run"
