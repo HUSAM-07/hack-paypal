@@ -14,7 +14,7 @@ Hosted demo (one Cloudflare Worker, `pact-worker`; Pact is the project's codenam
 - <https://pact-worker.vincent-wesley-liem.workers.dev/console>: the demo console (two agents, side by side) and [`/console/payout`](https://pact-worker.vincent-wesley-liem.workers.dev/console/payout), the day-30 payout
 - <https://pact-worker.vincent-wesley-liem.workers.dev/try>: run a shopping agent yourself (a live model when the host has a model key, scripted otherwise; the page says which)
 - <https://pact-worker.vincent-wesley-liem.workers.dev/proof>: the pre-registered eval behind every number, with every session to download
-- <https://pact-worker.vincent-wesley-liem.workers.dev/studio>: the AG Studio brand and creator dashboards
+- <https://pact-worker.vincent-wesley-liem.workers.dev/studio?view=first>: the AG Studio brand and creator dashboards, opened on the first payout
 - <https://pact-worker.vincent-wesley-liem.workers.dev/creators>: creator onboarding (connect PayPal, publish a test)
 - <https://pact-worker.vincent-wesley-liem.workers.dev/mcp>: the catalogue as a public MCP server (below)
 - <https://pact-worker.vincent-wesley-liem.workers.dev/catalogue/offers>: the offers agents read, synced to PayPal by Northwind, Lumen and MegaMart

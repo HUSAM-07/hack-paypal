@@ -23,6 +23,13 @@ function appEntryRewrite(): Plugin {
   };
 }
 
+const VENDOR_CHUNKS = [
+  { name: "vendor-ag-stack", test: /node_modules[\\/]ag-stack[\\/]/, priority: 4 },
+  { name: "vendor-ag-charts", test: /node_modules[\\/]ag-charts-/, priority: 3 },
+  { name: "vendor-ag-grid", test: /node_modules[\\/]ag-grid-/, priority: 2 },
+  { name: "vendor-ag-studio", test: /node_modules[\\/]ag-studio/, priority: 1 },
+];
+
 export default defineConfig(({ isSsrBuild }) => ({
   plugins: [react(), tailwindcss(), appEntryRewrite()],
   resolve: { alias: { "@": new URL("./src", import.meta.url).pathname } },
@@ -57,6 +64,13 @@ export default defineConfig(({ isSsrBuild }) => ({
             app: new URL("./app.html", import.meta.url).pathname,
             studio: new URL("./studio.html", import.meta.url).pathname,
             proof: new URL("./proof.html", import.meta.url).pathname,
+          },
+          // /studio loads AG Studio lazily (src/studio/App.tsx). Its vendors get chunks of their
+          // own: they download in parallel, and each keeps its hashed URL (cached for a year by
+          // public/_headers) until that library itself changes, not whenever our code does.
+          // Not their dependencies: React and the rest stay shared with the other pages.
+          output: {
+            codeSplitting: { includeDependenciesRecursively: false, groups: VENDOR_CHUNKS },
           },
         },
   },

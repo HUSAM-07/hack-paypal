@@ -36,7 +36,7 @@ No login, no keys. Open in this order:
 2. <https://pact-worker.vincent-wesley-liem.workers.dev/console?clean=1>: two agents, same request; one shown the test buys the Winix, one held out buys the Levoit.
 3. <https://pact-worker.vincent-wesley-liem.workers.dev/console/payout?clean=1>: the $383.96 payout; "Statement" opens Winix's PayPal invoice.
 4. <https://pact-worker.vincent-wesley-liem.workers.dev/proof>: the pre-registered eval (147 headline sessions, +94pp, 80% bound +90.3pp); all 963 sessions download as CSV.
-5. <https://pact-worker.vincent-wesley-liem.workers.dev/studio?clean=1>: the brand's AG Studio dashboard; ask the Analyst "Should we raise the purifier cap?". `/studio/creator?clean=1` is the creator's view.
+5. <https://pact-worker.vincent-wesley-liem.workers.dev/studio?view=first>: the brand's AG Studio dashboard; ask the Analyst "Should we raise the purifier cap?". `/studio/creator?clean=1` is the creator's view.
 6. <https://pact-worker.vincent-wesley-liem.workers.dev/try>: run a shopping agent yourself.
 7. Your own agent: `claude mcp add --transport http cited https://pact-worker.vincent-wesley-liem.workers.dev/mcp`, then ask it to buy an air purifier.
 8. <https://pact-worker.vincent-wesley-liem.workers.dev/creators>: onboard as a creator (simulated Log in with PayPal) and publish a test.
@@ -140,7 +140,7 @@ Judges can check it four ways: read the pre-registration and per-model results a
 - Run a live agent: <https://pact-worker.vincent-wesley-liem.workers.dev/try>
 - Public MCP server: <https://pact-worker.vincent-wesley-liem.workers.dev/mcp> (`claude mcp add --transport http cited https://pact-worker.vincent-wesley-liem.workers.dev/mcp`)
 - The proof (pre-registration, per-model results, all 963 sessions): <https://pact-worker.vincent-wesley-liem.workers.dev/proof>
-- AG Studio, brand view: <https://pact-worker.vincent-wesley-liem.workers.dev/studio?clean=1>
+- AG Studio, brand view: <https://pact-worker.vincent-wesley-liem.workers.dev/studio?view=first>
 - AG Studio, creator view: <https://pact-worker.vincent-wesley-liem.workers.dev/studio/creator?clean=1>
 - Winix's statement (PayPal Invoicing): <https://pact-worker.vincent-wesley-liem.workers.dev/console/statement?brand=winix&clean=1>
 - Creator onboarding: <https://pact-worker.vincent-wesley-liem.workers.dev/creators>

@@ -1,99 +1,19 @@
 import type { Scope } from "@cited/studio/tables";
-import { LicenseManager } from "ag-grid-enterprise";
-import type {
-  AgCoreDefaultRegistry,
-  AgPanelConfig,
-  AgStudioApi,
-  AgStudioApiReadyEvent,
-  AgWidgetFormParams,
-  AgWidgetsConfig,
-} from "ag-studio";
-import { AgStudioAiModule } from "ag-studio";
-import { AgStudio, AgStudioProvider, createWidgets } from "ag-studio-react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { aiToolDisplay, citedHarness } from "./agents/analyst";
+import type { AgStudioApi, AgStudioApiReadyEvent } from "ag-studio";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { type StudioContext, scopeStore } from "./context";
 import { diffTables, getJson, POLL_MS, type StudioConfig, type StudioTables } from "./data";
-import { initialState, sourcesFor } from "./layout";
-import { citedTheme } from "./theme";
-import { ArmStrip, CausedTile, CreatorTiles, DepositMeter, ReviewFlags } from "./widgets/cited";
-import { JourneysGrid } from "./widgets/JourneysGrid";
+import { scopeFromParams, searchWithScope } from "./scope";
 
 const CREATORS: Record<string, string> = { housefresh: "HouseFresh", airlab: "AirLab" };
 
-// biome-ignore lint/suspicious/noExplicitAny: our widgets take no data mapping
-const form = (p: AgWidgetFormParams<any>) => p.createDefaults({});
-const widgets = (defaults: AgWidgetsConfig<AgCoreDefaultRegistry>) =>
-  // biome-ignore lint/suspicious/noExplicitAny: custom widget registry is open-ended
-  createWidgets<any>({
-    additionalTypes: [
-      {
-        id: "cited-caused",
-        label: "Caused sales",
-        comp: CausedTile,
-        form,
-        defaultSize: { width: 360, height: 320 },
-        minSize: { width: 280, height: 260 },
-      },
-      {
-        id: "cited-arms",
-        label: "Arm strip",
-        comp: ArmStrip,
-        form,
-        defaultSize: { width: 320, height: 280 },
-        minSize: { width: 260, height: 220 },
-      },
-      {
-        id: "cited-deposit",
-        label: "Deposit meter",
-        comp: DepositMeter,
-        form,
-        defaultSize: { width: 320, height: 280 },
-        minSize: { width: 260, height: 220 },
-      },
-      {
-        id: "cited-creator",
-        label: "Creator credits",
-        comp: CreatorTiles,
-        form,
-        defaultSize: { width: 800, height: 160 },
-        minSize: { width: 300, height: 120 },
-      },
-      {
-        id: "cited-flags",
-        label: "Held for review",
-        comp: ReviewFlags,
-        form,
-        defaultSize: { width: 900, height: 220 },
-        minSize: { width: 360, height: 160 },
-      },
-      {
-        id: "cited-journeys",
-        label: "Journeys & Shapley split",
-        comp: JourneysGrid,
-        form,
-        defaultSize: { width: 900, height: 360 },
-        minSize: { width: 400, height: 240 },
-      },
-    ],
-    menu: [
-      ...defaults.menu,
-      {
-        label: "CITED",
-        widgetIds: [
-          "cited-caused",
-          "cited-arms",
-          "cited-deposit",
-          "cited-creator",
-          "cited-journeys",
-          "cited-flags",
-        ],
-      },
-    ],
-  });
-
-/** The Analyst's chat on the right of the brand view; filters beside it. No builder chrome by default. */
-const PANELS: AgPanelConfig = { edit: { right: ["ai", "filters"] }, view: { right: ["filters"] } };
+/**
+ * AG Studio (with AG Grid and AG Charts) and the Analyst load as their own chunks, requested on
+ * first render so they download alongside /config and /data while the header is on screen.
+ */
+type Parts = [typeof import("./StudioCanvas"), typeof import("./agents/analyst")];
+const loadParts = (): Promise<Parts> =>
+  Promise.all([import("./StudioCanvas"), import("./agents/analyst")]);
 
 const NARROW = "(max-width: 760px)";
 /** Phones get the dashboards without the chat panel, which would leave the canvas no width. */
@@ -134,7 +54,7 @@ export function App() {
   const [view, setView] = useState<StudioContext["view"]>(viewFromPath);
   const narrow = useNarrow();
   const [scope, setScope] = useState<Scope>(() => {
-    const s: Scope = params.get("scope") === "first" ? "first" : "todate";
+    const s = scopeFromParams(params);
     scopeStore.set(s);
     return s;
   });
@@ -146,13 +66,16 @@ export function App() {
   const [asOf, setAsOf] = useState<string | null>(null);
   const [firstBatch, setFirstBatch] = useState<string | null>(null);
   const [live, setLive] = useState(true);
+  const [loaded, setLoaded] = useState<Parts | null>(null);
   const api = useRef<AgStudioApi | null>(null);
   const last = useRef<StudioTables | null>(null);
 
   useEffect(() => {
+    loadParts()
+      .then(setLoaded)
+      .catch((e: Error) => setError(e.message));
     Promise.all([getJson<StudioConfig>("/config"), getJson<StudioTables>("/data")])
       .then(([c, d]) => {
-        if (c.gridLicenseKey) LicenseManager.setLicenseKey(c.gridLicenseKey);
         last.current = d;
         setConfig(c);
         setFirst(d);
@@ -198,16 +121,19 @@ export function App() {
     if (a) a.setState({ ...a.getState(), selectedPageId: v });
   }, []);
 
+  const pickScope = useCallback((s: Scope) => {
+    setScope(s);
+    const { pathname, search } = window.location;
+    window.history.replaceState(null, "", `${pathname}${searchWithScope(search, s)}`);
+  }, []);
+
   // One object for Studio's lifetime (its `context` is read once); kept in step with the page.
   const context = useRef<StudioContext>({ view, scope, brandId: "winix", creatorId }).current;
   Object.assign(context, { view, scope, creatorId });
   useEffect(() => scopeStore.set(scope), [scope]);
-  const data = useMemo(
-    () => (config && first ? sourcesFor(config, first.tables) : undefined),
-    [config, first],
-  );
-  const state = useMemo(() => initialState(viewFromPath(), creatorName), [creatorName]);
-  const ai = useMemo(() => (config ? citedHarness(config) : undefined), [config]);
+  const [initialView] = useState(viewFromPath);
+  const Canvas = loaded?.[0].StudioCanvas;
+  const analyst = loaded?.[1];
   const onApiReady = useCallback((e: AgStudioApiReadyEvent) => {
     api.current = e.api as AgStudioApi;
   }, []);
@@ -238,7 +164,7 @@ export function App() {
               <button
                 type="button"
                 aria-pressed={scope === "first"}
-                onClick={() => setScope("first")}
+                onClick={() => pickScope("first")}
                 disabled={!firstBatch}
               >
                 First payout
@@ -246,7 +172,7 @@ export function App() {
               <button
                 type="button"
                 aria-pressed={scope === "todate"}
-                onClick={() => setScope("todate")}
+                onClick={() => pickScope("todate")}
               >
                 Programme to date
               </button>
@@ -267,26 +193,17 @@ export function App() {
           The programme figures could not load ({error}). Reload the page in a moment.
         </p>
       ) : null}
-      {config && data && ai ? (
-        <AgStudioProvider
-          {...(config.licenseKey ? { licenseKey: config.licenseKey } : {})}
-          modules={[AgStudioAiModule]}
-        >
-          <div className="st-studio">
-            <AgStudio
-              data={data}
-              initialState={state}
-              mode={view === "brand" && !narrow ? "edit" : "view"}
-              panels={PANELS}
-              theme={citedTheme}
-              context={context}
-              widgets={widgets}
-              ai={ai}
-              aiToolDisplay={aiToolDisplay}
-              onApiReady={onApiReady}
-            />
-          </div>
-        </AgStudioProvider>
+      {config && first && Canvas && analyst ? (
+        <Canvas
+          config={config}
+          tables={first.tables}
+          analyst={analyst}
+          initialView={initialView}
+          creatorName={creatorName}
+          mode={view === "brand" && !narrow ? "edit" : "view"}
+          context={context}
+          onApiReady={onApiReady}
+        />
       ) : !error ? (
         <p className="st-loading">Loading the programme…</p>
       ) : null}
