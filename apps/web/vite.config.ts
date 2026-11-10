@@ -12,6 +12,8 @@ function appEntryRewrite(): Plugin {
         const path = req.url?.split("?")[0] ?? "";
         if (path === "/app" || path.startsWith("/app/")) {
           req.url = `/app.html${req.url?.slice(path.length) ?? ""}`;
+        } else if (path === "/proof") {
+          req.url = `/proof.html${req.url?.slice(path.length) ?? ""}`;
         } else if (path === "/studio" || path === "/studio/" || path === "/studio/creator") {
           req.url = `/studio.html${req.url?.slice(path.length) ?? ""}`;
         }
@@ -45,7 +47,7 @@ export default defineConfig(({ isSsrBuild }) => ({
     // CSP: no inline <script>; Vite already emits external module scripts only.
     modulePreload: { polyfill: false },
     sourcemap: false,
-    // Two pages: the landing never downloads app code, and vice versa. The SSR build
+    // Separate pages: the landing never downloads app code, and vice versa. The SSR build
     // (landing prerender) takes its entry from the CLI instead.
     rollupOptions: isSsrBuild
       ? {}
@@ -54,6 +56,7 @@ export default defineConfig(({ isSsrBuild }) => ({
             index: new URL("./index.html", import.meta.url).pathname,
             app: new URL("./app.html", import.meta.url).pathname,
             studio: new URL("./studio.html", import.meta.url).pathname,
+            proof: new URL("./proof.html", import.meta.url).pathname,
           },
         },
   },
