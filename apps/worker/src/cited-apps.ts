@@ -19,6 +19,7 @@ import {
   type Caller,
   CITED_PREFIX,
   citedEnv,
+  citedOpen,
   citedWriteDenied,
   internalEngineFetch,
   serveEngine,
@@ -214,6 +215,10 @@ export async function studioHandler(c: Ctx): Promise<Response> {
   const env = c.env;
   // Maya's approval runs server-side: an internal write where the engine's PayPal lives.
   const engineWrite = internalEngineFetch(env, c.executionCtx);
+  // Wherever CITED's writes are locked (the hosted demo), a visitor's Approve, Release and Void
+  // stay in their own cookie: they see the effect, the shared ledger and its locked numbers
+  // never move. Only a keyless local stack (CITED_OPEN_API=1) writes through to the engine.
+  const privateWrites = citedOpen(env) ? undefined : { cookiePath: STUDIO_PREFIX };
   const app = createStudioApp({
     read: createEngineReader({
       baseUrl: "https://engine.internal",
@@ -221,6 +226,7 @@ export async function studioHandler(c: Ctx): Promise<Response> {
     }),
     approve: createEngineApprover({ baseUrl: "https://engine.internal", fetch: engineWrite }),
     review: createEngineReviewer({ baseUrl: "https://engine.internal", fetch: engineWrite }),
+    privateWrites,
     llm: studioLlmChoice(env),
     limit: async (req) => {
       const ip = clientIp(req);

@@ -6,7 +6,7 @@
 import type { AgWidgetParams } from "ag-studio";
 import { useState, useSyncExternalStore } from "react";
 import { type StudioContext, scopeStore } from "../context";
-import { API } from "../data";
+import { API, privateNote } from "../data";
 import { money, num, useRows } from "./useRows";
 
 type P = AgWidgetParams<never, unknown, StudioContext>;
@@ -329,15 +329,17 @@ export function ReviewFlags(p: P) {
         method: "POST",
         headers: { "x-studio": "review" },
       });
-      const body = (await res.json().catch(() => ({}))) as { error?: string };
+      const body = (await res.json().catch(() => ({}))) as {
+        error?: string;
+        private?: boolean;
+        resetsAt?: string;
+      };
       if (!res.ok) throw new Error(body.error ?? `review answered ${res.status}`);
-      setNote({
-        id,
-        text:
-          action === "release"
-            ? "Released: paid at the next payout run."
-            : "Voided: the credit will never be paid, and its share of the deposit is freed.",
-      });
+      const done =
+        action === "release"
+          ? "Released: paid at the next payout run."
+          : "Voided: the credit will never be paid, and its share of the deposit is freed.";
+      setNote({ id, text: body.private ? `${done} ${privateNote(body.resetsAt)}` : done });
     } catch (e) {
       setNote({ id, text: (e as Error).message, error: true });
     } finally {

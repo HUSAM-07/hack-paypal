@@ -18,6 +18,15 @@ import {
   streamTurn,
   studioLlmChoice,
 } from "./llm";
+import {
+  applyOverlay,
+  checkReview,
+  OVERLAY_TTL_SECONDS,
+  type Overlay,
+  overlayCookie,
+  overlayFromRequest,
+  withChange,
+} from "./overlay";
 import { buildTables, TABLES } from "./tables";
 
 export const PORT = 8804;
@@ -35,6 +44,11 @@ export interface StudioDeps {
   llmFetch?: typeof fetch | undefined;
   /** Rate limit for model calls; resolve false to refuse. Keyed by caller. */
   limit?: ((req: Request) => Promise<boolean>) | undefined;
+  /**
+   * Hosted demo: Approve, Release and Void apply only to the visitor (a cookie replayed over the
+   * engine's reads) and never reach the shared ledger. `approve`/`review` are then unused.
+   */
+  privateWrites?: { cookiePath?: string; now?: () => number } | undefined;
   /** AG Studio licence key. Ships to the browser (normal for AG products); unset = watermark. */
   licenseKey?: string | undefined;
   /** AG Grid Enterprise key for the custom master-detail widget; falls back to licenseKey. */
@@ -69,6 +83,17 @@ export function createStudioApp(deps: StudioDeps = depsFromEnv(process.env)) {
     throw e;
   };
 
+  const priv = deps.privateWrites;
+  const nowSec = () => Math.floor((priv?.now?.() ?? Date.now()) / 1000);
+  const overlayOf = (req: Request) => (priv ? overlayFromRequest(req, nowSec()) : null);
+  /** The engine's data as this caller sees it (with their private changes, if any). */
+  const readFor = async (req: Request) => applyOverlay(await deps.read(), overlayOf(req));
+  /** Saves a private change in the visitor's cookie; tells the page it stayed private. */
+  const keep = (c: { header: (k: string, v: string) => void }, o: Overlay) => {
+    c.header("set-cookie", overlayCookie(o, nowSec(), priv?.cookiePath));
+    return { private: true, resetsAt: new Date(o.expiresAt * 1000).toISOString() };
+  };
+
   app.get("/health", (c) => c.json({ ok: true, app: "studio", llm: llm.kind }));
 
   app.get("/api/config", (c) =>
@@ -77,13 +102,14 @@ export function createStudioApp(deps: StudioDeps = depsFromEnv(process.env)) {
       gridLicenseKey: deps.gridLicenseKey ?? deps.licenseKey ?? "",
       llm: { kind: llm.kind, label: llm.label },
       tables: TABLES,
+      privateWrites: priv ? { ttlMinutes: OVERLAY_TTL_SECONDS / 60 } : null,
     }),
   );
 
   app.get("/api/data", async (c) => {
     c.header("cache-control", "no-store");
     try {
-      return c.json(buildTables(await deps.read()));
+      return c.json(buildTables(await readFor(c.req.raw)));
     } catch (e) {
       return c.json(engineError(e), 503);
     }
@@ -92,7 +118,7 @@ export function createStudioApp(deps: StudioDeps = depsFromEnv(process.env)) {
   app.get("/api/analyst", async (c) => {
     c.header("cache-control", "no-store");
     try {
-      const rec = recommend(await deps.read(), c.req.query("brand") ?? "winix");
+      const rec = recommend(await readFor(c.req.raw), c.req.query("brand") ?? "winix");
       return rec ? c.json(rec) : c.json({ error: "no such brand programme yet" }, 404);
     } catch (e) {
       return c.json(engineError(e), 503);
@@ -103,21 +129,40 @@ export function createStudioApp(deps: StudioDeps = depsFromEnv(process.env)) {
   // the approval id must match the card she saw, so a stale card can't approve a new top-up.
   app.post("/api/analyst/approve", async (c) => {
     if (c.req.header("x-studio") !== "approve") return c.json({ error: "forbidden" }, 403);
-    if (!deps.approve) return c.json({ error: "approvals are not configured" }, 501);
+    if (!priv && !deps.approve) return c.json({ error: "approvals are not configured" }, 501);
     const body = (await c.req.json().catch(() => null)) as {
       approvalId?: unknown;
       brandId?: unknown;
     } | null;
     try {
       const rec = recommend(
-        await deps.read(),
+        await readFor(c.req.raw),
         typeof body?.brandId === "string" ? body.brandId : "winix",
       );
       if (rec?.action !== "raise_cap" || rec.amountMinor === null)
         return c.json({ error: "nothing to approve right now" }, 409);
       if (body?.approvalId !== rec.approvalId)
         return c.json({ error: "this recommendation has changed; ask the Analyst again" }, 409);
-      const deposit = await deps.approve({
+      if (priv) {
+        const o = withChange(
+          overlayOf(c.req.raw),
+          {
+            kind: "approve",
+            approvalId: rec.approvalId,
+            brandId: rec.brandId,
+            amountMinor: rec.amountMinor,
+          },
+          nowSec(),
+        );
+        return c.json({
+          approved: true,
+          approvalId: rec.approvalId,
+          amountMinor: rec.amountMinor,
+          deposit: { status: "captured" },
+          ...keep(c, o),
+        });
+      }
+      const deposit = await (deps.approve as NonNullable<StudioDeps["approve"]>)({
         approvalId: rec.approvalId,
         brandId: rec.brandId,
         amountMinor: rec.amountMinor,
@@ -137,13 +182,22 @@ export function createStudioApp(deps: StudioDeps = depsFromEnv(process.env)) {
   // engine checks), and the header keeps a plain cross-site form from reaching it.
   app.post("/api/review-flags/:id/:action", async (c) => {
     if (c.req.header("x-studio") !== "review") return c.json({ error: "forbidden" }, 403);
-    if (!deps.review) return c.json({ error: "reviews are not configured" }, 501);
+    if (!priv && !deps.review) return c.json({ error: "reviews are not configured" }, 501);
     const action = c.req.param("action");
     const id = c.req.param("id");
     if (action !== "release" && action !== "void") return c.json({ error: "unknown action" }, 404);
     if (!/^[A-Za-z0-9_:-]{1,200}$/.test(id)) return c.json({ error: "bad flag id" }, 400);
     try {
-      return c.json({ flag: await deps.review(id, action) });
+      if (priv) {
+        const raw = await readFor(c.req.raw);
+        checkReview(raw, id);
+        const change = { kind: "review", flagId: id, action } as const;
+        const o = withChange(overlayOf(c.req.raw), change, nowSec());
+        const after = applyOverlay(raw, { expiresAt: o.expiresAt, changes: [change] });
+        const flag = (after.reviewFlags ?? []).find((f) => f.id === id);
+        return c.json({ flag, ...keep(c, o) });
+      }
+      return c.json({ flag: await (deps.review as NonNullable<StudioDeps["review"]>)(id, action) });
     } catch (e) {
       if (e instanceof ReviewRejected) return c.json({ error: e.message }, e.status);
       return c.json(engineError(e), 503);
@@ -194,4 +248,5 @@ export const app = createStudioApp();
 export * from "./analyst";
 export * from "./dashboard";
 export * from "./llm";
+export * from "./overlay";
 export * from "./tables";
