@@ -28,3 +28,11 @@ CITED_PAYPAL_WEBHOOK_ID=
 CITED_PASSPORT_KEY=
 # Bearer token for /api/cited/api; required unless CITED runs simulated.
 CITED_API_TOKEN=
+
+# --- Live agent at /try (src/live) ---
+# An OpenAI-compatible gateway for local runs (base URL ending in /v1). Takes priority over
+# ANTHROPIC_API_KEY; with neither set, /try runs the scripted agent and says so on the page.
+LLM_BASE_URL=
+LLM_API_KEY=
+# Model for live runs (default claude-sonnet-5-5).
+CITED_LIVE_MODEL=

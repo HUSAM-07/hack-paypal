@@ -5,6 +5,8 @@ export interface AgentContext {
   session: ShopperSession;
   /** Deterministic randomness for this session (fake agent personas). */
   rand: () => number;
+  /** The model's own words between tool calls (live view); never parsed. */
+  onThought?: (text: string) => void;
 }
 
 /** What an agent says about its own decision; the runner logs it verbatim. */

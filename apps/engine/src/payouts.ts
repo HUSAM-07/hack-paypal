@@ -1,7 +1,7 @@
 import { markPaid, releasePayable } from "@pact/attribution";
 import { PayPalError } from "@pact/paypal";
 import { nowOf } from "./clock";
-import { loadCredits, persistCredits } from "./credits";
+import { frozenCaptures, loadCredits, persistCredits } from "./credits";
 import type { Env } from "./env";
 import { getPayPal } from "./paypal";
 
@@ -30,14 +30,14 @@ export interface PayoutRun {
 }
 
 /**
- * Pay every credit whose hold has ended in ONE batch Payouts call (PAYPAL_ID recipients,
+ * Pay every credit whose hold has ended (and whose sale is not under an open dispute) in ONE batch Payouts call (PAYPAL_ID recipients,
  * one item per creator). The batch id is a hash of the credit ids, so a retry sends the
  * same `sender_batch_id` and `PayPal-Request-Id` and can never double-pay.
  */
 export async function runPayouts(env: Env): Promise<PayoutRun> {
   const now = await nowOf(env);
   const credits = await loadCredits(env);
-  const lines = releasePayable(credits, now);
+  const lines = releasePayable(credits, now, undefined, await frozenCaptures(env));
   const run: PayoutRun = { now, status: "nothing_due", items: [], skipped: [] };
 
   const payable = [];

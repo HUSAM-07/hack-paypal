@@ -24,7 +24,10 @@ authenticated by PayPal's signature instead.
    attributable fraction → whole caused units → 8% commission, capped by the deposit and
    Shapley-split across co-exposed creators. Each brand pays only its own SKU's units.
    Idempotent (credit id = `captureId:creatorId`). Credits start `pending`, held 30 days.
-4. Refund / dispute webhooks void pending credits at once (partial refunds proportionally).
+4. Refund webhooks void pending credits at once (partial refunds proportionally). A
+   `CUSTOMER.DISPUTE.CREATED` freezes the sale's pending credits: payouts skip them until
+   `CUSTOMER.DISPUTE.RESOLVED`, which voids them if the buyer won (`RESOLVED_BUYER_FAVOUR`,
+   `RESOLVED_WITH_PAYOUT`, `ACCEPTED`) and releases them to the next payout otherwise.
    Credits already paid are never clawed back; they appear in `reviewFlags`.
 5. `POST /api/clock/advance` `{days}` or `{to}` — moves the demo clock forward and sends ONE
    batch `POST /v1/payments/payouts` (`PAYPAL_ID` recipients, one item per creator) for every
@@ -49,10 +52,10 @@ catalogue reports every session it assigns an arm; lift needs the non-buyers).
 | `GET /api/lift`, `/api/lift/:brandId` | `{brands: Lift[]}` / `Lift` |
 | `GET /api/caused-units` | `{skus: [{brandId, upc, exposedSales, attributableFraction, causedUnits, lowerBound}]}` |
 | `GET /api/deposits` | `{brands: [{brandId, name, category, currency, deposited, reserved, spent, returned, available, deposits[], refunds[]}]}` |
-| `GET /api/credits?creatorId=` | `{creators: [{creatorId, name, paypalLinked, totals:{pending,voided,paid}, credits[]}], reviewFlags[]}` |
+| `GET /api/credits?creatorId=` | `{creators: [{creatorId, name, paypalLinked, totals:{pending,voided,paid,frozen}, credits[]}], reviewFlags[]}` (`frozen` is the part of `pending` held by an open dispute) |
 | `GET /api/journeys?limit=` | `{journeys: Journey[]}` |
 | `GET /api/journeys?source=mcp` | Sales made through the public `/mcp` endpoint, each with `verdict: {creditable, reason}`. They are kept out of lift, credits and every other number. |
-| `GET /api/shapley` | `{sales: [{captureId, brandId, upc, totalMinor, shares:[{creatorId, amountMinor, state}]}]}` |
+| `GET /api/shapley` | `{sales: [{captureId, brandId, upc, totalMinor, shares:[{creatorId, amountMinor, state, payoutBatchId}]}]}` |
 | `GET /api/payouts` | `{batches: [{senderBatchId, paypalBatchId, status, items[], createdAt}]}` |
 
 `Lift`: `{brandId, name, category, upc, arms:{test|placebo|none:{sessions,purchases}},
@@ -61,7 +64,7 @@ causedUnits, perModel:[{model, exposed:{sessions,purchases}, placebo:{…}, expo
 placeboRate, lift, weight}]}` (`stdError`/`lowerBound` are `null` when there is no data).
 
 `credits[]`: `{id, captureId, brandId, upc, amountMinor, currency, state: pending|voided|paid,
-voidReason, holdUntil, payoutBatchId, payoutStatus}`.
+voidReason, holdUntil, payoutBatchId, payoutStatus, frozen}`.
 
 `Journey`: `{orderId, sessionId, model, arm, storesViewed[], storeChosen, items:[{upc,
 amountMinor, currency}], priceSavedMinor|null, commission:{pending,paid,voided}, holdStatus:

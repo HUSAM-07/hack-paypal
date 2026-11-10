@@ -15,6 +15,11 @@ export const COMMISSION_BPS = 800;
 export const HOLD_DAYS = 30;
 /** PayPal caps `purchase_units[].custom_id` at 127 characters. The passport must fit. */
 export const CUSTOM_ID_MAX = 127;
+/**
+ * Session category for live, judge-driven agent runs (/try). The engine joins their sales like
+ * any other, but keeps them out of every programme's lift, ledger and journeys.
+ */
+export const LIVE_CATEGORY = "live";
 
 // ── Content an agent can be shown ──
 

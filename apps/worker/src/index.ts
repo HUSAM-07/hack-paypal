@@ -10,6 +10,7 @@ import {
 } from "./cited-apps";
 import { allowedOrigins, type Env } from "./env";
 import { newId } from "./ids";
+import { live, TRY_PREFIX } from "./live/routes";
 import { PUBLIC_MCP_PATH, publicMcpHandler } from "./mcp";
 import { payments } from "./payments/routes";
 import { webhooks } from "./payments/webhooks";
@@ -57,6 +58,7 @@ for (const [prefix, handler] of [
 }
 
 app.all(PUBLIC_MCP_PATH, publicMcpHandler);
+app.route(TRY_PREFIX, live);
 
 app.use("*", securityHeaders);
 app.use("/api/auth/*", ipRateLimit);

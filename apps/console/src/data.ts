@@ -75,14 +75,50 @@ function rivalOf(
   return { name: flat.name, causedUnits: flat.causedUnits, paidMinor: paid };
 }
 
-export async function loadPayout({ engine }: Deps, creatorId?: string): Promise<PayoutData | null> {
+/**
+ * One payout moment. `batch` picks which: "first" (default: the day-30 payout the video shows),
+ * "latest", or a sender_batch_id. Later cycles (co-exposure, a released dispute) add batches.
+ */
+/** What the ledger paid this creator in this batch (all-time paid if the engine predates batch ids). */
+function ledgerPaidIn(
+  mine: {
+    totals: { paid: number };
+    credits: { amountMinor: number; state: string; payoutBatchId?: string | null }[];
+  },
+  batch: EnginePayoutBatch,
+): number {
+  if (!mine.credits.some((c) => c.payoutBatchId !== undefined)) return mine.totals.paid;
+  const ids = [batch.paypalBatchId, batch.senderBatchId];
+  return mine.credits
+    .filter((c) => c.state === "paid" && ids.includes(c.payoutBatchId ?? null))
+    .reduce((a, c) => a + c.amountMinor, 0);
+}
+
+export async function loadPayout(
+  { engine }: Deps,
+  creatorId?: string,
+  batchPick = "first",
+): Promise<PayoutData | null> {
   const batches = await engine.payouts();
   const sent: EnginePayoutBatch[] = batches
     .filter(
       (b) => b.items.length > 0 && (!creatorId || b.items.some((i) => i.creatorId === creatorId)),
     )
-    .sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
-  const batch = sent[0];
+    .sort((a, b) =>
+      a.createdAt < b.createdAt
+        ? -1
+        : a.createdAt > b.createdAt
+          ? 1
+          : a.senderBatchId < b.senderBatchId
+            ? -1
+            : 1,
+    );
+  const batch =
+    batchPick === "latest"
+      ? sent.at(-1)
+      : batchPick === "first"
+        ? sent[0]
+        : sent.find((b) => b.senderBatchId === batchPick);
   if (!batch) return null;
   const item = batch.items.find((i) => !creatorId || i.creatorId === creatorId);
   if (!item) return null;
@@ -102,7 +138,7 @@ export async function loadPayout({ engine }: Deps, creatorId?: string): Promise<
     itemId: item.payoutItemId ?? senderItemId(item.creatorId, batch.senderBatchId),
     itemIdKind: item.payoutItemId ? "payout_item_id" : "sender_item_id",
     paidAt: batch.createdAt,
-    ledgerPaidMinor: mine ? mine.totals.paid : null,
+    ledgerPaidMinor: mine ? ledgerPaidIn(mine, batch) : null,
     rival: rivalOf(lift, allCredits),
   };
 }

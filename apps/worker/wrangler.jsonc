@@ -23,7 +23,9 @@
       "/console/*",
       "/catalogue",
       "/catalogue/*",
-      "/mcp"
+      "/mcp",
+      "/try",
+      "/try/*"
     ]
   },
   "durable_objects": {

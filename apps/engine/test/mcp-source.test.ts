@@ -80,7 +80,12 @@ it("records public /mcp sales apart: the study's numbers and ledger do not move"
   const rec = await call<Json>("POST", "/credits/recompute");
   expect(rec.json.created).toBe(51);
   const credits = await call<Json>("GET", "/credits");
-  expect(credits.json.creators[0].totals).toEqual({ pending: 39_164, voided: 0, paid: 0 });
+  expect(credits.json.creators[0].totals).toEqual({
+    pending: 39_164,
+    voided: 0,
+    paid: 0,
+    frozen: 0,
+  });
 
   const study = await call<Json>("GET", "/journeys?limit=200");
   expect(study.json.journeys.some((j: Json) => String(j.orderId).startsWith("O-MCP"))).toBe(false);

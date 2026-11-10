@@ -58,6 +58,13 @@ export interface Env {
   CITED_SELLER_NORTHWIND_PAYEE?: string;
   CITED_SELLER_LUMEN_PAYEE?: string;
   CITED_SELLER_MEGAMART_PAYEE?: string;
+
+  // Live agent at /try (src/live). A gateway wins over Anthropic; neither means the scripted agent.
+  /** OpenAI-compatible gateway for live runs (local dev, .dev.vars only). */
+  LLM_BASE_URL?: string;
+  LLM_API_KEY?: string;
+  /** Model id for live runs; default claude-sonnet-5-5. */
+  CITED_LIVE_MODEL?: string;
 }
 
 export function allowedOrigins(env: Env): string[] {

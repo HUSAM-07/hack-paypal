@@ -218,4 +218,59 @@ describe("payout moment (#29)", () => {
   it("answers 503 when the engine is down", async () => {
     expect((await appWith(RUNS, "down").request("/payout")).status).toBe(503);
   });
+
+  it("shows the day-30 payout by default when later batches exist; ?batch and ?creator pick others", async () => {
+    const later = structuredClone(ENGINE) as any;
+    const batch = (id: string, at: string, items: any[]) => ({
+      senderBatchId: `cited-${id}`,
+      paypalBatchId: `PAYOUT-${id}`,
+      status: "SUCCESS",
+      items,
+      createdAt: at,
+    });
+    const item = (creatorId: string, receiver: string, amountMinor: number) => ({
+      creatorId,
+      receiver,
+      amountMinor,
+      currency: "USD",
+      creditIds: [],
+    });
+    later["/api/payouts"].batches = [
+      batch("first", "2026-12-02T00:00:00.000Z", [item("housefresh", "HOUSEFRESH-PP", 38_396)]),
+      batch("day60", "2027-01-01T00:00:00.000Z", [
+        item("airlab", "AIRLAB-PP", 1_536),
+        item("housefresh", "HOUSEFRESH-PP", 6_143),
+      ]),
+    ];
+    later["/api/credits"].creators = [
+      {
+        creatorId: "airlab",
+        name: "AirLab",
+        totals: { pending: 0, voided: 0, paid: 1_536 },
+        credits: [
+          { brandId: "winix", amountMinor: 1_536, state: "paid", payoutBatchId: "PAYOUT-day60" },
+        ],
+      },
+      {
+        creatorId: "housefresh",
+        name: "HouseFresh",
+        totals: { pending: 0, voided: 768, paid: 44_539 },
+        credits: [
+          { brandId: "winix", amountMinor: 38_396, state: "paid", payoutBatchId: "PAYOUT-first" },
+          { brandId: "winix", amountMinor: 768, state: "voided", payoutBatchId: null },
+          { brandId: "winix", amountMinor: 6_143, state: "paid", payoutBatchId: "PAYOUT-day60" },
+        ],
+      },
+    ];
+    const app = appWith(RUNS, later);
+    const first = await (await app.request("/payout")).text();
+    expect(first).toContain("$383.96");
+    expect(first).not.toContain("differs from this payout");
+    const latest = await (await app.request("/payout?creator=housefresh&batch=latest")).text();
+    expect(latest).toContain("$61.43");
+    expect(latest).not.toContain("differs from this payout");
+    const airlab = await (await app.request("/payout?creator=airlab")).text();
+    expect(airlab).toContain("$15.36");
+    expect(airlab).toContain("AirLab");
+  });
 });

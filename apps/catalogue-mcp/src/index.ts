@@ -175,6 +175,46 @@ export function createCatalogueApp(opts: CatalogueAppOptions = {}) {
     return c.json({ refundId: refund.id, status: refund.status, sellerId, captureId });
   });
 
+  /**
+   * Simulated only: what a buyer and PayPal do in the Resolution Center. A buyer opens a
+   * dispute on a sale (`CUSTOMER.DISPUTE.CREATED`), then PayPal decides it
+   * (`CUSTOMER.DISPUTE.RESOLVED`); both reach the engine as signed webhooks.
+   */
+  app.post("/mock/disputes", async (c) => {
+    if (!mock) return c.json({ error: { code: "not_available", message: "simulated only" } }, 404);
+    const body = (await c.req.json().catch(() => ({}))) as { captureId?: unknown };
+    if (typeof body.captureId !== "string" || !mock.state.captures.has(body.captureId)) {
+      return c.json({ error: { code: "unknown_capture", message: "captureId is required" } }, 404);
+    }
+    const d = mock.openDispute(body.captureId);
+    await mock.flush();
+    return c.json(
+      { disputeId: d.dispute_id, captureId: d.captureId, status: d.status, amount: d.amount },
+      201,
+    );
+  });
+
+  app.post("/mock/disputes/:disputeId/resolve", async (c) => {
+    if (!mock) return c.json({ error: { code: "not_available", message: "simulated only" } }, 404);
+    const body = (await c.req.json().catch(() => ({}))) as { favour?: unknown };
+    if (body.favour !== "seller" && body.favour !== "buyer") {
+      return c.json({ error: { code: "bad_request", message: "favour: seller | buyer" } }, 400);
+    }
+    const id = c.req.param("disputeId");
+    if (!mock.state.disputes.has(id)) return c.json({ error: { code: "unknown_dispute" } }, 404);
+    const d = mock.resolveDispute(
+      id,
+      body.favour === "seller" ? "RESOLVED_SELLER_FAVOUR" : "RESOLVED_BUYER_FAVOUR",
+    );
+    await mock.flush();
+    return c.json({
+      disputeId: d.dispute_id,
+      captureId: d.captureId,
+      status: d.status,
+      outcome: d.outcome,
+    });
+  });
+
   /** Simulated only: the sales PayPal holds, to check the engine's ledger against. */
   app.get("/mock/state", (c) => {
     if (!mock) return c.json({ error: { code: "not_available", message: "simulated only" } }, 404);
@@ -187,6 +227,12 @@ export function createCatalogueApp(opts: CatalogueAppOptions = {}) {
         payee: x.payee,
         customId: x.customId ?? null,
         vaulted: Boolean(mock.state.orders.get(x.orderId)?.vaultId),
+      })),
+      disputes: [...mock.state.disputes.values()].map((d) => ({
+        id: d.dispute_id,
+        captureId: d.captureId,
+        status: d.status,
+        outcome: d.outcome ?? null,
       })),
       webhooksDelivered: mock.events.length,
       failedDeliveries: mock.failedDeliveries,

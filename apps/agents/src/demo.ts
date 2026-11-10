@@ -25,6 +25,8 @@ export const BEATS = [
   "payout",
   "return",
   "analyst",
+  "shapley",
+  "dispute",
   "checks",
 ] as const;
 export type BeatId = (typeof BEATS)[number];
@@ -69,6 +71,8 @@ export interface DemoResult {
     returnedMinor: number;
     levoitCausedUnits: number;
     liftPoints: number;
+    /** The co-exposure cohort and dispute beats: a later cycle, stated on its own. */
+    coExposure: CoExposureNumbers;
   };
   checks: Check[];
   /** True when every number on the card was reproduced (fake provider only). */
@@ -86,6 +90,49 @@ export const PLAN = {
   placeboWinix: [2, 0, 1],
   /** Held-out sessions that buy the Winix anyway (3/36). */
   noneWinix: [1, 1, 1],
+};
+
+/** Agents per model in the co-exposure cohort: shown both HouseFresh's and AirLab's tests. */
+export const COHORT_PER_MODEL = 4;
+const AIRLAB = { creatorId: "airlab", name: "AirLab", paypalId: "AIRLAB-PP" };
+
+export interface CoExposureNumbers {
+  sessions: number;
+  winixBuyers: number;
+  causedUnitsBefore: number;
+  causedUnitsAfter: number;
+  /** Earlier HouseFresh-only sales the tighter bound now credits. */
+  earlierSalesCredited: number;
+  coExposedSalesCredited: number;
+  /** The one sale the runner shows (and later disputes). */
+  splitSale: {
+    captureId: string;
+    totalMinor: number;
+    housefreshMinor: number;
+    airlabMinor: number;
+  };
+  /** Day 60's batch, with the disputed sale's credits held back. */
+  day60: { housefreshMinor: number; airlabMinor: number; frozenMinor: number };
+  /** Paid once PayPal resolved the dispute for the seller. */
+  released: { housefreshMinor: number; airlabMinor: number };
+}
+
+/**
+ * What the cohort and dispute beats must reproduce under the fake provider (seed cited-demo).
+ * Demo outputs, not eval results: the card's numbers come from the first cycle only.
+ */
+export const COEXPOSURE: Omit<CoExposureNumbers, "splitSale"> & {
+  splitSale: Omit<CoExposureNumbers["splitSale"], "captureId">;
+} = {
+  sessions: 12,
+  winixBuyers: 12,
+  causedUnitsBefore: 51,
+  causedUnitsAfter: 62,
+  earlierSalesCredited: 6,
+  coExposedSalesCredited: 5,
+  splitSale: { totalMinor: 768, housefreshMinor: 384, airlabMinor: 384 },
+  day60: { housefreshMinor: 6_143, airlabMinor: 1_536, frozenMinor: 768 },
+  released: { housefreshMinor: 384, airlabMinor: 384 },
 };
 
 /** The card: what the pipeline must reproduce. */
@@ -113,6 +160,12 @@ export const usd = (minor: number): string =>
 
 type Json = Record<string, any>;
 
+const hfOf = (credits: Json): Json =>
+  (credits.creators as Json[]).find((c) => c.creatorId === "housefresh") ?? {
+    totals: { pending: 0, voided: 0, paid: 0, frozen: 0 },
+    credits: [],
+  };
+
 function tag(seed: string): string {
   let h = 2166136261;
   for (const ch of seed) h = Math.imul(h ^ ch.charCodeAt(0), 16777619);
@@ -126,6 +179,7 @@ interface Slot {
   index: number;
   buysWinix: boolean;
   browse: string;
+  coExposed?: boolean;
 }
 
 export async function runDemo(o: DemoOptions): Promise<DemoResult> {
@@ -308,6 +362,7 @@ export async function runDemo(o: DemoOptions): Promise<DemoResult> {
       request: REQUEST,
       sessionId: s.id,
       category: CATEGORY,
+      ...(s.coExposed ? { coExposed: true } : {}),
       fake: {
         browseSeller: s.browse,
         loyalty: 0,
@@ -397,9 +452,7 @@ export async function runDemo(o: DemoOptions): Promise<DemoResult> {
     const rec = await eng("POST", "/credits/recompute");
     const winix = await eng("GET", "/lift/winix");
     const levoit = await eng("GET", "/lift/levoit");
-    const hf = (await eng("GET", "/credits")).creators.find(
-      (c: Json) => c.creatorId === "housefresh",
-    );
+    const hf = hfOf(await eng("GET", "/credits"));
     exposedSales = winix.exposedSales;
     causedUnits = winix.causedUnits;
     levoitUnits = levoit.causedUnits;
@@ -429,7 +482,7 @@ export async function runDemo(o: DemoOptions): Promise<DemoResult> {
   /** The seller whose sale it was refunds it through PayPal: `captures/{id}/refund`. */
   const refundOne = async (): Promise<{ captureId: string; amountMinor: number }> => {
     const captureId = heroSale?.captureId as string;
-    const before = (await eng("GET", "/credits")).creators[0].credits.find(
+    const before = hfOf(await eng("GET", "/credits")).credits.find(
       (c: Json) => c.captureId === captureId,
     );
     await cat("POST", `/sellers/${heroSale?.seller}/refunds`, { captureId });
@@ -440,7 +493,7 @@ export async function runDemo(o: DemoOptions): Promise<DemoResult> {
   const doRefund = async () => {
     const r = await refundOne();
     const creds = (await eng("GET", "/credits")) as Json;
-    const hf = creds.creators[0];
+    const hf = hfOf(creds);
     const voided = hf.credits.filter((c: Json) => c.state === "voided");
     voidedMinor = hf.totals.voided;
     await numbers("refund", {
@@ -475,12 +528,14 @@ export async function runDemo(o: DemoOptions): Promise<DemoResult> {
   });
 
   let paidMinor = 0;
+  let firstBatchId: string | undefined;
   await beat("payout", "HouseFresh is paid, in one batch, through PayPal Payouts", async () => {
     const payouts = await eng("GET", "/payouts");
     const credits = await eng("GET", "/credits");
-    const hf = credits.creators[0];
+    const hf = hfOf(credits);
     paidMinor = hf.totals.paid;
     const batch = payouts.batches[0];
+    firstBatchId = batch?.senderBatchId;
     await numbers("payout", {
       batches: payouts.batches.length,
       senderBatchId: batch?.senderBatchId,
@@ -550,6 +605,197 @@ export async function runDemo(o: DemoOptions): Promise<DemoResult> {
     );
   });
 
+  // ── A later cycle, stated on its own: two creators, one sale, and a disputed sale ──
+  const co: CoExposureNumbers = {
+    sessions: 0,
+    winixBuyers: 0,
+    causedUnitsBefore: 0,
+    causedUnitsAfter: 0,
+    earlierSalesCredited: 0,
+    coExposedSalesCredited: 0,
+    splitSale: { captureId: "", totalMinor: 0, housefreshMinor: 0, airlabMinor: 0 },
+    day60: { housefreshMinor: 0, airlabMinor: 0, frozenMinor: 0 },
+    released: { housefreshMinor: 0, airlabMinor: 0 },
+  };
+  const cohort: RunRecord[] = [];
+  let splitSale: Json | undefined;
+  await beat("shapley", "One sale, two creators: the commission splits by Shapley", async () => {
+    await eng("POST", "/creators", AIRLAB);
+    const ids: string[] = [];
+    for (let n = 0; ids.length < COHORT_PER_MODEL * MODEL_FAMILIES.length; n++) {
+      if (n > 5_000) throw new Error("could not find exposed session ids for the cohort");
+      const id = `${t}-co-${n.toString(36)}`;
+      const probe = new ShopperSession(ep, `probe-${id}`, { sessionId: id });
+      try {
+        await probe.search({ query: "air purifier" });
+      } finally {
+        await probe.close();
+      }
+      if (probe.passportBody()?.arm === "test") ids.push(id);
+    }
+    const before = await eng("GET", "/lift/winix");
+    co.causedUnitsBefore = before.causedUnits;
+    const creditedBefore = new Set<string>(
+      ((await eng("GET", "/shapley")).sales as Json[]).map((x) => x.captureId),
+    );
+    let k = 0;
+    for (let i = 0; i < COHORT_PER_MODEL; i++) {
+      for (const [m, model] of MODEL_FAMILIES.entries()) {
+        const r = await play({
+          id: ids[k++] as string,
+          arm: "test",
+          model,
+          index: i,
+          buysWinix: true,
+          browse: SELLERS[(i + m) % SELLERS.length] as string,
+          coExposed: true,
+        });
+        cohort.push(r);
+      }
+    }
+    co.sessions = cohort.length;
+    co.winixBuyers = cohort.filter((r) => r.product?.upc === UPC_WINIX_A230).length;
+    await line(
+      "shapley",
+      `A second creator, AirLab, publishes its own purifier test (living-room particle runs; it also recommends the Winix). ${co.sessions} more agents (${COHORT_PER_MODEL} per model) are shown both tests before they buy: ${co.winixBuyers} of ${co.sessions} buy the Winix.`,
+      { sessions: co.sessions, winixBuyers: co.winixBuyers },
+    );
+
+    await eng("POST", "/credits/recompute");
+    const after = await eng("GET", "/lift/winix");
+    co.causedUnitsAfter = after.causedUnits;
+    const sales = ((await eng("GET", "/shapley")).sales as Json[]).filter(
+      (x) => !creditedBefore.has(x.captureId),
+    );
+    const isCo = (x: Json) => (x.shares as Json[]).length > 1;
+    co.coExposedSalesCredited = sales.filter(isCo).length;
+    co.earlierSalesCredited = sales.length - co.coExposedSalesCredited;
+    splitSale = sales.find(isCo);
+    const share = (x: Json | undefined, who: string) =>
+      ((x?.shares as Json[] | undefined) ?? []).find((y) => y.creatorId === who)?.amountMinor ?? 0;
+    co.splitSale = {
+      captureId: splitSale?.captureId ?? "",
+      totalMinor: splitSale?.totalMinor ?? 0,
+      housefreshMinor: share(splitSale, "housefresh"),
+      airlabMinor: share(splitSale, "airlab"),
+    };
+
+    // The coalition lifts the engine splits on, recomputed here from the run records.
+    const exposed = [...records.values()].filter((r) => r.arm === "test");
+    const placebo = [...records.values()].filter((r) => r.arm === "placebo");
+    const winixRate = (rs: RunRecord[]) =>
+      rs.length ? rs.filter((r) => r.product?.upc === UPC_WINIX_A230).length / rs.length : 0;
+    const base = winixRate(placebo);
+    const v = (who: string[]) =>
+      Math.max(
+        0,
+        winixRate(exposed.filter((r) => who.every((c) => r.creatorsSeen.includes(c)))) - base,
+      );
+    const vH = v(["housefresh"]);
+    const vA = v(["airlab"]);
+    const vHA = v(["housefresh", "airlab"]);
+    const phiH = (vH + (vHA - vA)) / 2;
+    const phiA = (vA + (vHA - vH)) / 2;
+    const pts = (x: number) => `+${(x * 100).toFixed(1)}`;
+    await numbers("shapley", {
+      ...co,
+      lowerBound: after.lowerBound,
+      exposedSales: after.exposedSales,
+      coalitionLiftPoints: { housefresh: vH * 100, airlab: vA * 100, both: vHA * 100 },
+      shapleyPoints: { housefresh: phiH * 100, airlab: phiA * 100 },
+    });
+    await line(
+      "shapley",
+      `More evidence tightens the 80% bound: ${co.causedUnitsBefore} → ${co.causedUnitsAfter} caused Winix units over ${after.exposedSales} exposed sales. The ${sales.length} new credits go, in sale order, to ${co.earlierSalesCredited} earlier HouseFresh-only sales and ${co.coExposedSalesCredited} co-exposed sales; they draw on Winix's approved top-up.`,
+    );
+    if (splitSale) {
+      await line(
+        "shapley",
+        `One sale, two creators: ${usd(co.splitSale.totalMinor)} commission on capture ${co.splitSale.captureId} → HouseFresh ${usd(co.splitSale.housefreshMinor)}, AirLab ${usd(co.splitSale.airlabMinor)}, by Shapley. Lift over the placebo: HouseFresh's test ${pts(vH)} points, AirLab's ${pts(vA)}, both together ${pts(vHA)}; each adds the same at the margin, so each gets half.`,
+        { captureId: co.splitSale.captureId },
+      );
+    } else {
+      await line("shapley", "No co-exposed sale was credited in this run.");
+    }
+    check(
+      "shapley: every co-exposed credit splits exactly, and both creators earn",
+      sales
+        .filter(isCo)
+        .every(
+          (x) =>
+            share(x, "housefresh") > 0 &&
+            share(x, "airlab") > 0 &&
+            share(x, "housefresh") + share(x, "airlab") === x.totalMinor,
+        ) &&
+        (!fake || co.coExposedSalesCredited > 0),
+      `${co.coExposedSalesCredited} co-exposed sales split`,
+    );
+  });
+
+  let disputeId: string | undefined;
+  const frozenIds: string[] = [];
+  let day60: Json | undefined;
+  let releaseRun: Json | undefined;
+  await beat(
+    "dispute",
+    "A buyer disputes a sale: its credits freeze until PayPal decides",
+    async () => {
+      if (!splitSale) {
+        await line("dispute", "No credited co-exposed sale to dispute in this run.");
+        return;
+      }
+      const captureId = splitSale.captureId as string;
+      const opened = await cat("POST", "/mock/disputes", { captureId });
+      disputeId = opened.disputeId;
+      const held = (((await eng("GET", "/credits")).creators as Json[]) ?? []).flatMap((c) =>
+        (c.credits as Json[]).filter((x) => x.captureId === captureId),
+      );
+      frozenIds.push(...held.filter((x) => x.frozen).map((x) => x.id as string));
+      co.day60.frozenMinor = held.reduce((a, x) => a + x.amountMinor, 0);
+      await line(
+        "dispute",
+        `The buyer of that sale opens a PayPal dispute ("item not received", ${opened.disputeId}). CUSTOMER.DISPUTE.CREATED reaches the engine: the sale's ${held.length} pending credits (${usd(co.day60.frozenMinor)}) freeze. Not voided: PayPal has not decided.`,
+        {
+          disputeId,
+          captureId,
+          frozenCredits: frozenIds.length,
+          frozenMinor: co.day60.frozenMinor,
+        },
+      );
+
+      const jump = await eng("POST", "/clock/advance", { days: 30 });
+      day60 = jump.payout as Json;
+      const item = (who: string) =>
+        ((day60?.items as Json[] | undefined) ?? []).find((i) => i.creatorId === who);
+      co.day60.housefreshMinor = item("housefresh")?.amountMinor ?? 0;
+      co.day60.airlabMinor = item("airlab")?.amountMinor ?? 0;
+      await numbers("dispute", {
+        day60: { senderBatchId: day60?.senderBatchId, items: day60?.items },
+      });
+      await line(
+        "dispute",
+        `Day 60: holds end. One batch, two PayPal accounts (PAYPAL_ID): HouseFresh ${usd(co.day60.housefreshMinor)}, AirLab ${usd(co.day60.airlabMinor)} (batch ${day60?.senderBatchId}). The disputed sale's ${usd(co.day60.frozenMinor)} is held back.`,
+      );
+
+      const resolved = await cat("POST", `/mock/disputes/${disputeId}/resolve`, {
+        favour: "seller",
+      });
+      releaseRun = await eng("POST", "/payouts/run");
+      const rel = (who: string) =>
+        ((releaseRun?.items as Json[] | undefined) ?? []).find((i) => i.creatorId === who)
+          ?.amountMinor ?? 0;
+      co.released = { housefreshMinor: rel("housefresh"), airlabMinor: rel("airlab") };
+      await numbers("dispute", {
+        outcome: resolved.outcome,
+        released: { senderBatchId: releaseRun?.senderBatchId, items: releaseRun?.items },
+      });
+      await line(
+        "dispute",
+        `PayPal resolves the dispute in the seller's favour (${resolved.outcome}). CUSTOMER.DISPUTE.RESOLVED releases the credits, and the next payout pays them: HouseFresh ${usd(co.released.housefreshMinor)}, AirLab ${usd(co.released.airlabMinor)} (batch ${releaseRun?.senderBatchId}). Had the buyer won, they would have been voided.`,
+      );
+    },
+  );
+
   // ── The ledger and PayPal must agree ──
   await beat("checks", "Ledger and PayPal agree", async () => {
     const [deposits, credits, payouts, mock, salesMock, journeys, offers] = await Promise.all([
@@ -561,28 +807,48 @@ export async function runDemo(o: DemoOptions): Promise<DemoResult> {
       eng("GET", "/journeys?limit=200"),
       cat("GET", "/offers"),
     ]);
-    const hf = credits.creators[0];
-    const mockBatchTotal = mock.batches.reduce(
-      (a: number, b: Json) =>
-        a + b.items.reduce((x: number, i: Json) => x + i.amount.amountMinor, 0),
+    const hf = hfOf(credits);
+    const creators = credits.creators as Json[];
+    const ledgerPaid = creators.reduce((a, c) => a + c.totals.paid, 0);
+    const itemsOf = (b: Json) => b.items as Json[];
+    const mockBatchTotal = (mock.batches as Json[]).reduce(
+      (a, b) => a + itemsOf(b).reduce((x, i) => x + i.amount.amountMinor, 0),
       0,
     );
     check(
-      "payout: ledger paid == PayPal batch total",
-      hf.totals.paid === mockBatchTotal && mock.batches.length === 1,
-      `ledger ${usd(hf.totals.paid)}, PayPal ${usd(mockBatchTotal)} in ${mock.batches.length} batch`,
+      "payouts: ledger paid == PayPal batch totals",
+      ledgerPaid === mockBatchTotal && mock.batches.length === payouts.batches.length,
+      `ledger ${usd(ledgerPaid)}, PayPal ${usd(mockBatchTotal)} in ${mock.batches.length} batches`,
     );
-    const item = mock.batches[0]?.items[0];
+    const receivers: Record<string, string> = {
+      housefresh: "HOUSEFRESH-PP",
+      airlab: "AIRLAB-PP",
+    };
+    for (const c of creators) {
+      const inPayPal = (mock.batches as Json[])
+        .flatMap(itemsOf)
+        .filter((i) => i.receiver === receivers[c.creatorId] && i.recipientType === "PAYPAL_ID")
+        .reduce((a, i) => a + i.amount.amountMinor, 0);
+      check(
+        `payouts: ${c.name} paid in ledger == paid to its PAYPAL_ID`,
+        inPayPal === c.totals.paid,
+        `${usd(c.totals.paid)} vs ${usd(inPayPal)}`,
+      );
+    }
+    const firstMock = (mock.batches as Json[]).find((b) => b.senderBatchId === firstBatchId);
+    const item = firstMock?.items[0];
     check(
-      "payout goes to HouseFresh's PAYPAL_ID",
-      item?.receiver === "HOUSEFRESH-PP" && item?.recipientType === "PAYPAL_ID",
+      "day-30 payout: one item, to HouseFresh's PAYPAL_ID",
+      firstMock?.items.length === 1 &&
+        item?.receiver === "HOUSEFRESH-PP" &&
+        item?.recipientType === "PAYPAL_ID",
       `${item?.recipientType} ${item?.receiver}`,
     );
+    const ids = (bs: Json[]) => bs.map((b) => b.senderBatchId as string).sort();
     check(
-      "payout: one batch, same id in ledger and PayPal",
-      payouts.batches.length === 1 &&
-        payouts.batches[0].senderBatchId === mock.batches[0]?.senderBatchId,
-      `${payouts.batches[0]?.senderBatchId}`,
+      "payouts: the same batch ids in ledger and PayPal",
+      JSON.stringify(ids(payouts.batches)) === JSON.stringify(ids(mock.batches)),
+      `${payouts.batches.length} batches`,
     );
     const depositedMock = new Map<string, Json>(mock.captures.map((c: Json) => [c.id, c]));
     for (const b of deposits.brands as Json[]) {
@@ -651,6 +917,38 @@ export async function runDemo(o: DemoOptions): Promise<DemoResult> {
         (o.refund === "after-payout" ? credits.reviewFlags.length === 1 : voided === 1),
       `${refunded} refunded, ${voided} voided, ${credits.reviewFlags.length} flagged`,
     );
+    if (disputeId) {
+      const d = (salesMock.disputes as Json[]).find((x) => x.id === disputeId);
+      const disputed = creators.flatMap((c) =>
+        (c.credits as Json[]).filter((x) => x.captureId === d?.captureId),
+      );
+      const day60Ids = new Set(
+        ((day60?.items as Json[] | undefined) ?? []).flatMap((i) => i.creditIds as string[]),
+      );
+      const releasedIds = new Set(
+        ((releaseRun?.items as Json[] | undefined) ?? []).flatMap((i) => i.creditIds as string[]),
+      );
+      check(
+        "dispute: PayPal resolved it for the seller; the ledger released, not voided, its credits",
+        d?.status === "RESOLVED" &&
+          d?.outcome === "RESOLVED_SELLER_FAVOUR" &&
+          disputed.length === frozenIds.length &&
+          disputed.every((x) => x.state === "paid" && !x.frozen),
+        `${d?.status} ${d?.outcome}; ${disputed.map((x) => x.state).join(", ")}`,
+      );
+      check(
+        "dispute: frozen credits were held out of the day-60 batch and paid in the next",
+        frozenIds.length > 0 &&
+          frozenIds.every((id) => !day60Ids.has(id) && releasedIds.has(id)) &&
+          releasedIds.size === frozenIds.length,
+        `${frozenIds.length} frozen, ${releasedIds.size} released`,
+      );
+    }
+    check(
+      "every credit ends paid or voided: none left pending or frozen",
+      creators.every((c) => c.totals.frozen === 0 && c.totals.pending === 0),
+      creators.map((c) => `${c.name} pending ${usd(c.totals.pending)}`).join(", "),
+    );
     check(
       "every session purchased",
       [...records.values()].every((r) => r.status === "purchased"),
@@ -678,8 +976,10 @@ export async function runDemo(o: DemoOptions): Promise<DemoResult> {
     (returned.brands as Json[]).find((b) => b.brandId === "winix")?.returnedNow ?? 0;
   const result: DemoResult = {
     numbers: {
-      sessions: records.size,
-      purchased: [...records.values()].filter((r) => r.status === "purchased").length,
+      sessions: records.size - cohort.length,
+      purchased: [...records.values()].filter(
+        (r) => r.status === "purchased" && !cohort.includes(r),
+      ).length,
       exposedSales,
       causedUnits,
       creditedMinor,
@@ -687,6 +987,7 @@ export async function runDemo(o: DemoOptions): Promise<DemoResult> {
       returnedMinor,
       levoitCausedUnits: levoitUnits,
       liftPoints,
+      coExposure: co,
     },
     checks,
     matchesCard: false,
@@ -696,7 +997,7 @@ export async function runDemo(o: DemoOptions): Promise<DemoResult> {
     const expectPaid =
       o.refund === "before-payout" ? CARD.creditedMinor - voidedMinor : CARD.creditedMinor;
     const cardOk =
-      records.size === CARD.sessions &&
+      records.size - cohort.length === CARD.sessions &&
       exposedSales === CARD.exposedSales &&
       causedUnits === CARD.causedUnits &&
       creditedMinor === CARD.creditedMinor &&
@@ -708,6 +1009,13 @@ export async function runDemo(o: DemoOptions): Promise<DemoResult> {
       "numbers match the card (57 → 51 → $391.64; Levoit $0)",
       cardOk,
       `${exposedSales} → ${causedUnits} → ${usd(creditedMinor)}`,
+    );
+    const { captureId: _id, ...split } = co.splitSale;
+    const coOk = JSON.stringify({ ...co, splitSale: split }) === JSON.stringify(COEXPOSURE);
+    check(
+      "co-exposure and dispute numbers match the pinned demo outputs",
+      coOk,
+      `${co.causedUnitsBefore} → ${co.causedUnitsAfter} units; split ${usd(split.housefreshMinor)} / ${usd(split.airlabMinor)}`,
     );
   }
   await emit({

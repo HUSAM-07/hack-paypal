@@ -173,7 +173,7 @@ type Here = "console" | "payout";
 function nav(here: Here): string {
   const cur = (p: Here) => (p === here ? ' aria-current="page"' : "");
   return `<nav class="nav" aria-label="CITED"><a class="mark" href="../">CITED</a>
-<a href="/"${cur("console")}>Console</a><a href="/payout"${cur("payout")}>Payout</a><a href="../studio">Studio</a></nav>`;
+<a href="/"${cur("console")}>Console</a><a href="/payout"${cur("payout")}>Payout</a><a href="../try">Run an agent</a><a href="../studio">Studio</a></nav>`;
 }
 
 function page(title: string, here: Here, body: string, opts: Opts): string {
@@ -339,7 +339,7 @@ export function payoutPage(p: PayoutData | null, opts: Opts): string {
   <div><dt>Payout batch ID</dt><dd class="mono">${esc(p.paypalBatchId ?? p.senderBatchId)}</dd></div>
   <div><dt>${p.itemIdKind === "payout_item_id" ? "Payout item ID" : "Item reference"}</dt><dd class="mono">${esc(p.itemId)}</dd></div>
 </dl>
-<footer>Sent with PayPal Payouts. Refunds and disputes during the hold void credits before anything is paid.</footer>
+<footer>Sent with PayPal Payouts. A refund during the hold voids the credit; a dispute holds it until PayPal decides.</footer>
 </article>
 ${
   p.rival

@@ -213,3 +213,83 @@ it("the passport the agent carried to checkout verifies at the catalogue's key",
   expect(r.status).toBe("purchased");
   expect((await verifyPassport(sent ?? "", "cited-dev-passport-key")).ok).toBe(true);
 });
+
+/** An Anthropic Messages endpoint that searches, says why, then buys Lumen's offer. */
+function scriptedAnthropic(seen: { bodies: Record<string, any>[]; headers: Headers[] }): LlmConfig {
+  let call = 0;
+  const fetchImpl: typeof fetch = async (url, init) => {
+    expect(String(url)).toBe("http://anthropic.local/v1/messages");
+    const req = JSON.parse(String(init?.body));
+    seen.bodies.push(req);
+    seen.headers.push(new Headers(init?.headers));
+    call++;
+    if (call === 1) {
+      return Response.json({
+        content: [
+          { type: "text", text: "Looking at offers first." },
+          {
+            type: "tool_use",
+            id: "t1",
+            name: "search_product",
+            input: { query: "bedroom purifier", sellerId: "northwind" },
+          },
+        ],
+      });
+    }
+    const last = req.messages.at(-1).content[0];
+    expect(last.type).toBe("tool_result");
+    const data = JSON.parse(last.content.replace(/<\/?untrusted_third_party_data>/g, ""));
+    const offerId = data.offers.find((o: { seller: string }) => o.seller === "lumen").offerId;
+    return Response.json({
+      content: [
+        {
+          type: "tool_use",
+          id: "t2",
+          name: "checkout",
+          input: { offerId, reason: "Lumen is cheapest" },
+        },
+      ],
+    });
+  };
+  return {
+    baseUrl: "http://anthropic.local/v1",
+    apiKey: "sk-test",
+    api: "anthropic",
+    maxTokens: 500,
+    models: { gpt: "gpt-x", gemini: "gemini-x", sonnet: "claude-x" },
+    fetch: fetchImpl,
+  };
+}
+
+describe("Anthropic Messages agent", () => {
+  it("runs the same loop over /messages with tool_use blocks", async () => {
+    const seen = { bodies: [] as Record<string, any>[], headers: [] as Headers[] };
+    const thoughts: string[] = [];
+    const cfg = scriptedAnthropic(seen);
+    const { LlmAgent, ShopperSession } = await import("../src/index");
+    const session = new ShopperSession(await ep(), "anthropic-test");
+    const out = await new LlmAgent(cfg, "claude-x").run({
+      request: "purifier around $100",
+      session,
+      rand: () => 0,
+      onThought: (t) => thoughts.push(t),
+    });
+    await session.close();
+    expect(out.reason).toBe("Lumen is cheapest");
+    expect(session.purchase?.seller.id).toBe("lumen");
+    expect(thoughts).toEqual(["Looking at offers first."]);
+    expect(seen.headers[0]?.get("x-api-key")).toBe("sk-test");
+    expect(seen.bodies[0]).toMatchObject({ model: "claude-x", max_tokens: 500 });
+    expect(seen.bodies[0]?.system).toContain("shopping agent");
+    expect(seen.bodies[0]?.tools.map((t: { name: string }) => t.name)).toEqual([
+      "search_product",
+      "checkout",
+    ]);
+    // The second call replays the assistant's tool_use and our tool_result, in order.
+    expect(seen.bodies[1]?.messages.map((m: { role: string }) => m.role)).toEqual([
+      "user",
+      "assistant",
+      "user",
+    ]);
+  });
+});

@@ -46,7 +46,7 @@ export function createConsoleApp(deps: Deps = depsFromEnv(process.env)) {
 
   app.get("/payout", async (c) => {
     try {
-      const data = await loadPayout(deps, c.req.query("creator"));
+      const data = await loadPayout(deps, c.req.query("creator"), c.req.query("batch"));
       return c.html(
         payoutPage(
           data,
