@@ -513,6 +513,19 @@ code {
   font-weight: 600;
 }
 
+.proof-link {
+  color: var(--ink);
+  font-weight: 500;
+  text-decoration-color: var(--rule);
+  text-underline-offset: 3px;
+}
+.proof-link:hover {
+  text-decoration-color: var(--proof);
+}
+.proof-link:hover .try-arrow {
+  transform: translateX(4px);
+}
+
 /* Ledger */
 .ledger .l-sub th,
 .ledger .l-sub td {

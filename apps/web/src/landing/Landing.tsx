@@ -258,7 +258,7 @@ export function Landing() {
             <a href="#how" className="hide-sm">
               How it works
             </a>
-            <a href="#proof" className="hide-sm">
+            <a href="/proof" className="hide-sm">
               Proof
             </a>
             <a href="#money" className="hide-sm">
@@ -355,6 +355,15 @@ export function Landing() {
                   paid $0.
                   <Ref n={3} /> Agents that read the test elsewhere only shrink the measured lift,
                   so pay is a floor.
+                </p>
+                <p>
+                  <a className="proof-link" href="/proof">
+                    How we know the test caused the sales: the pre-registration, every interval, and
+                    every session to download
+                    <span className="try-arrow" aria-hidden="true">
+                      →
+                    </span>
+                  </a>
                 </p>
               </div>
               <figure className="fig fig-models">
