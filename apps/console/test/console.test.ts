@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { createEngineClient } from "../src/engine";
 import { createConsoleApp } from "../src/index";
-import { parseRunRecords, pickPair, type RunSource } from "../src/runs";
+import { type AgentRun, parseRunRecords, pickPair, type RunSource } from "../src/runs";
 
 const record = (o: Record<string, unknown>) =>
   JSON.stringify({
@@ -135,7 +135,7 @@ describe("run source", () => {
 });
 
 describe("picking the video pair", () => {
-  const run = (o: Record<string, unknown>) => parseRunRecords(record(o))[0];
+  const run = (o: Record<string, unknown>) => parseRunRecords(record(o))[0] as AgentRun;
   const winix = { upc: "111111111111", name: "Winix A230" };
   const levoit = { upc: "222222222222", name: "Levoit Core 300" };
 
