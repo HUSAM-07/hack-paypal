@@ -99,6 +99,23 @@ function useNarrow() {
   return narrow;
 }
 
+/** Demo creators by name; creators onboarded at /creators by their `c-` id. Anything else: HouseFresh. */
+export function creatorFromParams(params: URLSearchParams): string {
+  const id = params.get("creator") ?? "";
+  return Object.hasOwn(CREATORS, id) || /^c-[0-9a-f]{12}$/.test(id) ? id : "housefresh";
+}
+
+/** The byline a new creator chose, passed along by /creators. Plain text, rendered by React. */
+function displayName(raw: string | null): string | undefined {
+  const s = Array.from(raw ?? "", (ch) =>
+    ch.charCodeAt(0) < 32 || ch.charCodeAt(0) === 127 ? " " : ch,
+  )
+    .join("")
+    .trim()
+    .slice(0, 80);
+  return s || undefined;
+}
+
 function viewFromPath(): StudioContext["view"] {
   return window.location.pathname.replace(/\/$/, "").endsWith("/creator") ? "creator" : "brand";
 }
@@ -112,7 +129,8 @@ export function App() {
     scopeStore.set(s);
     return s;
   });
-  const creatorId = params.get("creator") === "airlab" ? "airlab" : "housefresh";
+  const creatorId = creatorFromParams(params);
+  const creatorName = CREATORS[creatorId] ?? displayName(params.get("name")) ?? creatorId;
   const [config, setConfig] = useState<StudioConfig | null>(null);
   const [first, setFirst] = useState<StudioTables | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -179,10 +197,7 @@ export function App() {
     () => (config && first ? sourcesFor(config, first.tables) : undefined),
     [config, first],
   );
-  const state = useMemo(
-    () => initialState(viewFromPath(), CREATORS[creatorId] ?? "HouseFresh"),
-    [creatorId],
-  );
+  const state = useMemo(() => initialState(viewFromPath(), creatorName), [creatorName]);
   const ai = useMemo(() => (config ? citedHarness(config) : undefined), [config]);
   const onApiReady = useCallback((e: AgStudioApiReadyEvent) => {
     api.current = e.api as AgStudioApi;
@@ -193,9 +208,7 @@ export function App() {
       <header className="st-head">
         <div className="st-title">
           <span className="st-mark">CITED</span>
-          <h1>
-            {view === "brand" ? "Purifier programme · Winix" : `${CREATORS[creatorId]} · creator`}
-          </h1>
+          <h1>{view === "brand" ? "Purifier programme · Winix" : `${creatorName} · creator`}</h1>
           <p>
             {view === "brand"
               ? "Maya, brand manager. Winix pays only for the sales its creators' tests caused."

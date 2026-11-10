@@ -16,6 +16,7 @@ export {
   type MockPayPal,
   type MockPayPalOptions,
   type MockWebhookEvent,
+  mockPayerId,
   type VaultedWallet,
   type WebhookDelivery,
   type WebhookHandler,

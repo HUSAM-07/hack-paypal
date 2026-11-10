@@ -16,6 +16,28 @@ import { fromPayPalValue, type Money, toPayPalValue } from "@pact/protocol";
 import { makeTestCert, signWebhook, type TestSigner } from "../testing/x509";
 
 export const MOCK_API_BASE = "https://api-m.sandbox.paypal.com";
+/** Access tokens the mock mints for an authorization code (Log in with PayPal). */
+const MOCK_USER_TOKEN_PREFIX = "A21AAmockuser-";
+
+/**
+ * A payer id derived from the authorization code: the same code always signs in the same member,
+ * so simulated sign-in is deterministic. 13 characters of PayPal's payer-id alphabet.
+ */
+export function mockPayerId(code: string): string {
+  let h = 0x811c9dc5;
+  let g = 0x01000193;
+  for (let i = 0; i < code.length; i++) {
+    h = Math.imul(h ^ code.charCodeAt(i), 0x01000193) >>> 0;
+    g = Math.imul(g ^ code.charCodeAt(i), 0x5bd1e995) >>> 0;
+  }
+  const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  let out = "";
+  for (let i = 0; i < 13; i++) {
+    const n = i < 6 ? h >>> (i * 5) : g >>> ((i - 6) * 4);
+    out += alphabet[n % alphabet.length];
+  }
+  return out;
+}
 export const MOCK_WEB_BASE = "https://www.sandbox.paypal.com";
 export const MOCK_CERT_URL = `${MOCK_API_BASE}/v1/notifications/certs/CERT-mock`;
 export const MOCK_WEBHOOK_ID = "WH-MOCK-0001";
@@ -954,6 +976,28 @@ export function createMockPayPal(opts: MockPayPalOptions = {}) {
       },
     },
     {
+      // Log in with PayPal: the member behind a user token minted by the code grant above.
+      method: "GET",
+      re: /^\/v1\/identity\/oauth2\/userinfo$/,
+      run: (_m, c) => {
+        const token = c.headers.get("authorization")?.replace(/^Bearer\s+/i, "") ?? "";
+        if (!token.startsWith(MOCK_USER_TOKEN_PREFIX)) {
+          throw fail(401, "AUTHENTICATION_FAILURE", "Not a user access token.", "INVALID_TOKEN");
+        }
+        const payerId = mockPayerId(token.slice(MOCK_USER_TOKEN_PREFIX.length));
+        return ok({
+          user_id: `https://www.paypal.com/webapps/auth/identity/user/${payerId.toLowerCase()}`,
+          sub: payerId.toLowerCase(),
+          name: "Simulated Creator",
+          payer_id: payerId,
+          verified_account: "true",
+          emails: [
+            { value: `${payerId.toLowerCase()}@sim.invalid`, primary: true, confirmed: true },
+          ],
+        });
+      },
+    },
+    {
       method: "GET",
       re: /^\/v1\/payments\/payouts-item\/([^/]+)$/,
       run: (m) => {
@@ -1157,6 +1201,24 @@ export function createMockPayPal(opts: MockPayPalOptions = {}) {
         return respond(401, {
           error: "invalid_client",
           error_description: "Client Authentication failed",
+        });
+      }
+      const form = new URLSearchParams(typeof init?.body === "string" ? init.body : "");
+      if (form.get("grant_type") === "authorization_code") {
+        const code = form.get("code") ?? "";
+        if (!/^[A-Za-z0-9_-]{8,64}$/.test(code)) {
+          return respond(400, {
+            error: "invalid_grant",
+            error_description: "Authorization code is invalid or expired.",
+          });
+        }
+        return respond(200, {
+          scope: "openid email https://uri.paypal.com/services/paypalattributes",
+          access_token: `${MOCK_USER_TOKEN_PREFIX}${code}`,
+          token_type: "Bearer",
+          expires_in: 28800,
+          refresh_token: `R23AAmock-${code}`,
+          nonce: `${iso()}mock`,
         });
       }
       return respond(200, {
