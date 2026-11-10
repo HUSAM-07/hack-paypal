@@ -1,5 +1,5 @@
 name: reseed-hosted
-# Manual only. Refreshes the CITED data on the hosted worker without ever showing it empty.
+# Manual, plus an hourly safety net (snapshot mode). Refreshes the CITED data on the hosted worker without ever showing it empty.
 #
 # snapshot (default): replays the 14-beat demo against a local `wrangler dev` of pact-worker
 #   inside this job, checks it against the locked numbers, exports the CITED tables as one SQL
@@ -12,7 +12,13 @@ name: reseed-hosted
 # Either way the job then reads the hosted API and pages and fails if any locked number is off
 # (62 caused, first payout $383.96, programme to date $468.43).
 # Honors DEPLOY_FREEZE (repo variable): while it is "true", only `force: true` runs this.
+#
+# Hourly: Studio's buttons can no longer change the shared ledger (a visitor's Approve, Release and
+# Void stay in their own cookie), so this only restores the locked numbers if something else moved
+# them. A scheduled run has no inputs, so it takes snapshot mode; under DEPLOY_FREEZE it is skipped.
 on:
+  schedule:
+    - cron: "23 * * * *"
   workflow_dispatch:
     inputs:
       mode:
@@ -26,6 +32,8 @@ on:
         default: false
 jobs:
   reseed:
+    # The hourly run honours the freeze quietly; a manual run says why it stopped (next step).
+    if: github.event_name != 'schedule' || vars.DEPLOY_FREEZE != 'true'
     runs-on: ubuntu-latest
     environment: production
     concurrency: { group: deploy-production, cancel-in-progress: false }

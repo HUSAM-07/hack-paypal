@@ -19,6 +19,7 @@ import {
   type Caller,
   CITED_PREFIX,
   citedEnv,
+  citedOpen,
   citedWriteDenied,
   internalEngineFetch,
   serveEngine,
@@ -26,6 +27,7 @@ import {
 } from "./cited";
 import type { Env } from "./env";
 import { PUBLIC_MCP_PATH } from "./mcp";
+import { cachedRead } from "./read-cache";
 import { clientIp } from "./security";
 
 /**
@@ -87,11 +89,14 @@ async function asDemoPage(res: Response, prefix: string, csp = DEMO_PAGE_CSP): P
  * clients. Used for reads (console, Studio) and the mock's signed webhooks; server-side only.
  */
 function engineFetch(env: Env, ctx: ExecCtx): typeof fetch {
-  return async (input, init) =>
+  const direct = (req: Request) =>
     withReadRetry(
-      new Request(input, init),
+      req,
       async (r) => engine.fetch(r, citedEnv(env, "internal"), ctx) as Promise<Response>,
     );
+  // Reads are polled by every open console and Studio tab: share them for a few seconds (D1's
+  // daily read limit). Webhook deliveries (POST) bypass it.
+  return async (input, init) => cachedRead(new Request(input, init), direct);
 }
 
 /**
@@ -214,6 +219,10 @@ export async function studioHandler(c: Ctx): Promise<Response> {
   const env = c.env;
   // Maya's approval runs server-side: an internal write where the engine's PayPal lives.
   const engineWrite = internalEngineFetch(env, c.executionCtx);
+  // Wherever CITED's writes are locked (the hosted demo), a visitor's Approve, Release and Void
+  // stay in their own cookie: they see the effect, the shared ledger and its locked numbers
+  // never move. Only a keyless local stack (CITED_OPEN_API=1) writes through to the engine.
+  const privateWrites = citedOpen(env) ? undefined : { cookiePath: STUDIO_PREFIX };
   const app = createStudioApp({
     read: createEngineReader({
       baseUrl: "https://engine.internal",
@@ -221,6 +230,7 @@ export async function studioHandler(c: Ctx): Promise<Response> {
     }),
     approve: createEngineApprover({ baseUrl: "https://engine.internal", fetch: engineWrite }),
     review: createEngineReviewer({ baseUrl: "https://engine.internal", fetch: engineWrite }),
+    privateWrites,
     llm: studioLlmChoice(env),
     limit: async (req) => {
       const ip = clientIp(req);

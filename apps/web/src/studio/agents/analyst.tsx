@@ -21,7 +21,7 @@ import type {
 import { clientToolRunner, createAiHarness, directLlmRunner } from "ag-studio";
 import { useState } from "react";
 import type { StudioConfig } from "../data";
-import { API, getJson } from "../data";
+import { API, getJson, privateNote } from "../data";
 import { workerAdapter } from "./adapter";
 
 export interface Recommendation {
@@ -88,11 +88,15 @@ export function ApprovalCard(p: AgAiToolDetailParams<{ brandId?: string }, Recom
         error?: string;
         amountMinor?: number;
         deposit?: { status?: string };
+        private?: boolean;
+        resetsAt?: string;
       };
       if (!res.ok) throw new Error(body.error ?? `approval answered ${res.status}`);
       setState("done");
       setMessage(
-        `Approved: ${usd(body.amountMinor ?? 0)} top-up captured through PayPal (${body.deposit?.status ?? "captured"}). The deposit meter updates on the next refresh.`,
+        body.private
+          ? `Approved: ${usd(body.amountMinor ?? 0)} top-up. ${privateNote(body.resetsAt)}`
+          : `Approved: ${usd(body.amountMinor ?? 0)} top-up captured through PayPal (${body.deposit?.status ?? "captured"}). The deposit meter updates on the next refresh.`,
       );
     } catch (e) {
       setState("error");
