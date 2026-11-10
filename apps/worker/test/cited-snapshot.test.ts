@@ -1,6 +1,6 @@
 import { env } from "cloudflare:workers";
 import { beforeAll, describe, expect, it } from "vitest";
-import { CITED_TABLES, snapshotSql } from "../scripts/cited-snapshot-sql.mjs";
+import { CITED_TABLES, PRESERVED_TABLES, snapshotSql } from "../scripts/cited-snapshot-sql.mjs";
 import { checkCited, LOCKED } from "../scripts/verify-cited.mjs";
 
 const DB = (env as unknown as { DB: D1Database }).DB;
@@ -46,7 +46,9 @@ describe("hosted reseed snapshot", () => {
     const { results } = await DB.prepare(
       "SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%' AND name NOT LIKE '_cf_%' AND name <> 'd1_migrations'",
     ).all<{ name: string }>();
-    const cited = results.map((r) => r.name).filter((n) => !PACT_TABLES.includes(n));
+    const cited = results
+      .map((r) => r.name)
+      .filter((n) => !PACT_TABLES.includes(n) && !PRESERVED_TABLES.includes(n));
     // A new CITED migration table must join the snapshot, or a reseed would leave stale rows.
     expect([...cited].sort()).toEqual([...CITED_TABLES].sort());
   });

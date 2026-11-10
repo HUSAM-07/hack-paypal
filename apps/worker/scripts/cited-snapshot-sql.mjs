@@ -24,6 +24,12 @@ export const CITED_TABLES = [
   "cited_live_runs",
 ];
 
+/**
+ * CITED tables a reseed must never wipe: real PayPal evidence that a replayed demo can't
+ * recreate (signed sandbox webhooks verified on the live endpoint).
+ */
+export const PRESERVED_TABLES = ["webhook_proofs"];
+
 /** D1 rejects a statement over 100 KB; stay well below it. */
 const MAX_STATEMENT_BYTES = 90_000;
 

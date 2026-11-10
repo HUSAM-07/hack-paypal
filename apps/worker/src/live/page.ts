@@ -4,9 +4,7 @@
  * passes through, so each row compares the two agents at the same moment of their run.
  * Everything a model or a third party wrote is rendered with textContent, never as HTML.
  */
-import { siteNavLinks } from "@pact/protocol";
-
-import { UPC_WINIX_A230 } from "@pact/protocol";
+import { siteNavLinks, UPC_WINIX_A230 } from "@pact/protocol";
 
 const esc = (s: string) => s.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
 
