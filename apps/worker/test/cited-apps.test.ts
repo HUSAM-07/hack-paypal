@@ -2,6 +2,7 @@ import { SELF } from "cloudflare:test";
 import { env as rawEnv } from "cloudflare:workers";
 import { describe, expect, it } from "vitest";
 import { d1RunSource, prefixLinks } from "../src/cited-apps";
+import { clearReadCache } from "../src/read-cache";
 
 const env = rawEnv as unknown as { DB: D1Database };
 const get = (path: string, init?: RequestInit) => SELF.fetch(`https://example.com${path}`, init);
@@ -131,6 +132,7 @@ describe("AG Studio on the hosted demo", () => {
       ),
     ]);
     const before = await ledger();
+    clearReadCache(); // Studio's reads are cached for 10s; earlier tests read the empty ledger
 
     const config = (await (await get("/studio/api/config")).json()) as {
       privateWrites: { ttlMinutes: number } | null;

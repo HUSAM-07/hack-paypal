@@ -27,6 +27,7 @@ import {
 } from "./cited";
 import type { Env } from "./env";
 import { PUBLIC_MCP_PATH } from "./mcp";
+import { cachedRead } from "./read-cache";
 import { clientIp } from "./security";
 
 /**
@@ -88,11 +89,14 @@ async function asDemoPage(res: Response, prefix: string, csp = DEMO_PAGE_CSP): P
  * clients. Used for reads (console, Studio) and the mock's signed webhooks; server-side only.
  */
 function engineFetch(env: Env, ctx: ExecCtx): typeof fetch {
-  return async (input, init) =>
+  const direct = (req: Request) =>
     withReadRetry(
-      new Request(input, init),
+      req,
       async (r) => engine.fetch(r, citedEnv(env, "internal"), ctx) as Promise<Response>,
     );
+  // Reads are polled by every open console and Studio tab: share them for a few seconds (D1's
+  // daily read limit). Webhook deliveries (POST) bypass it.
+  return async (input, init) => cachedRead(new Request(input, init), direct);
 }
 
 /**
