@@ -55,6 +55,8 @@ Configured in `apps/catalogue-mcp/src/sellers.ts`. Prices are the price-matched 
 
 Verified on the sandbox app: OAuth works, the app token has the vault scope, and `POST /v3/vault/setup-tokens` with `payment_source.paypal` returns `PAYER_ACTION_REQUIRED`. Card payments are refused (`PAYEE_NOT_ENABLED_FOR_CARD_PROCESSING`), so the vaulted PayPal wallet is the only headless way to pay. The webhook `8042373202922840X` is registered for `<workers.dev>/api/cited/webhooks/paypal`.
 
+Done on 2026-11-10 (ids in [SANDBOX-EVIDENCE.md](../SANDBOX-EVIDENCE.md)): the buyer approved the vault once, and `apps/engine/scripts/sandbox-agent-checkout.ts` ran agent orders that PayPal created and captured from that `vault_id` in one call, a refund through the toolkit's `create_refund`, and the engine's payout. The payee in that run was the app's own sandbox business account, given by email (unlike the spike 11 note below, it was accepted); routing to separate seller accounts (steps 2 and 3) is still unverified.
+
 Still to do, in order:
 
 1. **Vault the buyer once.** With the sandbox credentials in `.env`, run `npx tsx packages/paypal/spikes/02-setup-token.ts`, open the printed approve link and log in as the sandbox **personal** (buyer) account, then run `npx tsx packages/paypal/spikes/03-payment-token.ts`. The vault id lands in `packages/paypal/spikes/.state.json` (`vaultId`). Set it as `CITED_BUYER_VAULT_ID` (worker: `npx wrangler secret put CITED_BUYER_VAULT_ID`).
