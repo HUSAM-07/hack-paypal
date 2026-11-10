@@ -52,6 +52,10 @@ export interface Env {
   CITED_PASSPORT_KEY?: string;
   /** AG Grid Enterprise licence key for /studio; optional (watermark without it). */
   AG_GRID_LICENSE_KEY?: string;
+  /** AG Studio licence (trial) key; unset = watermark. Ships to the browser. */
+  AG_STUDIO_LICENSE_KEY?: string;
+  /** Model for the Studio agents (default claude-sonnet-5-5). */
+  CITED_STUDIO_MODEL?: string;
   /** Bearer token for the CITED API; required unless CITED runs simulated. */
   CITED_API_TOKEN?: string;
   /** Sandbox: the buyer's vaulted PayPal wallet the agents pay with (see AGENT-CHECKOUT.md). */

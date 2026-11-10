@@ -1,0 +1,239 @@
+import { describe, expect, it } from "vitest";
+import { recommend } from "../src/analyst";
+import { createStudioApp, type RawEngine } from "../src/index";
+import {
+  parseTurn,
+  type StudioLlmChoice,
+  streamTurn,
+  studioLlmChoice,
+  toOpenAiMessages,
+} from "../src/llm";
+import { buildTables, inFirstPayout, type TableId } from "../src/tables";
+import { raw } from "./fixture";
+
+const row = (t: ReturnType<typeof buildTables>, table: TableId, id: string) =>
+  t.tables[table]?.find((r) => r.id === id);
+
+describe("buildTables", () => {
+  const t = buildTables(raw);
+
+  it("labels the first batch and matches credits by PayPal's or our batch id", () => {
+    expect(t.firstBatch).toMatchObject({ senderBatchId: "cited-1", label: "Batch 1" });
+    const c2 = raw.creators[0]?.credits[1];
+    expect(c2 && inFirstPayout({ ...c2, creatorId: "housefresh" }, raw.payouts?.[0])).toBe(true);
+    expect(row(t, "credits", "C2:housefresh")).toMatchObject({
+      payoutBatch: "Batch 1",
+      firstPayout: true,
+    });
+  });
+
+  it("gives each brand a row per scope, money in dollars for display only", () => {
+    expect(row(t, "brands", "winix:todate")).toMatchObject({ causedUnits: 2, paid: 7.68 });
+    expect(row(t, "brands", "winix:first")).toMatchObject({ scopeKey: "first" });
+    expect(row(t, "brands", "levoit:todate")).toMatchObject({ causedUnits: 0, paid: 0 });
+  });
+
+  it("writes text cells as – instead of blank, and a voided credit has no batch", () => {
+    expect(row(t, "credits", "C1:housefresh")).toMatchObject({
+      state: "voided",
+      voidReason: "refund",
+      payoutBatch: "–",
+    });
+    expect(row(t, "credits", "C2:housefresh")).toMatchObject({
+      voidReason: "–",
+      splitWith: "Other Lab $2.68",
+    });
+  });
+
+  it("changes version only when the data changes", () => {
+    expect(buildTables(raw).version).toBe(t.version);
+    const voided: RawEngine = {
+      ...raw,
+      journeys: raw.journeys.map((j) => ({ ...j, holdStatus: "voided" })),
+    };
+    expect(buildTables(voided).version).not.toBe(t.version);
+  });
+});
+
+describe("Analyst recommendation", () => {
+  it("keeps the cap when the deposit left covers a cycle", () => {
+    expect(recommend(raw, "winix")).toMatchObject({
+      action: "none",
+      amountMinor: null,
+      approvalId: "analyst-2",
+    });
+  });
+
+  it("raises the cap in $500 steps when proven lift outruns the deposit", () => {
+    const short: RawEngine = {
+      ...raw,
+      deposits: raw.deposits.map((d) => ({ ...d, available: 0, deposits: d.deposits.slice(0, 1) })),
+    };
+    const rec = recommend(short, "winix");
+    expect(rec).toMatchObject({
+      action: "raise_cap",
+      amountMinor: 50_000,
+      approvalId: "analyst-1",
+    });
+    expect(rec?.citations.map((c) => c.source)).toContain("/api/cited/api/lift");
+    expect(rec?.guard).toMatch(/never changes ranking/);
+  });
+
+  it("never funds a brand whose lift isn't proven", () => {
+    expect(recommend(raw, "levoit")).toMatchObject({ action: "none" });
+  });
+});
+
+describe("model proxy", () => {
+  it("prefers the local gateway, then Anthropic, then the scripted Analyst", () => {
+    expect(
+      studioLlmChoice({ LLM_BASE_URL: "http://g/", LLM_API_KEY: "k", ANTHROPIC_API_KEY: "a" }).kind,
+    ).toBe("gateway");
+    expect(studioLlmChoice({ ANTHROPIC_API_KEY: "a" }).kind).toBe("anthropic");
+    expect(studioLlmChoice({}).kind).toBe("scripted");
+  });
+
+  it("rejects malformed turns and maps tool calls to OpenAI messages", () => {
+    expect(typeof parseTurn({ input: "nope" })).toBe("string");
+    const turn = parseTurn({
+      instructions: "be brief",
+      input: [
+        { type: "message", role: "user", content: [{ type: "text", text: "hi" }] },
+        { type: "function_call", callId: "c1", name: "run_query", arguments: "{}" },
+        { type: "function_call_output", callId: "c1", output: "42" },
+      ],
+    });
+    if (typeof turn === "string") throw new Error(turn);
+    expect(toOpenAiMessages(turn).map((m) => m.role)).toEqual([
+      "system",
+      "user",
+      "assistant",
+      "tool",
+    ]);
+  });
+
+  it("streams a gateway turn as text, tool calls and a done event", async () => {
+    const sse = [
+      { choices: [{ delta: { content: "Hello" } }] },
+      {
+        choices: [
+          {
+            delta: {
+              tool_calls: [{ index: 0, id: "t1", function: { name: "go", arguments: '{"a":' } }],
+            },
+          },
+        ],
+      },
+      {
+        choices: [
+          {
+            delta: { tool_calls: [{ index: 0, function: { arguments: "1}" } }] },
+            finish_reason: "tool_calls",
+          },
+        ],
+      },
+      { choices: [], usage: { prompt_tokens: 3, completion_tokens: 4 } },
+    ]
+      .map((c) => `data: ${JSON.stringify(c)}\n\n`)
+      .join("");
+    const fake = (async () => new Response(`${sse}data: [DONE]\n\n`)) as unknown as typeof fetch;
+    const choice: StudioLlmChoice = {
+      kind: "gateway",
+      model: "m",
+      baseUrl: "http://g",
+      apiKey: "k",
+      label: "m",
+    };
+    const turn = parseTurn({ input: [{ type: "message", role: "user", content: "hi" }] });
+    if (typeof turn === "string") throw new Error(turn);
+    const text = await new Response(
+      streamTurn(choice, turn, { signal: new AbortController().signal, fetch: fake }),
+    ).text();
+    const events = text
+      .trim()
+      .split("\n")
+      .map((l) => JSON.parse(l));
+    expect(events).toEqual([
+      { t: "text", d: "Hello" },
+      { t: "tool", id: "t1", name: "go" },
+      { t: "args", id: "t1", d: '{"a":' },
+      { t: "args", id: "t1", d: "1}" },
+      { t: "done", model: "m", status: "completed", usage: { inputTokens: 3, outputTokens: 4 } },
+    ]);
+  });
+});
+
+describe("studio routes", () => {
+  const gateway: StudioLlmChoice = {
+    kind: "gateway",
+    model: "m",
+    baseUrl: "http://g",
+    apiKey: "secret",
+    label: "m",
+  };
+  const approvals: unknown[] = [];
+  const short: RawEngine = {
+    ...raw,
+    deposits: raw.deposits.map((d) => ({ ...d, available: 0, deposits: d.deposits.slice(0, 1) })),
+  };
+  const app = createStudioApp({
+    read: async () => short,
+    approve: async (a) => {
+      approvals.push(a);
+      return { status: "captured" };
+    },
+    llm: gateway,
+    llmFetch: (async () => new Response("data: [DONE]\n\n")) as unknown as typeof fetch,
+    limit: async (req) => req.headers.get("x-test-limit") !== "over",
+  });
+
+  it("serves config without the model key, and the tables", async () => {
+    const config = await (await app.request("/api/config")).text();
+    expect(config).not.toContain("secret");
+    expect(JSON.parse(config)).toMatchObject({
+      llm: { kind: "gateway", label: "m" },
+      licenseKey: "",
+    });
+    const data = (await (await app.request("/api/data")).json()) as {
+      tables: Record<string, unknown[]>;
+    };
+    expect(Object.keys(data.tables)).toEqual(
+      expect.arrayContaining(["brands", "credits", "journeys", "payouts"]),
+    );
+  });
+
+  it("answers 503 when the engine is down", async () => {
+    const { EngineUnavailable } = await import("../src/dashboard");
+    const down = createStudioApp({
+      read: async () => {
+        throw new EngineUnavailable("down");
+      },
+    });
+    expect((await down.request("/api/data")).status).toBe(503);
+  });
+
+  it("refuses cross-origin and over-limit model calls, and caps the body", async () => {
+    const post = (headers: Record<string, string>, body = '{"input":[]}') =>
+      app.request("http://studio.test/api/llm", {
+        method: "POST",
+        headers: { host: "studio.test", ...headers },
+        body,
+      });
+    expect((await post({ origin: "http://evil.test" })).status).toBe(403);
+    expect((await post({ "x-test-limit": "over" })).status).toBe(429);
+    expect((await post({}, "x".repeat(400_001))).status).toBe(413);
+    expect((await post({ origin: "http://studio.test" })).status).toBe(200);
+    const scripted = createStudioApp({ read: async () => raw });
+    expect((await scripted.request("/api/llm", { method: "POST", body: "{}" })).status).toBe(503);
+  });
+
+  it("approves only the recommendation Maya saw, at the engine's amount", async () => {
+    const approve = (body: unknown, headers: Record<string, string> = { "x-studio": "approve" }) =>
+      app.request("/api/analyst/approve", { method: "POST", headers, body: JSON.stringify(body) });
+    expect((await approve({ approvalId: "analyst-1", brandId: "winix" }, {})).status).toBe(403);
+    expect((await approve({ approvalId: "analyst-9", brandId: "winix" })).status).toBe(409);
+    const ok = await approve({ approvalId: "analyst-1", brandId: "winix", amountMinor: 9_999_999 });
+    expect(ok.status).toBe(200);
+    expect(approvals).toEqual([{ approvalId: "analyst-1", brandId: "winix", amountMinor: 50_000 }]);
+  });
+});

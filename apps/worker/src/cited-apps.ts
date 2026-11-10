@@ -6,12 +6,18 @@ import {
   type RunSource,
 } from "@cited/console";
 import { app as engine } from "@cited/engine";
-import { AG_GRID_SRC, createEngineReader, createStudioApp } from "@cited/studio";
+import {
+  createEngineApprover,
+  createEngineReader,
+  createStudioApp,
+  studioLlmChoice,
+} from "@cited/studio";
 import { createMockPayPal } from "@pact/paypal";
 import type { Context } from "hono";
 import { CITED_PREFIX, citedEnv, serveEngine } from "./cited";
 import type { Env } from "./env";
 import { PUBLIC_MCP_PATH } from "./mcp";
+import { clientIp } from "./security";
 
 /**
  * The CITED demo apps (catalogue, console) mounted inside pact-worker next to the engine, so a
@@ -50,11 +56,13 @@ export function prefixLinks(html: string, prefix: string): string {
 export const DEMO_PAGE_CSP =
   "default-src 'self'; script-src 'self' 'unsafe-inline' https://*.paypal.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https://*.paypal.com; frame-src https://*.paypal.com; base-uri 'none'; object-src 'none'; frame-ancestors 'none'";
 
-/** Studio also loads AG Grid from jsDelivr (one pinned file). */
-export const STUDIO_PAGE_CSP = DEMO_PAGE_CSP.replace(
-  "script-src 'self' 'unsafe-inline'",
-  `script-src 'self' 'unsafe-inline' ${AG_GRID_SRC}`,
-);
+/**
+ * AG Studio is a bundled React app (apps/web/studio.html): no inline scripts. Its charts and
+ * grids inject styles at runtime and draw to canvas, hence 'unsafe-inline' styles and blob:/data:
+ * images. Everything else is same-origin.
+ */
+export const STUDIO_PAGE_CSP =
+  "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self'; worker-src 'self' blob:; base-uri 'none'; object-src 'none'; form-action 'self'; frame-ancestors 'none'";
 
 async function asDemoPage(res: Response, prefix: string, csp = DEMO_PAGE_CSP): Promise<Response> {
   const html = res.headers.get("content-type")?.includes("text/html");
@@ -146,17 +154,48 @@ export async function consoleHandler(c: Ctx): Promise<Response> {
   return asDemoPage(await app.fetch(strip(c.req.raw, CONSOLE_PREFIX)), CONSOLE_PREFIX);
 }
 
+/**
+ * /studio/api/*: the Studio API (tables from the engine, the Analyst's model, Maya's approval).
+ * /studio and /studio/creator: the AG Studio app, a static entry built by apps/web.
+ */
 export async function studioHandler(c: Ctx): Promise<Response> {
+  const path = new URL(c.req.url).pathname;
+  if (!path.startsWith(`${STUDIO_PREFIX}/api/`) && path !== `${STUDIO_PREFIX}/health`) {
+    // The assets binding serves studio.html at its pretty URL; the app routes by pathname.
+    const res = await c.env.ASSETS.fetch(new URL("/studio", c.req.url));
+    const out = new Response(res.body, res);
+    out.headers.set("Content-Security-Policy", STUDIO_PAGE_CSP);
+    out.headers.set("X-Content-Type-Options", "nosniff");
+    out.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
+    out.headers.set("Cache-Control", "no-cache");
+    return out;
+  }
+  const env = c.env;
+  const simulated = (env.CITED_PAYPAL_MODE ?? env.PAYPAL_MODE) === "simulated";
+  // Writes go where the engine's PayPal lives: the demo Durable Object when simulated.
+  const engineWrite: typeof fetch = async (input, init) => {
+    const req = new Request(input, init);
+    if (env.CITED_API_TOKEN) req.headers.set("authorization", `Bearer ${env.CITED_API_TOKEN}`);
+    if (!simulated) return engine.fetch(req, citedEnv(env), c.executionCtx) as Promise<Response>;
+    const url = new URL(req.url);
+    url.pathname = `${CITED_PREFIX}${url.pathname}`;
+    return env.CITED_DEMO.get(env.CITED_DEMO.idFromName("demo")).fetch(new Request(url, req));
+  };
   const app = createStudioApp({
     read: createEngineReader({
       baseUrl: "https://engine.internal",
-      fetch: engineFetch(c.env, c.executionCtx),
+      fetch: engineFetch(env, c.executionCtx),
     }),
-    licenseKey: c.env.AG_GRID_LICENSE_KEY,
+    approve: createEngineApprover({ baseUrl: "https://engine.internal", fetch: engineWrite }),
+    llm: studioLlmChoice(env),
+    limit: async (req) => {
+      const ip = clientIp(req);
+      const mine = await env.IP_LIMITER.limit({ key: `studio-llm:${ip}` });
+      if (!mine.success) return false;
+      return (await env.IP_LIMITER.limit({ key: "studio-llm:all" })).success;
+    },
+    licenseKey: env.AG_STUDIO_LICENSE_KEY,
+    gridLicenseKey: env.AG_GRID_LICENSE_KEY,
   });
-  return asDemoPage(
-    await app.fetch(strip(c.req.raw, STUDIO_PREFIX)),
-    STUDIO_PREFIX,
-    STUDIO_PAGE_CSP,
-  );
+  return app.fetch(strip(c.req.raw, STUDIO_PREFIX));
 }

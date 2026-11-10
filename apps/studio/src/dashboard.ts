@@ -32,7 +32,23 @@ export interface RawDeposits {
   spent: number;
   returned: number;
   available: number;
-  deposits: { id: string; kind: string; amountMinor: number; returnedMinor: number }[];
+  deposits: {
+    id: string;
+    kind: string;
+    amountMinor: number;
+    returnedMinor: number;
+    status?: string;
+    createdAt?: string;
+  }[];
+}
+
+export interface RawPayoutBatch {
+  senderBatchId: string;
+  /** PayPal's payout_batch_id; credits record this one. */
+  paypalBatchId?: string | null;
+  status: string;
+  createdAt: string;
+  items: { creatorId: string; amountMinor: number; currency: string; creditIds: string[] }[];
 }
 
 export interface RawCredit {
@@ -47,12 +63,14 @@ export interface RawCredit {
   holdUntil: string | null;
   payoutBatchId: string | null;
   payoutStatus: string | null;
+  /** Pending but held back by an open PayPal dispute. */
+  frozen?: boolean;
 }
 
 export interface RawCreator {
   creatorId: string;
   name: string;
-  totals: { pending: number; voided: number; paid: number };
+  totals: { pending: number; voided: number; paid: number; frozen?: number };
   credits: RawCredit[];
 }
 
@@ -81,6 +99,8 @@ export interface RawEngine {
   deposits: RawDeposits[];
   creators: RawCreator[];
   journeys: RawJourney[];
+  /** Payout batches, oldest first. Optional so older callers (and tests) can omit them. */
+  payouts?: RawPayoutBatch[];
 }
 
 export interface BrandView {
@@ -280,12 +300,13 @@ export function createEngineReader(opts: {
     return (await res.json()) as T;
   }
   return async () => {
-    const [clock, lift, deposits, credits, journeys] = await Promise.all([
+    const [clock, lift, deposits, credits, journeys, payouts] = await Promise.all([
       get<{ now: string }>("/clock"),
       get<{ brands: RawLift[] }>("/lift"),
       get<{ brands: RawDeposits[] }>("/deposits"),
       get<{ creators: RawCreator[] }>("/credits"),
       get<{ journeys: RawJourney[] }>("/journeys?limit=200"),
+      get<{ batches: RawPayoutBatch[] }>("/payouts"),
     ]);
     return {
       now: clock.now,
@@ -293,7 +314,35 @@ export function createEngineReader(opts: {
       deposits: deposits.brands,
       creators: credits.creators,
       journeys: journeys.journeys,
+      payouts: payouts.batches,
     };
+  };
+}
+
+/** Maya's approval: captures a top-up through the engine's approval endpoint. */
+export function createEngineApprover(opts: {
+  baseUrl: string;
+  token?: string | undefined;
+  fetch?: typeof fetch | undefined;
+}) {
+  const f = opts.fetch ?? fetch;
+  const base = opts.baseUrl.replace(/\/$/, "");
+  return async (a: { approvalId: string; brandId: string; amountMinor: number }) => {
+    let res: Response;
+    try {
+      res = await f(`${base}/api/approvals/${encodeURIComponent(a.approvalId)}/approve`, {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          ...(opts.token ? { authorization: `Bearer ${opts.token}` } : {}),
+        },
+        body: JSON.stringify({ brandId: a.brandId, amountMinor: a.amountMinor }),
+      });
+    } catch {
+      throw new EngineUnavailable(`Engine not reachable at ${opts.baseUrl}`);
+    }
+    if (!res.ok) throw new EngineUnavailable(`Engine answered ${res.status} for the approval`);
+    return (await res.json()) as { id: string; status: string; amountMinor: number };
   };
 }
 

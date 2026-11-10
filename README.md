@@ -76,7 +76,7 @@ Defaults need no keys. [`.env.example`](.env.example) lists every variable (PayP
 - `apps/catalogue-mcp`: MCP server: `search_product` over the sellers' offers, arm assignment, signed passports, and `checkout` through PayPal; the sellers' refund action.
 - `apps/agents`: shopper agents (GPT, Gemini, Sonnet; scripted by default) and the demo runner.
 - `apps/engine`: Hono + D1: webhooks, arm-checkout join, credit ledger, payouts, refunds, read API. Deployed inside `apps/worker` at `/api/cited`.
-- `apps/studio`: AG Studio dashboards for brands and creators.
+- `apps/studio`: the API behind the AG Studio dashboards (`/studio`, `/studio/creator`) and the Analyst; the page is `apps/web/studio.html`. See [cited/STUDIO.md](cited/STUDIO.md).
 - `apps/console`: the demo console (two agents side by side, payout moment).
 - `packages/evals`: the eval harness and committed results.
 

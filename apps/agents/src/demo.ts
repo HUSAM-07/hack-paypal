@@ -52,6 +52,11 @@ export interface DemoOptions {
   emit: (e: DemoEvent) => void | Promise<void>;
   /** Pause between beats (ms), for a live screen. */
   pace?: number;
+  /**
+   * Wait at the Analyst beat for Maya to approve the top-up in AG Studio (/studio) instead of
+   * approving it from the script. For recording the dashboards; gives up after this many ms.
+   */
+  approveInStudioMs?: number;
 }
 
 export interface Check {
@@ -594,15 +599,37 @@ export async function runDemo(o: DemoOptions): Promise<DemoResult> {
         closeVerdict: { boundPoints: -6.0, source: "packages/evals/results/cited/summary.md" },
       },
     );
-    const top = await eng("POST", "/approvals/analyst-1/approve", {
-      brandId: "winix",
-      amountMinor: 50_000,
-    });
-    await line(
-      "analyst",
-      `Maya approves: Winix adds ${usd(50_000)} to the programme (scripted amount; capture ${top.captureId}). Money buys honest tests, never a better spot.`,
-      { approval: "analyst-1", brandId: "winix", amountMinor: 50_000 },
-    );
+    if (o.approveInStudioMs) {
+      await line("analyst", "Waiting for Maya to approve the top-up in AG Studio (/studio)…");
+      const deadline = Date.now() + o.approveInStudioMs;
+      let topUp: Json | undefined;
+      while (!topUp) {
+        const d = await eng("GET", "/deposits");
+        const winix = (d.brands as Json[]).find((b) => b.brandId === "winix");
+        topUp = (winix?.deposits as Json[] | undefined)?.find(
+          (x) => x.kind !== "initial" && x.status === "captured",
+        );
+        if (topUp) break;
+        if (Date.now() > deadline)
+          throw new Error("nobody approved the top-up in AG Studio in time");
+        await new Promise((r) => setTimeout(r, 1000));
+      }
+      await line(
+        "analyst",
+        `Maya approves in AG Studio: Winix adds ${usd(topUp.amountMinor as number)} to the programme (capture ${String(topUp.captureId)}). Money buys honest tests, never a better spot.`,
+        { approval: "analyst-1", brandId: "winix", amountMinor: topUp.amountMinor },
+      );
+    } else {
+      const top = await eng("POST", "/approvals/analyst-1/approve", {
+        brandId: "winix",
+        amountMinor: 50_000,
+      });
+      await line(
+        "analyst",
+        `Maya approves: Winix adds ${usd(50_000)} to the programme (scripted amount; capture ${top.captureId}). Money buys honest tests, never a better spot.`,
+        { approval: "analyst-1", brandId: "winix", amountMinor: 50_000 },
+      );
+    }
   });
 
   // ── A later cycle, stated on its own: two creators, one sale, and a disputed sale ──
