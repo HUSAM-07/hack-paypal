@@ -227,6 +227,11 @@ const TRY = [
     body: "Day 30: the voided refund, the batch Payout to HouseFresh, the deposit returned to Winix.",
   },
   {
+    href: "/try",
+    title: "Run an agent yourself",
+    body: "Type what the buyer wants. A live agent shops, pays a seller through PayPal, and the engine decides whether the creator earns.",
+  },
+  {
     href: "/studio",
     title: "Studio dashboards",
     body: "The brand and creator views of the same ledger.",

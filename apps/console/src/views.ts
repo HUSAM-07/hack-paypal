@@ -173,7 +173,7 @@ type Here = "console" | "payout";
 function nav(here: Here): string {
   const cur = (p: Here) => (p === here ? ' aria-current="page"' : "");
   return `<nav class="nav" aria-label="CITED"><a class="mark" href="../">CITED</a>
-<a href="/"${cur("console")}>Console</a><a href="/payout"${cur("payout")}>Payout</a><a href="../studio">Studio</a></nav>`;
+<a href="/"${cur("console")}>Console</a><a href="/payout"${cur("payout")}>Payout</a><a href="../try">Run an agent</a><a href="../studio">Studio</a></nav>`;
 }
 
 function page(title: string, here: Here, body: string, opts: Opts): string {

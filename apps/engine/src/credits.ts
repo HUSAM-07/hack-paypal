@@ -10,7 +10,7 @@ import {
   type ReviewFlag,
   type VoidEvent,
 } from "@pact/attribution";
-import type { AttributedSale, Credit } from "@pact/protocol";
+import { type AttributedSale, type Credit, LIVE_CATEGORY } from "@pact/protocol";
 import type { Env } from "./env";
 import { brandLiftData, evaluateBrand } from "./lift";
 import { aggregateDeposit, type Brand, listBrands, listDeposits } from "./programme";
@@ -92,12 +92,18 @@ export async function persistCredits(
   for (let i = 0; i < stmts.length; i += 50) await env.DB.batch(stmts.slice(i, i + 50));
 }
 
-/** Sales that joined to a verified passport. Unattributed sales never reach the ledger. */
+/**
+ * Sales that joined to a verified passport. Unattributed sales never reach the ledger, and
+ * neither do live runs' sales (LIVE_CATEGORY): they never draw on a programme's deposit.
+ */
 export async function loadAttributedSales(env: Env): Promise<AttributedSale[]> {
   const { results } = await env.DB.prepare(
     `SELECT * FROM sales WHERE unattributed_reason IS NULL AND arm IS NOT NULL
+       AND session_id NOT IN (SELECT session_id FROM agent_sessions WHERE category = ?)
      ORDER BY captured_at, capture_id, upc`,
-  ).all<Row>();
+  )
+    .bind(LIVE_CATEGORY)
+    .all<Row>();
   return results.map((r) => ({
     captureId: r.capture_id as string,
     orderId: r.order_id as string,

@@ -27,6 +27,9 @@ export default defineConfig(async () => ({
           MODEL_PROVIDER: live ? "anthropic" : "fake",
           ANTHROPIC_API_KEY: live ? (devVar("ANTHROPIC_API_KEY") ?? "") : "",
           CHANNEL3_API_KEY: "",
+          // /try must use its scripted agent in tests, whatever .dev.vars holds.
+          LLM_BASE_URL: "",
+          LLM_API_KEY: "",
           SESSION_SECRET: "test-session-secret-that-is-long-enough-0123456789",
           RP_ID: "localhost",
           ORIGINS: "http://localhost:5173",

@@ -3,6 +3,7 @@
  * $ENGINE_API_TOKEN`; in PAYPAL_MODE=simulated with no token set it is open for local demos.
  * Response shapes are documented in apps/engine/README.md.
  */
+import { LIVE_CATEGORY } from "@pact/protocol";
 import { Hono } from "hono";
 import { z } from "zod";
 import { advanceClock, nowOf } from "./clock";
@@ -404,9 +405,10 @@ async function journeys(env: Env, limit: number) {
     await env.DB.prepare(
       `SELECT x.*, s.stores_viewed AS stores_viewed FROM sales x
        LEFT JOIN agent_sessions s ON s.session_id = x.session_id
-       WHERE x.unattributed_reason IS NULL ORDER BY x.captured_at DESC, x.order_id LIMIT ?`,
+       WHERE x.unattributed_reason IS NULL AND COALESCE(s.category, '') != ?
+       ORDER BY x.captured_at DESC, x.order_id LIMIT ?`,
     )
-      .bind(limit * 4)
+      .bind(LIVE_CATEGORY, limit * 4)
       .all<Row>()
   ).results;
   const prices = new Map(

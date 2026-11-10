@@ -51,6 +51,11 @@ export interface MockPayPalOptions {
   autoSettlePayouts?: boolean;
   /** Fixed-rate PayPal fee: `bps` of the amount plus `fixedMinor`. Default 2.9% + 30. */
   fee?: { bps: number; fixedMinor: number };
+  /**
+   * Where the id counter starts (default 0). A mock that restarts while its earlier orders,
+   * captures and events live on in a database must start past them, or ids repeat.
+   */
+  idOffset?: number;
 }
 
 interface StoredOrder {
@@ -171,7 +176,7 @@ export function createMockPayPal(opts: MockPayPalOptions = {}) {
   const pending = new Set<Promise<unknown>>();
   let signer: Promise<TestSigner> | undefined;
   let chain: Promise<unknown> = Promise.resolve();
-  let seq = 0;
+  let seq = Math.max(0, Math.floor(opts.idOffset ?? 0));
 
   const iso = () => new Date(now()).toISOString().replace(/\.\d{3}Z$/, "Z");
   const id = (prefix: string, len = 17) =>

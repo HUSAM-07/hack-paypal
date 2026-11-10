@@ -10,6 +10,7 @@ import {
 } from "./cited-apps";
 import { allowedOrigins, type Env } from "./env";
 import { newId } from "./ids";
+import { live, TRY_PREFIX } from "./live/routes";
 import { payments } from "./payments/routes";
 import { webhooks } from "./payments/webhooks";
 import { ipRateLimit, originAllowed, securityHeaders } from "./security";
@@ -54,6 +55,8 @@ for (const [prefix, handler] of [
   app.all(prefix, handler);
   app.all(`${prefix}/*`, handler);
 }
+
+app.route(TRY_PREFIX, live);
 
 app.use("*", securityHeaders);
 app.use("/api/auth/*", ipRateLimit);

@@ -8,6 +8,15 @@ export interface LlmConfig {
   models: Record<ModelFamily, string>;
   fetch?: typeof fetch;
   maxSteps?: number;
+  /**
+   * Wire format. "openai" (default): an OpenAI-compatible `/chat/completions` gateway.
+   * "anthropic": the Anthropic Messages API at `${baseUrl}/messages`, same tools and loop.
+   */
+  api?: "openai" | "anthropic";
+  /** Output token cap per model call. Required by the Anthropic API; default 1024 there. */
+  maxTokens?: number;
+  /** Aborts in-flight model calls (a run's hard timeout). */
+  signal?: AbortSignal;
 }
 
 export function llmConfigFromEnv(env: Record<string, string | undefined>): LlmConfig {
@@ -22,7 +31,7 @@ export function llmConfigFromEnv(env: Record<string, string | undefined>): LlmCo
   };
 }
 
-type Message =
+export type Message =
   | { role: "system" | "user"; content: string }
   | {
       role: "assistant";
@@ -110,11 +119,19 @@ export class LlmAgent implements ShopperAgent {
   ) {}
 
   private async chat(messages: Message[]) {
+    if (this.cfg.api === "anthropic") return this.chatAnthropic(messages);
     const f = this.cfg.fetch ?? fetch;
     const res = await f(`${this.cfg.baseUrl.replace(/\/$/, "")}/chat/completions`, {
       method: "POST",
       headers: { "content-type": "application/json", authorization: `Bearer ${this.cfg.apiKey}` },
-      body: JSON.stringify({ model: this.model, messages, tools: TOOLS, tool_choice: "auto" }),
+      body: JSON.stringify({
+        model: this.model,
+        messages,
+        tools: TOOLS,
+        tool_choice: "auto",
+        ...(this.cfg.maxTokens ? { max_tokens: this.cfg.maxTokens } : {}),
+      }),
+      ...(this.cfg.signal ? { signal: this.cfg.signal } : {}),
     });
     if (!res.ok) throw new Error(`LLM gateway ${res.status}: ${(await res.text()).slice(0, 200)}`);
     const json = (await res.json()) as {
@@ -125,7 +142,34 @@ export class LlmAgent implements ShopperAgent {
     return msg;
   }
 
-  async run({ request, session }: AgentContext): Promise<AgentOutcome> {
+  /** Same loop over the Anthropic Messages API: translate there, answer in the OpenAI shape. */
+  private async chatAnthropic(messages: Message[]) {
+    const f = this.cfg.fetch ?? fetch;
+    const res = await f(`${this.cfg.baseUrl.replace(/\/$/, "")}/messages`, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "x-api-key": this.cfg.apiKey,
+        "anthropic-version": "2023-06-01",
+      },
+      body: JSON.stringify({
+        model: this.model,
+        max_tokens: this.cfg.maxTokens ?? 1024,
+        ...toAnthropic(messages),
+        tools: TOOLS.map((t) => ({
+          name: t.function.name,
+          description: t.function.description,
+          input_schema: t.function.parameters,
+        })),
+      }),
+      ...(this.cfg.signal ? { signal: this.cfg.signal } : {}),
+    });
+    if (!res.ok)
+      throw new Error(`Anthropic API ${res.status}: ${(await res.text()).slice(0, 200)}`);
+    return fromAnthropic((await res.json()) as AnthropicResponse);
+  }
+
+  async run({ request, session, onThought }: AgentContext): Promise<AgentOutcome> {
     const messages: Message[] = [
       { role: "system", content: SYSTEM },
       { role: "user", content: request },
@@ -138,6 +182,7 @@ export class LlmAgent implements ShopperAgent {
         content: msg.content ?? null,
         ...(msg.tool_calls ? { tool_calls: msg.tool_calls } : {}),
       });
+      if (msg.content?.trim()) onThought?.(msg.content.trim());
       if (!msg.tool_calls?.length) return { reason: msg.content, steps: step };
 
       for (const call of msg.tool_calls) {
@@ -171,4 +216,66 @@ export class LlmAgent implements ShopperAgent {
     }
     return { reason: null, steps: max };
   }
+}
+
+type AnthropicBlock =
+  | { type: "text"; text: string }
+  | { type: "tool_use"; id: string; name: string; input: unknown }
+  | { type: "tool_result"; tool_use_id: string; content: string };
+
+interface AnthropicResponse {
+  content?: AnthropicBlock[];
+}
+
+/** OpenAI-shaped history → Anthropic `system` + alternating user/assistant blocks. */
+export function toAnthropic(messages: Message[]): {
+  system: string;
+  messages: { role: "user" | "assistant"; content: AnthropicBlock[] }[];
+} {
+  let system = "";
+  const out: { role: "user" | "assistant"; content: AnthropicBlock[] }[] = [];
+  const push = (role: "user" | "assistant", block: AnthropicBlock) => {
+    const last = out[out.length - 1];
+    if (last?.role === role) last.content.push(block);
+    else out.push({ role, content: [block] });
+  };
+  for (const m of messages) {
+    if (m.role === "system") system += m.content;
+    else if (m.role === "user") push("user", { type: "text", text: m.content });
+    else if (m.role === "tool")
+      push("user", { type: "tool_result", tool_use_id: m.tool_call_id, content: m.content });
+    else if (m.role === "assistant") {
+      if (m.content) push("assistant", { type: "text", text: m.content });
+      for (const c of m.tool_calls ?? []) {
+        let input: unknown = {};
+        try {
+          input = JSON.parse(c.function.arguments || "{}");
+        } catch {
+          // The model sent bad JSON last turn; the tool already answered with an error.
+        }
+        push("assistant", { type: "tool_use", id: c.id, name: c.function.name, input });
+      }
+    }
+  }
+  return { system, messages: out };
+}
+
+export function fromAnthropic(r: AnthropicResponse): Message & { role: "assistant" } {
+  const blocks = r.content ?? [];
+  const text = blocks
+    .filter((b): b is Extract<AnthropicBlock, { type: "text" }> => b.type === "text")
+    .map((b) => b.text)
+    .join("\n");
+  const calls = blocks
+    .filter((b): b is Extract<AnthropicBlock, { type: "tool_use" }> => b.type === "tool_use")
+    .map((b) => ({
+      id: b.id,
+      type: "function" as const,
+      function: { name: b.name, arguments: JSON.stringify(b.input ?? {}) },
+    }));
+  return {
+    role: "assistant",
+    content: text || null,
+    ...(calls.length ? { tool_calls: calls } : {}),
+  };
 }

@@ -84,7 +84,13 @@ function catalogueFor(env: Env, ctx: ExecCtx): CatalogueApp {
   }
   // Simulated: the mock signs the agents' captures and the sellers' refunds as webhooks and
   // delivers them straight to the engine, the way PayPal would.
-  const mock = createMockPayPal({ autoSettlePayouts: true, deliverFetch: engineFetch(env, ctx) });
+  // The object restarts when evicted while D1 keeps its sales, so ids start from the clock:
+  // a reused capture id would be dropped by the engine's join as a duplicate.
+  const mock = createMockPayPal({
+    autoSettlePayouts: true,
+    deliverFetch: engineFetch(env, ctx),
+    idOffset: Date.now(),
+  });
   mock.registerWebhook("https://engine.internal/webhooks/paypal");
   catalogue = createCatalogueApp({ env: catalogueEnv, mock });
   return catalogue;
