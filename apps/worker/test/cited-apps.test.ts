@@ -69,16 +69,16 @@ describe("CITED demo apps mounted in pact-worker", () => {
     expect((await get("/console/api/demo")).status).toBe(200);
   });
 
-  it("serves CITED Studio with AG Grid allowed by its CSP and live engine data", async () => {
-    const page = await get("/studio");
-    expect(page.status).toBe(200);
-    const html = await page.text();
-    expect(html).toContain('href="/studio/creator"');
+  it("serves the AG Studio page under a strict CSP, and its API from live engine data", async () => {
+    const page = await get("/studio/creator");
     const csp = page.headers.get("content-security-policy") ?? "";
-    expect(csp).toContain("https://cdn.jsdelivr.net/npm/ag-grid-enterprise@");
-    expect((await get("/studio/creator")).status).toBe(200);
-    const data = await get("/studio/api/dashboard");
+    expect(csp).toContain("script-src 'self'");
+    expect(csp).not.toContain("unsafe-eval");
+    const config = await get("/studio/api/config");
+    expect(config.status).toBe(200);
+    expect(await config.json()).toMatchObject({ llm: { kind: expect.any(String) } });
+    const data = await get("/studio/api/data");
     expect(data.status).toBe(200);
-    expect(await data.json()).toHaveProperty("brands");
+    expect(await data.json()).toHaveProperty("tables.brands");
   });
 });

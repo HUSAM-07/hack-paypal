@@ -6,7 +6,7 @@ Run on 2026-11-10 against https://pact-worker.vincent-wesley-liem.workers.dev (m
 
 ## Problems, worst first for video
 
-1. **Studio beat has nothing to show.** `/studio` returns 404 on hosted. Pending #69. The 1:50-2:40 beat (+51 extra Winix, $391.64 → $383.96, Levoit $0, Analyst, Maya approves) cannot be recorded from main until it lands. Fallback: the API (`/api/cited/api/lift`, `/deposits`) or the local demo output carries the same numbers.
+1. **Studio beat.** Rebuilt on AG Studio; how to record it, with Maya approving in Studio: [STUDIO.md](STUDIO.md). (Was: `/studio` returned 404 on hosted, pending #69.) The 1:50-2:40 beat: +51 extra Winix, $391.64 → $383.96, Levoit $0, Analyst, Maya approves. Fallback if Studio is down: the API (`/api/cited/api/lift`, `/deposits`) or the local demo output carries the same numbers.
 2. **Console side-by-side showed the wrong story (fixed in this PR).** Hosted `/console` showed the newest runs: exposed agent saw the test at MegaMart ("$7.00 cheaper") and the held-out agent bought the same Winix, with "No commission: the test did not cause this sale" under the exposed order (the engine credits 51 of the 57 exposed sales; the newest was one of the 6 not credited). The script says Northwind → Lumen ($4 cheaper) and held-out buys Levoit. Commit "fix(console): show a credited, cross-shop…" now prefers a credited, cross-shop exposed run and a held-out run that bought the other purifier. It takes effect once this merges to `main` and deploys. Re-check `/console?clean=1` after the deploy.
 3. **The hosted demo is a finished run, not a live one.** State is already post-payout (clock at 2026-12-09, deposits captured, payout `000000000000C` sent). The payout card therefore reads "Dec 9, 2026", a date in the future. The simulated PayPal lives in the demo Durable Object's memory and resets when it idles; D1 keeps the ledger. If the object is evicted before recording, hosted `/console/payout` still reads from D1, but new orders and refunds need a fresh run. Do not trigger a re-run on hosted while recording. Cut the date off the payout card, or record the local demo for the hook.
 4. **"Pay with PayPal (simulated)" on shop product pages.** Visible if the video lingers on a shop. Crop it, or show the shop only as the hop.
@@ -38,7 +38,7 @@ Local run ends with 16 of 16 ledger-vs-PayPal checks ok.
 | 0:20 Winix and Levoit fund, equal prices | `/shops/northwind`, `/shops/lumen`, `/shops/megamart` | open each | Winix and Levoit at $99.99 / $95.99 / $102.99 | pass |
 | 0:50 PayPal-only: Northwind → Lumen $4 cheaper | `/console?clean=1`, left column | none | "Stores visited: Northwind", paid at Lumen, "$4.00 cheaper" | **fail on main** (problem 2: showed MegaMart, $7.00), fixed in this PR |
 | 1:20 Proof: 147 sessions, 94pp, 24pp, close verdict pays nothing | `/api/cited/api/lift` | none | Winix 57/57, 3/54, 3/36; Levoit 0 caused units | pass (numbers only; no page shows the 24pp or narrow-verdict studies, they come from `packages/evals/results`) |
-| 1:50 AG Studio: +51, $391.64, voids $7.68, $383.96, $616.04, Levoit $0, Analyst, Maya approves | `/studio` | | | **pending #69** (404 today) |
+| 1:50 AG Studio: +51, $391.64, voids $7.68, $383.96, $616.04, Levoit $0, Analyst, Maya approves | `/studio` | | | AG Studio; see [STUDIO.md](STUDIO.md) |
 | 2:40 Close | | | | n/a, no screen |
 | Whole flow, one command | `CITED_ENGINE=worker npm run demo:cited` | | 11 beats, all locked numbers, 16/16 checks ok | pass |
 

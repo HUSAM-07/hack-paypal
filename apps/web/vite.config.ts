@@ -12,6 +12,8 @@ function appEntryRewrite(): Plugin {
         const path = req.url?.split("?")[0] ?? "";
         if (path === "/app" || path.startsWith("/app/")) {
           req.url = `/app.html${req.url?.slice(path.length) ?? ""}`;
+        } else if (path === "/studio" || path === "/studio/" || path === "/studio/creator") {
+          req.url = `/studio.html${req.url?.slice(path.length) ?? ""}`;
         }
         next();
       });
@@ -29,6 +31,13 @@ export default defineConfig(({ isSsrBuild }) => ({
     // SameSite=Strict session cookie and WebSocket Origin check both hold.
     proxy: {
       "/api": "http://localhost:8790",
+      // The worker only takes same-origin model calls; in dev the page and worker differ by port.
+      "/studio/api": {
+        target: "http://localhost:8790",
+        changeOrigin: true,
+        configure: (proxy) =>
+          proxy.on("proxyReq", (req) => req.setHeader("origin", "http://localhost:8790")),
+      },
       "/ws": { target: "ws://localhost:8790", ws: true },
     },
   },
@@ -44,6 +53,7 @@ export default defineConfig(({ isSsrBuild }) => ({
           input: {
             index: new URL("./index.html", import.meta.url).pathname,
             app: new URL("./app.html", import.meta.url).pathname,
+            studio: new URL("./studio.html", import.meta.url).pathname,
           },
         },
   },

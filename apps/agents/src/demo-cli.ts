@@ -13,6 +13,7 @@ const { values } = parseArgs({
     out: { type: "string" },
     serve: { type: "string" },
     pace: { type: "string", default: "0" },
+    "approve-in-studio": { type: "boolean", default: false },
     "use-running": { type: "boolean", default: false },
     "engine-url": { type: "string", default: `http://localhost:${DEFAULT_PORTS.engine}` },
     "catalogue-url": { type: "string", default: `http://localhost:${DEFAULT_PORTS.catalogue}` },
@@ -30,6 +31,7 @@ if (values.help) {
   --out FILE          write every session's run record as JSONL (what the console reads)
   --serve PORT        also serve the stream as Server-Sent Events at http://localhost:PORT/events
   --pace MS           pause between beats, for a live screen
+  --approve-in-studio wait at the Analyst beat for the top-up to be approved in AG Studio (/studio)
   --use-running       use an already running 'npm run dev:cited' stack (needs a fresh engine); else a private stack starts
   --verbose           show the apps' own logs`);
   process.exit(0);
@@ -116,6 +118,7 @@ try {
     refund,
     emit,
     pace: Number(values.pace),
+    ...(values["approve-in-studio"] ? { approveInStudioMs: 15 * 60_000 } : {}),
   });
   if (values.out)
     writeFileSync(
