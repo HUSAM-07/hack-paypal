@@ -8,6 +8,7 @@ import { createPublicMcp, type PublicMcp } from "./public";
 import { isSellerId, sellersFromEnv } from "./sellers";
 import { createMcpServer } from "./server";
 
+export * from "./arms";
 export * from "./catalogue";
 export * from "./checkout";
 export * from "./offers";
