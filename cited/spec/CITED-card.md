@@ -9,9 +9,9 @@
 - Sessions get the test, a same-creator placebo (another HouseFresh article), or neither: 50/50 for 7 days, then a permanent 5% holdout. Only the test is withheld; ranking never changes. Held-out agents reading the test elsewhere only shrink measured lift, so pay is a floor.
 - Credited units = exposed sales × (exposed − placebo rate) / exposed rate; 8% commission, $0 on no lift; Shapley splits co-exposure.
 
-**PayPal APIs + unhappy paths:** Store Sync; real arm-checkout join via signed Agent Affiliate Passport in Orders v2 `purchase_units[].custom_id` + `items[].upc`. Deposits: Orders v2 capture; unspent: `captures/{id}/refund`. 30-day hold; void on `REFUNDED`/`PARTIALLY_REFUNDED`; a dispute webhook freezes the credit until PayPal decides (void if the buyer wins). Multi-recipient Payouts (`PAYPAL_ID`) split co-exposed sales across affiliates by Shapley value.
+**PayPal APIs + unhappy paths:** Store Sync; no storefronts: the agent checks out through PayPal itself (Orders v2, seller as `payee`, buyer's Vault-linked wallet); real arm-checkout join via signed Agent Affiliate Passport in `purchase_units[].custom_id` + `items[].upc`. Deposits: Orders v2 capture; unspent: `captures/{id}/refund`. 30-day hold; void on `REFUNDED`/`PARTIALLY_REFUNDED`; a dispute webhook freezes the credit until PayPal decides (void if the buyer wins). Multi-recipient Payouts (`PAYPAL_ID`) split co-exposed sales across affiliates by Shapley value.
 
-**Why PayPal-only:** Only PayPal combines brand affiliate contracts (Honey), an agent catalogue (Store Sync) and Payouts to PayPal/Venmo; Stripe has no affiliate business. Last-click credit can be overwritten; causal credit can't. 57/57 exposed Winix buys settled at $4-cheaper Lumen (WooCommerce), not Northwind (Shopify). PayPal earns network fees plus settlement.
+**Why PayPal-only:** Only PayPal combines brand affiliate contracts (Honey), an agent catalogue (Store Sync) and Payouts to PayPal/Venmo; Stripe has no affiliate business. Last-click credit can be overwritten; causal credit can't. The demo's exposed agent reads Northwind's offer and pays $4-cheaper Lumen; the passport still credits the test. PayPal earns network fees plus settlement.
 
 **AI + depth:** Model-stratified attributable fraction, 80% lower bound.
 
