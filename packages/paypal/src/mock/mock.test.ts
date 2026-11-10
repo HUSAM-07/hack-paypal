@@ -71,6 +71,16 @@ async function paidOrder(s: ReturnType<typeof setup>) {
 }
 
 describe("orders", () => {
+  it("a restarted mock with an id offset never repeats an earlier instance's ids", async () => {
+    const first = await paidOrder(setup());
+    const again = await paidOrder(setup());
+    expect(again.cap.id).toBe(first.cap.id); // same counter, same ids
+    const later = await paidOrder(setup({ idOffset: 1_794_000_000_000 }));
+    expect(later.order.id).not.toBe(first.order.id);
+    expect(later.cap.id).not.toBe(first.cap.id);
+    expect(later.cap.id).toHaveLength(first.cap.id.length);
+  });
+
   it("creates, approves, captures; custom_id and items.upc survive", async () => {
     const s = setup();
     const created = await s.raw("POST", "/v2/checkout/orders", {

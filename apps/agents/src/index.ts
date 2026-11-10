@@ -6,6 +6,7 @@ export * from "./agent";
 export * from "./fake-agent";
 export * from "./in-process";
 export * from "./llm-agent";
+export * from "./rng";
 export * from "./run";
 export * from "./session";
 export * from "./types";
