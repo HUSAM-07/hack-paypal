@@ -40,6 +40,9 @@ export default defineConfig(async () => ({
           PAYPAL_CLIENT_ID: "test-client-id",
           PAYPAL_CLIENT_SECRET: "test-client-secret",
           PAYPAL_WEBHOOK_ID: "WH-TEST-ID",
+          // Deployed-like CITED: writes from outside need this token. CITED_OPEN_API is unset
+          // here on purpose; test/cited.test.ts checks the locked and opt-in configs directly.
+          CITED_API_TOKEN: "test-cited-token",
         },
       },
     }),

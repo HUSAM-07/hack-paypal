@@ -14,7 +14,14 @@ import {
 } from "@cited/studio";
 import { createMockPayPal } from "@pact/paypal";
 import type { Context } from "hono";
-import { CITED_PREFIX, citedEnv, serveEngine } from "./cited";
+import {
+  type Caller,
+  CITED_PREFIX,
+  citedEnv,
+  citedWriteDenied,
+  internalEngineFetch,
+  serveEngine,
+} from "./cited";
 import type { Env } from "./env";
 import { PUBLIC_MCP_PATH } from "./mcp";
 import { clientIp } from "./security";
@@ -73,10 +80,25 @@ async function asDemoPage(res: Response, prefix: string, csp = DEMO_PAGE_CSP): P
   return out;
 }
 
-/** The engine as a fetch function, so in-process callers keep their HTTP-shaped clients. */
+/**
+ * The engine in-process as a fetch function, so in-process callers keep their HTTP-shaped
+ * clients. Used for reads (console, Studio) and the mock's signed webhooks; server-side only.
+ */
 function engineFetch(env: Env, ctx: ExecCtx): typeof fetch {
   return async (input, init) =>
-    engine.fetch(new Request(input, init), citedEnv(env), ctx) as Promise<Response>;
+    engine.fetch(new Request(input, init), citedEnv(env, "internal"), ctx) as Promise<Response>;
+}
+
+/**
+ * The catalogue's demo controls (seller refunds, mock disputes, the demo clock) move money in
+ * the judged demo, so public callers need the CITED token. Shopping (`/mcp`, `/checkout`) stays
+ * open like the public /mcp, and so do reads.
+ */
+const CATALOGUE_OPEN_WRITES = new Set([`${CATALOGUE_PREFIX}/mcp`, `${CATALOGUE_PREFIX}/checkout`]);
+
+function catalogueWriteDenied(req: Request, env: Env): Response | null {
+  if (CATALOGUE_OPEN_WRITES.has(new URL(req.url).pathname)) return null;
+  return citedWriteDenied(env, req);
 }
 
 let catalogue: CatalogueApp | undefined;
@@ -114,19 +136,30 @@ function catalogueFor(env: Env, ctx: ExecCtx): CatalogueApp {
 }
 
 /** Runs inside CitedDemoDO: the stateful demo apps, by path prefix. */
-export async function serveStatefulDemo(req: Request, env: Env, ctx: ExecCtx): Promise<Response> {
+export async function serveStatefulDemo(
+  req: Request,
+  env: Env,
+  ctx: ExecCtx,
+  caller: Caller,
+): Promise<Response> {
   const path = new URL(req.url).pathname;
   if (path === CATALOGUE_PREFIX || path.startsWith(`${CATALOGUE_PREFIX}/`)) {
+    if (caller === "public") {
+      const denied = catalogueWriteDenied(req, env);
+      if (denied) return denied;
+    }
     return catalogueFor(env, ctx).fetch(strip(req, CATALOGUE_PREFIX));
   }
-  if (path.startsWith(`${CITED_PREFIX}/`)) return serveEngine(req, env, ctx);
+  if (path.startsWith(`${CITED_PREFIX}/`)) return serveEngine(req, env, ctx, caller);
   // Reached only through the rate-limited /mcp mount (apps/worker/src/mcp.ts).
   if (path === PUBLIC_MCP_PATH) return catalogueFor(env, ctx).publicMcp.handle(req);
   return new Response("not found", { status: 404 });
 }
 
-/** /catalogue/*: forwarded to the one demo Durable Object. */
-export function statefulDemoHandler(c: Ctx): Promise<Response> {
+/** /catalogue/*: forwarded to the one demo Durable Object (which checks writes again). */
+export function statefulDemoHandler(c: Ctx): Response | Promise<Response> {
+  const denied = catalogueWriteDenied(c.req.raw, c.env);
+  if (denied) return denied;
   const ns = c.env.CITED_DEMO;
   return ns.get(ns.idFromName("demo")).fetch(c.req.raw);
 }
@@ -171,16 +204,8 @@ export async function studioHandler(c: Ctx): Promise<Response> {
     return out;
   }
   const env = c.env;
-  const simulated = (env.CITED_PAYPAL_MODE ?? env.PAYPAL_MODE) === "simulated";
-  // Writes go where the engine's PayPal lives: the demo Durable Object when simulated.
-  const engineWrite: typeof fetch = async (input, init) => {
-    const req = new Request(input, init);
-    if (env.CITED_API_TOKEN) req.headers.set("authorization", `Bearer ${env.CITED_API_TOKEN}`);
-    if (!simulated) return engine.fetch(req, citedEnv(env), c.executionCtx) as Promise<Response>;
-    const url = new URL(req.url);
-    url.pathname = `${CITED_PREFIX}${url.pathname}`;
-    return env.CITED_DEMO.get(env.CITED_DEMO.idFromName("demo")).fetch(new Request(url, req));
-  };
+  // Maya's approval runs server-side: an internal write where the engine's PayPal lives.
+  const engineWrite = internalEngineFetch(env, c.executionCtx);
   const app = createStudioApp({
     read: createEngineReader({
       baseUrl: "https://engine.internal",

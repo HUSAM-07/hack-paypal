@@ -33,6 +33,7 @@ if (values.help) {
   --pace MS           pause between beats, for a live screen
   --approve-in-studio wait at the Analyst beat for the top-up to be approved in AG Studio (/studio)
   --use-running       use an already running 'npm run dev:cited' stack (needs a fresh engine); else a private stack starts
+                      (env CITED_API_TOKEN, if set, is sent as the bearer token: a hosted worker needs it)
   --verbose           show the apps' own logs`);
   process.exit(0);
 }
@@ -119,6 +120,8 @@ try {
     emit,
     pace: Number(values.pace),
     ...(values["approve-in-studio"] ? { approveInStudioMs: 15 * 60_000 } : {}),
+    // A hosted worker locks CITED writes; reseed-hosted.yml passes its token through the env.
+    apiToken: process.env.CITED_API_TOKEN || undefined,
   });
   if (values.out)
     writeFileSync(

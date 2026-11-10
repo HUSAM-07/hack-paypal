@@ -1,5 +1,8 @@
 import { Hono } from "hono";
 import { api } from "./api";
+
+export { writeDenied } from "./api";
+
 import type { Env } from "./env";
 import { webhooks } from "./webhooks";
 

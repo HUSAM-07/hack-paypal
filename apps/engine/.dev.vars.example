@@ -12,5 +12,6 @@ PAYPAL_WEBHOOK_ID=
 
 # Same value as the catalogue's PASSPORT_SIGNING_KEY. Without it every sale is unattributed.
 PASSPORT_KEY=
-# Bearer token for /api. Unset = open in simulated mode, 503 otherwise.
+# Bearer token for /api writes (reads are public). Unset = writes answer 503, unless
+# ENGINE_OPEN_API=1 (which `npm run dev` passes) opts in to keyless local writes.
 ENGINE_API_TOKEN=

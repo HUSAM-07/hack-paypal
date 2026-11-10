@@ -28,6 +28,30 @@ jobs:
       - uses: actions/setup-node@v4
         with: { node-version: 22, cache: npm }
       - run: npm ci
+      - name: Refuse a config that opens CITED writes
+        run: |
+          if grep -q CITED_OPEN_API apps/worker/wrangler.jsonc; then
+            echo "CITED_OPEN_API is local-only; remove it from apps/worker/wrangler.jsonc" >&2
+            exit 1
+          fi
+      - name: Push worker secrets
+        working-directory: apps/worker
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CITED_API_TOKEN: ${{ secrets.CITED_API_TOKEN }}
+          AG_STUDIO_LICENSE_KEY: ${{ secrets.AG_STUDIO_LICENSE_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        # Each only when set; values go through stdin and are never echoed.
+        run: |
+          for name in CITED_API_TOKEN AG_STUDIO_LICENSE_KEY ANTHROPIC_API_KEY; do
+            if [ -n "${!name}" ]; then
+              printf "%s" "${!name}" | npx wrangler secret put "$name" >/dev/null
+              echo "pushed $name"
+            else
+              echo "skipped $name (not set)"
+            fi
+          done
       - run: npm run deploy -w @pact/worker
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}

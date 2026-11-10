@@ -26,8 +26,12 @@ CITED_PAYPAL_MODE=simulated
 CITED_PAYPAL_WEBHOOK_ID=
 # Same value as the catalogue's PASSPORT_SIGNING_KEY. wrangler.jsonc sets the public dev key.
 CITED_PASSPORT_KEY=
-# Bearer token for /api/cited/api; required unless CITED runs simulated.
+# Bearer token for CITED writes (engine write API, catalogue refunds/disputes/demo clock).
+# Unset = those writes answer 503. Reads, /try, /mcp and Studio work either way.
 CITED_API_TOKEN=
+# Local only: 1 opens CITED writes without a token (while CITED_API_TOKEN is unset). Never
+# put it in wrangler.jsonc or a worker secret; CI refuses to deploy if wrangler.jsonc has it.
+CITED_OPEN_API=1
 
 # --- Live agent at /try (src/live) ---
 # An OpenAI-compatible gateway for local runs (base URL ending in /v1). Takes priority over

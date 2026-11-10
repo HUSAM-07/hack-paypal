@@ -15,6 +15,8 @@ export default defineConfig(async () => ({
           MODEL_PROVIDER: "fake",
           PASSPORT_KEY: "test-passport-key",
           PAYPAL_WEBHOOK_ID: "WH-TEST-ID",
+          // Tests drive the write API without a token; one test checks the locked default.
+          ENGINE_OPEN_API: "1",
         },
       },
     }),

@@ -28,6 +28,9 @@ jobs:
             DELETE FROM brands; DELETE FROM clock; DELETE FROM cited_agent_runs;
             DELETE FROM cited_live_runs;"
       - name: Replay the demo against the deployed worker
+        # The hosted worker locks CITED writes; the demo runner sends this as its bearer token.
+        env:
+          CITED_API_TOKEN: ${{ secrets.CITED_API_TOKEN }}
         run: >-
           npm run demo:cited -- --use-running
           --engine-url "${{ vars.DEPLOY_URL }}/api/cited"

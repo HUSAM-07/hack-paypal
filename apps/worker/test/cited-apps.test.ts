@@ -39,7 +39,18 @@ describe("CITED demo apps mounted in pact-worker", () => {
     expect(res.status).toBe(201);
     const bought = (await res.json()) as { captureId: string; status: string };
     expect(bought.status).toBe("COMPLETED");
-    const refund = await post("/catalogue/sellers/lumen/refunds", { captureId: bought.captureId });
+    // The seller's refund is a demo control: locked without the CITED token.
+    const refundBody = JSON.stringify({ captureId: bought.captureId });
+    const anon = await get("/catalogue/sellers/lumen/refunds", {
+      method: "POST",
+      body: refundBody,
+    });
+    expect(anon.status).toBe(401);
+    const refund = await get("/catalogue/sellers/lumen/refunds", {
+      method: "POST",
+      headers: { "content-type": "application/json", authorization: "Bearer test-cited-token" },
+      body: refundBody,
+    });
     expect(refund.status).toBe(200);
     const state = (await (await get("/catalogue/mock/state")).json()) as {
       failedDeliveries: unknown[];
