@@ -297,4 +297,31 @@ export function createEngineReader(opts: {
   };
 }
 
+/** Posts Maya's approval to the engine, which captures the top-up deposit. */
+export function createEngineApprover(opts: {
+  baseUrl: string;
+  token?: string | undefined;
+  fetch?: typeof fetch | undefined;
+}): (a: { approvalId: string; brandId: string; amountMinor: number }) => Promise<unknown> {
+  const f = opts.fetch ?? fetch;
+  const base = opts.baseUrl.replace(/\/$/, "");
+  return async ({ approvalId, brandId, amountMinor }) => {
+    let res: Response;
+    try {
+      res = await f(`${base}/api/approvals/${encodeURIComponent(approvalId)}/approve`, {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          ...(opts.token ? { authorization: `Bearer ${opts.token}` } : {}),
+        },
+        body: JSON.stringify({ brandId, amountMinor }),
+      });
+    } catch {
+      throw new EngineUnavailable(`Engine not reachable at ${opts.baseUrl}`);
+    }
+    if (!res.ok) throw new EngineUnavailable(`Engine answered ${res.status} for the approval`);
+    return res.json();
+  };
+}
+
 export class EngineUnavailable extends Error {}

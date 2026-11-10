@@ -7,9 +7,16 @@ import {
 } from "@cited/console";
 import { app as engine } from "@cited/engine";
 import { createShopsApp } from "@cited/shops";
-import { AG_GRID_SRC, createEngineReader, createStudioApp } from "@cited/studio";
+import {
+  AG_GRID_SRC,
+  createEngineApprover,
+  createEngineReader,
+  createStudioApp,
+  type Wording,
+} from "@cited/studio";
 import { createMockPayPal } from "@pact/paypal";
 import type { Context } from "hono";
+import { providerFor } from "./agent";
 import { CITED_PREFIX, citedEnv, serveEngine } from "./cited";
 import type { Env } from "./env";
 
@@ -137,12 +144,57 @@ export async function consoleHandler(c: Ctx): Promise<Response> {
   return asDemoPage(await app.fetch(strip(c.req.raw, CONSOLE_PREFIX)), CONSOLE_PREFIX);
 }
 
+/** The Analyst's wording, from pact-worker's own provider. Fake or no key: null, so the template stands. */
+const wordingCache = new Map<string, { text: string; model: string }>();
+
+export function analystWording(env: Env): Wording {
+  return async ({ system, user }) => {
+    if (env.MODEL_PROVIDER !== "anthropic" || !env.ANTHROPIC_API_KEY) return null;
+    const hit = wordingCache.get(user);
+    if (hit) return hit;
+    const provider = providerFor(env);
+    let text = "";
+    for await (const ev of provider.stream({
+      system,
+      messages: [{ role: "user", content: user }],
+      tools: [],
+      signal: AbortSignal.timeout(8000),
+    })) {
+      if (ev.type === "text") text += ev.delta;
+    }
+    if (!text.trim()) return null;
+    const out = { text, model: provider.name };
+    if (wordingCache.size > 20) wordingCache.clear();
+    wordingCache.set(user, out);
+    return out;
+  };
+}
+
+/**
+ * Writes go where the simulated PayPal lives: a top-up captures a deposit, which the Durable
+ * Object's mock must see. With real PayPal any isolate will do.
+ */
+function engineWriteFetch(env: Env, ctx: ExecCtx): typeof fetch {
+  if ((env.CITED_PAYPAL_MODE ?? env.PAYPAL_MODE) !== "simulated") return engineFetch(env, ctx);
+  return async (input, init) => {
+    const url = new URL(new Request(input, init).url);
+    url.pathname = `${CITED_PREFIX}${url.pathname}`;
+    const ns = env.CITED_DEMO;
+    return ns.get(ns.idFromName("demo")).fetch(new Request(url, new Request(input, init)));
+  };
+}
+
 export async function studioHandler(c: Ctx): Promise<Response> {
   const app = createStudioApp({
     read: createEngineReader({
       baseUrl: "https://engine.internal",
       fetch: engineFetch(c.env, c.executionCtx),
     }),
+    approve: createEngineApprover({
+      baseUrl: "https://engine.internal",
+      fetch: engineWriteFetch(c.env, c.executionCtx),
+    }),
+    wording: analystWording(c.env),
     licenseKey: c.env.AG_GRID_LICENSE_KEY,
   });
   return asDemoPage(

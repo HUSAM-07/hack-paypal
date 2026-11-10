@@ -75,5 +75,8 @@ describe("CITED demo apps mounted in pact-worker", () => {
     const data = await get("/studio/api/dashboard");
     expect(data.status).toBe(200);
     expect(await data.json()).toHaveProperty("brands");
+    expect((await get("/studio/api/analyst")).status).toBeLessThan(500);
+    const approve = await get("/studio/api/analyst/approve", { method: "POST" });
+    expect(approve.status).toBe(403);
   });
 });

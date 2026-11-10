@@ -74,6 +74,26 @@ s.void{color:var(--void)}
 .shares{width:100%;border-collapse:collapse}
 .shares td{padding:5px 0;border-top:1px solid var(--line)}
 .shares td:last-child{text-align:right;font-weight:600}
+.analyst{margin-bottom:20px;display:grid;grid-template-columns:1.6fr 1fr;gap:28px;align-items:start}
+.analyst h3{margin:0 0 6px;font-size:1.25rem;font-weight:600}
+.analyst .rat{margin:0 0 12px;max-width:62ch}
+.analyst .cites{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px 18px;margin:0 0 14px}
+.analyst .cites div{border-top:1px solid var(--line);padding-top:5px}
+.analyst .cites dt{color:var(--muted);font-size:.8rem}
+.analyst .cites dd{margin:0;font-weight:600;font-variant-numeric:tabular-nums}
+.analyst .cites dd small{display:block;font-weight:400;color:var(--muted);font-size:.72rem}
+.analyst .guard{color:var(--muted);font-size:.85rem;margin:10px 0 0}
+.approve{background:var(--navy);color:#fff;border:0;border-radius:8px;padding:11px 20px;font:inherit;font-weight:600;cursor:pointer}
+.approve:disabled{background:#9aa6b2;cursor:default}
+.approved{color:var(--test);font-weight:600}
+.runway{display:grid;gap:10px}
+.runway .row{display:grid;grid-template-columns:190px 1fr 86px;gap:10px;align-items:center;font-size:.9rem}
+.runway .bar{height:22px;background:var(--bg);border-radius:6px;overflow:hidden}
+.runway .bar b{display:block;height:100%;background:#9aa6b2;border-radius:6px 0 0 6px;transition:width .6s}
+.runway .row.hl .bar b{background:var(--sky)}
+.runway .row.hl{font-weight:600}
+.runway .amt{text-align:right;font-variant-numeric:tabular-nums}
+.analyst[hidden]{display:none}
 .err{background:var(--void-bg);color:var(--void);padding:10px 14px;border-radius:8px;margin-bottom:16px;display:none}
 footer{margin-top:16px;color:var(--muted);font-size:.8rem;display:flex;justify-content:space-between}
 .clean footer,.clean .meta nav{display:none}
@@ -92,6 +112,7 @@ function shell(view: View, opts: { clean: boolean; licenseKey?: string | undefin
   <div class="card"><h2>Winix share by arm</h2><div id="arms"></div></div>
   <div class="card"><h2>Deposit</h2><div id="meter"></div></div>
 </section>
+<section class="panel analyst" id="analyst" aria-live="polite" hidden></section>
 <section class="panel"><h2>Cross-store journeys &amp; Shapley split <span>Expand a row for the agent's store hops and each creator's share</span></h2><div id="journeys" class="grid"></div></section>`
       : `<section class="cards creator">
   <div class="card"><h2>Pending (30-day hold)</h2><div id="t-pending"></div></div>
@@ -124,7 +145,8 @@ export function studioPage(view: View, opts: { clean: boolean; licenseKey?: stri
 const CLIENT = String.raw`
 (function(){
 var view=document.body.dataset.view;
-var api=location.pathname.replace(/\/(creator)?\/?$/,"")+"/api/dashboard";
+var root=location.pathname.replace(/\/(creator)?\/?$/,"");
+var api=root+"/api/dashboard";
 var ag=window.agGrid;
 if(ag&&window.AG_LICENSE&&ag.LicenseManager)ag.LicenseManager.setLicenseKey(window.AG_LICENSE);
 if(ag&&ag.ModuleRegistry&&ag.AllEnterpriseModule)ag.ModuleRegistry.registerModules([ag.AllEnterpriseModule]);
@@ -258,6 +280,31 @@ function renderCreator(c){
   });
 }
 
+var approving=false;
+function renderAnalyst(r){
+  var el=$("analyst");el.hidden=false;
+  var cites=r.citations.map(function(c){return '<div><dt>'+esc(c.label)+'</dt><dd>'+esc(c.value)+'<small class="mono">'+esc(c.source)+'</small></dd></div>';}).join("");
+  var max=Math.max.apply(null,r.chart.bars.map(function(b){return b.minor;}).concat([1]));
+  var bars=r.chart.bars.map(function(b){return '<div class="row'+(b.key===r.chart.highlight?' hl':'')+'"><span>'+esc(b.label)+'</span><span class="bar"><b style="width:'+(b.minor/max*100).toFixed(1)+'%"></b></span><span class="amt">'+usd(b.minor)+'</span></div>';}).join("");
+  var act=r.action==="raise_cap"
+    ?'<button class="approve" id="approve"'+(approving?' disabled':'')+'>'+(approving?'Approving…':'Approve '+usd(r.amountMinor)+' top-up')+'</button>'
+    :'<span class="approved">'+esc(r.headline)+'</span>';
+  el.innerHTML='<div><h2>Analyst <span>'+(r.wording==="template"?'recommendation from the engine numbers':'wording by '+esc(r.wording))+'</span></h2>'+
+    '<h3>'+esc(r.headline)+'</h3><p class="rat">'+esc(r.rationale)+'</p><dl class="cites">'+cites+'</dl>'+act+'<p class="guard">'+esc(r.guard)+'</p></div>'+
+    '<div><h2>Runway</h2><div class="runway">'+bars+'</div></div>';
+  var btn=$("approve");
+  if(btn)btn.onclick=function(){
+    approving=true;renderAnalyst(r);
+    fetch(root+"/api/analyst/approve",{method:"POST",headers:{"x-studio":"approve"}})
+      .then(function(x){if(!x.ok)throw new Error("approval answered "+x.status);return x.json();})
+      .then(function(){approving=false;poll();})
+      .catch(function(e){approving=false;var er=$("err");er.textContent="Could not approve: "+e.message;er.style.display="block";poll();});
+  };
+}
+function pollAnalyst(){
+  fetch(root+"/api/analyst",{cache:"no-store"}).then(function(r){return r.ok?r.json():null;}).then(function(r){if(r&&!approving)renderAnalyst(r);}).catch(function(){});
+}
+
 function render(d){
   $("asof").textContent="Programme clock: "+day(d.asOf);
   if(view==="brand"){
@@ -265,6 +312,7 @@ function render(d){
     if(!b){$("tile").innerHTML='<p class="note">No programme yet. Run the demo.</p>';return;}
     renderTile(b,d.brands.filter(function(x){return x!==b;}));
     renderArms(b);renderMeter(b);renderJourneys(d.journeys);
+    pollAnalyst();
   }else{
     var c=d.creators.find(function(x){return x.creatorId==="housefresh";})||d.creators[0];
     if(c)renderCreator(c);
