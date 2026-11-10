@@ -19,7 +19,7 @@ export interface StudioConfig {
 }
 
 export const API = "/studio/api";
-export const POLL_MS = 2_000;
+export const POLL_MS = 15_000;
 
 /** The hosted demo keeps a visitor's decisions to their own browser; say so plainly. */
 export function privateNote(resetsAt?: string): string {
