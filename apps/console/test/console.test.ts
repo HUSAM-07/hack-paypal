@@ -134,6 +134,36 @@ describe("run source", () => {
   });
 });
 
+describe("picking the video pair", () => {
+  const run = (o: Record<string, unknown>) => parseRunRecords(record(o))[0];
+  const winix = { upc: "111111111111", name: "Winix A230" };
+  const levoit = { upc: "222222222222", name: "Levoit Core 300" };
+
+  it("prefers a credited, cross-shop exposed run and a held-out run that bought the other purifier", () => {
+    const runs = [
+      run({ orderId: "ORD-A", storesViewed: ["northwind"], shop: "lumen" }),
+      run({ orderId: "ORD-B", storesViewed: ["lumen"], shop: "lumen" }),
+      run({ orderId: "ORD-C", storesViewed: ["megamart"], shop: "lumen" }),
+      run({ arm: "none", orderId: "ORD-D", product: levoit }),
+      run({ arm: "none", orderId: "ORD-E", product: winix }),
+    ];
+    const { exposed, heldOut } = pickPair(runs, new Set(["ORD-A", "ORD-B"]));
+    expect(exposed?.orderId).toBe("ORD-A");
+    expect(heldOut?.orderId).toBe("ORD-D");
+  });
+
+  it("falls back to the latest runs when nothing tells the story", () => {
+    const runs = [
+      run({ orderId: "ORD-A", storesViewed: ["lumen"] }),
+      run({ orderId: "ORD-B", storesViewed: ["lumen"] }),
+      run({ arm: "none", orderId: "ORD-C", product: winix }),
+    ];
+    const { exposed, heldOut } = pickPair(runs);
+    expect(exposed?.orderId).toBe("ORD-B");
+    expect(heldOut?.orderId).toBe("ORD-C");
+  });
+});
+
 describe("side-by-side runs (#28)", () => {
   it("shows both runs, the Northwind → Lumen hop and the engine's order", async () => {
     const html = await (await appWith(RUNS).request("/")).text();
