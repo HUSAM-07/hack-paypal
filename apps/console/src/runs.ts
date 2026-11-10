@@ -38,7 +38,8 @@ function toRun(raw: Record<string, unknown>): AgentRun | null {
     creatorsSeen: arr(raw.creatorsSeen),
     storesViewed: arr(raw.storesViewed),
     product: product ?? null,
-    shop: (raw.shop as string | null) ?? null,
+    // The seller the agent paid through PayPal; records from before agent checkout say `shop`.
+    shop: ((raw.seller ?? raw.shop) as string | null) ?? null,
     orderId: (raw.orderId as string | null) ?? null,
     totalMinor: total?.amountMinor ?? null,
     passportAttached: raw.passportAttached === true,

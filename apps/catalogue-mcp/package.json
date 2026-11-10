@@ -14,6 +14,7 @@
   "dependencies": {
     "@hono/node-server": "^1.19.0",
     "@modelcontextprotocol/sdk": "^1.32.2",
+    "@pact/paypal": "*",
     "@pact/protocol": "*",
     "hono": "^4.13.16",
     "zod": "^4.6.7"

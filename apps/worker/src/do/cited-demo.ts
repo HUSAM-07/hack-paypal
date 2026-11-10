@@ -3,9 +3,9 @@ import { type ExecCtx, serveStatefulDemo } from "../cited-apps";
 import type { Env } from "../env";
 
 /**
- * The single instance ("demo") that serves /shops, /catalogue and, in simulated mode,
- * /api/cited. Their state lives in this object's memory: the simulated PayPal orders and
- * captures, and the catalogue's demo clock. It resets when the object is evicted after a few idle minutes; the money the
+ * The single instance ("demo") that serves /catalogue and, in simulated mode, /api/cited.
+ * Their state lives in this object's memory: the simulated PayPal orders and captures the
+ * agents' checkouts create, and the catalogue's demo clock. It resets when the object is evicted after a few idle minutes; the money the
  * engine records lives in D1 and is unaffected.
  */
 export class CitedDemoDO extends DurableObject<Env> {

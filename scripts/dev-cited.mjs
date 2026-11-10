@@ -4,7 +4,6 @@ import { spawn } from "node:child_process";
 const apps = [
   ["engine", "@cited/engine", 8800],
   ["catalogue-mcp", "@cited/catalogue-mcp", 8801],
-  ["shops", "@cited/shops", 8802],
   ["agents", "@cited/agents", 8803],
   ["studio", "@cited/studio", 8804],
   ["console", "@cited/console", 8805],
@@ -14,7 +13,7 @@ const env = {
   ...process.env,
   PAYPAL_MODE: "simulated",
   MODEL_PROVIDER: "fake",
-  // The shops' PayPal mock delivers its webhooks here.
+  // The catalogue's PayPal mock (the agents' checkouts, the sellers' refunds) delivers its webhooks here.
   ENGINE_URL: "http://localhost:8800",
 };
 const children = apps.map(([name, workspace, port]) => {

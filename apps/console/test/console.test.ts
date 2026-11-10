@@ -132,6 +132,11 @@ describe("run source", () => {
     expect(exposed?.product?.name).toBe("Winix A230");
     expect(heldOut?.product?.name).toBe("Levoit Core 300");
   });
+
+  it("reads the seller an agent paid through PayPal", () => {
+    const [r] = parseRunRecords(record({ shop: undefined, seller: "megamart" }));
+    expect(r?.shop).toBe("megamart");
+  });
 });
 
 describe("picking the video pair", () => {

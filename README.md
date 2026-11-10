@@ -2,7 +2,7 @@
 
 **PayPal's affiliate network, rebuilt for AI agents: it pays creators on proven lift, not last-click cookies.**
 
-AI shopping agents read product tests but never click an affiliate link, so creators go unpaid when an agent buys on their verdict. CITED fixes that. Brands fund a category programme (say, air purifiers), never a verdict. In PayPal's agent catalogue (our mock of Store Sync), each shopping session randomly sees a creator's test, a placebo (other content from the same creator), or nothing; ranking never changes. A signed **Agent Affiliate Passport** rides in the PayPal Orders v2 `purchase_units[].custom_id`, so the sale joins back to its arm even at a different shop. The engine credits only the sales the test caused (80% lower bound, Shapley split across co-exposed creators), holds credits 30 days, voids them on refunds and disputes, then pays creators by batch Payouts and refunds the unspent deposit. AG Studio shows it to the brand and the creator.
+AI shopping agents read product tests but never click an affiliate link, so creators go unpaid when an agent buys on their verdict. CITED fixes that. Brands fund a category programme (say, air purifiers), never a verdict. In PayPal's agent catalogue (our mock of Store Sync), each shopping session randomly sees a creator's test, a placebo (other content from the same creator), or nothing; ranking never changes. A signed **Agent Affiliate Passport** rides in the PayPal Orders v2 `purchase_units[].custom_id`, so the sale joins back to its arm even when the agent pays a different seller. There are no storefronts: the agent checks out through PayPal itself, paying the seller's PayPal account from the wallet the buyer linked to it ([AGENT-CHECKOUT.md](cited/spec/AGENT-CHECKOUT.md)). The engine credits only the sales the test caused (80% lower bound, Shapley split across co-exposed creators), holds credits 30 days, voids them on refunds and disputes, then pays creators by batch Payouts and refunds the unspent deposit. AG Studio shows it to the brand and the creator.
 
 Built for the [PayPal AI Hackathon](https://paypalaihackathon.devpost.com/). Licensed [MIT](LICENSE). Everything runs with no API keys: PayPal is simulated and the shopper agents are scripted by default.
 
@@ -10,7 +10,7 @@ Built for the [PayPal AI Hackathon](https://paypalaihackathon.devpost.com/). Lic
 
 Hosted demo (one Cloudflare Worker, `pact-worker`; Pact is the project's codename):
 
-- <https://pact-worker.vincent-wesley-liem.workers.dev/shops>: the Northwind, Lumen and MegaMart storefronts
+- <https://pact-worker.vincent-wesley-liem.workers.dev/catalogue/offers>: the offers agents read, synced to PayPal by Northwind, Lumen and MegaMart
 - <https://pact-worker.vincent-wesley-liem.workers.dev/console>: the demo console (two agents, side by side)
 - <https://pact-worker.vincent-wesley-liem.workers.dev/api/cited/health>: the CITED engine's health check
 
@@ -21,10 +21,10 @@ Needs Node 22+.
 ```bash
 npm ci
 npm run demo:cited     # the full demo in your terminal, 11 beats, self-checking
-npm run dev:cited      # every app locally: shops, console, catalogue, agents, studio, engine
+npm run dev:cited      # every app locally: console, catalogue, agents, studio, engine
 ```
 
-`npm run dev:cited` serves the shops at <http://localhost:8802> and the console at <http://localhost:8805>; each app answers `/health` (engine `:8800`, catalogue `:8801`, shops `:8802`, agents `:8803`, studio `:8804`, console `:8805`). It forces `PAYPAL_MODE=simulated` and `MODEL_PROVIDER=fake`, so no `.env` is needed. `npm run demo:cited` starts its own private stack (ports 8800 to 8805 must be free) and ends with ledger-versus-PayPal reconciliation checks. Flags: `npm run demo:cited -- --help`.
+`npm run dev:cited` serves the console at <http://localhost:8805>; each app answers `/health` (engine `:8800`, catalogue `:8801`, agents `:8803`, studio `:8804`, console `:8805`). It forces `PAYPAL_MODE=simulated` and `MODEL_PROVIDER=fake`, so no `.env` is needed. `npm run demo:cited` starts its own private stack (ports 8800 to 8805 must be free) and ends with ledger-versus-PayPal reconciliation checks. Flags: `npm run demo:cited -- --help`.
 
 ## What the demo shows
 
@@ -44,13 +44,15 @@ Every number traces to a committed, pre-registered eval ([`packages/evals/result
 
 | API | Where | Use |
 |---|---|---|
-| Orders v2 | `apps/shops`, `apps/engine/src/programme.ts` | Shop checkout carries the signed passport in `purchase_units[].custom_id`, with `items[].upc`; brand deposits are `CAPTURE` orders |
+| Orders v2 | `apps/catalogue-mcp/src/checkout.ts`, `apps/engine/src/programme.ts` | The agent's checkout pays the seller (`purchase_units[].payee`) from the buyer's vaulted wallet (`payment_source.paypal.vault_id`), with the signed passport in `custom_id` and `items[].upc`; brand deposits are `CAPTURE` orders |
 | Webhooks | `apps/engine/src/webhooks` | Signature-verified intake; the capture is joined to its arm; refund and dispute events void pending credits |
 | Payouts | `apps/engine/src/payouts.ts` | One batch to `PAYPAL_ID` recipients after the 30-day hold, split by Shapley value across co-exposed creators |
 | Payments v2 `captures/{id}/refund` | `apps/engine/src/cycle.ts` | Returns each brand's unspent deposit |
-| Store Sync (agent catalogue) | `apps/catalogue-mcp` | Our MCP mock of it: listings across 3 shops, per-session arm, signed passport |
+| Store Sync (agent catalogue) | `apps/catalogue-mcp` | Our MCP mock of it: offers from 3 sellers, per-session arm, signed passport, `checkout` |
+| Vault (PayPal wallet) | `apps/catalogue-mcp`, `packages/paypal/src/vault.ts` | The buyer links PayPal to the agent once; every checkout charges that `vault_id` |
+| Payments v2 `captures/{id}/refund` (seller) | `apps/catalogue-mcp` | A seller refunds a returned item; the refund webhook voids the credit |
 
-Every mutating call sets a deterministic `PayPal-Request-Id`. Mode is `simulated` by default (an in-memory mock in `packages/paypal`). The deployed worker reads `CITED_PAYPAL_MODE`; locally it is `PAYPAL_MODE`. Set either to `sandbox` with the credentials from [`.env.example`](.env.example) to use the PayPal sandbox; for example `PAYPAL_MODE=sandbox npm run dev -w @cited/shops` (`npm run dev:cited` always forces simulated).
+Every mutating call sets a deterministic `PayPal-Request-Id`. Mode is `simulated` by default (an in-memory mock in `packages/paypal`). The deployed worker reads `CITED_PAYPAL_MODE`; locally it is `PAYPAL_MODE`. Set either to `sandbox` with the credentials from [`.env.example`](.env.example) to use the PayPal sandbox; for example `PAYPAL_MODE=sandbox npm run dev -w @cited/catalogue-mcp` (`npm run dev:cited` always forces simulated).
 
 ## Configuration
 
@@ -61,8 +63,7 @@ Defaults need no keys. [`.env.example`](.env.example) lists every variable (PayP
 - `packages/protocol`: the shared contract (arms, passport, credits, `Money`).
 - `packages/attribution`: pure functions: attributable fraction, 80% lower bound, Shapley split, ledger rules.
 - `packages/paypal`: fetch-based PayPal REST client (Orders, Payouts, webhooks) plus an in-memory mock.
-- `apps/catalogue-mcp`: MCP server: `search_product`, arm assignment, signed passports.
-- `apps/shops`: Northwind, Lumen and MegaMart storefronts with PayPal checkout.
+- `apps/catalogue-mcp`: MCP server: `search_product` over the sellers' offers, arm assignment, signed passports, and `checkout` through PayPal; the sellers' refund action.
 - `apps/agents`: shopper agents (GPT, Gemini, Sonnet; scripted by default) and the demo runner.
 - `apps/engine`: Hono + D1: webhooks, arm-checkout join, credit ledger, payouts, refunds, read API. Deployed inside `apps/worker` at `/api/cited`.
 - `apps/studio`: AG Studio dashboards for brands and creators.

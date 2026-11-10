@@ -1,6 +1,8 @@
 /**
  * The scripted demo: plays every beat of cited/spec/CITED-packet.md against the live local stack
- * (engine, catalogue, shops), in order, from a seed. Each beat emits events; see README.md.
+ * (engine, and the catalogue that also runs the agents' PayPal checkout), in order, from a seed.
+ * No storefronts: agents read offers synced to PayPal and pay the seller's PayPal account from
+ * the wallet the buyer linked to them. Each beat emits events; see README.md.
  *
  * The 147 sessions follow the shape of the price-matched study (19 exposed, 18 placebo, 12 held-out
  * per model; Winix buyers 57/57, 3/54, 3/36). Under the fake provider the agents' choices are
@@ -41,7 +43,6 @@ export interface DemoEvent {
 export interface DemoOptions {
   engineUrl: string;
   catalogueUrl: string;
-  shopsUrl: string;
   seed: string;
   provider: "fake" | "openai-compatible";
   /** Where the refund beat sits. See README. */
@@ -97,7 +98,13 @@ export const CARD = {
   deposit: 100_000,
 };
 
-const SHOPS = ["northwind", "lumen", "megamart"] as const;
+const SELLERS = ["northwind", "lumen", "megamart"] as const;
+const SELLER_NAMES: Record<string, string> = {
+  northwind: "Northwind",
+  lumen: "Lumen",
+  megamart: "MegaMart",
+};
+const sellerName = (id: string | null | undefined) => (id ? (SELLER_NAMES[id] ?? id) : "?");
 const REQUEST = "Small bedroom purifier, light sleeper, around $100, just buy it";
 const CATEGORY = "purifier";
 
@@ -149,16 +156,21 @@ export async function runDemo(o: DemoOptions): Promise<DemoResult> {
       throw new Error(`engine ${method} ${path} → ${res.status} ${JSON.stringify(json)}`);
     return json;
   };
-  const shops = async (path: string, init?: RequestInit): Promise<Json> => {
-    const res = await fetch(`${o.shopsUrl}${path}`, init);
+  /** The catalogue: offers, the agents' PayPal checkout, and the sellers' refund action. */
+  const cat = async (method: "GET" | "POST", path: string, body?: unknown): Promise<Json> => {
+    const res = await fetch(`${o.catalogueUrl}${path}`, {
+      method,
+      ...(body === undefined
+        ? {}
+        : { body: JSON.stringify(body), headers: { "content-type": "application/json" } }),
+    });
     const json = (await res.json()) as Json;
-    if (!res.ok) throw new Error(`shops ${path} → ${res.status} ${JSON.stringify(json)}`);
+    if (!res.ok) throw new Error(`catalogue ${path} → ${res.status} ${JSON.stringify(json)}`);
     return json;
   };
 
   const ep: Endpoints = {
     catalogueUrl: o.catalogueUrl,
-    shopsUrl: o.shopsUrl,
     engineUrl: o.engineUrl,
   };
   const fake = o.provider === "fake";
@@ -214,8 +226,12 @@ export async function runDemo(o: DemoOptions): Promise<DemoResult> {
     }
     await line(
       "fund",
-      "Lumen sells both purifiers $4.00 cheaper than Northwind. Levoit is priced the same as Winix in every shop.",
+      "Northwind, Lumen and MegaMart sync their catalogues to PayPal; no agent visits their websites. Lumen offers both purifiers $4.00 under Northwind, and Levoit is priced the same as Winix at every seller.",
       { prices: DEMO_SHOP_PRICES },
+    );
+    await line(
+      "fund",
+      "Each buyer linked their PayPal to their shopping agent once (PayPal Vault, payment_source.paypal). Every agent below checks out through PayPal with that saved wallet; the money goes straight to the seller's PayPal account.",
     );
   });
 
@@ -267,7 +283,7 @@ export async function runDemo(o: DemoOptions): Promise<DemoResult> {
           model,
           index: i,
           buysWinix: arm === "test" ? true : i >= total - (winixBuyers as number),
-          browse: SHOPS[(i + m) % SHOPS.length] as string,
+          browse: SELLERS[(i + m) % SELLERS.length] as string,
         });
       }
     });
@@ -293,7 +309,7 @@ export async function runDemo(o: DemoOptions): Promise<DemoResult> {
       sessionId: s.id,
       category: CATEGORY,
       fake: {
-        browseShop: s.browse,
+        browseSeller: s.browse,
         loyalty: 0,
         ...(s.arm === "test"
           ? {}
@@ -307,17 +323,27 @@ export async function runDemo(o: DemoOptions): Promise<DemoResult> {
   };
 
   let heroSale: RunRecord | undefined;
-  await beat("exposed", "An exposed agent browses Northwind and pays at Lumen", async () => {
-    const r = await play(heroExposed);
-    heroSale = r;
-    const nw = DEMO_SHOP_PRICES.northwind[UPC_WINIX_A230];
-    const lu = DEMO_SHOP_PRICES.lumen[UPC_WINIX_A230];
-    await line(
-      "exposed",
-      `"${REQUEST}" → ${r.model} (arm: ${r.arm}) saw HouseFresh's test, browsed ${r.storesViewed.join(", ")} at ${usd(nw)} and paid at ${r.shop} for ${usd(r.total?.amountMinor ?? 0)}: ${r.product?.name}. Saved ${usd(nw - lu)}. Same listings, same order as any other agent; only the test was added.`,
-      { sessionId: r.sessionId, orderId: r.orderId, captureId: r.captureId, savedMinor: nw - lu },
-    );
-  });
+  await beat(
+    "exposed",
+    "An exposed agent reads Northwind's offer and pays Lumen through PayPal",
+    async () => {
+      const r = await play(heroExposed);
+      heroSale = r;
+      const nw = DEMO_SHOP_PRICES.northwind[UPC_WINIX_A230];
+      const lu = DEMO_SHOP_PRICES.lumen[UPC_WINIX_A230];
+      await line(
+        "exposed",
+        `"${REQUEST}" → ${r.model} (arm: ${r.arm}) saw HouseFresh's test while reading ${r.storesViewed.map(sellerName).join(", ")}'s offer at ${usd(nw)}. The agent checked out through PayPal with the buyer's saved PayPal, paid ${sellerName(r.seller)} ${usd(r.total?.amountMinor ?? 0)} for the ${r.product?.name} (order ${r.orderId}, capture ${r.captureId}). Saved ${usd(nw - lu)}. Same offers, same order as any other agent; only the test was added.`,
+        {
+          sessionId: r.sessionId,
+          orderId: r.orderId,
+          captureId: r.captureId,
+          seller: r.seller,
+          savedMinor: nw - lu,
+        },
+      );
+    },
+  );
   await beat(
     "heldout",
     "A held-out agent sees everything except the test and buys Levoit",
@@ -325,8 +351,8 @@ export async function runDemo(o: DemoOptions): Promise<DemoResult> {
       const r = await play(heroHeld);
       await line(
         "heldout",
-        `Same request → ${r.model} (arm: ${r.arm}), same listings in the same order, no test: bought ${r.product?.name} at ${r.shop} for ${usd(r.total?.amountMinor ?? 0)}.`,
-        { sessionId: r.sessionId, orderId: r.orderId },
+        `Same request → ${r.model} (arm: ${r.arm}), same offers in the same order, no test. The agent checked out through PayPal with the buyer's saved PayPal, paid ${sellerName(r.seller)} ${usd(r.total?.amountMinor ?? 0)} for the ${r.product?.name}.`,
+        { sessionId: r.sessionId, orderId: r.orderId, seller: r.seller },
       );
     },
   );
@@ -400,12 +426,13 @@ export async function runDemo(o: DemoOptions): Promise<DemoResult> {
     );
   });
 
+  /** The seller whose sale it was refunds it through PayPal: `captures/{id}/refund`. */
   const refundOne = async (): Promise<{ captureId: string; amountMinor: number }> => {
     const captureId = heroSale?.captureId as string;
     const before = (await eng("GET", "/credits")).creators[0].credits.find(
       (c: Json) => c.captureId === captureId,
     );
-    await shops(`/mock/captures/${captureId}/refund`, { method: "POST" });
+    await cat("POST", `/sellers/${heroSale?.seller}/refunds`, { captureId });
     return { captureId, amountMinor: before?.amountMinor ?? 0 };
   };
 
@@ -431,7 +458,7 @@ export async function runDemo(o: DemoOptions): Promise<DemoResult> {
       const { voided } = await doRefund();
       await line(
         "refund",
-        `The exposed buyer returns the Winix (capture ${heroSale?.captureId}). PayPal's refund webhook voids ${voided.length} pending credit (${usd(voidedMinor)}) before it can be paid.`,
+        `The exposed buyer returns the Winix and ${sellerName(heroSale?.seller)} refunds it through PayPal (captures/${heroSale?.captureId}/refund). PayPal's refund webhook voids ${voided.length} pending credit (${usd(voidedMinor)}) before it can be paid.`,
       );
       check("one refund voids exactly one credit", voided.length === 1, `${voided.length} voided`);
     });
@@ -525,13 +552,14 @@ export async function runDemo(o: DemoOptions): Promise<DemoResult> {
 
   // ── The ledger and PayPal must agree ──
   await beat("checks", "Ledger and PayPal agree", async () => {
-    const [deposits, credits, payouts, mock, shopMock, journeys] = await Promise.all([
+    const [deposits, credits, payouts, mock, salesMock, journeys, offers] = await Promise.all([
       eng("GET", "/deposits"),
       eng("GET", "/credits"),
       eng("GET", "/payouts"),
       eng("GET", "/mock/state"),
-      shops("/mock/state"),
+      cat("GET", "/mock/state"),
       eng("GET", "/journeys?limit=200"),
+      cat("GET", "/offers"),
     ]);
     const hf = credits.creators[0];
     const mockBatchTotal = mock.batches.reduce(
@@ -583,12 +611,31 @@ export async function runDemo(o: DemoOptions): Promise<DemoResult> {
         `${usd(b.deposited)}`,
       );
     }
-    const sales = shopMock.captures as Json[];
+    const sales = salesMock.captures as Json[];
     const attributed = (journeys.journeys as Json[]).flatMap((j) => j.items as Json[]);
     check(
-      "sales: every shop capture reached the engine through a webhook",
-      attributed.length === sales.length && shopMock.failedDeliveries.length === 0,
-      `${attributed.length} attributed / ${sales.length} captured, ${shopMock.failedDeliveries.length} failed deliveries`,
+      "sales: every agent's PayPal capture reached the engine through a webhook",
+      attributed.length === sales.length && salesMock.failedDeliveries.length === 0,
+      `${attributed.length} attributed / ${sales.length} captured, ${salesMock.failedDeliveries.length} failed deliveries`,
+    );
+    const payeeOf = new Map<string, string>(
+      (offers.offers as Json[]).map((x) => [x.seller.id, JSON.stringify(x.seller.payee)]),
+    );
+    const byCapture = new Map<string, Json>(sales.map((x) => [x.id, x]));
+    const all = [...records.values()];
+    const paidRight = all.filter((r) => {
+      const c = byCapture.get(r.captureId ?? "");
+      return c?.vaulted === true && JSON.stringify(c.payee) === payeeOf.get(r.seller ?? "");
+    });
+    check(
+      "sales: every agent paid the seller's PayPal account (payee) from the buyer's saved wallet",
+      paidRight.length === all.length && sales.length === all.length,
+      `${paidRight.length}/${all.length} orders`,
+    );
+    check(
+      "cross-seller: the exposed agent read Northwind's offer and paid Lumen",
+      heroSale?.storesViewed.includes("northwind") === true && heroSale?.seller === "lumen",
+      `read ${heroSale?.storesViewed.join(",")}, paid ${heroSale?.seller}`,
     );
     check(
       "sales: engine amounts == PayPal amounts",
@@ -599,7 +646,7 @@ export async function runDemo(o: DemoOptions): Promise<DemoResult> {
     const refunded = sales.filter((s) => s.refunded > 0).length;
     const voided = hf.credits.filter((c: Json) => c.state === "voided").length;
     check(
-      "one refund at the shop == one voided credit in the ledger",
+      "one refund by the seller == one voided credit in the ledger",
       refunded === 1 &&
         (o.refund === "after-payout" ? credits.reviewFlags.length === 1 : voided === 1),
       `${refunded} refunded, ${voided} voided, ${credits.reviewFlags.length} flagged`,
@@ -677,7 +724,9 @@ function sessionData(r: RunRecord): Record<string, unknown> {
     model: r.model,
     arm: r.arm,
     storesViewed: r.storesViewed,
-    shop: r.shop,
+    seller: r.seller,
+    sellerName: r.sellerName,
+    paidWith: r.paidWith,
     product: r.product?.name ?? null,
     upc: r.product?.upc ?? null,
     totalMinor: r.total?.amountMinor ?? null,

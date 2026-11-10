@@ -6,7 +6,6 @@ import {
   CATALOGUE_PREFIX,
   CONSOLE_PREFIX,
   consoleHandler,
-  SHOPS_PREFIX,
   statefulDemoHandler,
 } from "./cited-apps";
 import { allowedOrigins, type Env } from "./env";
@@ -49,7 +48,6 @@ app.get("/app/*", appPage);
 
 // CITED demo apps: their pages set their own headers (inline CSS and scripts).
 for (const [prefix, handler] of [
-  [SHOPS_PREFIX, statefulDemoHandler],
   [CONSOLE_PREFIX, consoleHandler],
   [CATALOGUE_PREFIX, statefulDemoHandler],
 ] as const) {
