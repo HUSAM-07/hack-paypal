@@ -11,12 +11,18 @@ export interface InvoiceItemInput {
   quantity: string;
   unit_amount: Money;
   description?: string;
+  /** Item-level discount, taken off this line's total (never more than it). */
+  discount?: { amount: Money };
+  /** yyyy-MM-dd */
+  item_date?: string;
 }
 
 export interface CreateInvoiceInput {
   detail: {
     currency_code: string;
     invoice_number?: string;
+    /** yyyy-MM-dd */
+    invoice_date?: string;
     reference?: string;
     note?: string;
     memo?: string;
@@ -41,6 +47,26 @@ export interface NotifyInput {
   send_to_recipient?: boolean;
 }
 
+/** An external payment recorded against an invoice (cash, bank transfer, a prior capture…). */
+export interface RecordPaymentInput {
+  method:
+    | "BANK_TRANSFER"
+    | "CASH"
+    | "CHECK"
+    | "CREDIT_CARD"
+    | "DEBIT_CARD"
+    | "PAYPAL"
+    | "WIRE_TRANSFER"
+    | "OTHER";
+  /** yyyy-MM-dd */
+  payment_date?: string;
+  note?: string;
+  /** Omit to mark the whole amount due as paid. */
+  amount?: Money;
+}
+
+const PaymentReference = z.object({ payment_id: z.string() });
+
 const SendResult = z.object({
   href: z.string().optional(),
   rel: z.string().optional(),
@@ -58,9 +84,10 @@ export function invoicingApi(t: Transport) {
         path: "/v2/invoicing/invoices",
         json: {
           ...input,
-          items: input.items.map(({ unit_amount, ...rest }) => ({
+          items: input.items.map(({ unit_amount, discount, ...rest }) => ({
             ...rest,
             unit_amount: toAmount(unit_amount),
+            ...(discount ? { discount: { amount: toAmount(discount.amount) } } : {}),
           })),
           ...(input.configuration
             ? {
@@ -112,6 +139,27 @@ export function invoicingApi(t: Transport) {
         idempotent: true,
         ...(opts ? { options: opts } : {}),
       });
+    },
+    /**
+     * Record a payment made outside the invoice (PayPal `invoices/{id}/payments`). A SENT
+     * invoice paid in full becomes MARKED_AS_PAID with nothing due.
+     */
+    async recordPayment(
+      id: string,
+      input: RecordPaymentInput,
+      opts: MutatingOptions,
+    ): Promise<{ paymentId: string }> {
+      const { amount, ...rest } = input;
+      const res = await t.request({
+        method: "POST",
+        route: "/v2/invoicing/invoices/:id/payments",
+        path: `/v2/invoicing/invoices/${enc(id)}/payments`,
+        json: { ...rest, ...(amount ? { amount: toAmount(amount) } : {}) },
+        schema: PaymentReference,
+        idempotent: true,
+        options: opts,
+      });
+      return { paymentId: res.payment_id };
     },
     /** Only SENT/UNPAID invoices can be cancelled; PayPal answers 204. */
     async cancel(id: string, input: NotifyInput, opts: MutatingOptions): Promise<void> {

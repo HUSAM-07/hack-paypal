@@ -15,4 +15,6 @@ export interface Env {
    * worker's in-process callers set it; never a deployed config.
    */
   ENGINE_OPEN_API?: string | undefined;
+  /** Who brand statements (Invoicing v2) are addressed to; default billing@<brandId>.example.com. */
+  STATEMENT_RECIPIENT_EMAIL?: string | undefined;
 }

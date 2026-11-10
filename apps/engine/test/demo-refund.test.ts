@@ -69,6 +69,31 @@ describe("refunds, top-ups and access", () => {
       .brands[0];
     expect(close.returnedNow).toBe(100_000 - paid.paid);
 
+    // The brand's statement: a PayPal invoice for exactly what was paid, settled from the deposit.
+    const voidedMinor = first?.amountMinor as number;
+    const [st] = (await call<Json>("GET", "/invoices")).json.statements;
+    expect(st).toMatchObject({
+      brandId: "winix",
+      status: "MARKED_AS_PAID",
+      creditedMinor: 39_164,
+      voidedMinor,
+      paidMinor: 39_164 - voidedMinor,
+      returnedMinor: 100_000 - paid.paid,
+      depositedMinor: 100_000,
+      invoiceTotalMinor: 39_164 - voidedMinor,
+      invoicePaidMinor: 39_164 - voidedMinor,
+      invoiceDueMinor: 0,
+    });
+    expect(st.invoiceNumber).toMatch(/^CITED-WINIX-[0-9A-F]{8}$/);
+    const inv = getPayPal(e).mock?.state.invoices.get(st.invoiceId);
+    expect(inv?.amount.amountMinor).toBe(39_164 - voidedMinor);
+    expect(inv?.discount.amountMinor).toBe(voidedMinor);
+    expect(inv?.payments.map((p) => p.method)).toEqual(["OTHER"]);
+    // A retried close issues no second invoice.
+    await call("POST", "/cycle/close", { brandIds: ["winix"] });
+    expect((await call<Json>("GET", "/invoices")).json.statements).toHaveLength(1);
+    expect(getPayPal(e).mock?.state.invoices.size).toBe(1);
+
     // A refund that lands after the credit was paid cannot claw it back: it is flagged for a person.
     await refundEvent(second?.captureId, "95.99");
     const flagged = await call<Json>("GET", "/credits");

@@ -274,3 +274,79 @@ describe("payout moment (#29)", () => {
     expect(airlab).toContain("AirLab");
   });
 });
+
+describe("brand statement (PayPal Invoicing)", () => {
+  const STATEMENT = {
+    id: "stmt-1",
+    brandId: "winix",
+    invoiceNumber: "CITED-WINIX-A8DC4A8F",
+    invoiceId: "INV2-AAAA-BBBB-CCCC-DDDD",
+    status: "MARKED_AS_PAID",
+    currency: "USD",
+    creditedMinor: 39_164,
+    voidedMinor: 768,
+    paidMinor: 38_396,
+    returnedMinor: 61_604,
+    depositedMinor: 100_000,
+    reservedMinor: 0,
+    invoiceTotalMinor: 38_396,
+    invoicePaidMinor: 38_396,
+    invoiceDueMinor: 0,
+    lines: [
+      {
+        creatorId: "housefresh",
+        name: "HouseFresh",
+        creditedMinor: 39_164,
+        voidedMinor: 768,
+        paidMinor: 38_396,
+        credits: 51,
+      },
+    ],
+    payoutBatchIds: ["PAYOUT-BATCH-77"],
+    refundIds: ["REFUND-1"],
+    createdAt: "2026-12-02T00:00:00.000Z",
+  };
+  const withStatement = () => {
+    const e = structuredClone(ENGINE) as any;
+    e["/api/invoices"] = { statements: [STATEMENT] };
+    return e;
+  };
+
+  it("links the payout to the brand statement that covers its batch", async () => {
+    const html = await (await appWith(RUNS, withStatement()).request("/payout")).text();
+    expect(html).toContain('href="/statement?brand=winix"');
+    expect(html).toContain("CITED-WINIX-A8DC4A8F");
+    expect(html).toContain("marked paid, $0 due");
+    // The clean video frame stays as it was.
+    const clean = await (await appWith(RUNS, withStatement()).request("/payout?clean=1")).text();
+    expect(clean).not.toContain("/statement?brand=");
+  });
+
+  it("shows no link when the engine has no statements endpoint", async () => {
+    const html = await (await appWith(RUNS).request("/payout")).text();
+    expect(html).toContain("$391.64");
+    expect(html).not.toContain("/statement?brand=");
+  });
+
+  it("renders the statement: lines, voids, paid, returned, $0 due", async () => {
+    const html = await (
+      await appWith(RUNS, withStatement()).request("/statement?brand=winix")
+    ).text();
+    expect(html).toContain("Winix · CITED programme statement");
+    expect(html).toContain("INV2-AAAA-BBBB-CCCC-DDDD");
+    expect(html).toContain("$391.64");
+    expect(html).toContain("−$7.68");
+    expect(html).toContain("$383.96");
+    expect(html).toContain("$616.04");
+    expect(html).toContain("$0.00 due");
+    expect(html).not.toContain("differs from the");
+  });
+
+  it("waits when there is no statement yet, and answers 503 when the engine is down", async () => {
+    const empty = structuredClone(ENGINE) as any;
+    empty["/api/invoices"] = { statements: [] };
+    const html = await (await appWith(RUNS, empty).request("/statement")).text();
+    expect(html).toContain("No statement yet");
+    expect((await appWith(RUNS, "down").request("/statement")).status).toBe(503);
+  });
+});

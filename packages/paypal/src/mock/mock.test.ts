@@ -440,3 +440,73 @@ describe("ids", () => {
     expect(fresh.startsWith("VT-")).toBe(true);
   });
 });
+
+describe("invoicing", () => {
+  const INVOICING = "invoicing_v2";
+  const statement = (number: string) => ({
+    detail: { currency_code: "USD", invoice_number: number, note: "statement" },
+    items: [
+      {
+        name: "Commission credited",
+        quantity: "1",
+        unit_amount: usd(39164),
+        discount: { amount: usd(768) },
+      },
+    ],
+  });
+
+  it("creates, sends and marks paid a statement; spec-valid at each step", async () => {
+    const s = setup();
+    const inv = await s.paypal.invoicing.create(statement("CITED-T1"), { requestId: "c1" });
+    expect(inv.status).toBe("DRAFT");
+    expect(inv.amount).toEqual(usd(38396));
+    const draft = await s.raw("GET", `/v2/invoicing/invoices/${inv.id}`);
+    expect(
+      validateResponse(INVOICING, "GET", "/v2/invoicing/invoices/{invoice_id}", draft.json),
+    ).toEqual([]);
+
+    await s.paypal.invoicing.send(inv.id, { send_to_recipient: false }, { requestId: "s1" });
+    await expect(
+      s.paypal.invoicing.recordPayment(
+        inv.id,
+        { method: "OTHER", amount: usd(38397) },
+        { requestId: "p0" },
+      ),
+    ).rejects.toThrow();
+    const pay = await s.paypal.invoicing.recordPayment(
+      inv.id,
+      { method: "OTHER", amount: usd(38396), payment_date: "2026-12-05" },
+      { requestId: "p1" },
+    );
+    expect(pay.paymentId).toMatch(/^EXTR-/);
+    // A replay is answered from the idempotency store: no second payment.
+    await s.paypal.invoicing.recordPayment(
+      inv.id,
+      { method: "OTHER", amount: usd(38396) },
+      { requestId: "p1" },
+    );
+
+    const paid = await s.paypal.invoicing.get(inv.id);
+    expect(paid.status).toBe("MARKED_AS_PAID");
+    expect(paid.due_amount).toEqual(usd(0));
+    expect(paid.payments?.paid_amount).toEqual(usd(38396));
+    const got = await s.raw("GET", `/v2/invoicing/invoices/${inv.id}`);
+    expect(
+      validateResponse(INVOICING, "GET", "/v2/invoicing/invoices/{invoice_id}", got.json),
+    ).toEqual([]);
+  });
+
+  it("refuses a duplicate invoice number, a discount over the line, and paying a draft", async () => {
+    const s = setup();
+    const inv = await s.paypal.invoicing.create(statement("CITED-T2"), { requestId: "c1" });
+    await expect(
+      s.paypal.invoicing.create(statement("CITED-T2"), { requestId: "c2" }),
+    ).rejects.toThrow();
+    const bad = statement("CITED-T3");
+    bad.items[0] = { ...bad.items[0], discount: { amount: usd(40000) } } as (typeof bad.items)[0];
+    await expect(s.paypal.invoicing.create(bad, { requestId: "c3" })).rejects.toThrow();
+    await expect(
+      s.paypal.invoicing.recordPayment(inv.id, { method: "OTHER" }, { requestId: "p1" }),
+    ).rejects.toThrow();
+  });
+});

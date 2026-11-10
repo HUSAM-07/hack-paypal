@@ -590,6 +590,31 @@ export async function runDemo(o: DemoOptions): Promise<DemoResult> {
         r,
       );
     }
+    const statements = (returned.statements ?? []) as Json[];
+    await numbers("return", {
+      statements: statements.map((x) => ({
+        brandId: x.brandId,
+        invoiceNumber: x.invoiceNumber,
+        invoiceId: x.invoiceId,
+        status: x.status,
+        creditedMinor: x.creditedMinor,
+        voidedMinor: x.voidedMinor,
+        paidMinor: x.paidMinor,
+        returnedMinor: x.returnedMinor,
+        depositedMinor: x.depositedMinor,
+        invoiceDueMinor: x.invoiceDueMinor,
+      })),
+    });
+    for (const x of statements) {
+      const who = x.brandId === "winix" ? "Winix" : "Levoit";
+      await line(
+        "return",
+        x.invoiceId
+          ? `${who}'s statement through PayPal Invoicing (${x.invoiceNumber}, ${x.invoiceId}): ${usd(x.creditedMinor)} credited − ${usd(x.voidedMinor)} voided = ${usd(x.paidMinor)} paid to creators; ${usd(x.returnedMinor)} of the ${usd(x.depositedMinor)} deposit returned. Marked paid against the deposit: ${x.status}, ${usd(x.invoiceDueMinor ?? 0)} due.`
+          : `${who}'s statement: nothing paid, so no PayPal invoice (${x.status}); ${usd(x.returnedMinor)} of the ${usd(x.depositedMinor)} deposit returned.`,
+        { invoiceNumber: x.invoiceNumber, invoiceId: x.invoiceId, status: x.status },
+      );
+    }
   });
 
   if (o.refund === "after-payout") {
@@ -923,6 +948,53 @@ export async function runDemo(o: DemoOptions): Promise<DemoResult> {
         `${usd(b.deposited)}`,
       );
     }
+    // Brand statements (PayPal Invoicing): the invoice states the ledger, to the cent, and is
+    // settled from the deposit, so no money moves twice.
+    const stmts = ((await eng("GET", "/invoices")).statements ?? []) as Json[];
+    const invoicesMock = new Map<string, Json>(
+      ((mock.invoices ?? []) as Json[]).map((x) => [x.id as string, x]),
+    );
+    const closed = ((returned.brands ?? []) as Json[]).filter(
+      (b) => b.spent > 0 || b.returnedNow > 0,
+    );
+    check(
+      "statements: one per brand at cycle close",
+      closed.every((b) => stmts.some((x) => x.brandId === b.brandId)),
+      `${stmts.length} statements for ${closed.length} closed brands`,
+    );
+    for (const x of stmts) {
+      const atClose = ((returned.brands ?? []) as Json[]).find((b) => b.brandId === x.brandId);
+      const inv = invoicesMock.get(x.invoiceId as string);
+      const ledgerOk =
+        x.creditedMinor - x.voidedMinor === x.paidMinor &&
+        x.paidMinor === atClose?.spent &&
+        x.returnedMinor === atClose?.returnedNow &&
+        x.paidMinor + x.returnedMinor + (atClose?.reserved ?? 0) === x.depositedMinor;
+      check(
+        `${x.brandId}: statement credited − voided == paid, paid + returned == deposit`,
+        ledgerOk,
+        `${usd(x.creditedMinor)} − ${usd(x.voidedMinor)} = ${usd(x.paidMinor)}; ${usd(x.paidMinor)} + ${usd(x.returnedMinor)} of ${usd(x.depositedMinor)}`,
+      );
+      if (x.paidMinor === 0) {
+        check(
+          `${x.brandId}: nothing paid, no PayPal invoice`,
+          x.invoiceId === null && x.status === "NO_CHARGE",
+          `${x.status}`,
+        );
+        continue;
+      }
+      check(
+        `${x.brandId}: PayPal invoice total == ledger paid, marked paid, $0 due`,
+        inv?.amount.amountMinor === x.paidMinor &&
+          inv?.discount.amountMinor === x.voidedMinor &&
+          inv?.paid.amountMinor === x.paidMinor &&
+          inv?.status === "MARKED_AS_PAID" &&
+          x.status === "MARKED_AS_PAID" &&
+          x.invoiceDueMinor === 0,
+        `${x.invoiceId} ${inv?.status}: ${usd(inv?.amount.amountMinor ?? 0)} invoiced, ${usd(inv?.paid.amountMinor ?? 0)} recorded vs ledger ${usd(x.paidMinor)}`,
+      );
+    }
+
     const sales = salesMock.captures as Json[];
     const attributed = (journeys.journeys as Json[]).flatMap((j) => j.items as Json[]);
     check(

@@ -125,6 +125,23 @@ interface StoredBatch {
   completeTime?: string;
 }
 
+export interface StoredInvoice {
+  id: string;
+  number: string;
+  status: "DRAFT" | "SENT" | "PARTIALLY_PAID" | "MARKED_AS_PAID" | "CANCELLED";
+  currency: string;
+  /** Sum of qty × unit price. */
+  itemTotal: Money;
+  /** Sum of item-level discounts. */
+  discount: Money;
+  /** itemTotal − discount: what the invoice asks for. */
+  amount: Money;
+  paid: Money;
+  request: Json;
+  payments: { paymentId: string; method: string; date: string; amount: Money; note?: string }[];
+  createTime: string;
+}
+
 export interface Dispute {
   dispute_id: string;
   captureId: string;
@@ -168,6 +185,7 @@ export function createMockPayPal(opts: MockPayPalOptions = {}) {
   const batches = new Map<string, StoredBatch>();
   const batchBySenderId = new Map<string, string>();
   const disputes = new Map<string, Dispute>();
+  const invoices = new Map<string, StoredInvoice>();
   const wallets = new Map<string, VaultedWallet>();
   const idempotency = new Map<string, { status: number; body: Json; fingerprint: string }>();
   const targets: { url?: string; handler?: WebhookHandler }[] = [];
@@ -574,6 +592,57 @@ export function createMockPayPal(opts: MockPayPalOptions = {}) {
     run: (m: RegExpMatchArray, c: Ctx) => { status: number; body: Json };
   };
   const ok = (body: Json, status = 200) => ({ status, body });
+  const invoiceOf = (invoiceId: string) => {
+    const inv = invoices.get(invoiceId);
+    if (!inv) throw notFound();
+    return inv;
+  };
+  const payerUrl = (inv: StoredInvoice) => `${MOCK_WEB_BASE}/invoice/p/#${inv.id}`;
+  const invoiceJson = (inv: StoredInvoice): Json => {
+    const req = inv.request;
+    const due = {
+      amountMinor: inv.amount.amountMinor - inv.paid.amountMinor,
+      currency: inv.currency,
+    };
+    return {
+      ...req,
+      id: inv.id,
+      status: inv.status,
+      detail: {
+        ...(req.detail as Json),
+        invoice_number: inv.number,
+        metadata: {
+          create_time: inv.createTime,
+          recipient_view_url: payerUrl(inv),
+          invoicer_view_url: `${MOCK_WEB_BASE}/invoice/details/${inv.id}`,
+        },
+      },
+      amount: {
+        ...amountJson(inv.amount),
+        breakdown: {
+          item_total: amountJson(inv.itemTotal),
+          discount: { item_discount: amountJson(inv.discount) },
+        },
+      },
+      due_amount: amountJson(due),
+      ...(inv.payments.length
+        ? {
+            payments: {
+              paid_amount: amountJson(inv.paid),
+              transactions: inv.payments.map((p) => ({
+                payment_id: p.paymentId,
+                type: "EXTERNAL",
+                method: p.method,
+                payment_date: p.date,
+                amount: amountJson(p.amount),
+                ...(p.note ? { note: p.note } : {}),
+              })),
+            },
+          }
+        : {}),
+      links: [link("self", `${MOCK_API_BASE}/v2/invoicing/invoices/${inv.id}`)],
+    };
+  };
   const notFound = () =>
     fail(
       404,
@@ -892,6 +961,166 @@ export function createMockPayPal(opts: MockPayPalOptions = {}) {
         throw notFound();
       },
     },
+    // ---------- Invoicing v2 (statements) ----------
+    {
+      method: "POST",
+      re: /^\/v2\/invoicing\/invoices$/,
+      run: (_m, { body }) => {
+        const detail = body.detail as Json | undefined;
+        const currency = detail?.currency_code;
+        const items = body.items;
+        if (typeof currency !== "string" || !Array.isArray(items) || items.length === 0) {
+          throw fail(
+            400,
+            "INVALID_REQUEST",
+            "detail.currency_code and items[] are required.",
+            "MISSING_REQUIRED_PARAMETER",
+          );
+        }
+        const nonNeg = (v: unknown, where: string): Money => {
+          const a = v as Json | undefined;
+          try {
+            if (a?.currency_code !== currency || typeof a.value !== "string") throw new Error();
+            return fromPayPalValue(a.value, currency);
+          } catch {
+            throw fail(
+              422,
+              "UNPROCESSABLE_ENTITY",
+              `${where} is invalid.`,
+              "INVALID_PARAMETER_VALUE",
+            );
+          }
+        };
+        let itemTotal = 0;
+        let discount = 0;
+        for (const it of items as Json[]) {
+          const unit = nonNeg(it.unit_amount, "items[].unit_amount");
+          const qty = Number(it.quantity ?? "1");
+          if (!Number.isInteger(qty) || qty < 0) {
+            throw fail(
+              422,
+              "UNPROCESSABLE_ENTITY",
+              "items[].quantity is invalid.",
+              "INVALID_PARAMETER_VALUE",
+            );
+          }
+          const line = unit.amountMinor * qty;
+          const d = it.discount
+            ? nonNeg((it.discount as Json).amount, "items[].discount.amount").amountMinor
+            : 0;
+          if (d > line) {
+            throw fail(
+              422,
+              "UNPROCESSABLE_ENTITY",
+              "Item discount exceeds the item amount.",
+              "INVALID_DISCOUNT",
+            );
+          }
+          itemTotal += line;
+          discount += d;
+        }
+        const number =
+          typeof detail?.invoice_number === "string" ? detail.invoice_number : id("", 10);
+        if ([...invoices.values()].some((x) => x.number === number)) {
+          throw fail(
+            422,
+            "UNPROCESSABLE_ENTITY",
+            "Invoice number already exists.",
+            "DUPLICATE_INVOICE_NUMBER",
+          );
+        }
+        const raw = id("", 16);
+        const inv: StoredInvoice = {
+          id: `INV2-${raw.slice(0, 4)}-${raw.slice(4, 8)}-${raw.slice(8, 12)}-${raw.slice(12, 16)}`,
+          number,
+          status: "DRAFT",
+          currency,
+          itemTotal: { amountMinor: itemTotal, currency },
+          discount: { amountMinor: discount, currency },
+          amount: { amountMinor: itemTotal - discount, currency },
+          paid: { amountMinor: 0, currency },
+          request: body,
+          payments: [],
+          createTime: iso(),
+        };
+        invoices.set(inv.id, inv);
+        return ok(invoiceJson(inv), 201);
+      },
+    },
+    {
+      method: "GET",
+      re: /^\/v2\/invoicing\/invoices\/([^/]+)$/,
+      run: (m) => ok(invoiceJson(invoiceOf(m[1] as string))),
+    },
+    {
+      method: "POST",
+      re: /^\/v2\/invoicing\/invoices\/([^/]+)\/send$/,
+      run: (m) => {
+        const inv = invoiceOf(m[1] as string);
+        if (inv.status !== "DRAFT") {
+          throw fail(422, "UNPROCESSABLE_ENTITY", "Invoice is already sent.", "CANT_SEND_INVOICE");
+        }
+        inv.status = "SENT";
+        return ok(link("payer-view", payerUrl(inv)), 200);
+      },
+    },
+    {
+      method: "POST",
+      re: /^\/v2\/invoicing\/invoices\/([^/]+)\/payments$/,
+      run: (m, { body }) => {
+        const inv = invoiceOf(m[1] as string);
+        if (inv.status !== "SENT" && inv.status !== "PARTIALLY_PAID") {
+          throw fail(
+            422,
+            "UNPROCESSABLE_ENTITY",
+            "A payment can only be recorded on a sent, unpaid invoice.",
+            "CANNOT_PROCESS_PAYMENTS",
+          );
+        }
+        const due = inv.amount.amountMinor - inv.paid.amountMinor;
+        const amt =
+          body.amount === undefined
+            ? due
+            : parseAmount(body.amount, "currency_code", "amount").amountMinor;
+        if (amt > due || amt <= 0) {
+          throw fail(
+            422,
+            "UNPROCESSABLE_ENTITY",
+            "Payment exceeds the amount due.",
+            "INVALID_PAYMENT_AMOUNT",
+          );
+        }
+        const paymentId = `EXTR-${id("", 17)}`;
+        inv.payments.push({
+          paymentId,
+          method: typeof body.method === "string" ? body.method : "OTHER",
+          date: typeof body.payment_date === "string" ? body.payment_date : iso().slice(0, 10),
+          amount: { amountMinor: amt, currency: inv.currency },
+          ...(typeof body.note === "string" ? { note: body.note } : {}),
+        });
+        inv.paid = { amountMinor: inv.paid.amountMinor + amt, currency: inv.currency };
+        inv.status =
+          inv.paid.amountMinor === inv.amount.amountMinor ? "MARKED_AS_PAID" : "PARTIALLY_PAID";
+        return ok({ payment_id: paymentId }, 200);
+      },
+    },
+    {
+      method: "POST",
+      re: /^\/v2\/invoicing\/invoices\/([^/]+)\/cancel$/,
+      run: (m) => {
+        const inv = invoiceOf(m[1] as string);
+        if (inv.status !== "SENT") {
+          throw fail(
+            422,
+            "UNPROCESSABLE_ENTITY",
+            "Only a sent, unpaid invoice can be cancelled.",
+            "CANT_CANCEL_INVOICE",
+          );
+        }
+        inv.status = "CANCELLED";
+        return ok({}, 204);
+      },
+    },
   ];
 
   async function dispatch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
@@ -901,15 +1130,17 @@ export function createMockPayPal(opts: MockPayPalOptions = {}) {
     const method = (init?.method ?? "GET").toUpperCase();
     const headers = new Headers(init?.headers);
     const respond = (status: number, body: Json | string) =>
-      new Response(typeof body === "string" ? body : JSON.stringify(body), {
-        status,
-        headers: {
-          "content-type": url.pathname.includes("/certs/")
-            ? "application/x-pem-file"
-            : "application/json",
-          "paypal-debug-id": "mock-debug-id",
-        },
-      });
+      status === 204
+        ? new Response(null, { status })
+        : new Response(typeof body === "string" ? body : JSON.stringify(body), {
+            status,
+            headers: {
+              "content-type": url.pathname.includes("/certs/")
+                ? "application/x-pem-file"
+                : "application/json",
+              "paypal-debug-id": "mock-debug-id",
+            },
+          });
 
     if (url.pathname.startsWith("/v1/notifications/certs/") && method === "GET") {
       signer ??= makeTestCert({
@@ -1001,7 +1232,7 @@ export function createMockPayPal(opts: MockPayPalOptions = {}) {
     },
     events,
     failedDeliveries,
-    state: { orders, captures, refunds, batches, disputes, wallets },
+    state: { orders, captures, refunds, batches, disputes, wallets, invoices },
   };
 }
 

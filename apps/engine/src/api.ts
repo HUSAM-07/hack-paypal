@@ -15,6 +15,7 @@ import { brandLiftData, evaluateBrand } from "./lift";
 import { payoutItemIds, refreshPayouts, runPayouts, senderItemId } from "./payouts";
 import { getPayPal } from "./paypal";
 import { captureDeposit, getBrand, listBrands, requestDeposit, upsertBrand } from "./programme";
+import { issueStatements, listStatements } from "./statements";
 
 export const api = new Hono<{ Bindings: Env }>();
 
@@ -252,11 +253,13 @@ api.post("/payouts/refresh", async (c) => {
   return c.json({ ok: true });
 });
 
-/** End of cycle: return each brand's unspent deposit. */
+/** End of cycle: return each brand's unspent deposit, then state it to the brand (Invoicing v2). */
 api.post("/cycle/close", async (c) => {
   const r = await body(c, z.object({ brandIds: z.array(Short).optional() }).default({}));
   if ("error" in r) return c.json(r, 400);
-  return c.json({ now: await nowOf(c.env), brands: await closeCycle(c.env, r.data.brandIds) });
+  const brands = await closeCycle(c.env, r.data.brandIds);
+  const statements = await issueStatements(c.env, brands);
+  return c.json({ now: await nowOf(c.env), brands, statements });
 });
 
 // ───────────────────────── reads for AG Studio ─────────────────────────
@@ -551,6 +554,11 @@ api.get("/shapley", async (c) => {
   });
 });
 
+/** Brand statements: one PayPal invoice per brand per cycle close, settled from the deposit. */
+api.get("/invoices", async (c) =>
+  c.json({ statements: await listStatements(c.env, c.req.query("brandId") || undefined) }),
+);
+
 api.get("/payouts", async (c) => {
   const rows = (
     await c.env.DB.prepare(
@@ -582,7 +590,7 @@ api.get("/payouts", async (c) => {
 api.get("/mock/state", (c) => {
   const { mock } = getPayPal(c.env);
   if (!mock) return c.json({ error: "not_available" }, 404);
-  const { captures, refunds, batches } = mock.state;
+  const { captures, refunds, batches, invoices } = mock.state;
   return c.json({
     captures: [...captures.values()].map((x) => ({
       id: x.id,
@@ -605,6 +613,15 @@ api.get("/mock/state", (c) => {
         amount: i.amount,
         status: i.status,
       })),
+    })),
+    invoices: [...invoices.values()].map((x) => ({
+      id: x.id,
+      number: x.number,
+      status: x.status,
+      amount: x.amount,
+      discount: x.discount,
+      paid: x.paid,
+      payments: x.payments.map((p) => ({ method: p.method, amount: p.amount })),
     })),
   });
 });

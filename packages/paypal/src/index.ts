@@ -20,6 +20,7 @@ export {
   type InvoiceItemInput,
   invoicePayerUrl,
   type NotifyInput,
+  type RecordPaymentInput,
 } from "./invoicing";
 export * from "./mock";
 export {
