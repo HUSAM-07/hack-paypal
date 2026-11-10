@@ -118,7 +118,8 @@ describe("storefronts", () => {
       const res = await app.request(`/${shop}/p/winix-a230`);
       expect(res.status).toBe(200);
       html[shop] = await res.text();
-      expect(html[shop]).toContain("paypal-buttons");
+      const checkout = await app.request(`/${shop}/checkout/winix-a230`);
+      expect(await checkout.text()).toContain("paypal-buttons");
     }
     expect(html.northwind).toContain("$99.99");
     expect(html.lumen).toContain("$95.99");

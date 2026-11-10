@@ -5,9 +5,10 @@ import {
   type PayPalClient,
 } from "@pact/paypal";
 import { Hono } from "hono";
-import { isShopId, PRODUCTS, productBySlug, SHOP_IDS, SHOPS } from "./catalogue";
+import { isShopId, PRODUCTS, productBySlug, SHOPS } from "./catalogue";
 import { CheckoutError, captureOrder, createOrder } from "./checkout";
-import { homePage, productPage } from "./pages";
+import { hubPage } from "./hub";
+import { checkoutPage, homePage, productPage } from "./pages";
 
 export * from "./catalogue";
 export { simulatedPayPal } from "./simulated-paypal";
@@ -72,11 +73,7 @@ export function createShopsApp(opts: ShopsOptions = {}) {
     }),
   );
 
-  app.get("/", (c) =>
-    c.html(
-      `<!doctype html><title>CITED shops</title><ul>${SHOP_IDS.map((id) => `<li><a href="/${id}">${SHOPS[id].name}</a></li>`).join("")}</ul>`,
-    ),
-  );
+  app.get("/", (c) => c.html(hubPage()));
 
   app.onError((e, c) => {
     if (e instanceof CheckoutError) {
@@ -97,8 +94,15 @@ export function createShopsApp(opts: ShopsOptions = {}) {
     const shop = shopFor(c.req.param("shop"));
     const product = productBySlug(c.req.param("slug"));
     if (!shop || !product) return c.notFound();
+    return c.html(productPage(shop, product));
+  });
+
+  app.get("/:shop/checkout/:slug", (c) => {
+    const shop = shopFor(c.req.param("shop"));
+    const product = productBySlug(c.req.param("slug"));
+    if (!shop || !product) return c.notFound();
     return c.html(
-      productPage(shop, product, {
+      checkoutPage(shop, product, {
         paypalClientId: sandbox ? env.PAYPAL_CLIENT_ID : undefined,
       }),
     );
