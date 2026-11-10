@@ -18,7 +18,8 @@
     "evals": "npm run evals -w @pact/evals --",
     "dev:cited": "node scripts/dev-cited.mjs",
     "demo:cited": "npm run demo -w @cited/agents --",
-    "e2e:cited": "npm run e2e -w @cited/agents"
+    "e2e:cited": "npm run e2e -w @cited/agents",
+    "bench:cited": "tsx scripts/bench-engine.mjs"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.6.4",

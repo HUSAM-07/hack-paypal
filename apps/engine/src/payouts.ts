@@ -28,42 +28,64 @@ export interface PayoutRun {
   }[];
   /** Creators with due credits but no PayPal account on file; their credits stay pending. */
   skipped: { creatorId: string; amountMinor: number; reason: "no_paypal_id" }[];
+  /** Every batch this run sent (more than one only past PAYOUT_BATCH_MAX_ITEMS creators). */
+  batches: PayoutBatchRun[];
   /** Credits past their hold that the abuse guard keeps for a reviewer: never in this batch. */
   held: { creditId: string; creatorId: string; amountMinor: number }[];
 }
 
 /**
- * Pay every credit whose hold has ended (and whose sale is not under an open dispute) in ONE batch Payouts call (PAYPAL_ID recipients,
- * one item per creator). The batch id is a hash of the credit ids, so a retry sends the
- * same `sender_batch_id` and `PayPal-Request-Id` and can never double-pay.
+ * PayPal Payouts takes at most 15,000 items in one `POST /v1/payments/payouts` call; a larger
+ * run is split into several batches.
  */
-export async function runPayouts(env: Env): Promise<PayoutRun> {
+export const PAYOUT_BATCH_MAX_ITEMS = 15_000;
+
+export interface PayoutBatchRun {
+  senderBatchId: string;
+  paypalBatchId?: string;
+  batchStatus?: string;
+  items: number;
+}
+
+/**
+ * Pay every credit whose hold has ended (and whose sale is not under an open dispute) by batch
+ * Payouts (PAYPAL_ID recipients, one item per creator): one batch up to PAYOUT_BATCH_MAX_ITEMS
+ * creators, more beyond. Each batch id is a hash of its credit ids, so a retry sends the same
+ * `sender_batch_id` and `PayPal-Request-Id` and can never double-pay.
+ */
+export async function runPayouts(env: Env, maxItems = PAYOUT_BATCH_MAX_ITEMS): Promise<PayoutRun> {
   const now = await nowOf(env);
   // The guard runs first, so nothing it would hold can slip into this batch.
   await applyGuard(env, now);
   const credits = await loadCredits(env);
   const held = await heldCredits(env);
   const lines = releasePayable(credits, now, undefined, await frozenCaptures(env), held);
+  const byId = new Map(credits.map((c) => [c.id, c]));
   const run: PayoutRun = {
     now,
     status: "nothing_due",
     items: [],
     skipped: [],
+    batches: [],
     held: releasePayable(credits, now, 0)
       .flatMap((l) => l.creditIds)
       .filter((id) => held.has(id))
       .map((id) => {
-        const c = credits.find((x) => x.id === id) as (typeof credits)[number];
+        const c = byId.get(id) as (typeof credits)[number];
         return { creditId: id, creatorId: c.creatorId, amountMinor: c.amount.amountMinor };
       }),
   };
 
+  // One read for every receiver, not one per creator.
+  const receivers = new Map(
+    (await env.DB.prepare("SELECT creator_id, paypal_id FROM creators").all<Row>()).results.map(
+      (r) => [r.creator_id as string, (r.paypal_id as string | null) ?? null],
+    ),
+  );
   const payable = [];
   for (const line of lines) {
-    const c = await env.DB.prepare("SELECT paypal_id FROM creators WHERE creator_id = ?")
-      .bind(line.creatorId)
-      .first<{ paypal_id: string | null }>();
-    if (!c?.paypal_id) {
+    const receiver = receivers.get(line.creatorId);
+    if (!receiver) {
       run.skipped.push({
         creatorId: line.creatorId,
         amountMinor: line.gross.amountMinor,
@@ -71,19 +93,10 @@ export async function runPayouts(env: Env): Promise<PayoutRun> {
       });
       continue;
     }
-    payable.push({ line, receiver: c.paypal_id });
+    payable.push({ line, receiver });
   }
   if (payable.length === 0) return run;
 
-  const creditIds = payable.flatMap((p) => p.line.creditIds).sort();
-  const senderBatchId = `cited-${(await sha256Hex(creditIds.join(","))).slice(0, 32)}`;
-  const items = payable.map((p) => ({
-    recipient_type: "PAYPAL_ID" as const,
-    receiver: p.receiver,
-    amount: p.line.gross,
-    sender_item_id: senderItemId(p.line.creatorId, senderBatchId),
-    note: "CITED: commission on sales your test caused",
-  }));
   run.items = payable.map((p) => ({
     creatorId: p.line.creatorId,
     receiver: p.receiver,
@@ -91,7 +104,58 @@ export async function runPayouts(env: Env): Promise<PayoutRun> {
     currency: p.line.currency,
     creditIds: p.line.creditIds,
   }));
-  run.senderBatchId = senderBatchId;
+
+  let ledger = credits;
+  for (let i = 0; i < payable.length; i += maxItems) {
+    const chunk = payable.slice(i, i + maxItems);
+    const creditIds = chunk.flatMap((p) => p.line.creditIds).sort();
+    const sent = await sendBatch(env, chunk, creditIds, now);
+    ledger = markPaid(ledger, creditIds, sent.paypalBatchId ?? sent.senderBatchId);
+    run.batches.push(sent);
+  }
+  await persistCredits(env, credits, ledger, now);
+  for (const b of run.batches)
+    await setPayoutStatus(env, b.paypalBatchId ?? b.senderBatchId, b.batchStatus ?? "PENDING");
+  await refreshPayouts(env);
+
+  for (const b of run.batches) {
+    const final = await env.DB.prepare(
+      "SELECT status FROM payout_batches WHERE sender_batch_id = ?",
+    )
+      .bind(b.senderBatchId)
+      .first<{ status: string }>();
+    if (final?.status) b.batchStatus = final.status;
+  }
+  const first = run.batches[0] as PayoutBatchRun;
+  run.status = "sent";
+  run.senderBatchId = first.senderBatchId;
+  if (first.paypalBatchId) run.paypalBatchId = first.paypalBatchId;
+  if (first.batchStatus) run.batchStatus = first.batchStatus;
+  return run;
+}
+
+/** Create (or find, on a retry) one Payouts batch for these creators' due credits. */
+async function sendBatch(
+  env: Env,
+  chunk: { line: ReturnType<typeof releasePayable>[number]; receiver: string }[],
+  creditIds: string[],
+  now: string,
+): Promise<PayoutBatchRun> {
+  const senderBatchId = `cited-${(await sha256Hex(creditIds.join(","))).slice(0, 32)}`;
+  const items = chunk.map((p) => ({
+    recipient_type: "PAYPAL_ID" as const,
+    receiver: p.receiver,
+    amount: p.line.gross,
+    sender_item_id: senderItemId(p.line.creatorId, senderBatchId),
+    note: "CITED: commission on sales your test caused",
+  }));
+  const stored = chunk.map((p) => ({
+    creatorId: p.line.creatorId,
+    receiver: p.receiver,
+    amountMinor: p.line.gross.amountMinor,
+    currency: p.line.currency,
+    creditIds: p.line.creditIds,
+  }));
 
   const prior = await env.DB.prepare(
     "SELECT paypal_batch_id, status FROM payout_batches WHERE sender_batch_id = ?",
@@ -106,7 +170,7 @@ export async function runPayouts(env: Env): Promise<PayoutRun> {
       `INSERT OR IGNORE INTO payout_batches (sender_batch_id, status, items_json, credit_ids_json, created_at)
        VALUES (?, 'SENDING', ?, ?, ?)`,
     )
-      .bind(senderBatchId, JSON.stringify(run.items), JSON.stringify(creditIds), now)
+      .bind(senderBatchId, JSON.stringify(stored), JSON.stringify(creditIds), now)
       .run();
     const { paypal } = getPayPal(env);
     try {
@@ -136,19 +200,12 @@ export async function runPayouts(env: Env): Promise<PayoutRun> {
       .bind(paypalBatchId ?? null, batchStatus, senderBatchId)
       .run();
   }
-
-  const ledger = markPaid(credits, creditIds, paypalBatchId ?? senderBatchId);
-  await persistCredits(env, credits, ledger, now);
-  await setPayoutStatus(env, paypalBatchId ?? senderBatchId, batchStatus);
-  await refreshPayouts(env);
-
-  const final = await env.DB.prepare("SELECT status FROM payout_batches WHERE sender_batch_id = ?")
-    .bind(senderBatchId)
-    .first<{ status: string }>();
-  run.status = "sent";
-  if (paypalBatchId) run.paypalBatchId = paypalBatchId;
-  run.batchStatus = final?.status ?? batchStatus;
-  return run;
+  return {
+    senderBatchId,
+    ...(paypalBatchId ? { paypalBatchId } : {}),
+    batchStatus,
+    items: chunk.length,
+  };
 }
 
 async function setPayoutStatus(env: Env, batchId: string, status: string): Promise<void> {
