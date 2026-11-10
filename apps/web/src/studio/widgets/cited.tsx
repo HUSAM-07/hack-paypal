@@ -58,7 +58,8 @@ export function CausedTile(p: P) {
   const notCredited = Math.max(0, exposed - caused);
   const share = exposed > 0 ? caused / exposed : 0;
   return (
-    <div className="cw cw-caused">
+    // biome-ignore lint/a11y/noNoninteractiveTabindex: the body scrolls when the widget is small; keyboard users must reach it (WCAG 2.1.1)
+    <div className="cw cw-caused" tabIndex={0}>
       <div className="cw-caused-figure">
         <span className="cw-plus">+{caused}</span>
         <span className="cw-caused-unit">
@@ -161,7 +162,8 @@ export function ArmStrip(p: P) {
   const test = mine.find((r) => r.armKey === "test");
   const placebo = mine.find((r) => r.armKey === "placebo");
   return (
-    <div className="cw cw-arms">
+    // biome-ignore lint/a11y/noNoninteractiveTabindex: the body scrolls when the widget is small; keyboard users must reach it (WCAG 2.1.1)
+    <div className="cw cw-arms" tabIndex={0}>
       {mine.map((r) => (
         <div key={String(r.armKey)} className={`cw-arm ${ARM_CLASS[String(r.armKey)] ?? ""}`}>
           <div className="cw-arm-label">
@@ -201,7 +203,8 @@ export function DepositMeter(p: P) {
     { key: "returned", label: "Returned to the brand", value: num(row.returned) },
   ];
   return (
-    <div className="cw cw-deposit">
+    // biome-ignore lint/a11y/noNoninteractiveTabindex: the body scrolls when the widget is small; keyboard users must reach it (WCAG 2.1.1)
+    <div className="cw cw-deposit" tabIndex={0}>
       <div className="cw-deposit-head">
         <span className="cw-deposit-total">{money(deposited)}</span>
         <span className="cw-muted">
@@ -271,7 +274,8 @@ export function CreatorTiles(p: P) {
   const row = rows?.find((r) => r.creatorId === creatorId);
   if (!row) return <div className="cw-empty">No credits yet for this creator.</div>;
   return (
-    <div className="cw cw-tiles">
+    // biome-ignore lint/a11y/noNoninteractiveTabindex: the body scrolls when the widget is small; keyboard users must reach it (WCAG 2.1.1)
+    <div className="cw cw-tiles" tabIndex={0}>
       {STATES.map((s) => (
         <div key={s.key} className={`cw-tile is-${s.key}`}>
           <span className="cw-tile-label">{s.label}</span>
@@ -353,7 +357,8 @@ export function ReviewFlags(p: P) {
       </div>
     );
   return (
-    <div className="cw cw-flags">
+    // biome-ignore lint/a11y/noNoninteractiveTabindex: the body scrolls when the widget is small; keyboard users must reach it (WCAG 2.1.1)
+    <div className="cw cw-flags" tabIndex={0}>
       <table className="cw-flags-table">
         <thead>
           <tr>

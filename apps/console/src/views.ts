@@ -1,4 +1,4 @@
-import { siteNavLinks } from "@pact/protocol";
+import { SITE_NAV_TOUCH_CSS, siteNavLinks } from "@pact/protocol";
 import type { DemoData, PayoutData, RunView, StatementData } from "./data";
 import { creatorName, esc, shopName, usd } from "./format";
 
@@ -117,7 +117,8 @@ a{color:inherit}
 .notice header small{font-size:.75rem;opacity:.85}
 .notice .top{padding:2.2rem 2.2rem 1.8rem;border-bottom:1px solid var(--line)}
 .notice .top p{margin:0;color:var(--muted)}
-.notice .hello{font-size:1.05rem;color:var(--ink)!important}
+.notice .hello{margin:0;font-size:1.05rem;font-weight:400;color:var(--ink)!important}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
 .amount{font-size:4.4rem;font-weight:600;line-height:1;margin:.9rem 0 .7rem;letter-spacing:-.03em}
 .amount small{font-size:1.2rem;color:var(--muted);font-weight:500;margin-left:.5rem;letter-spacing:0}
 .status{display:inline-flex;align-items:center;gap:.45rem;color:var(--test);font-weight:600}
@@ -194,7 +195,7 @@ function page(title: string, here: Here, body: string, opts: Opts): string {
   return `<!doctype html><html lang="en"><head><meta charset="utf-8"><title>${esc(title)}</title>
 <meta name="viewport" content="width=device-width,initial-scale=1">
 ${opts.live ? '<meta http-equiv="refresh" content="2">' : ""}
-<style>${CSS}</style></head><body class="${cls}">${nav(here)}${body}</body></html>`;
+<style>${CSS}${SITE_NAV_TOUCH_CSS}</style></head><body class="${cls}">${nav(here)}${body}</body></html>`;
 }
 
 function waiting(msg: string): string {
@@ -327,7 +328,7 @@ export function payoutPage(p: PayoutData | null, opts: Opts): string {
     return page(
       "CITED · payout",
       "payout",
-      `<main class="pay">${waiting("No payout yet. Payouts are sent when a 30-day hold ends.")}</main>`,
+      `<main class="pay"><h1 class="sr">Creator payout</h1>${waiting("No payout yet. Payouts are sent when a 30-day hold ends.")}</main>`,
       opts,
     );
   }
@@ -340,7 +341,7 @@ export function payoutPage(p: PayoutData | null, opts: Opts): string {
 <article class="notice">
 <header><span class="pp">Pay<span>Pal</span></span><small>Payment received</small></header>
 <div class="top">
-  <p class="hello">${esc(name)}, you received a payment</p>
+  <h1 class="hello">${esc(name)}, you received a payment</h1>
   <div class="amount num">${usd(p.amountMinor)}<small>${esc(p.currency)}</small></div>
   <p>From CITED · commission on sales your test caused</p>
 </div>
@@ -385,7 +386,7 @@ export function statementPage(d: StatementData | null, opts: Opts): string {
     return page(
       "CITED · statement",
       "payout",
-      `<main class="pay">${waiting("No statement yet. Brands get one when a programme cycle closes.")}</main>`,
+      `<main class="pay"><h1 class="sr">Brand statement</h1>${waiting("No statement yet. Brands get one when a programme cycle closes.")}</main>`,
       opts,
     );
   }
@@ -411,7 +412,7 @@ export function statementPage(d: StatementData | null, opts: Opts): string {
 <article class="notice">
 <header><span class="pp">Pay<span>Pal</span></span><small>${s.invoiceId ? "Invoice · statement" : "Statement"}</small></header>
 <div class="top">
-  <p class="hello">${esc(d.brandName)} · CITED programme statement</p>
+  <h1 class="hello">${esc(d.brandName)} · CITED programme statement</h1>
   <div class="amount num">${usd(s.paidMinor)}<small>${esc(s.currency)}</small></div>
   <p>${s.invoiceId ? "Settled from your prepaid deposit · nothing due" : "Nothing paid this cycle, so no PayPal invoice"}</p>
 </div>

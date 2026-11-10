@@ -254,6 +254,7 @@ export function App() {
           ) : null}
           <span
             className={`st-live${live ? "" : " is-stale"}`}
+            role="status"
             title={asOf ? `Engine clock ${asOf}` : undefined}
           >
             <i aria-hidden="true" />
@@ -262,34 +263,36 @@ export function App() {
           </span>
         </div>
       </header>
-      {error ? (
-        <p className="st-error" role="alert">
-          The programme figures could not load ({error}). Reload the page in a moment.
-        </p>
-      ) : null}
-      {config && data && ai ? (
-        <AgStudioProvider
-          {...(config.licenseKey ? { licenseKey: config.licenseKey } : {})}
-          modules={[AgStudioAiModule]}
-        >
-          <div className="st-studio">
-            <AgStudio
-              data={data}
-              initialState={state}
-              mode={view === "brand" && !narrow ? "edit" : "view"}
-              panels={PANELS}
-              theme={citedTheme}
-              context={context}
-              widgets={widgets}
-              ai={ai}
-              aiToolDisplay={aiToolDisplay}
-              onApiReady={onApiReady}
-            />
-          </div>
-        </AgStudioProvider>
-      ) : !error ? (
-        <p className="st-loading">Loading the programme…</p>
-      ) : null}
+      <main className="st-main">
+        {error ? (
+          <p className="st-error" role="alert">
+            The programme figures could not load ({error}). Reload the page in a moment.
+          </p>
+        ) : null}
+        {config && data && ai ? (
+          <AgStudioProvider
+            {...(config.licenseKey ? { licenseKey: config.licenseKey } : {})}
+            modules={[AgStudioAiModule]}
+          >
+            <div className="st-studio">
+              <AgStudio
+                data={data}
+                initialState={state}
+                mode={view === "brand" && !narrow ? "edit" : "view"}
+                panels={PANELS}
+                theme={citedTheme}
+                context={context}
+                widgets={widgets}
+                ai={ai}
+                aiToolDisplay={aiToolDisplay}
+                onApiReady={onApiReady}
+              />
+            </div>
+          </AgStudioProvider>
+        ) : !error ? (
+          <p className="st-loading">Loading the programme…</p>
+        ) : null}
+      </main>
       <footer className="st-foot">
         <span>
           Live from the CITED engine read API ·{" "}

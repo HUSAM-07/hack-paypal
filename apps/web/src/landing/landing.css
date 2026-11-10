@@ -29,6 +29,7 @@
   --muted: #5b5f68;
   --proof: #1f7a55;
   --held: #b7791f;
+  --held-ink: #8a5a12; /* amber for text: --held is 3.4:1 on --bg, below AA */
   --rule: #e6e2da;
   --none: #c9c4b9;
   --serif: "Newsreader", "Iowan Old Style", Georgia, serif;
@@ -138,6 +139,17 @@ code {
 .top-nav a[aria-current] {
   color: var(--ink);
   box-shadow: inset 0 -1.5px 0 var(--ink);
+}
+/* Touch screens: 44px-tall nav targets (same rule as SITE_NAV_TOUCH_CSS on the server pages). */
+@media (pointer: coarse) {
+  .top-nav a,
+  .wordmark {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 44px;
+    min-height: 44px;
+  }
 }
 
 /* Type */
@@ -528,7 +540,7 @@ code {
   font-weight: 600;
 }
 .ledger .l-void td {
-  color: var(--held);
+  color: var(--held-ink);
 }
 .ledger .l-total th,
 .ledger .l-total td {

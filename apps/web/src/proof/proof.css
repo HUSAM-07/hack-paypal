@@ -385,7 +385,7 @@
   align-self: center;
 }
 .iv-nopay .iv-lb {
-  color: var(--held);
+  color: var(--held-ink);
 }
 .iv-legend {
   display: flex;
@@ -474,7 +474,7 @@
   color: var(--proof);
 }
 .v-not-met {
-  color: var(--held);
+  color: var(--held-ink);
 }
 .v-reported {
   color: var(--muted);
@@ -560,7 +560,7 @@
   min-height: 1.2em;
 }
 .dl-err {
-  color: var(--held);
+  color: var(--held-ink);
 }
 .note-data {
   margin-top: 1.5rem;
