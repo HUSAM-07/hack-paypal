@@ -198,7 +198,8 @@ async function backfillOrder(env: Env, orderId: string): Promise<void> {
     .first();
   if (known) return;
   try {
-    const order = await getPayPal(env).paypal.orders.get(orderId);
+    // The PayPal Agent Toolkit's `get_order` tool, through our client's auth and fetch.
+    const order = await getPayPal(env).paypal.agentToolkit.getOrder(orderId);
     await storeOrder(env, order as unknown as Raw);
   } catch {
     // Unknown to this PayPal account (or PayPal is down): the join falls back to the capture.

@@ -3,6 +3,7 @@ import { clientTokenApi, identityApi } from "./identity";
 import { invoicingApi } from "./invoicing";
 import { authorizationsApi, capturesApi, ordersApi } from "./orders";
 import { payoutsApi } from "./payouts";
+import { agentToolkitApi } from "./toolkit";
 import { vaultApi } from "./vault";
 import {
   type PostbackVerifyInput,
@@ -28,6 +29,8 @@ export function createPayPal(cfg: PayPalConfig) {
     invoicing: invoicingApi(t),
     identity: identityApi(t),
     clientToken: clientTokenApi(t, cfg.now),
+    /** PayPal Agent Toolkit tools, run through this client's auth and fetch. */
+    agentToolkit: agentToolkitApi(t),
     webhooks: {
       /** Ask PayPal to verify (production path). */
       verifyByPostback: (input: PostbackVerifyInput) => verifyWebhookPostback(t, input),

@@ -7,6 +7,11 @@ import type { Payee, SellerId } from "./sellers";
  * The agent platform pays for the agent: it creates the Orders v2 order itself, with the
  * seller's PayPal account as `payee`, the signed passport in `custom_id`, the UPC on the item,
  * and the buyer's vaulted PayPal wallet as the payment source. No storefront, no redirect.
+ *
+ * Which call goes where (cited/spec/AGENT-CHECKOUT.md): order creation uses our Orders v2
+ * client, because the PayPal Agent Toolkit's `create_order` cannot carry `payee`, `custom_id`,
+ * `items[].upc` or a vaulted `payment_source`; the capture, the order read-back and the seller's
+ * refund run through the toolkit's `pay_order`, `get_order` and `create_refund` tools.
  */
 export interface CheckoutInput {
   offerId: string;
@@ -124,12 +129,21 @@ export async function checkout(deps: CheckoutDeps, input: CheckoutInput): Promis
       },
       { requestId: await checkoutRequestId(input) },
     );
-    // A vaulted wallet normally comes back COMPLETED; capture if PayPal stopped at APPROVED.
+    // A vaulted wallet normally comes back COMPLETED; capture if PayPal stopped at APPROVED,
+    // with the PayPal Agent Toolkit's `pay_order` tool.
     if (order.status === "APPROVED") {
-      order = await deps.paypal.orders.capture(order.id, {
+      order = await deps.paypal.agentToolkit.payOrder(order.id, {
         requestId: `cited-capture-${order.id}`.slice(0, 108),
       });
     }
+    // Read back what PayPal holds (toolkit `get_order`): the status, the capture and the
+    // custom_id the engine will join on. The payment has already happened, so a failed read
+    // falls back to the create/capture response instead of failing the checkout.
+    const paid = order;
+    order = await deps.paypal.agentToolkit.getOrder(paid.id).catch((e: unknown) => {
+      console.warn(`checkout: toolkit get_order read-back failed: ${(e as Error).message}`);
+      return paid;
+    });
     const unit = order.purchase_units?.[0];
     const capture = unit?.payments?.captures?.[0];
     return {
@@ -145,6 +159,40 @@ export async function checkout(deps: CheckoutDeps, input: CheckoutInput): Promis
     };
   } catch (e) {
     if (e instanceof PayPalError) throw new CheckoutError(502, "paypal_error", e.message);
+    throw e;
+  }
+}
+
+export interface OrderStatus {
+  orderId: string;
+  status: string;
+  sellerId: string | null;
+  payee: { email_address?: string | undefined; merchant_id?: string | undefined } | null;
+  /** The signed passport PayPal holds for this sale, the engine's join key. */
+  customId: string | null;
+  captureId: string | null;
+  captureStatus: string | null;
+}
+
+/** An order as PayPal holds it, read with the PayPal Agent Toolkit's `get_order` tool. */
+export async function orderStatus(paypal: PayPalClient, orderId: string): Promise<OrderStatus> {
+  try {
+    const order = await paypal.agentToolkit.getOrder(orderId);
+    const unit = order.purchase_units?.[0];
+    const capture = unit?.payments?.captures?.[0];
+    return {
+      orderId: order.id,
+      status: order.status,
+      sellerId: unit?.reference_id ?? null,
+      payee: unit?.payee ?? null,
+      customId: capture?.custom_id ?? unit?.custom_id ?? null,
+      captureId: capture?.id ?? null,
+      captureStatus: capture?.status ?? null,
+    };
+  } catch (e) {
+    if (e instanceof PayPalError) {
+      throw new CheckoutError(e.status === 404 ? 404 : 502, "paypal_error", e.message);
+    }
     throw e;
   }
 }

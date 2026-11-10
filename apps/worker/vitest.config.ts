@@ -18,6 +18,18 @@ function devVar(name: string): string | undefined {
 }
 
 export default defineConfig(async () => ({
+  resolve: {
+    // In this pool, an isolate that sends with axios (as the PayPal Agent Toolkit does) breaks the
+    // start of the next isolate, so the pool runs a double with the toolkit's contract and
+    // requests. The real toolkit runs in the Node tests and in workerd under wrangler dev
+    // (scripts/toolkit-smoke.ts).
+    alias: {
+      "@paypal/agent-toolkit/mcp": path.join(
+        import.meta.dirname,
+        "test/helpers/agent-toolkit-double.ts",
+      ),
+    },
+  },
   plugins: [
     cloudflareTest({
       wrangler: { configPath: "./wrangler.jsonc" },

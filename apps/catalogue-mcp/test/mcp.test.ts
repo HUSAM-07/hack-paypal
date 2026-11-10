@@ -34,6 +34,7 @@ it("serves search_product and checkout over streamable HTTP", async () => {
   expect(list.result.tools.map((t: { name: string }) => t.name)).toEqual([
     "search_product",
     "checkout",
+    "get_order",
   ]);
   const out = (await call("search_product", { query: "air purifier" })).structuredContent;
   expect(out.offers.length).toBe(6);
@@ -63,6 +64,13 @@ it("checks out through PayPal: seller as payee, passport in custom_id, buyer's v
   expect(unit.items[0].upc).toEqual({ type: "UPC-A", code: UPC_WINIX_A230 });
   expect(mock.state.captures.get(bought.captureId)?.customId).toBe(found.passport);
   expect(events).toEqual(["CHECKOUT.ORDER.COMPLETED", "PAYMENT.CAPTURE.COMPLETED"]);
+  const status = (await call("get_order", { orderId: bought.orderId })).structuredContent;
+  expect(status).toMatchObject({
+    status: "COMPLETED",
+    sellerId: "lumen",
+    customId: found.passport,
+  });
+  expect((await call("get_order", { orderId: "NOPE" })).isError).toBe(true);
 
   // A retry with the same clientRef pays nothing twice.
   const again = (

@@ -51,6 +51,7 @@ export type {
   UserTokens,
 } from "./schemas";
 export { type KeyValueStore, memoryStore } from "./store";
+export { AGENT_TOOLKIT_VERSION, agentToolkitApi, runToolkit, type ToolkitMethod } from "./toolkit";
 export { type CreateSetupTokenInput, setupTokenApproveUrl } from "./vault";
 export { crc32, parseCertificate } from "./webhooks/crypto";
 export { createWebhookDeduper } from "./webhooks/dedupe";

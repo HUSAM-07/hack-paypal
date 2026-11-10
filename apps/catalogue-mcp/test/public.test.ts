@@ -41,7 +41,7 @@ it("an MCP client searches and checks out; the passport is minted per session as
   const { mock, events, connect, mcp } = setup();
   const client = await connect();
   const { tools } = await client.listTools();
-  expect(tools.map((t) => t.name)).toEqual(["search_product", "checkout"]);
+  expect(tools.map((t) => t.name)).toEqual(["search_product", "checkout", "get_order"]);
   expect(tools[0]?.description).toContain("16 CFR 255");
 
   const found = (await call(client, "search_product", { query: "air purifier", sellerId: "lumen" }))
@@ -73,6 +73,13 @@ it("an MCP client searches and checks out; the passport is minted per session as
   expect(decodePassportBody(String(theirs.customId).split(".")[0] as string).sessionId).not.toBe(
     body.sessionId,
   );
+
+  // get_order (PayPal Agent Toolkit) reads a session's own orders, and only those.
+  const status = (await call(client, "get_order", { orderId: bought.orderId })).structuredContent;
+  expect(status).toMatchObject({ orderId: bought.orderId, status: "COMPLETED", sellerId: "lumen" });
+  expect(status.customId).toBe(bought.customId);
+  const peek = await call(other, "get_order", { orderId: bought.orderId });
+  expect(peek.content[0].text).toContain("unknown_order");
 });
 
 it("ranks the same offers in every session, whatever the arm", async () => {

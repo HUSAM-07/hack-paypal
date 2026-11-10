@@ -183,7 +183,8 @@ export function createCatalogueApp(opts: CatalogueAppOptions = {}) {
       typeof body.amountMinor === "number"
         ? { amountMinor: body.amountMinor, currency: held?.amount.currency ?? "USD" }
         : undefined;
-    const refund = await paypal.captures.refund(captureId, amount ? { amount } : {}, {
+    // The PayPal Agent Toolkit's `create_refund` tool, through our client's auth and fetch.
+    const refund = await paypal.agentToolkit.createRefund(captureId, amount ? { amount } : {}, {
       requestId: `cited-refund-${captureId}-${amount?.amountMinor ?? "full"}`,
     });
     await mock?.flush();
