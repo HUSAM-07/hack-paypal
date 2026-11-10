@@ -9,6 +9,7 @@ import { Hono } from "hono";
 import { applyVoids } from "../credits";
 import type { Env } from "../env";
 import { applyBatchStatus } from "../payouts";
+import { getPayPal } from "../paypal";
 import { type CaptureFacts, readItems, recordCapture, shopOf } from "./join";
 
 /** Programme deposits are Orders v2 captures too; they are money in, not sales. */
@@ -81,26 +82,12 @@ webhooks.post("/paypal", async (c) => {
 
 async function dispatch(env: Env, eventId: string, type: string, r: Raw): Promise<boolean> {
   switch (type) {
-    case "CHECKOUT.ORDER.APPROVED": {
-      const orderId = str(r.id);
-      const unit = obj((Array.isArray(r.purchase_units) ? r.purchase_units : [])[0]);
-      if (!orderId || !unit || isDeposit(str(unit.custom_id))) return true;
-      await env.DB.prepare(
-        `INSERT INTO orders (order_id, custom_id, shop_id, items_json, approved_at)
-         VALUES (?, ?, ?, ?, ?)
-         ON CONFLICT (order_id) DO UPDATE SET custom_id = excluded.custom_id,
-           shop_id = excluded.shop_id, items_json = excluded.items_json`,
-      )
-        .bind(
-          orderId,
-          str(unit.custom_id) ?? null,
-          shopOf(unit),
-          JSON.stringify(readItems(unit.items)),
-          now(),
-        )
-        .run();
+    // APPROVED: a buyer approved at PayPal. COMPLETED: an agent paid from the buyer's vaulted
+    // wallet, so PayPal created and captured in one call and there was no approval step.
+    case "CHECKOUT.ORDER.APPROVED":
+    case "CHECKOUT.ORDER.COMPLETED":
+      await storeOrder(env, r);
       return true;
-    }
     case "PAYMENT.CAPTURE.COMPLETED": {
       const captureId = str(r.id);
       const orderId = str(obj(obj(r.supplementary_data)?.related_ids)?.order_id);
@@ -116,6 +103,7 @@ async function dispatch(env: Env, eventId: string, type: string, r: Raw): Promis
       const amount = money(r.amount);
       if (customId) facts.customId = customId;
       if (amount) facts.amount = amount;
+      if (!facts.items.length) await backfillOrder(env, orderId);
       await recordCapture(env, facts);
       return true;
     }
@@ -144,11 +132,17 @@ async function dispatch(env: Env, eventId: string, type: string, r: Raw): Promis
       const txs = Array.isArray(r.disputed_transactions) ? (r.disputed_transactions as Raw[]) : [];
       const captureId = str(txs[0]?.seller_transaction_id);
       if (!disputeId || !captureId) return true;
+      // A decided dispute is stored as RESOLVED:<outcome_code>; it decides void or release.
+      const outcome = str(obj(r.dispute_outcome)?.outcome_code);
+      const status = str(r.status) ?? type.split(".").at(-1) ?? "UNKNOWN";
       await storeRefund(env, {
         id: disputeId,
         captureId,
         kind: "dispute",
-        status: str(r.status) ?? type.split(".").at(-1) ?? "UNKNOWN",
+        status:
+          type === "CUSTOMER.DISPUTE.RESOLVED" || status === "RESOLVED"
+            ? `RESOLVED:${outcome ?? "NONE"}`
+            : status,
         amount: money(r.dispute_amount),
         eventId,
       });
@@ -168,6 +162,44 @@ async function dispatch(env: Env, eventId: string, type: string, r: Raw): Promis
   }
 }
 
+/** Keeps an order's line items and seller so a later capture (which has neither) can be joined. */
+async function storeOrder(env: Env, r: Raw): Promise<void> {
+  const orderId = str(r.id);
+  const unit = obj((Array.isArray(r.purchase_units) ? r.purchase_units : [])[0]);
+  if (!orderId || !unit || isDeposit(str(unit.custom_id))) return;
+  await env.DB.prepare(
+    `INSERT INTO orders (order_id, custom_id, shop_id, items_json, approved_at)
+     VALUES (?, ?, ?, ?, ?)
+     ON CONFLICT (order_id) DO UPDATE SET custom_id = excluded.custom_id,
+       shop_id = excluded.shop_id, items_json = excluded.items_json`,
+  )
+    .bind(
+      orderId,
+      str(unit.custom_id) ?? null,
+      shopOf(unit),
+      JSON.stringify(readItems(unit.items)),
+      now(),
+    )
+    .run();
+}
+
+/**
+ * PayPal does not promise webhook order: when a capture arrives before its order event, read
+ * the order from PayPal. Best effort; a miss leaves the sale unattributed, never guessed.
+ */
+async function backfillOrder(env: Env, orderId: string): Promise<void> {
+  const known = await env.DB.prepare("SELECT 1 FROM orders WHERE order_id = ?")
+    .bind(orderId)
+    .first();
+  if (known) return;
+  try {
+    const order = await getPayPal(env).paypal.orders.get(orderId);
+    await storeOrder(env, order as unknown as Raw);
+  } catch {
+    // Unknown to this PayPal account (or PayPal is down): the join falls back to the capture.
+  }
+}
+
 async function storeRefund(
   env: Env,
   x: {
@@ -182,7 +214,9 @@ async function storeRefund(
   await env.DB.prepare(
     `INSERT INTO refunds (id, capture_id, kind, status, amount_minor, currency, event_id, created_at)
      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-     ON CONFLICT (id) DO UPDATE SET status = excluded.status, event_id = excluded.event_id,
+     ON CONFLICT (id) DO UPDATE SET event_id = excluded.event_id,
+       -- PayPal does not promise order: a late CREATED never reopens a resolved dispute.
+       status = CASE WHEN refunds.status LIKE 'RESOLVED%' THEN refunds.status ELSE excluded.status END,
        amount_minor = COALESCE(excluded.amount_minor, amount_minor),
        currency = COALESCE(excluded.currency, currency)`,
   )

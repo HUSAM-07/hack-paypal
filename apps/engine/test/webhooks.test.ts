@@ -3,6 +3,7 @@ import { type PassportBody, signPassport } from "@pact/protocol";
 import { describe, expect, it } from "vitest";
 import type { Env } from "../src/env";
 import { app } from "../src/index";
+import { getPayPal } from "../src/paypal";
 
 const e = env as unknown as Env;
 const KEY = "test-passport-key";
@@ -121,6 +122,61 @@ describe("capture join", () => {
         unattributed_reason: reason,
       });
     }
+  });
+});
+
+describe("agent checkout (vaulted wallet, payee = seller)", () => {
+  it("joins a sale whose order arrived as CHECKOUT.ORDER.COMPLETED, credited to the seller", async () => {
+    const token = await signPassport(body({ sessionId: "sess3" }), KEY);
+    const ev = approved("O-V1", token, "megamart");
+    await post({
+      ...ev,
+      event_type: "CHECKOUT.ORDER.COMPLETED",
+      resource: { ...ev.resource, status: "COMPLETED" },
+    });
+    await post(captured("C-V1", "O-V1", token));
+    expect(await sale("C-V1")).toMatchObject({
+      shop_id: "megamart",
+      session_id: "sess3",
+      unattributed_reason: null,
+    });
+  });
+
+  it("reads the order from PayPal when the capture arrives first", async () => {
+    const pp = getPayPal({ ...e, PAYPAL_MODE: "simulated" });
+    const wallet = pp.mock?.vaultWallet();
+    const token = await signPassport(body({ sessionId: "sess4" }), KEY);
+    const order = await pp.paypal.orders.create(
+      {
+        intent: "CAPTURE",
+        purchase_units: [
+          {
+            reference_id: "lumen",
+            payee: { merchant_id: "SELLERLUMEN" },
+            custom_id: token,
+            amount: { amountMinor: 9599, currency: "USD" },
+            items: [
+              {
+                name: "Purifier",
+                quantity: 1,
+                unit_amount: { amountMinor: 9599, currency: "USD" },
+                upc: "012345678905",
+              },
+            ],
+          },
+        ],
+        payment_source: { paypal: { vault_id: wallet?.id as string } },
+      },
+      { requestId: "engine-backfill-test" },
+    );
+    const capId = order.purchase_units?.[0]?.payments?.captures?.[0]?.id as string;
+    await post(captured(capId, order.id, token));
+    expect(await sale(capId)).toMatchObject({
+      shop_id: "lumen",
+      upc: "012345678905",
+      session_id: "sess4",
+      unattributed_reason: null,
+    });
   });
 });
 

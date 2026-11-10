@@ -28,7 +28,6 @@ npm run dev:cited   # starts every app; PAYPAL_MODE=simulated and MODEL_PROVIDER
 |---|---|---|
 | `apps/engine` (Worker, Hono + D1) | 8800 | `curl localhost:8800/health` |
 | `apps/catalogue-mcp` | 8801 | `curl localhost:8801/health` |
-| `apps/shops` | 8802 | `curl localhost:8802/health` |
 | `apps/agents` | 8803 | `curl localhost:8803/health` |
 | `apps/studio` | 8804 | `curl localhost:8804/health` |
 

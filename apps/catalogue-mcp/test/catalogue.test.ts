@@ -69,16 +69,20 @@ describe("demo clock", () => {
 });
 
 describe("search_product", () => {
-  it("lists all three shops with Money prices and Lumen $4 under Northwind", async () => {
-    const { listings } = await make().search({ query: "air purifier" });
-    expect(new Set(listings.map((l) => l.shopId))).toEqual(
+  it("offers both purifiers from all three sellers, price-matched, Lumen $4 under Northwind", async () => {
+    const { offers } = await make().search({ query: "air purifier" });
+    expect(new Set(offers.map((o) => o.seller.id))).toEqual(
       new Set(["northwind", "lumen", "megamart"]),
     );
-    const price = (shop: string, brand: string) =>
-      listings.find((l) => l.shopId === shop && l.brand === brand)?.price;
+    const price = (seller: string, brand: string) =>
+      offers.find((o) => o.seller.id === seller && o.brand === brand)?.price;
     expect(price("northwind", "Winix")).toEqual({ amountMinor: 9999, currency: "USD" });
     expect(price("lumen", "Winix")).toEqual({ amountMinor: 9599, currency: "USD" });
-    expect(listings.some((l) => l.brand === "Levoit")).toBe(true);
+    expect(price("lumen", "Levoit")).toEqual(price("lumen", "Winix"));
+    expect(price("megamart", "Levoit")).toEqual({ amountMinor: 10299, currency: "USD" });
+    const lumen = offers.find((o) => o.seller.id === "lumen");
+    expect(lumen?.seller.payee.merchant_id).toBeTruthy();
+    expect(new Set(offers.map((o) => o.offerId)).size).toBe(offers.length);
   });
 
   it("attaches content per arm", async () => {
@@ -110,18 +114,27 @@ describe("search_product", () => {
         query: "air purifier",
         passport: await signPassport(body, KEY),
       });
-      orders.push(JSON.stringify(r.listings));
+      orders.push(JSON.stringify(r.offers));
     }
     expect(orders[0]).toBe(orders[1]);
     expect(orders[1]).toBe(orders[2]);
   });
 
-  it("issues a verifiable passport, keeps the arm and records stores viewed", async () => {
+  it("issues a verifiable passport, keeps the arm and records sellers viewed", async () => {
     const cat = make();
-    const first = await cat.search({ query: "winix", shopId: "northwind" });
+    const unknown = await verifyPassport(
+      (await cat.search({ query: "winix", sellerId: "nope" })).passport,
+      KEY,
+    );
+    expect(unknown.ok && unknown.body.storesViewed).toEqual([]);
+    const first = await cat.search({ query: "winix", sellerId: "northwind" });
     const v1 = await verifyPassport(first.passport, KEY);
     expect(v1.ok && v1.body.storesViewed).toEqual(["northwind"]);
-    const second = await cat.search({ query: "winix", passport: first.passport, shopId: "lumen" });
+    const second = await cat.search({
+      query: "winix",
+      passport: first.passport,
+      sellerId: "lumen",
+    });
     const v2 = await verifyPassport(second.passport, KEY);
     expect(v2.ok && v2.body.arm).toBe(v1.ok && v1.body.arm);
     expect(v2.ok && v2.body.sessionId).toBe(v1.ok && v1.body.sessionId);

@@ -6,13 +6,14 @@ import {
   CATALOGUE_PREFIX,
   CONSOLE_PREFIX,
   consoleHandler,
-  SHOPS_PREFIX,
   STUDIO_PREFIX,
   statefulDemoHandler,
   studioHandler,
 } from "./cited-apps";
 import { allowedOrigins, type Env } from "./env";
 import { newId } from "./ids";
+import { live, TRY_PREFIX } from "./live/routes";
+import { PUBLIC_MCP_PATH, publicMcpHandler } from "./mcp";
 import { payments } from "./payments/routes";
 import { webhooks } from "./payments/webhooks";
 import { ipRateLimit, originAllowed, securityHeaders } from "./security";
@@ -51,7 +52,6 @@ app.get("/app/*", appPage);
 
 // CITED demo apps: their pages set their own headers (inline CSS and scripts).
 for (const [prefix, handler] of [
-  [SHOPS_PREFIX, statefulDemoHandler],
   [CONSOLE_PREFIX, consoleHandler],
   [STUDIO_PREFIX, studioHandler],
   [CATALOGUE_PREFIX, statefulDemoHandler],
@@ -59,6 +59,9 @@ for (const [prefix, handler] of [
   app.all(prefix, handler);
   app.all(`${prefix}/*`, handler);
 }
+
+app.all(PUBLIC_MCP_PATH, publicMcpHandler);
+app.route(TRY_PREFIX, live);
 
 app.use("*", securityHeaders);
 app.use("/api/auth/*", ipRateLimit);

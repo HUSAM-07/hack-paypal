@@ -11,7 +11,7 @@ import {
   creatorContent,
   type Listing,
   searchListings,
-} from "../../../../apps/catalogue-mcp/src/listings";
+} from "../../../../apps/catalogue-mcp/src/offers";
 
 export type StudyId = "purifier" | "narrow";
 export type EvalArm = "test" | "placebo" | "none";

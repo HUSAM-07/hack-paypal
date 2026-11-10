@@ -53,3 +53,20 @@ export function dateTime(iso: string): string {
     minute: "2-digit",
   });
 }
+
+const CREATOR_NAMES: Record<string, string> = { housefresh: "HouseFresh" };
+
+export function creatorName(id: string): string {
+  return CREATOR_NAMES[id] ?? id.charAt(0).toUpperCase() + id.slice(1);
+}
+
+export function dateOnly(iso: string): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return iso;
+  return d.toLocaleDateString("en-US", {
+    timeZone: "UTC",
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+}

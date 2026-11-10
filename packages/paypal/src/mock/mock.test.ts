@@ -71,6 +71,16 @@ async function paidOrder(s: ReturnType<typeof setup>) {
 }
 
 describe("orders", () => {
+  it("a restarted mock with an id offset never repeats an earlier instance's ids", async () => {
+    const first = await paidOrder(setup());
+    const again = await paidOrder(setup());
+    expect(again.cap.id).toBe(first.cap.id); // same counter, same ids
+    const later = await paidOrder(setup({ idOffset: 1_794_000_000_000 }));
+    expect(later.order.id).not.toBe(first.order.id);
+    expect(later.cap.id).not.toBe(first.cap.id);
+    expect(later.cap.id).toHaveLength(first.cap.id.length);
+  });
+
   it("creates, approves, captures; custom_id and items.upc survive", async () => {
     const s = setup();
     const created = await s.raw("POST", "/v2/checkout/orders", {
@@ -128,6 +138,47 @@ describe("orders", () => {
     expect(b.json.id).toBe(a.json.id);
     expect(c.json.id).not.toBe(a.json.id);
     expect(s.mock.state.orders.size).toBe(2);
+  });
+
+  it("pays a named payee from a vaulted wallet in one call, order event before capture", async () => {
+    const s = setup();
+    const wallet = s.mock.vaultWallet({ email: "buyer@agent.test" });
+    const payee = { merchant_id: "SELLERLUMEN01" };
+    const created = await s.raw("POST", "/v2/checkout/orders", {
+      intent: "CAPTURE",
+      purchase_units: [{ ...rawUnit, reference_id: "lumen", payee }],
+      payment_source: { paypal: { vault_id: wallet.id } },
+    });
+    expect(created.status).toBe(201);
+    expect(created.json.status).toBe("COMPLETED");
+    expect(validateResponse(ORDERS, "POST", "/v2/checkout/orders", created.json)).toEqual([]);
+    const u = created.json.purchase_units[0];
+    expect(u.payee).toEqual(payee);
+    expect(u.payments.captures[0].custom_id).toBe("passport.v1.abc");
+    expect(created.json.payment_source.paypal.email_address).toBe("buyer@agent.test");
+    const [cap] = [...s.mock.state.captures.values()];
+    expect(cap?.payee).toEqual(payee);
+    await s.mock.flush();
+    expect(s.deliveries.map((d) => d.event.event_type)).toEqual([
+      "CHECKOUT.ORDER.COMPLETED",
+      "PAYMENT.CAPTURE.COMPLETED",
+    ]);
+    expect(WebhookEvent.safeParse(s.deliveries[0]?.event).success).toBe(true);
+  });
+
+  it("rejects an unknown vault_id and a payee without an account", async () => {
+    const s = setup();
+    const bad = await s.raw("POST", "/v2/checkout/orders", {
+      intent: "CAPTURE",
+      purchase_units: [rawUnit],
+      payment_source: { paypal: { vault_id: "nope" } },
+    });
+    expect(bad.json.details[0].issue).toBe("INVALID_PAYMENT_TOKEN");
+    const noPayee = await s.raw("POST", "/v2/checkout/orders", {
+      intent: "CAPTURE",
+      purchase_units: [{ ...rawUnit, payee: {} }],
+    });
+    expect(noPayee.status).toBe(422);
   });
 });
 
@@ -292,6 +343,33 @@ describe("webhooks", () => {
     });
   });
 
+  it("resolves a dispute with a CUSTOMER.DISPUTE.RESOLVED carrying the outcome", async () => {
+    const s = setup();
+    const { cap } = await paidOrder(s);
+    const d = s.mock.openDispute(cap.id);
+    s.mock.resolveDispute(d.dispute_id, "RESOLVED_SELLER_FAVOUR");
+    s.mock.resolveDispute(d.dispute_id, "RESOLVED_BUYER_FAVOUR"); // already decided: no-op
+    await s.mock.flush();
+    const disputes = s.deliveries.filter((x) => x.event.event_type.startsWith("CUSTOMER.DISPUTE"));
+    expect(disputes.map((x) => x.event.event_type)).toEqual([
+      "CUSTOMER.DISPUTE.CREATED",
+      "CUSTOMER.DISPUTE.RESOLVED",
+    ]);
+    const resolved = disputes[1]?.event.resource as Record<string, unknown>;
+    expect(resolved).toMatchObject({
+      dispute_id: d.dispute_id,
+      status: "RESOLVED",
+      dispute_outcome: { outcome_code: "RESOLVED_SELLER_FAVOUR" },
+      disputed_transactions: [{ seller_transaction_id: cap.id }],
+    });
+    // Signed like every other event (the cert is cached per URL, so verification itself is
+    // covered by the test above, which owns the first certificate).
+    expect(Object.keys((disputes[1] as WebhookDelivery).headers)).toContain(
+      "paypal-transmission-sig",
+    );
+    expect(s.mock.state.disputes.get(d.dispute_id)?.outcome).toBe("RESOLVED_SELLER_FAVOUR");
+  });
+
   it("POSTs signed events to a registered callback URL", async () => {
     const calls: { url: string; body: string; sig?: string | null }[] = [];
     const s = setup({
@@ -350,5 +428,15 @@ describe("PAYPAL_MODE toggle", () => {
 
   it("rejects unknown modes", () => {
     expect(() => createPayPalFromEnv({ PAYPAL_MODE: "live" })).toThrow(/simulated/);
+  });
+});
+
+describe("ids", () => {
+  it("start from idOffset, so a recreated mock never repeats an old id", () => {
+    const first = createMockPayPal().vaultWallet().id;
+    expect(createMockPayPal().vaultWallet().id).toBe(first);
+    const fresh = createMockPayPal({ idOffset: 1_000_000 }).vaultWallet().id;
+    expect(fresh).not.toBe(first);
+    expect(fresh.startsWith("VT-")).toBe(true);
   });
 });

@@ -10,7 +10,7 @@ import {
   type ReviewFlag,
   type VoidEvent,
 } from "@pact/attribution";
-import type { AttributedSale, Credit } from "@pact/protocol";
+import { type AttributedSale, type Credit, LIVE_CATEGORY } from "@pact/protocol";
 import type { Env } from "./env";
 import { brandLiftData, evaluateBrand } from "./lift";
 import { aggregateDeposit, type Brand, listBrands, listDeposits } from "./programme";
@@ -92,12 +92,18 @@ export async function persistCredits(
   for (let i = 0; i < stmts.length; i += 50) await env.DB.batch(stmts.slice(i, i + 50));
 }
 
-/** Sales that joined to a verified passport. Unattributed sales never reach the ledger. */
+/**
+ * Sales that joined to a verified passport. Unattributed sales never reach the ledger, and
+ * neither do live runs' sales (LIVE_CATEGORY): they never draw on a programme's deposit.
+ */
 export async function loadAttributedSales(env: Env): Promise<AttributedSale[]> {
   const { results } = await env.DB.prepare(
-    `SELECT * FROM sales WHERE unattributed_reason IS NULL AND arm IS NOT NULL
+    `SELECT * FROM sales WHERE unattributed_reason IS NULL AND arm IS NOT NULL AND source = 'agent'
+       AND session_id NOT IN (SELECT session_id FROM agent_sessions WHERE category = ?)
      ORDER BY captured_at, capture_id, upc`,
-  ).all<Row>();
+  )
+    .bind(LIVE_CATEGORY)
+    .all<Row>();
   return results.map((r) => ({
     captureId: r.capture_id as string,
     orderId: r.order_id as string,
@@ -121,7 +127,7 @@ export async function coalitionValueFor(env: Env, brand: Brand): Promise<Coaliti
   const { results } = await env.DB.prepare(
     `SELECT s.arm AS arm, s.creators_seen AS seen,
        EXISTS (SELECT 1 FROM sales x WHERE x.session_id = s.session_id AND x.upc = ?
-               AND x.unattributed_reason IS NULL) AS bought
+               AND x.unattributed_reason IS NULL AND x.source = 'agent') AS bought
      FROM agent_sessions s WHERE s.category = ? AND s.arm IN ('test', 'placebo')`,
   )
     .bind(brand.upc, brand.category)
@@ -188,11 +194,36 @@ export async function recomputeCredits(env: Env, now: string): Promise<Recompute
   return summary;
 }
 
+/**
+ * Where a dispute stands, from the status the webhook stored. PayPal's outcome codes: the buyer
+ * wins with RESOLVED_BUYER_FAVOUR, RESOLVED_WITH_PAYOUT or ACCEPTED (the seller accepted the
+ * claim); anything else resolved (seller favour, cancelled by the buyer, denied) releases.
+ */
+export function disputeState(status: string): "open" | "buyer" | "seller" {
+  if (!status.startsWith("RESOLVED")) return "open";
+  const code = status.split(":")[1] ?? "";
+  return ["RESOLVED_BUYER_FAVOUR", "RESOLVED_WITH_PAYOUT", "ACCEPTED"].includes(code)
+    ? "buyer"
+    : "seller";
+}
+
+/** Captures with a dispute PayPal has not decided yet: their credits are frozen, not paid. */
+export async function frozenCaptures(env: Env): Promise<Set<string>> {
+  const { results } = await env.DB.prepare(
+    "SELECT capture_id, status FROM refunds WHERE kind = 'dispute'",
+  ).all<Row>();
+  return new Set(
+    results
+      .filter((r) => disputeState(r.status as string) === "open")
+      .map((r) => r.capture_id as string),
+  );
+}
+
 const sumMinor = (rows: Row[], k: string) => rows.reduce((a, r) => a + ((r[k] as number) ?? 0), 0);
 
 /**
- * Void credits for every refund and dispute on file. Pure ledger rules, so reapplying is a
- * no-op; paid credits are never touched, only flagged for a person to review.
+ * Void credits for every refund, and every dispute the buyer won, on file. Pure ledger rules,
+ * so reapplying is a no-op; paid credits are never touched, only flagged for a person to review.
  */
 export async function applyVoids(env: Env, captureId?: string): Promise<ReviewFlag[]> {
   const refunds = (
@@ -221,7 +252,8 @@ export async function applyVoids(env: Env, captureId?: string): Promise<ReviewFl
       .bind(capture)
       .first<{ total: number | null; currency: string | null }>();
     const events: VoidEvent[] = [];
-    if (rows.some((r) => r.kind === "dispute"))
+    // An open dispute only freezes the credit (see frozenCaptures); it voids if the buyer wins.
+    if (rows.some((r) => r.kind === "dispute" && disputeState(r.status as string) === "buyer"))
       events.push({ kind: "dispute", captureId: capture });
     const refundRows = rows.filter(
       (r) => r.kind === "refund" && r.status !== "FAILED" && r.status !== "CANCELLED",

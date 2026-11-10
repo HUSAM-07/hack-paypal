@@ -5,14 +5,15 @@ import type { CheckoutResult, Endpoints, SearchResult } from "./types";
 
 export interface SearchArgs {
   query: string;
-  /** Shop the agent is browsing; recorded in the passport as a store viewed. */
-  shopId?: string;
+  /** Seller whose offer the agent is looking at; recorded in the passport as a store viewed. */
+  sellerId?: string;
 }
 
 /**
- * One buyer session's hands: search over MCP, checkout over the shop's agent API.
- * It holds the passport the catalogue issued and attaches it at checkout, whichever shop
- * the agent picks, so the model never has to copy a signed token by hand.
+ * One buyer session's hands, both over the catalogue's MCP: `search_product`, then `checkout`,
+ * where the agent platform pays the seller from the PayPal wallet the buyer linked to the agent.
+ * It holds the passport the catalogue issued and attaches it at checkout, whichever seller the
+ * agent picks, so the model never has to copy a signed token by hand.
  */
 export class ShopperSession {
   passport: string | undefined;
@@ -52,7 +53,7 @@ export class ShopperSession {
       arguments: {
         query: args.query,
         ...(this.passport ? { passport: this.passport } : {}),
-        ...(args.shopId ? { shopId: args.shopId } : {}),
+        ...(args.sellerId ? { sellerId: args.sellerId } : {}),
         // Only the first search can start a co-exposed session; later ones carry the passport.
         ...(this.searches === 0 && this.opts.coExposed ? { coExposed: true } : {}),
         ...(this.searches === 0 && this.opts.sessionId ? { sessionId: this.opts.sessionId } : {}),
@@ -68,46 +69,28 @@ export class ShopperSession {
     return out;
   }
 
-  /** Create the order at the chosen shop with the passport in `custom_id`, then capture it. */
-  async checkout(shopId: string, upc: string): Promise<CheckoutResult> {
-    const f = this.ep.shopsFetch ?? fetch;
-    const base = `${this.ep.shopsUrl}/${encodeURIComponent(shopId)}/api/orders`;
-    const created = await f(base, {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({
-        upc,
+  /** Buy an offer: a PayPal order paying its seller, the passport in `custom_id`, captured at once. */
+  async checkout(offerId: string): Promise<CheckoutResult> {
+    const client = await this.mcp();
+    const res = await client.callTool({
+      name: "checkout",
+      arguments: {
+        offerId,
         clientRef: this.sessionRef,
         ...(this.passport ? { passport: this.passport } : {}),
-      }),
+      },
     });
-    const order = (await created.json()) as {
-      orderId?: string;
-      total?: CheckoutResult["total"];
-      error?: { message: string };
-    };
-    if (!created.ok || !order.orderId || !order.total) {
-      throw new Error(`checkout failed at ${shopId}: ${order.error?.message ?? created.status}`);
+    const out = res.structuredContent as unknown as CheckoutResult | undefined;
+    if (res.isError || !out?.orderId) {
+      const text = (res.content as { text?: string }[] | undefined)?.[0]?.text;
+      throw new Error(`checkout failed for ${offerId}: ${text ?? "no order"}`);
     }
-    const captured = await f(`${base}/${order.orderId}/capture`, { method: "POST" });
-    const cap = (await captured.json()) as {
-      status?: string;
-      captureId?: string | null;
-      error?: { message: string };
-    };
-    if (!captured.ok) {
-      throw new Error(`capture failed at ${shopId}: ${cap.error?.message ?? captured.status}`);
+    if (out.status !== "COMPLETED" || !out.captureId) {
+      throw new Error(`checkout for ${offerId} ended ${out.status}, not captured`);
     }
     this.checkedOutWithPassport = this.passport !== undefined;
-    this.purchase = {
-      orderId: order.orderId,
-      shopId,
-      upc,
-      total: order.total,
-      captureId: cap.captureId ?? null,
-      status: cap.status ?? "UNKNOWN",
-    };
-    return this.purchase;
+    this.purchase = out;
+    return out;
   }
 
   /** Decoded for logging only; the engine verifies the signature, not the runner. */

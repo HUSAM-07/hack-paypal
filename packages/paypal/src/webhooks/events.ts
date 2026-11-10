@@ -29,7 +29,10 @@ const envelope = <T extends string, R extends z.ZodType>(
     resource,
   });
 
-export const OrderApprovedEvent = envelope(["CHECKOUT.ORDER.APPROVED"], Order);
+export const OrderApprovedEvent = envelope(
+  ["CHECKOUT.ORDER.APPROVED", "CHECKOUT.ORDER.COMPLETED"],
+  Order,
+);
 export const AuthorizationEvent = envelope(
   ["PAYMENT.AUTHORIZATION.CREATED", "PAYMENT.AUTHORIZATION.VOIDED"],
   Authorization,

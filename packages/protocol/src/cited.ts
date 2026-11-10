@@ -15,6 +15,11 @@ export const COMMISSION_BPS = 800;
 export const HOLD_DAYS = 30;
 /** PayPal caps `purchase_units[].custom_id` at 127 characters. The passport must fit. */
 export const CUSTOM_ID_MAX = 127;
+/**
+ * Session category for live, judge-driven agent runs (/try). The engine joins their sales like
+ * any other, but keeps them out of every programme's lift, ledger and journeys.
+ */
+export const LIVE_CATEGORY = "live";
 
 // ── Content an agent can be shown ──
 
@@ -111,6 +116,17 @@ export function decodePassportBody(s: string): PassportBody {
     creatorsSeen: creators ? creators.split(",") : [],
     storesViewed: stores ? stores.split(",") : [],
   });
+}
+
+/**
+ * Sessions opened through the public MCP endpoint (`/mcp`) carry this session-id prefix, set by
+ * the catalogue when it signs the passport. The engine records their sales as source `mcp` and
+ * keeps them out of the study, the ledger and the console's numbers.
+ */
+export const PUBLIC_MCP_SESSION_PREFIX = "mcp_";
+export type SaleSource = "agent" | "mcp";
+export function saleSource(sessionId: string | null | undefined): SaleSource {
+  return sessionId?.startsWith(PUBLIC_MCP_SESSION_PREFIX) ? "mcp" : "agent";
 }
 
 // ── Sales, credits and money movements ──

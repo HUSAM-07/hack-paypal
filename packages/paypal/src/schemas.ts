@@ -135,6 +135,8 @@ export const Order = z.object({
         description: z.string().optional(),
         amount: PayPalAmount.optional(),
         payee: Payee.optional(),
+        /** Kept as sent (`upc`, `unit_amount`, ...) so a sale can be joined to its products. */
+        items: z.array(z.record(z.string(), z.unknown())).optional(),
         payments: z
           .object({
             authorizations: z.array(Authorization).optional(),

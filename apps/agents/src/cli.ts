@@ -12,7 +12,6 @@ const { values } = parseArgs({
     request: { type: "string", default: DEFAULT_REQUEST },
     out: { type: "string" },
     "catalogue-url": { type: "string", default: "http://localhost:8801" },
-    "shops-url": { type: "string", default: "http://localhost:8802" },
     "in-process": { type: "boolean", default: false },
   },
 });
@@ -27,7 +26,6 @@ async function endpoints(): Promise<Endpoints> {
   if (values["in-process"]) return inProcessEndpoints();
   return {
     catalogueUrl: values["catalogue-url"] as string,
-    shopsUrl: values["shops-url"] as string,
   };
 }
 
@@ -55,5 +53,5 @@ const by = (k: string) =>
     return m;
   }, {});
 console.error(
-  `done: ${records.length} sessions; status ${JSON.stringify(by("status"))}; arm ${JSON.stringify(by("arm"))}; shop ${JSON.stringify(by("shop"))}`,
+  `done: ${records.length} sessions; status ${JSON.stringify(by("status"))}; arm ${JSON.stringify(by("arm"))}; seller ${JSON.stringify(by("seller"))}`,
 );

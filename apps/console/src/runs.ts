@@ -38,7 +38,8 @@ function toRun(raw: Record<string, unknown>): AgentRun | null {
     creatorsSeen: arr(raw.creatorsSeen),
     storesViewed: arr(raw.storesViewed),
     product: product ?? null,
-    shop: (raw.shop as string | null) ?? null,
+    // The seller the agent paid through PayPal; records from before agent checkout say `shop`.
+    shop: ((raw.seller ?? raw.shop) as string | null) ?? null,
     orderId: (raw.orderId as string | null) ?? null,
     totalMinor: total?.amountMinor ?? null,
     passportAttached: raw.passportAttached === true,
@@ -77,12 +78,38 @@ export function runSourceFromEnv(env: Record<string, string | undefined>): RunSo
   return fileRunSource(env.CITED_RUNS_FILE ?? ".cited/runs.jsonl");
 }
 
-/** The latest bought run for each of two arms that got the same request. */
-export function pickPair(runs: AgentRun[]): { exposed: AgentRun | null; heldOut: AgentRun | null } {
+/**
+ * The pair the video frame shows: one exposed run and one held-out run for the same request.
+ * Latest wins, but a run that tells the story ranks first: the exposed run earned commission
+ * (the engine credits 51 of 57, so the newest exposed sale may not have) and paid at a shop it
+ * did not browse; the held-out run bought a different product than the exposed one.
+ * `credited` says which orders earned commission; omit it to ignore that signal.
+ */
+export function pickPair(
+  runs: AgentRun[],
+  credited?: ReadonlySet<string>,
+): { exposed: AgentRun | null; heldOut: AgentRun | null } {
   const bought = runs.filter((r) => r.status === "purchased" && r.orderId);
-  const latest = (arm: AgentRun["arm"], request?: string) =>
-    [...bought].reverse().find((r) => r.arm === arm && (!request || r.request === request)) ?? null;
-  const exposed = latest("test");
-  const heldOut = latest("none", exposed?.request) ?? latest("none");
+  const best = (arm: AgentRun["arm"], score: (r: AgentRun) => number, request?: string) => {
+    let top: AgentRun | null = null;
+    let topScore = -1;
+    for (const r of [...bought].reverse()) {
+      if (r.arm !== arm || (request && r.request !== request)) continue;
+      const s = score(r);
+      if (s > topScore) {
+        top = r;
+        topScore = s;
+      }
+    }
+    return top;
+  };
+  const exposed = best(
+    "test",
+    (r) =>
+      (credited && r.orderId && credited.has(r.orderId) ? 2 : 0) +
+      (r.shop && !r.storesViewed.includes(r.shop) ? 1 : 0),
+  );
+  const differs = (r: AgentRun) => (r.product?.upc !== exposed?.product?.upc ? 1 : 0);
+  const heldOut = best("none", differs, exposed?.request) ?? best("none", differs);
   return { exposed, heldOut };
 }

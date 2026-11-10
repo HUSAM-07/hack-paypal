@@ -9,7 +9,7 @@ Read these first:
 - [cited/spec/CITED-packet.md](cited/spec/CITED-packet.md): the demo script. Everything we build serves a beat in it.
 
 ## How it works (one paragraph)
-Brands fund a category programme. PayPal's agent catalogue (our mock of Store Sync) randomly shows AI shopping agents a creator's test, a placebo (other content from the same creator), or nothing; ranking never changes. The catalogue issues a signed **Agent Affiliate Passport**, the shop puts it in Orders v2 `purchase_units[].custom_id`, and the capture joins the sale to its arm, even at a different shop. The engine credits only the sales the test caused (attributable fraction at the 80% lower bound, Shapley split across co-exposed creators), holds credits 30 days, voids them on refunds and disputes, then pays creators by batch Payouts and refunds the unspent deposit. AG Studio shows it all to the brand and the creator.
+Brands fund a category programme. PayPal's agent catalogue (our mock of Store Sync) randomly shows AI shopping agents a creator's test, a placebo (other content from the same creator), or nothing; ranking never changes. The catalogue issues a signed **Agent Affiliate Passport**, the shop puts it in Orders v2 `purchase_units[].custom_id`, and the capture joins the sale to its arm, even at a different shop. The engine credits only the sales the test caused (attributable fraction at the 80% lower bound, Shapley split across co-exposed creators), holds credits 30 days, voids them on refunds, freezes them while a dispute is open (voided if the buyer wins), then pays creators by batch Payouts and refunds the unspent deposit. AG Studio shows it all to the brand and the creator.
 
 ## Layout
 CITED reuses this monorepo. Pact is the codename: `pact-worker` is the one deployed Worker (https://pact-worker.vincent-wesley-liem.workers.dev; CI deploys it on every green push to `main`), and CITED ships inside it. Don't extend the old Pact chat features.
@@ -22,9 +22,8 @@ Existing, reused:
 
 New for CITED (create when the issue says so):
 - `packages/attribution`: pure functions only. Attributable fraction, lower bound, Shapley split, ledger rules. Property tests.
-- `apps/catalogue-mcp`: MCP server with `search_product`, arm assignment, passport issuing.
+- `apps/catalogue-mcp`: MCP server with `search_product` (offers from sellers synced to PayPal), arm assignment, passport issuing, and `checkout`: the agent platform creates the Orders v2 order itself (payee = seller, passport in `custom_id`, buyer's vaulted wallet). Also the sellers' config and refund action. See `cited/spec/AGENT-CHECKOUT.md`.
 - `apps/engine`: Hono + D1 app. Webhooks, the arm-checkout join, credit ledger, payouts, refunds, and the read API for AG Studio. Runs standalone for dev and tests; deployed inside `apps/worker` at `/api/cited`. Its migrations live in `apps/worker/migrations`. Deployed settings are `CITED_*` vars on the worker.
-- `apps/shops`: Northwind, Lumen and MegaMart storefronts with PayPal checkout.
 - `apps/agents`: shopper-agent runner (GPT, Gemini, Sonnet) and the one-command demo runner.
 - `apps/studio`: AG Studio dashboards and the custom Analyst agent.
 - `cited/`: specs, PayPal OpenAPI specs (for the mock layer) and eval reference. Docs only.
@@ -44,7 +43,7 @@ npm workspaces. Each package exports `./src/index.ts` directly; no build step fo
 2. **Ranking is identical across arms.** The catalogue only adds or withholds the creator test. A test must assert this.
 3. **Money never buys rank or verdicts.** Brands fund a category, never a creator or a verdict. Each brand pays only for its own lifted units.
 4. **The passport rides in `custom_id`** (max 127 chars) and is signed. The engine verifies it before crediting; unverifiable sales are unattributed, never guessed.
-5. **Void before pay.** Refund, partial-refund and dispute events void pending credits. Never pay a credit before its 30-day hold ends (the demo clock may jump).
+5. **Void before pay.** Refund and partial-refund events void pending credits; a dispute freezes them (never paid while open) and voids them if the buyer wins. Never pay a credit before its 30-day hold ends (the demo clock may jump).
 6. **Every mutating PayPal call sets `PayPal-Request-Id`** with deterministic keys; payout batches use a deterministic `sender_batch_id`.
 7. **Every number on the card traces to a committed eval result.** If the eval moves a number, update the card and packet (issue B21).
 8. **Secrets live only in `.env` / `.dev.vars` / wrangler secrets.** Never commit or log them.

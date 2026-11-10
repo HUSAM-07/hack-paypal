@@ -3,8 +3,9 @@
  *
  * It is a `fetch` implementation: hand `mock.fetch` to `createPayPal({ fetch })` and the
  * normal typed client talks to it exactly as it would to the sandbox. State covers what
- * CITED needs: OAuth token, Orders v2 (create / get / capture), buyer approval, capture
- * get and (partial) refunds, disputes, Payouts batches, and the webhook events those
+ * CITED needs: OAuth token, Orders v2 (create / get / capture, `payee`, and create-and-capture
+ * against a vaulted PayPal wallet), buyer approval, capture get and (partial) refunds,
+ * disputes, Payouts batches, and the webhook events those
  * produce. Mutating calls honour `PayPal-Request-Id` (replays return the original
  * response). Webhooks are signed like PayPal's, so `verifyWebhookSelf` accepts them.
  *
@@ -50,6 +51,11 @@ export interface MockPayPalOptions {
   autoSettlePayouts?: boolean;
   /** Fixed-rate PayPal fee: `bps` of the amount plus `fixedMinor`. Default 2.9% + 30. */
   fee?: { bps: number; fixedMinor: number };
+  /**
+   * Where the id counter starts (default 0). A mock that restarts while its earlier orders,
+   * captures and events live on in a database must start past them, or ids repeat.
+   */
+  idOffset?: number;
 }
 
 interface StoredOrder {
@@ -60,7 +66,22 @@ interface StoredOrder {
   createTime: string;
   updateTime: string;
   captureIds: string[];
+  /** Set when the order was paid with a vaulted PayPal wallet (no buyer approval step). */
+  vaultId?: string;
 }
+
+export interface VaultedWallet {
+  /** The `vault_id` a merchant or platform charges with `payment_source.paypal.vault_id`. */
+  id: string;
+  payerId: string;
+  email: string;
+}
+
+/** The payee PayPal assumes when an order names none: the API caller's own account. */
+export const MOCK_DEFAULT_PAYEE = {
+  email_address: "merchant@example.com",
+  merchant_id: "MOCKMERCHANT01",
+};
 
 interface StoredCapture {
   id: string;
@@ -70,6 +91,8 @@ interface StoredCapture {
   refunded: number;
   customId?: string;
   invoiceId?: string;
+  /** Who received the money: the order's `payee`, else the caller. */
+  payee: { email_address?: string; merchant_id?: string };
   refundIds: string[];
   createTime: string;
   updateTime: string;
@@ -107,7 +130,13 @@ export interface Dispute {
   captureId: string;
   reason: string;
   amount: Money;
+  status: "OPEN" | "RESOLVED";
+  /** PayPal's `dispute_outcome.outcome_code`, once resolved. */
+  outcome?: DisputeOutcome;
 }
+
+/** The outcome codes the mock can resolve a dispute with (PayPal `dispute_outcome.outcome_code`). */
+export type DisputeOutcome = "RESOLVED_SELLER_FAVOUR" | "RESOLVED_BUYER_FAVOUR";
 
 class HttpError extends Error {
   constructor(
@@ -139,6 +168,7 @@ export function createMockPayPal(opts: MockPayPalOptions = {}) {
   const batches = new Map<string, StoredBatch>();
   const batchBySenderId = new Map<string, string>();
   const disputes = new Map<string, Dispute>();
+  const wallets = new Map<string, VaultedWallet>();
   const idempotency = new Map<string, { status: number; body: Json; fingerprint: string }>();
   const targets: { url?: string; handler?: WebhookHandler }[] = [];
   const events: MockWebhookEvent[] = [];
@@ -146,7 +176,7 @@ export function createMockPayPal(opts: MockPayPalOptions = {}) {
   const pending = new Set<Promise<unknown>>();
   let signer: Promise<TestSigner> | undefined;
   let chain: Promise<unknown> = Promise.resolve();
-  let seq = 0;
+  let seq = Math.max(0, Math.floor(opts.idOffset ?? 0));
 
   const iso = () => new Date(now()).toISOString().replace(/\.\d{3}Z$/, "Z");
   const id = (prefix: string, len = 17) =>
@@ -305,9 +335,12 @@ export function createMockPayPal(opts: MockPayPalOptions = {}) {
     const caps = o.captureIds.map((cid) => captureJson(captures.get(cid) as StoredCapture));
     const units = o.units.map((u, i) => ({
       ...u,
-      payee: { email_address: "merchant@example.com", merchant_id: "MOCKMERCHANT01" },
+      payee: (u.payee as Json | undefined) ?? MOCK_DEFAULT_PAYEE,
       ...(i === 0 && caps.length > 0 ? { payments: { captures: caps } } : {}),
     }));
+    const wallet = o.vaultId ? wallets.get(o.vaultId) : undefined;
+    const email = wallet?.email ?? "buyer@example.com";
+    const payerId = wallet?.payerId ?? "MOCKPAYER0001";
     return {
       id: o.id,
       status: o.status,
@@ -316,15 +349,16 @@ export function createMockPayPal(opts: MockPayPalOptions = {}) {
         ? {
             payment_source: {
               paypal: {
-                email_address: "buyer@example.com",
-                account_id: "MOCKPAYER0001",
+                email_address: email,
+                account_id: payerId,
                 account_status: "VERIFIED",
+                ...(wallet ? { attributes: { vault: { id: wallet.id, status: "VAULTED" } } } : {}),
               },
             },
             payer: {
               name: { given_name: "Mock", surname: "Buyer" },
-              email_address: "buyer@example.com",
-              payer_id: "MOCKPAYER0001",
+              email_address: email,
+              payer_id: payerId,
             },
           }
         : {}),
@@ -412,6 +446,80 @@ export function createMockPayPal(opts: MockPayPalOptions = {}) {
     return orderJson(o);
   }
 
+  /**
+   * The buyer links their PayPal to an agent once (in PayPal: approve a setup token, then
+   * exchange it for a payment token). Returns the wallet whose `id` is the `vault_id`.
+   */
+  function vaultWallet(w: { email?: string; payerId?: string } = {}): VaultedWallet {
+    const wallet: VaultedWallet = {
+      id: id("VT-", 20),
+      payerId: w.payerId ?? id("PAYER", 13),
+      email: w.email ?? "buyer@example.com",
+    };
+    wallets.set(wallet.id, wallet);
+    return wallet;
+  }
+
+  /**
+   * Capture every purchase unit of an approved order and emit the capture events. With
+   * `orderEvent`, `CHECKOUT.ORDER.COMPLETED` goes out first, so a listener has the line
+   * items before the capture.
+   */
+  function captureNow(o: StoredOrder, orderEvent = false): void {
+    const t = iso();
+    for (const u of o.units) {
+      const amt = parseAmount(u.amount, "currency_code", "amount");
+      const cap: StoredCapture = {
+        id: id("3C"),
+        orderId: o.id,
+        amount: amt,
+        fee: feeFor(amt),
+        refunded: 0,
+        refundIds: [],
+        createTime: t,
+        updateTime: t,
+        payee: (u.payee as StoredCapture["payee"] | undefined) ?? MOCK_DEFAULT_PAYEE,
+        ...(typeof u.custom_id === "string" ? { customId: u.custom_id } : {}),
+        ...(typeof u.invoice_id === "string" ? { invoiceId: u.invoice_id } : {}),
+      };
+      captures.set(cap.id, cap);
+      o.captureIds.push(cap.id);
+    }
+    o.status = "COMPLETED";
+    o.updateTime = t;
+    if (orderEvent) {
+      emit("CHECKOUT.ORDER.COMPLETED", "checkout-order", "Checkout Order Completed", orderJson(o));
+    }
+    for (const cid of o.captureIds) {
+      emit("PAYMENT.CAPTURE.COMPLETED", "capture", "Payment completed for the order.", {
+        ...captureJson(captures.get(cid) as StoredCapture),
+        // Real capture webhooks carry the order id here; consumers join sales on it.
+        supplementary_data: { related_ids: { order_id: o.id } },
+      });
+    }
+  }
+
+  function disputeJson(d: Dispute, c: StoredCapture) {
+    return {
+      dispute_id: d.dispute_id,
+      reason: d.reason,
+      status: d.status,
+      dispute_amount: amountJson(d.amount),
+      dispute_life_cycle_stage: d.status === "OPEN" ? "INQUIRY" : "CHARGEBACK",
+      ...(d.outcome ? { dispute_outcome: { outcome_code: d.outcome } } : {}),
+      disputed_transactions: [
+        {
+          seller_transaction_id: d.captureId,
+          ...(c.customId ? { custom: c.customId } : {}),
+          gross_amount: amountJson(c.amount),
+        },
+      ],
+      create_time: iso(),
+      update_time: iso(),
+      links: [link("self", `${MOCK_API_BASE}/v1/customer/disputes/${d.dispute_id}`)],
+    };
+  }
+
   /** The buyer opens a dispute on a capture. Emits `CUSTOMER.DISPUTE.CREATED`. */
   function openDispute(captureId: string, d: { reason?: string; amount?: Money } = {}): Dispute {
     const c = captures.get(captureId);
@@ -427,26 +535,34 @@ export function createMockPayPal(opts: MockPayPalOptions = {}) {
       captureId,
       reason: d.reason ?? "MERCHANDISE_OR_SERVICE_NOT_RECEIVED",
       amount: d.amount ?? c.amount,
+      status: "OPEN",
     };
     disputes.set(dispute.dispute_id, dispute);
-    emit("CUSTOMER.DISPUTE.CREATED", "dispute", "A new dispute is created with Dispute ID.", {
-      dispute_id: dispute.dispute_id,
-      reason: dispute.reason,
-      status: "OPEN",
-      dispute_amount: amountJson(dispute.amount),
-      dispute_life_cycle_stage: "INQUIRY",
-      disputed_transactions: [
-        {
-          seller_transaction_id: captureId,
-          ...(c.customId ? { custom: c.customId } : {}),
-          gross_amount: amountJson(c.amount),
-        },
-      ],
-      create_time: iso(),
-      update_time: iso(),
-      links: [link("self", `${MOCK_API_BASE}/v1/customer/disputes/${dispute.dispute_id}`)],
-    });
+    emit(
+      "CUSTOMER.DISPUTE.CREATED",
+      "dispute",
+      "A new dispute is created with Dispute ID.",
+      disputeJson(dispute, c),
+    );
     return dispute;
+  }
+
+  /** PayPal decides an open dispute. Emits `CUSTOMER.DISPUTE.RESOLVED` with the outcome. */
+  function resolveDispute(disputeId: string, outcome: DisputeOutcome): Dispute {
+    const d = disputes.get(disputeId);
+    const c = d && captures.get(d.captureId);
+    if (!d || !c)
+      throw fail(
+        404,
+        "RESOURCE_NOT_FOUND",
+        "The specified resource does not exist.",
+        "INVALID_RESOURCE_ID",
+      );
+    if (d.status === "RESOLVED") return d;
+    d.status = "RESOLVED";
+    d.outcome = outcome;
+    emit("CUSTOMER.DISPUTE.RESOLVED", "dispute", "A dispute was resolved.", disputeJson(d, c));
+    return d;
   }
 
   // ---------- routing ----------
@@ -521,8 +637,31 @@ export function createMockPayPal(opts: MockPayPalOptions = {}) {
               parseAmount(it.unit_amount, "currency_code", "items[].unit_amount");
             }
           }
+          const payee = u.payee as Json | undefined;
+          if (
+            payee !== undefined &&
+            typeof payee?.merchant_id !== "string" &&
+            typeof payee?.email_address !== "string"
+          ) {
+            throw fail(
+              422,
+              "INVALID_REQUEST",
+              "payee needs merchant_id or email_address.",
+              "MISSING_REQUIRED_PARAMETER",
+            );
+          }
           return { reference_id: "default", ...u, amount: amountJson(amt) };
         });
+        const source = (b.payment_source as Json | undefined)?.paypal as Json | undefined;
+        const vaultId = source?.vault_id;
+        if (vaultId !== undefined && (typeof vaultId !== "string" || !wallets.has(vaultId))) {
+          throw fail(
+            422,
+            "UNPROCESSABLE_ENTITY",
+            "The vault_id is not a vaulted PayPal wallet for this merchant.",
+            "INVALID_PAYMENT_TOKEN",
+          );
+        }
         const t = iso();
         const o: StoredOrder = {
           id: id("5O"),
@@ -532,8 +671,14 @@ export function createMockPayPal(opts: MockPayPalOptions = {}) {
           createTime: t,
           updateTime: t,
           captureIds: [],
+          ...(typeof vaultId === "string" ? { vaultId } : {}),
         };
         orders.set(o.id, o);
+        if (o.vaultId) {
+          // A vaulted wallet needs no buyer approval: PayPal creates and captures in one call.
+          o.status = "APPROVED";
+          captureNow(o, true);
+        }
         return ok(orderJson(o), 201);
       },
     },
@@ -574,33 +719,7 @@ export function createMockPayPal(opts: MockPayPalOptions = {}) {
             "ORDER_NOT_APPROVED",
           );
         }
-        const t = iso();
-        for (const u of o.units) {
-          const amt = parseAmount(u.amount, "currency_code", "amount");
-          const cap: StoredCapture = {
-            id: id("3C"),
-            orderId: o.id,
-            amount: amt,
-            fee: feeFor(amt),
-            refunded: 0,
-            refundIds: [],
-            createTime: t,
-            updateTime: t,
-            ...(typeof u.custom_id === "string" ? { customId: u.custom_id } : {}),
-            ...(typeof u.invoice_id === "string" ? { invoiceId: u.invoice_id } : {}),
-          };
-          captures.set(cap.id, cap);
-          o.captureIds.push(cap.id);
-        }
-        o.status = "COMPLETED";
-        o.updateTime = t;
-        for (const cid of o.captureIds) {
-          emit("PAYMENT.CAPTURE.COMPLETED", "capture", "Payment completed for the order.", {
-            ...captureJson(captures.get(cid) as StoredCapture),
-            // Real capture webhooks carry the order id here; consumers join sales on it.
-            supplementary_data: { related_ids: { order_id: o.id } },
-          });
-        }
+        captureNow(o);
         return ok(orderJson(o), 201);
       },
     },
@@ -872,7 +991,9 @@ export function createMockPayPal(opts: MockPayPalOptions = {}) {
     webhookId,
     registerWebhook,
     approveOrder,
+    vaultWallet,
     openDispute,
+    resolveDispute,
     settlePayouts,
     /** Await all in-flight webhook deliveries. */
     async flush(): Promise<void> {
@@ -880,7 +1001,7 @@ export function createMockPayPal(opts: MockPayPalOptions = {}) {
     },
     events,
     failedDeliveries,
-    state: { orders, captures, refunds, batches, disputes },
+    state: { orders, captures, refunds, batches, disputes, wallets },
   };
 }
 

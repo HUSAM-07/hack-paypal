@@ -19,14 +19,15 @@
       "/ws",
       "/app",
       "/app/*",
-      "/shops",
-      "/shops/*",
       "/console",
       "/console/*",
       "/catalogue",
       "/catalogue/*",
       "/studio",
-      "/studio/*"
+      "/studio/*",
+      "/mcp",
+      "/try",
+      "/try/*"
     ]
   },
   "durable_objects": {
@@ -69,6 +70,9 @@
     // CITED engine at /api/cited. The passport key here is the published dev key the catalogue
     // uses in simulated mode (not a secret); a sandbox deployment overrides it with a secret.
     "CITED_PAYPAL_MODE": "simulated",
+    // Sandbox subscription for <workers.dev>/api/cited/webhooks/paypal (capture, refund,
+    // reversal, dispute and payout-batch events). Not a secret; signatures are bound to it.
+    "CITED_PAYPAL_WEBHOOK_ID": "8042373202922840X",
     "CITED_PASSPORT_KEY": "cited-dev-passport-key"
   }
 }

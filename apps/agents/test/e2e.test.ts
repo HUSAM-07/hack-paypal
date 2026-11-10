@@ -1,12 +1,15 @@
 /**
- * End to end against a real local stack: engine (wrangler dev), catalogue and shops, all
- * PAYPAL_MODE=simulated. 147 agent sessions across arms and models become real shop orders, their
+ * End to end against a real local stack: engine (wrangler dev) and the catalogue, all
+ * PAYPAL_MODE=simulated. 147 agent sessions across arms and models become PayPal orders paid to
+ * the sellers from the buyer's vaulted wallet, their
  * captures reach the engine through the PayPal mock's signed webhooks, credits accrue, the clock
  * jumps 30 days, one batch payout lands, one refund voids (or flags) one credit, unspent deposits
- * return, and the engine's ledger agrees with what the PayPal mocks hold.
+ * return, and the engine's ledger agrees with what the PayPal mocks hold. Then a later cycle:
+ * 12 agents see two creators' tests (Shapley split), and a disputed sale's credits freeze until
+ * PayPal resolves the dispute for the seller.
  */
 import { afterAll, describe, expect, it } from "vitest";
-import { CARD, type DemoEvent, runDemo } from "../src/demo";
+import { CARD, COEXPOSURE, type DemoEvent, runDemo } from "../src/demo";
 import { type Stack, startStack } from "../src/stack";
 
 const stacks: Stack[] = [];
@@ -15,7 +18,7 @@ afterAll(async () => {
 });
 
 async function play(refund: "before-payout" | "after-payout", base: number) {
-  const stack = await startStack({ ports: { engine: base, catalogue: base + 1, shops: base + 2 } });
+  const stack = await startStack({ ports: { engine: base, catalogue: base + 1 } });
   stacks.push(stack);
   const events: DemoEvent[] = [];
   const result = await runDemo({
@@ -50,6 +53,11 @@ describe("CITED end to end (simulated PayPal)", () => {
     expect(a.result.numbers.paidMinor).toBeLessThan(CARD.creditedMinor);
     expect(a.result.numbers.paidMinor + a.result.numbers.returnedMinor).toBe(CARD.deposit);
 
+    // A later cycle, on its own: AirLab joins, one co-exposed sale splits $7.68 into $3.84 +
+    // $3.84 by Shapley; a disputed sale's credits freeze at day 60 and are paid once PayPal
+    // resolves for the seller.
+    expect(a.result.numbers.coExposure).toMatchObject(COEXPOSURE);
+
     // Every beat plays, in order, and a seed replays byte for byte on a fresh stack.
     const beats = a.events.filter((e) => e.type === "beat.start").map((e) => e.beat);
     expect(beats).toEqual([
@@ -63,6 +71,8 @@ describe("CITED end to end (simulated PayPal)", () => {
       "payout",
       "return",
       "analyst",
+      "shapley",
+      "dispute",
       "checks",
     ]);
     expect(a.events.map((e) => e.seq)).toEqual(a.events.map((_, i) => i + 1));
@@ -78,6 +88,7 @@ describe("CITED end to end (simulated PayPal)", () => {
       creditedMinor: 39_164,
       paidMinor: 39_164,
       returnedMinor: CARD.returnedMinor,
+      coExposure: COEXPOSURE,
     });
   }, 240_000);
 });

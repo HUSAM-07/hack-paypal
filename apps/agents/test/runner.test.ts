@@ -14,7 +14,7 @@ const ep = (): Promise<Endpoints> => inProcessEndpoints();
 const base = { seed: "t", runIndex: 0, family: "gpt" as const, provider: "fake" as const };
 
 describe("fake shopper agent, end to end", () => {
-  it("searches, picks a shop, checks out with the passport, and logs one record", async () => {
+  it("searches, picks an offer, checks out through PayPal with the passport, logs one record", async () => {
     const r = await runSession({ ...base, endpoints: await ep() });
     expect(r.status).toBe("purchased");
     expect(r.orderId).toBeTruthy();
@@ -26,27 +26,30 @@ describe("fake shopper agent, end to end", () => {
     expect(r.reason).toBeTruthy();
     expect(r.model).toBe("fake-gpt");
     expect(r.total?.currency).toBe("USD");
+    expect(r.paidWith).toBe("vaulted_paypal");
+    expect(r.seller).toBeTruthy();
   });
 
-  it("browses Northwind and pays at Lumen, and the passport records the Northwind view", async () => {
+  it("reads Northwind's offer and pays Lumen, and the passport records the Northwind view", async () => {
     const r = await runSession({
       ...base,
       endpoints: await ep(),
-      fake: { browseShop: "northwind", loyalty: 0 },
+      fake: { browseSeller: "northwind", loyalty: 0 },
     });
     expect(r.status).toBe("purchased");
     expect(r.storesViewed).toEqual(["northwind"]);
-    expect(r.shop).toBe("lumen");
-    expect(r.reason).toMatch(/lumen is cheaper/);
+    expect(r.seller).toBe("lumen");
+    expect(r.sellerName).toBe("Lumen");
+    expect(r.reason).toMatch(/Lumen is cheaper/);
   });
 
-  it("stays at the browsed shop when loyal", async () => {
+  it("pays the seller it was reading when loyal", async () => {
     const r = await runSession({
       ...base,
       endpoints: await ep(),
-      fake: { browseShop: "megamart", loyalty: 1 },
+      fake: { browseSeller: "megamart", loyalty: 1 },
     });
-    expect(r.shop).toBe("megamart");
+    expect(r.seller).toBe("megamart");
   });
 
   it("runs all three model families and a seeded batch is repeatable", async () => {
@@ -56,22 +59,33 @@ describe("fake shopper agent, end to end", () => {
     const b = await run();
     expect(new Set(a.map((r) => r.family))).toEqual(new Set(MODEL_FAMILIES));
     expect(a.every((r) => r.status === "purchased")).toBe(true);
-    const pick = (rs: typeof a) => rs.map((r) => [r.family, r.shop, r.product?.upc]);
+    const pick = (rs: typeof a) => rs.map((r) => [r.family, r.seller, r.product?.upc]);
     expect(pick(a)).toEqual(pick(b));
   });
 
   it("records an error instead of throwing when checkout fails", async () => {
     const endpoints = await ep();
+    const inner = endpoints.catalogueFetch as typeof fetch;
     const r = await runSession({
       ...base,
-      endpoints: { ...endpoints, shopsFetch: async () => new Response("{}", { status: 500 }) },
+      endpoints: {
+        ...endpoints,
+        // Corrupt the offer id on the way to the platform: PayPal is never called.
+        catalogueFetch: async (i, init) => {
+          const body = typeof init?.body === "string" ? init.body : "";
+          const bad = body.includes('"checkout"')
+            ? body.replace(/"offerId":"[^"]+"/, '"offerId":"gone"')
+            : body;
+          return inner(i, { ...init, ...(body ? { body: bad } : {}) });
+        },
+      },
     });
     expect(r.status).toBe("error");
     expect(r.error).toMatch(/checkout failed/);
   });
 });
 
-/** An OpenAI-compatible gateway scripted to search, read, then buy at the cheaper shop. */
+/** An OpenAI-compatible gateway scripted to search, read, then buy from the cheaper seller. */
 function scriptedGateway(seen: { messages: unknown[][]; model: string[] }): LlmConfig {
   let call = 0;
   const fetchImpl: typeof fetch = async (_url, init) => {
@@ -91,7 +105,10 @@ function scriptedGateway(seen: { messages: unknown[][]; model: string[] }): LlmC
                 type: "function",
                 function: {
                   name: "search_product",
-                  arguments: JSON.stringify({ query: "bedroom air purifier", shopId: "northwind" }),
+                  arguments: JSON.stringify({
+                    query: "bedroom air purifier",
+                    sellerId: "northwind",
+                  }),
                 },
               },
             ],
@@ -106,10 +123,9 @@ function scriptedGateway(seen: { messages: unknown[][]; model: string[] }): LlmC
                 function: {
                   name: "checkout",
                   arguments: JSON.stringify({
-                    shopId: "lumen",
-                    upc: JSON.parse(
+                    offerId: JSON.parse(
                       last.content.replace(/<\/?untrusted_third_party_data>/g, ""),
-                    ).listings.find((l: { shopId: string }) => l.shopId === "lumen").upc,
+                    ).offers.find((o: { seller: string }) => o.seller === "lumen").offerId,
                     reason: "cheapest in budget, Lumen undercuts Northwind",
                   }),
                 },
@@ -138,7 +154,7 @@ describe("OpenAI-compatible agent", () => {
     });
     expect(r.status).toBe("purchased");
     expect(r.model).toBe("sonnet-x");
-    expect(r.shop).toBe("lumen");
+    expect(r.seller).toBe("lumen");
     expect(r.storesViewed).toEqual(["northwind"]);
     expect(r.reason).toBe("cheapest in budget, Lumen undercuts Northwind");
     const tool = JSON.stringify(seen.messages[1]);
@@ -149,7 +165,7 @@ describe("OpenAI-compatible agent", () => {
   it("fences and truncates creator text so it cannot pose as instructions", () => {
     const out = fenceUntrusted({
       passport: "p",
-      listings: [],
+      offers: [],
       creatorContent: [
         {
           id: "t",
@@ -179,21 +195,101 @@ describe("OpenAI-compatible agent", () => {
   });
 });
 
-it("the passport the agent carried verifies at the shop's key", async () => {
+it("the passport the agent carried to checkout verifies at the catalogue's key", async () => {
   const endpoints = await ep();
   let sent: string | undefined;
-  const shopsFetch = endpoints.shopsFetch as typeof fetch;
+  const inner = endpoints.catalogueFetch as typeof fetch;
   const r = await runSession({
     ...base,
     endpoints: {
       ...endpoints,
-      shopsFetch: async (i, init) => {
-        const b = init?.body ? JSON.parse(String(init.body)) : {};
-        sent ??= b.passport;
-        return shopsFetch(i, init);
+      catalogueFetch: async (i, init) => {
+        const b = typeof init?.body === "string" ? JSON.parse(init.body) : {};
+        if (b.params?.name === "checkout") sent ??= b.params.arguments.passport;
+        return inner(i, init);
       },
     },
   });
   expect(r.status).toBe("purchased");
   expect((await verifyPassport(sent ?? "", "cited-dev-passport-key")).ok).toBe(true);
+});
+
+/** An Anthropic Messages endpoint that searches, says why, then buys Lumen's offer. */
+function scriptedAnthropic(seen: { bodies: Record<string, any>[]; headers: Headers[] }): LlmConfig {
+  let call = 0;
+  const fetchImpl: typeof fetch = async (url, init) => {
+    expect(String(url)).toBe("http://anthropic.local/v1/messages");
+    const req = JSON.parse(String(init?.body));
+    seen.bodies.push(req);
+    seen.headers.push(new Headers(init?.headers));
+    call++;
+    if (call === 1) {
+      return Response.json({
+        content: [
+          { type: "text", text: "Looking at offers first." },
+          {
+            type: "tool_use",
+            id: "t1",
+            name: "search_product",
+            input: { query: "bedroom purifier", sellerId: "northwind" },
+          },
+        ],
+      });
+    }
+    const last = req.messages.at(-1).content[0];
+    expect(last.type).toBe("tool_result");
+    const data = JSON.parse(last.content.replace(/<\/?untrusted_third_party_data>/g, ""));
+    const offerId = data.offers.find((o: { seller: string }) => o.seller === "lumen").offerId;
+    return Response.json({
+      content: [
+        {
+          type: "tool_use",
+          id: "t2",
+          name: "checkout",
+          input: { offerId, reason: "Lumen is cheapest" },
+        },
+      ],
+    });
+  };
+  return {
+    baseUrl: "http://anthropic.local/v1",
+    apiKey: "sk-test",
+    api: "anthropic",
+    maxTokens: 500,
+    models: { gpt: "gpt-x", gemini: "gemini-x", sonnet: "claude-x" },
+    fetch: fetchImpl,
+  };
+}
+
+describe("Anthropic Messages agent", () => {
+  it("runs the same loop over /messages with tool_use blocks", async () => {
+    const seen = { bodies: [] as Record<string, any>[], headers: [] as Headers[] };
+    const thoughts: string[] = [];
+    const cfg = scriptedAnthropic(seen);
+    const { LlmAgent, ShopperSession } = await import("../src/index");
+    const session = new ShopperSession(await ep(), "anthropic-test");
+    const out = await new LlmAgent(cfg, "claude-x").run({
+      request: "purifier around $100",
+      session,
+      rand: () => 0,
+      onThought: (t) => thoughts.push(t),
+    });
+    await session.close();
+    expect(out.reason).toBe("Lumen is cheapest");
+    expect(session.purchase?.seller.id).toBe("lumen");
+    expect(thoughts).toEqual(["Looking at offers first."]);
+    expect(seen.headers[0]?.get("x-api-key")).toBe("sk-test");
+    expect(seen.bodies[0]).toMatchObject({ model: "claude-x", max_tokens: 500 });
+    expect(seen.bodies[0]?.system).toContain("shopping agent");
+    expect(seen.bodies[0]?.tools.map((t: { name: string }) => t.name)).toEqual([
+      "search_product",
+      "checkout",
+    ]);
+    // The second call replays the assistant's tool_use and our tool_result, in order.
+    expect(seen.bodies[1]?.messages.map((m: { role: string }) => m.role)).toEqual([
+      "user",
+      "assistant",
+      "user",
+    ]);
+  });
 });
