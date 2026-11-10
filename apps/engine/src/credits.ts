@@ -95,7 +95,7 @@ export async function persistCredits(
 /** Sales that joined to a verified passport. Unattributed sales never reach the ledger. */
 export async function loadAttributedSales(env: Env): Promise<AttributedSale[]> {
   const { results } = await env.DB.prepare(
-    `SELECT * FROM sales WHERE unattributed_reason IS NULL AND arm IS NOT NULL
+    `SELECT * FROM sales WHERE unattributed_reason IS NULL AND arm IS NOT NULL AND source = 'agent'
      ORDER BY captured_at, capture_id, upc`,
   ).all<Row>();
   return results.map((r) => ({
@@ -121,7 +121,7 @@ export async function coalitionValueFor(env: Env, brand: Brand): Promise<Coaliti
   const { results } = await env.DB.prepare(
     `SELECT s.arm AS arm, s.creators_seen AS seen,
        EXISTS (SELECT 1 FROM sales x WHERE x.session_id = s.session_id AND x.upc = ?
-               AND x.unattributed_reason IS NULL) AS bought
+               AND x.unattributed_reason IS NULL AND x.source = 'agent') AS bought
      FROM agent_sessions s WHERE s.category = ? AND s.arm IN ('test', 'placebo')`,
   )
     .bind(brand.upc, brand.category)

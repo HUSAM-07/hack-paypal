@@ -10,6 +10,7 @@ import { createMockPayPal } from "@pact/paypal";
 import type { Context } from "hono";
 import { CITED_PREFIX, citedEnv, serveEngine } from "./cited";
 import type { Env } from "./env";
+import { PUBLIC_MCP_PATH } from "./mcp";
 
 /**
  * The CITED demo apps (catalogue, console) mounted inside pact-worker next to the engine, so a
@@ -84,7 +85,13 @@ function catalogueFor(env: Env, ctx: ExecCtx): CatalogueApp {
   }
   // Simulated: the mock signs the agents' captures and the sellers' refunds as webhooks and
   // delivers them straight to the engine, the way PayPal would.
-  const mock = createMockPayPal({ autoSettlePayouts: true, deliverFetch: engineFetch(env, ctx) });
+  // The engine's D1 outlives this object, so ids start from the clock: after an eviction the new
+  // captures and webhook ids must not repeat old ones (the engine would drop them as duplicates).
+  const mock = createMockPayPal({
+    autoSettlePayouts: true,
+    deliverFetch: engineFetch(env, ctx),
+    idSeed: Date.now() * 1000,
+  });
   mock.registerWebhook("https://engine.internal/webhooks/paypal");
   catalogue = createCatalogueApp({ env: catalogueEnv, mock });
   return catalogue;
@@ -97,6 +104,8 @@ export async function serveStatefulDemo(req: Request, env: Env, ctx: ExecCtx): P
     return catalogueFor(env, ctx).fetch(strip(req, CATALOGUE_PREFIX));
   }
   if (path.startsWith(`${CITED_PREFIX}/`)) return serveEngine(req, env, ctx);
+  // Reached only through the rate-limited /mcp mount (apps/worker/src/mcp.ts).
+  if (path === PUBLIC_MCP_PATH) return catalogueFor(env, ctx).publicMcp.handle(req);
   return new Response("not found", { status: 404 });
 }
 

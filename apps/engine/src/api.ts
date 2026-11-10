@@ -389,14 +389,35 @@ api.get("/credits", async (c) => {
   });
 });
 
-async function journeys(env: Env, limit: number) {
+/**
+ * What CITED would do with a public /mcp sale. Those sales never reach the ledger (they would move
+ * the study's numbers), so this says whether the arm makes it creditable, not that it was paid.
+ */
+function mcpVerdict(arm: unknown, creatorsSeen: string[]) {
+  if (arm === "test") {
+    return {
+      creditable: true,
+      reason: `Exposed arm: the agent was shown ${creatorsSeen.join(", ") || "a creator"}'s test, so CITED counts this sale toward the creator's caused units (kept out of the recorded study).`,
+    };
+  }
+  return {
+    creditable: false,
+    reason:
+      arm === "placebo"
+        ? "Placebo arm: the agent saw other content from the same creator, not the test. Not credited."
+        : "Held-out arm: the agent saw no creator content. Not credited.",
+  };
+}
+
+async function journeys(env: Env, limit: number, source: "agent" | "mcp" = "agent") {
   const sales = (
     await env.DB.prepare(
       `SELECT x.*, s.stores_viewed AS stores_viewed FROM sales x
        LEFT JOIN agent_sessions s ON s.session_id = x.session_id
-       WHERE x.unattributed_reason IS NULL ORDER BY x.captured_at DESC, x.order_id LIMIT ?`,
+       WHERE x.unattributed_reason IS NULL AND x.source = ?
+       ORDER BY x.captured_at DESC, x.order_id LIMIT ?`,
     )
-      .bind(limit * 4)
+      .bind(source, limit * 4)
       .all<Row>()
   ).results;
   const prices = new Map(
@@ -463,12 +484,25 @@ async function journeys(env: Env, limit: number) {
       holdUntil: holds[0] ?? null,
       shapley: [...splits.entries()].map(([captureId, shares]) => ({ captureId, shares })),
       capturedAt: first.captured_at,
+      ...(source === "mcp"
+        ? {
+            source,
+            verdict: mcpVerdict(first.arm, JSON.parse(first.creators_seen as string) as string[]),
+          }
+        : {}),
     };
   });
 }
 
+/** `?source=mcp` lists the public /mcp sales instead, each with its credit verdict. */
 api.get("/journeys", async (c) =>
-  c.json({ journeys: await journeys(c.env, Math.min(200, Number(c.req.query("limit")) || 50)) }),
+  c.json({
+    journeys: await journeys(
+      c.env,
+      Math.min(200, Number(c.req.query("limit")) || 50),
+      c.req.query("source") === "mcp" ? "mcp" : "agent",
+    ),
+  }),
 );
 
 /** Shapley splits per sale, flat: one row per (capture, creator). */

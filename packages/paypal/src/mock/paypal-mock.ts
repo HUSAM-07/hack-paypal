@@ -51,6 +51,12 @@ export interface MockPayPalOptions {
   autoSettlePayouts?: boolean;
   /** Fixed-rate PayPal fee: `bps` of the amount plus `fixedMinor`. Default 2.9% + 30. */
   fee?: { bps: number; fixedMinor: number };
+  /**
+   * Where generated ids start counting. Default 0 (reproducible ids). A mock that is recreated
+   * while its webhooks' receiver keeps state (a restarted Durable Object) needs a fresh range,
+   * or its new captures and event ids repeat old ones and are deduplicated away.
+   */
+  idSeed?: number;
 }
 
 interface StoredOrder {
@@ -165,7 +171,7 @@ export function createMockPayPal(opts: MockPayPalOptions = {}) {
   const pending = new Set<Promise<unknown>>();
   let signer: Promise<TestSigner> | undefined;
   let chain: Promise<unknown> = Promise.resolve();
-  let seq = 0;
+  let seq = opts.idSeed ?? 0;
 
   const iso = () => new Date(now()).toISOString().replace(/\.\d{3}Z$/, "Z");
   const id = (prefix: string, len = 17) =>

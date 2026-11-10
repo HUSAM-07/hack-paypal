@@ -4,12 +4,14 @@ import { Hono } from "hono";
 import { type Catalogue, createCatalogue, DEV_PASSPORT_KEY } from "./catalogue";
 import { CheckoutError, checkout } from "./checkout";
 import { searchOffers } from "./offers";
+import { createPublicMcp, type PublicMcp } from "./public";
 import { isSellerId, sellersFromEnv } from "./sellers";
 import { createMcpServer } from "./server";
 
 export * from "./catalogue";
 export * from "./checkout";
 export * from "./offers";
+export * from "./public";
 export * from "./sellers";
 
 export const PORT = 8801;
@@ -202,7 +204,14 @@ export function createCatalogueApp(opts: CatalogueAppOptions = {}) {
     return c.json({ now: catalogue.clock.now().toISOString() });
   });
 
-  const extras: CatalogueAppExtras = { catalogue, mock };
+  // Not routed here: the worker mounts it at /mcp behind its per-IP rate limit.
+  const publicMcp = createPublicMcp({
+    catalogue,
+    ...deps,
+    ...(mock ? { flush: () => mock.flush() } : {}),
+  });
+
+  const extras: CatalogueAppExtras = { catalogue, mock, publicMcp };
   return Object.assign(app, extras);
 }
 
@@ -210,5 +219,7 @@ export interface CatalogueAppExtras {
   catalogue: Catalogue;
   /** Simulated only: the PayPal the agents pay through. */
   mock: MockPayPal | undefined;
+  /** The public, stateful MCP server (one shopping session per MCP session). */
+  publicMcp: PublicMcp;
 }
 export type CatalogueApp = ReturnType<typeof createCatalogueApp>;

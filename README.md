@@ -14,6 +14,16 @@ Hosted demo (one Cloudflare Worker, `pact-worker`; Pact is the project's codenam
 - <https://pact-worker.vincent-wesley-liem.workers.dev/console>: the demo console (two agents, side by side)
 - <https://pact-worker.vincent-wesley-liem.workers.dev/api/cited/health>: the CITED engine's health check
 
+### Use it from your agent
+
+The catalogue is also a public remote MCP server, so your own agent can shop through it and the creator still gets credited only if the test caused the sale. URL: <https://pact-worker.vincent-wesley-liem.workers.dev/mcp> (Streamable HTTP, no sign-in, simulated PayPal: no real money moves). Open it in a browser for the config snippets.
+
+```bash
+claude mcp add --transport http cited https://pact-worker.vincent-wesley-liem.workers.dev/mcp
+```
+
+Claude Desktop: Settings → Connectors → Add custom connector with the URL (or `npx -y mcp-remote <url>` in `claude_desktop_config.json`). Cursor: `{"mcpServers":{"cited":{"url":"<url>"}}}`. Tools: `search_product` (offers, plus the creator content for your session's arm, with its FTC disclosure) and `checkout` (Orders v2, seller as payee, passport in `custom_id`). Each MCP session is one shopping session with its own passport. Your purchase shows at [`/api/cited/api/journeys?source=mcp`](https://pact-worker.vincent-wesley-liem.workers.dev/api/cited/api/journeys?source=mcp) with a credit verdict; these sales are kept out of the recorded demo numbers on `/console`. Limits: 60 requests a minute per IP, three orders per session.
+
 ### Run it locally in 3 lines
 
 Needs Node 22+.

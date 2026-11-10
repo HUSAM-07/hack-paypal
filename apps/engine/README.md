@@ -51,6 +51,7 @@ catalogue reports every session it assigns an arm; lift needs the non-buyers).
 | `GET /api/deposits` | `{brands: [{brandId, name, category, currency, deposited, reserved, spent, returned, available, deposits[], refunds[]}]}` |
 | `GET /api/credits?creatorId=` | `{creators: [{creatorId, name, paypalLinked, totals:{pending,voided,paid}, credits[]}], reviewFlags[]}` |
 | `GET /api/journeys?limit=` | `{journeys: Journey[]}` |
+| `GET /api/journeys?source=mcp` | Sales made through the public `/mcp` endpoint, each with `verdict: {creditable, reason}`. They are kept out of lift, credits and every other number. |
 | `GET /api/shapley` | `{sales: [{captureId, brandId, upc, totalMinor, shares:[{creatorId, amountMinor, state}]}]}` |
 | `GET /api/payouts` | `{batches: [{senderBatchId, paypalBatchId, status, items[], createdAt}]}` |
 
