@@ -1,4 +1,5 @@
 import { type CSSProperties, type ReactNode, useState } from "react";
+import { SiteHeader } from "../landing/SiteHeader";
 import {
   blob,
   type Cell,
@@ -471,30 +472,7 @@ export function Proof() {
       <a className="skip" href="#main">
         Skip to content
       </a>
-      <header className="top">
-        <div className="wrap top-inner">
-          <a className="wordmark" href="/">
-            CITED
-          </a>
-          <nav aria-label="Sections" className="top-nav">
-            <a href="#prereg" className="hide-sm">
-              Pre-registration
-            </a>
-            <a href="#result" className="hide-sm">
-              Result
-            </a>
-            <a href="#money" className="hide-sm">
-              Payout
-            </a>
-            <a href="#data" className="hide-sm">
-              Data
-            </a>
-            <a href="/console?clean=1" className="top-cta">
-              Live demo
-            </a>
-          </nav>
-        </div>
-      </header>
+      <SiteHeader current="proof" />
 
       <main id="main">
         <div className="wrap proof-hero">
@@ -588,9 +566,10 @@ export function Proof() {
               <div className="design-item">
                 <h3 className="h3">Three model families</h3>
                 <p>
-                  {H.sessions} forced-buy sessions across GPT, Gemini and Sonnet, each agent given
-                  the same payload the catalogue's <code>search_product</code> returns and a PayPal
-                  checkout tool. A second variant lets the agent decline to buy.
+                  {H.sessions} forced-buy sessions across gpt-6-luna, gemini-3.8-flash and
+                  claude-sonnet-5-5, each agent given the same payload the catalogue's{" "}
+                  <code>search_product</code> returns and a PayPal checkout tool. A second variant
+                  lets the agent decline to buy.
                 </p>
               </div>
             </div>
@@ -693,8 +672,8 @@ export function Proof() {
                   )}{" "}
                   across the arms: price decided most picks, so the test had little to add. Lift{" "}
                   {pp(S.catalogueForced.lift.lift)}, bound {pp(S.catalogueForced.lift.lowerBound)}.
-                  Sonnet bought the Winix in all 18 placebo sessions, so its lift was zero and the
-                  hypothesis that every model shows lift failed.
+                  claude-sonnet-5-5 bought the Winix in all 18 placebo sessions, so its lift was
+                  zero and the hypothesis that every model shows lift failed.
                 </p>
               </div>
               <div>
@@ -715,9 +694,9 @@ export function Proof() {
                   Price-matched, lift was {pp(S.parityAbstain.lift.lift)} (bound{" "}
                   {pp(S.parityAbstain.lift.lowerBound)}); among buyers only,{" "}
                   {pp(S.parityAbstainBuyers.lift.lift)} (bound{" "}
-                  {pp(S.parityAbstainBuyers.lift.lowerBound)}). Gemini declined more often without
-                  the test. In the first study it was {pp(S.catalogueAbstain.lift.lift)} overall but{" "}
-                  {pp(S.catalogueAbstainBuyers.lift.lift)} among buyers (bound{" "}
+                  {pp(S.parityAbstainBuyers.lift.lowerBound)}). gemini-3.8-flash declined more often
+                  without the test. In the first study it was {pp(S.catalogueAbstain.lift.lift)}{" "}
+                  overall but {pp(S.catalogueAbstainBuyers.lift.lift)} among buyers (bound{" "}
                   {pp(S.catalogueAbstainBuyers.lift.lowerBound)}): the test made agents buy, not
                   switch brands.
                 </p>
@@ -783,6 +762,14 @@ export function Proof() {
                 exposed agent.
               </figcaption>
             </figure>
+            <div className="prose">
+              <p>
+                The hosted demo moves this money through a simulated PayPal. The same $383.96 was
+                also sent for real once, as a PayPal sandbox batch Payout (batch{" "}
+                <code>ME2KV57B7KYNS</code>, status SUCCESS), with a sandbox invoice settling the
+                brand's statement: <Src path="cited/SANDBOX-EVIDENCE.md">SANDBOX-EVIDENCE.md</Src>.
+              </p>
+            </div>
           </Section>
 
           <Section id="limits" kicker="Limitations" title="What this does not show.">

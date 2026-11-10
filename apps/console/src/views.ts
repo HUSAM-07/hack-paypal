@@ -1,5 +1,6 @@
+import { siteNavLinks } from "@pact/protocol";
 import type { DemoData, PayoutData, RunView, StatementData } from "./data";
-import { creatorName, dateOnly, esc, shopName, usd } from "./format";
+import { creatorName, esc, shopName, usd } from "./format";
 
 /*
  * Fonts come from the worker's own static assets (/fonts/*), so the demo-page CSP
@@ -151,7 +152,8 @@ a{color:inherit}
 }
 @media (max-width:640px){
   html{font-size:16px}
-  .nav{gap:1.1rem;flex-wrap:wrap}
+  .nav{gap:.2rem 1.1rem;flex-wrap:wrap}
+  .nav .mark{flex-basis:100%}
   .lede{flex-direction:column;gap:.2rem}
   .request{font-size:1.65rem}
   .step{grid-template-columns:1fr;gap:.2rem}
@@ -177,10 +179,14 @@ type Here = "console" | "payout";
  * Links are root-relative where they stay inside the console (the worker prefixes them with
  * /console) and "../" where they leave it, which resolves to the site root from both pages.
  */
+function consoleHref(path: string): string {
+  if (path === "/console") return "/";
+  if (path.startsWith("/console/")) return path.slice("/console".length);
+  return `..${path}`;
+}
+
 function nav(here: Here): string {
-  const cur = (p: Here) => (p === here ? ' aria-current="page"' : "");
-  return `<nav class="nav" aria-label="CITED"><a class="mark" href="../">CITED</a>
-<a href="/"${cur("console")}>Console</a><a href="/payout"${cur("payout")}>Payout</a><a href="../try">Run an agent</a><a href="../studio">Studio</a></nav>`;
+  return `<nav class="nav" aria-label="CITED"><a class="mark" href="../">CITED</a>${siteNavLinks(here, consoleHref)}</nav>`;
 }
 
 function page(title: string, here: Here, body: string, opts: Opts): string {
@@ -327,10 +333,9 @@ export function payoutPage(p: PayoutData | null, opts: Opts): string {
   }
   const mismatch = p.ledgerPaidMinor !== null && p.ledgerPaidMinor !== p.amountMinor;
   const name = p.creatorName;
-  // The demo clock jumps past the hold, so this date sits ahead of today: label it as such.
-  const date = opts.clean
-    ? "After the 30-day hold"
-    : `<span class="num">${esc(dateOnly(p.paidAt))}</span> <span class="dim">· demo clock, after the 30-day hold</span>`;
+  // The demo clock jumps past the hold, so a calendar date would sit in the future: say when
+  // the payout happened relative to the demo instead.
+  const date = "After the 30-day hold";
   const body = `<main class="pay"><div class="mail">
 <article class="notice">
 <header><span class="pp">Pay<span>Pal</span></span><small>Payment received</small></header>
