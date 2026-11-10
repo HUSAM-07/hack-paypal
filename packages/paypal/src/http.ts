@@ -290,6 +290,38 @@ export class Transport {
     }
   }
 
+  /**
+   * One unvalidated call for the PayPal Agent Toolkit bridge (`./toolkit.ts`): the toolkit
+   * builds the request, this adds our app token and sends it through our fetch (so simulated
+   * mode reaches the mock). `route` is a label for logs, never a concrete path.
+   */
+  async raw(init: {
+    method: string;
+    path: string;
+    route: string;
+    headers: Record<string, string>;
+    body?: string | undefined;
+  }): Promise<Response> {
+    const headers = new Headers(init.headers);
+    headers.set("Authorization", `Bearer ${await this.appToken()}`);
+    if (this.partnerAttributionId) {
+      headers.set("PayPal-Partner-Attribution-Id", this.partnerAttributionId);
+    }
+    const started = this.now();
+    const req: RequestInit = { method: init.method, headers };
+    if (init.body !== undefined) req.body = init.body;
+    const res = await this.fetchImpl(this.base + init.path, req);
+    this.onRequest?.({
+      method: init.method,
+      route: init.route,
+      status: res.status,
+      attempt: 1,
+      durationMs: this.now() - started,
+      debugId: res.headers.get("paypal-debug-id") ?? undefined,
+    });
+    return res;
+  }
+
   private backoff(attempt: number, retryAfter: string | null): number {
     const seconds = retryAfter ? Number(retryAfter) : Number.NaN;
     if (Number.isFinite(seconds) && seconds >= 0) return Math.min(seconds * 1000, MAX_BACKOFF_MS);

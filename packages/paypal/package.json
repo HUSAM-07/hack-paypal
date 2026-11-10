@@ -13,6 +13,17 @@
   },
   "dependencies": {
     "@pact/protocol": "*",
+    "@paypal/agent-toolkit": "1.11.0",
+    "axios": "^1.21.0",
     "zod": "^4.6.7"
+  },
+  "imports": {
+    "#toolkit-axios": {
+      "types": "./src/toolkit-axios.d.ts",
+      "workerd": "axios/dist/browser/axios.cjs",
+      "worker": "axios/dist/browser/axios.cjs",
+      "browser": "axios/dist/browser/axios.cjs",
+      "default": "axios/dist/node/axios.cjs"
+    }
   }
 }

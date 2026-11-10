@@ -18,7 +18,7 @@ describe("public catalogue MCP server at /mcp", () => {
       new StreamableHTTPClientTransport(new URL(`${ORIGIN}/mcp`), { fetch: selfFetch }),
     );
     const { tools } = await client.listTools();
-    expect(tools.map((t) => t.name)).toEqual(["search_product", "checkout"]);
+    expect(tools.map((t) => t.name)).toEqual(["search_product", "checkout", "get_order"]);
 
     const found = (await client.callTool({
       name: "search_product",

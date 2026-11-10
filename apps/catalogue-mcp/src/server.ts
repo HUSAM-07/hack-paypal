@@ -1,7 +1,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import type { Catalogue } from "./catalogue";
-import { type CheckoutDeps, CheckoutError, checkout } from "./checkout";
+import { type CheckoutDeps, CheckoutError, checkout, orderStatus } from "./checkout";
 
 const json = (out: unknown) => ({
   content: [{ type: "text" as const, text: JSON.stringify(out) }],
@@ -38,7 +38,7 @@ export function createMcpServer(catalogue: Catalogue, deps?: Omit<CheckoutDeps, 
       {
         title: "Buy an offer with the buyer's PayPal",
         description:
-          "Buy one offer. The platform creates a PayPal order paying the seller directly, charges the PayPal wallet the buyer linked to this agent, and returns the order and capture. No website, no redirect.",
+          "Buy one offer. The platform creates a PayPal order paying the seller directly, charges the PayPal wallet the buyer linked to this agent, and returns the order and capture, read back with the PayPal Agent Toolkit. No website, no redirect.",
         inputSchema: {
           offerId: z.string().min(1).max(64),
           passport: z.string().max(127).optional(),
@@ -49,6 +49,27 @@ export function createMcpServer(catalogue: Catalogue, deps?: Omit<CheckoutDeps, 
       async (args) => {
         try {
           return json(await checkout({ catalogue, ...deps }, args));
+        } catch (e) {
+          if (!(e instanceof CheckoutError)) throw e;
+          return {
+            isError: true,
+            content: [{ type: "text" as const, text: `${e.code}: ${e.message}` }],
+          };
+        }
+      },
+    );
+    server.registerTool(
+      "get_order",
+      {
+        title: "Order status (PayPal Agent Toolkit)",
+        description:
+          "Read an order from PayPal with the PayPal Agent Toolkit's get_order tool: status, seller, capture and the passport in custom_id.",
+        inputSchema: { orderId: z.string().regex(/^[A-Za-z0-9-]{1,64}$/) },
+        annotations: { readOnlyHint: true },
+      },
+      async ({ orderId }) => {
+        try {
+          return json(await orderStatus(deps.paypal, orderId));
         } catch (e) {
           if (!(e instanceof CheckoutError)) throw e;
           return {

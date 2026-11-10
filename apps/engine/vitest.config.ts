@@ -3,6 +3,15 @@ import { cloudflareTest, readD1Migrations } from "@cloudflare/vitest-plugin";
 import { defineConfig } from "vitest/config";
 
 export default defineConfig(async () => ({
+  resolve: {
+    // The workers pool runs a double of the PayPal Agent Toolkit; see apps/worker/vitest.config.ts.
+    alias: {
+      "@paypal/agent-toolkit/mcp": path.join(
+        import.meta.dirname,
+        "../worker/test/helpers/agent-toolkit-double.ts",
+      ),
+    },
+  },
   plugins: [
     cloudflareTest({
       wrangler: { configPath: "./wrangler.jsonc" },

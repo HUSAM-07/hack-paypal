@@ -3,7 +3,7 @@ import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/
 import { PUBLIC_MCP_SESSION_PREFIX, signPassport } from "@pact/protocol";
 import { z } from "zod";
 import type { Catalogue } from "./catalogue";
-import { type CheckoutDeps, CheckoutError, checkout } from "./checkout";
+import { type CheckoutDeps, CheckoutError, checkout, orderStatus } from "./checkout";
 
 /**
  * The catalogue as a public remote MCP server (`/mcp` on the hosted demo), for any MCP client:
@@ -56,9 +56,11 @@ const SEARCH_DESCRIPTION = `Search air purifier offers from merchants whose cata
 
 Pass \`sellerId\` when you look closely at one seller's offer. Call this before \`checkout\`.`;
 
-const CHECKOUT_DESCRIPTION = `Buy one offer for the user with the PayPal wallet they linked to this agent. The platform creates a PayPal order (Orders v2) that pays the seller directly and charges the wallet; no website, no redirect. Only buy when the user asked you to buy. This is a demo on simulated PayPal: no real money moves.
+const CHECKOUT_DESCRIPTION = `Buy one offer for the user with the PayPal wallet they linked to this agent. The platform creates a PayPal order (Orders v2) that pays the seller directly and charges the wallet, then reads it back with the PayPal Agent Toolkit; no website, no redirect. Only buy when the user asked you to buy. This is a demo on simulated PayPal: no real money moves.
 
 The session's signed Agent Affiliate Passport rides along in the order's \`custom_id\`, so the creator is credited only if the test they were shown caused the sale. Repeating the same offerId in a session returns the same order (no double charge). At most ${PUBLIC_MCP_LIMITS.checkoutsPerSession} orders per session.`;
+
+const GET_ORDER_DESCRIPTION = `Read one of this session's orders from PayPal with the PayPal Agent Toolkit's get_order tool: its status, the seller, the capture, and the passport PayPal holds in \`custom_id\`. Only orders placed in this session.`;
 
 const json = (out: unknown) => ({
   content: [{ type: "text" as const, text: JSON.stringify(out) }],
@@ -173,6 +175,31 @@ export function createPublicMcp(o: PublicMcpOptions) {
             note: "Simulated PayPal: no real money moved. The capture reached the CITED engine by webhook.",
             engineRecord: PUBLIC_MCP_SALES_PATH,
           });
+        } catch (e) {
+          if (e instanceof CheckoutError) return toolError(`${e.code}: ${e.message}`);
+          throw e;
+        }
+      },
+    );
+    server.registerTool(
+      "get_order",
+      {
+        title: "Order status (PayPal Agent Toolkit)",
+        description: GET_ORDER_DESCRIPTION,
+        inputSchema: {
+          orderId: z
+            .string()
+            .regex(/^[A-Za-z0-9-]{1,64}$/)
+            .describe("orderId returned by checkout"),
+        },
+        annotations: { readOnlyHint: true, openWorldHint: true },
+      },
+      async ({ orderId }) => {
+        if (![...shop.orders].some((k) => k.endsWith(`|${orderId}`))) {
+          return toolError("unknown_order: only orders placed in this session");
+        }
+        try {
+          return json(await orderStatus(o.paypal, orderId));
         } catch (e) {
           if (e instanceof CheckoutError) return toolError(`${e.code}: ${e.message}`);
           throw e;
