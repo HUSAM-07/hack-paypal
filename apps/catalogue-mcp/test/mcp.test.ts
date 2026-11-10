@@ -102,6 +102,39 @@ it("lets only the seller refund its sale, emitting the refund webhook", async ()
   expect(state.captures[0]).toMatchObject({ refunded: 9599, vaulted: true });
 });
 
+it("simulates a buyer's dispute and PayPal's decision as signed dispute webhooks", async () => {
+  const { app, events } = setup();
+  const post = (path: string, body: unknown) =>
+    app.request(path, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(body),
+    });
+  const bought = (await (
+    await post("/checkout", { offerId: `lumen-${UPC_WINIX_A230}` })
+  ).json()) as Rpc;
+  expect((await post("/mock/disputes", { captureId: "nope" })).status).toBe(404);
+  const opened = (await (
+    await post("/mock/disputes", { captureId: bought.captureId })
+  ).json()) as Rpc;
+  expect(opened).toMatchObject({ captureId: bought.captureId, status: "OPEN" });
+  expect(events.at(-1)).toBe("CUSTOMER.DISPUTE.CREATED");
+  const path = `/mock/disputes/${opened.disputeId}/resolve`;
+  expect((await post(path, { favour: "maybe" })).status).toBe(400);
+  const resolved = (await (await post(path, { favour: "seller" })).json()) as Rpc;
+  expect(resolved).toMatchObject({ status: "RESOLVED", outcome: "RESOLVED_SELLER_FAVOUR" });
+  expect(events.at(-1)).toBe("CUSTOMER.DISPUTE.RESOLVED");
+  const state = (await (await app.request("/mock/state")).json()) as Rpc;
+  expect(state.disputes).toEqual([
+    {
+      id: opened.disputeId,
+      captureId: bought.captureId,
+      status: "RESOLVED",
+      outcome: "RESOLVED_SELLER_FAVOUR",
+    },
+  ]);
+});
+
 it("needs a linked buyer wallet outside simulated mode", async () => {
   const app = createCatalogueApp({
     env: {

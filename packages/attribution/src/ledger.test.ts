@@ -65,6 +65,19 @@ describe("demo: 102 Winix units", () => {
     expect(line?.fee.amountMinor).toBe(1567); // 2% of $783.28, recorded per payout
   });
 
+  it("a disputed sale's credit is frozen: payable only once the dispute is lifted", () => {
+    const day30 = "2026-12-01T00:00:00.000Z";
+    const frozen = new Set(["cap005"]);
+    const [line] = releasePayable(credits, day30, undefined, frozen);
+    const disputed = credits.find((c) => c.captureId === "cap005");
+    expect(line?.creditIds).toHaveLength(101);
+    expect(line?.creditIds).not.toContain(disputed?.id);
+    expect(line?.gross.amountMinor).toBe(78_328 - (disputed?.amount.amountMinor ?? 0));
+    const paid = markPaid(credits, line?.creditIds ?? [], "batch-1");
+    const [next] = releasePayable(paid, day30);
+    expect(next?.creditIds).toEqual([disputed?.id]);
+  });
+
   it("pays $783.28 and returns $216.72 of the $1,000 deposit", () => {
     const [line] = releasePayable(credits, "2026-12-01T00:00:00.000Z");
     const paid = markPaid(credits, line?.creditIds ?? [], "batch-1");

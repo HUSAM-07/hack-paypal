@@ -62,7 +62,12 @@ describe("CITED demo money flow (simulated PayPal)", () => {
 
     const before = await call<Json>("GET", "/credits");
     expect(before.json.creators).toHaveLength(1);
-    expect(before.json.creators[0].totals).toEqual({ pending: 39_164, voided: 0, paid: 0 });
+    expect(before.json.creators[0].totals).toEqual({
+      pending: 39_164,
+      voided: 0,
+      paid: 0,
+      frozen: 0,
+    });
 
     // Nothing is paid inside the 30-day hold.
     expect(((await call<Json>("POST", "/payouts/run")).json as Json).status).toBe("nothing_due");
@@ -80,7 +85,12 @@ describe("CITED demo money flow (simulated PayPal)", () => {
     expect(batch?.items[0]?.amount).toEqual({ amountMinor: 39_164, currency: "USD" });
 
     const paid = await call<Json>("GET", "/credits");
-    expect(paid.json.creators[0].totals).toEqual({ pending: 0, voided: 0, paid: 39_164 });
+    expect(paid.json.creators[0].totals).toEqual({
+      pending: 0,
+      voided: 0,
+      paid: 39_164,
+      frozen: 0,
+    });
     expect(paid.json.creators[0].credits[0].payoutStatus).toBe("SUCCESS");
 
     // A retry (credits reset after a crash that lost the DB write) reuses the batch, no second payout.

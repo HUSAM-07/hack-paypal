@@ -188,11 +188,36 @@ export async function recomputeCredits(env: Env, now: string): Promise<Recompute
   return summary;
 }
 
+/**
+ * Where a dispute stands, from the status the webhook stored. PayPal's outcome codes: the buyer
+ * wins with RESOLVED_BUYER_FAVOUR, RESOLVED_WITH_PAYOUT or ACCEPTED (the seller accepted the
+ * claim); anything else resolved (seller favour, cancelled by the buyer, denied) releases.
+ */
+export function disputeState(status: string): "open" | "buyer" | "seller" {
+  if (!status.startsWith("RESOLVED")) return "open";
+  const code = status.split(":")[1] ?? "";
+  return ["RESOLVED_BUYER_FAVOUR", "RESOLVED_WITH_PAYOUT", "ACCEPTED"].includes(code)
+    ? "buyer"
+    : "seller";
+}
+
+/** Captures with a dispute PayPal has not decided yet: their credits are frozen, not paid. */
+export async function frozenCaptures(env: Env): Promise<Set<string>> {
+  const { results } = await env.DB.prepare(
+    "SELECT capture_id, status FROM refunds WHERE kind = 'dispute'",
+  ).all<Row>();
+  return new Set(
+    results
+      .filter((r) => disputeState(r.status as string) === "open")
+      .map((r) => r.capture_id as string),
+  );
+}
+
 const sumMinor = (rows: Row[], k: string) => rows.reduce((a, r) => a + ((r[k] as number) ?? 0), 0);
 
 /**
- * Void credits for every refund and dispute on file. Pure ledger rules, so reapplying is a
- * no-op; paid credits are never touched, only flagged for a person to review.
+ * Void credits for every refund, and every dispute the buyer won, on file. Pure ledger rules,
+ * so reapplying is a no-op; paid credits are never touched, only flagged for a person to review.
  */
 export async function applyVoids(env: Env, captureId?: string): Promise<ReviewFlag[]> {
   const refunds = (
@@ -221,7 +246,8 @@ export async function applyVoids(env: Env, captureId?: string): Promise<ReviewFl
       .bind(capture)
       .first<{ total: number | null; currency: string | null }>();
     const events: VoidEvent[] = [];
-    if (rows.some((r) => r.kind === "dispute"))
+    // An open dispute only freezes the credit (see frozenCaptures); it voids if the buyer wins.
+    if (rows.some((r) => r.kind === "dispute" && disputeState(r.status as string) === "buyer"))
       events.push({ kind: "dispute", captureId: capture });
     const refundRows = rows.filter(
       (r) => r.kind === "refund" && r.status !== "FAILED" && r.status !== "CANCELLED",

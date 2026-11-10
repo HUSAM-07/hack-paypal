@@ -27,7 +27,15 @@ non-zero if any check fails or the numbers drift from the card. About 10 s.
 | 8 | `payout` | One batch Payouts call to HouseFresh's `PAYPAL_ID` |
 | 9 | `return` | Unspent deposits come back through `captures/{id}/refund` |
 | 10 | `analyst` | "Tests with a clear winner move agents 94 points…"; Maya approves a $500 top-up (scripted amount) |
-| 11 | `checks` | Ledger vs PayPal mocks; one line per check |
+| 11 | `shapley` | A later cycle: AirLab joins with its own purifier test; 12 agents (4 per model) see both tests and buy Winix. The bound tightens (51 → 62 units); one co-exposed sale's $7.68 splits HouseFresh $3.84, AirLab $3.84 by Shapley |
+| 12 | `dispute` | The buyer of that sale opens a PayPal dispute: its 2 credits freeze. Day 60: one batch pays HouseFresh $61.43 and AirLab $15.36, the frozen $7.68 held back. PayPal resolves for the seller and the next batch pays $3.84 + $3.84 |
+| 13 | `checks` | Ledger vs PayPal mocks; one line per check |
+
+**The later cycle.** Beats 11-12 run after the day-30 payout and the deposit returns, so the
+card's numbers (beats 1-10) never move. They are demo outputs, stated on their own: AirLab's
+cohort draws on Winix's approved $500 top-up. A dispute only freezes a credit; it voids if PayPal
+decides for the buyer (`RESOLVED_BUYER_FAVOUR`) and is released otherwise. The runner pins these
+numbers too (`COEXPOSURE` in `src/demo.ts`).
 
 **Determinism.** The seed fixes everything. The catalogue is stateless and arms are a hash of
 `(seed, sessionId)`, so the runner picks session ids that land on the planned arms (simulated mode
@@ -63,7 +71,7 @@ interface DemoEvent {
   v: 1;
   seq: number;          // 1, 2, 3, … no gaps
   type: "run.start" | "beat.start" | "line" | "session" | "numbers" | "beat.end" | "run.end";
-  beat?: "fund" | "exposed" | "heldout" | "study" | "credits" | "refund" | "jump" | "payout" | "return" | "analyst" | "checks";
+  beat?: "fund" | "exposed" | "heldout" | "study" | "credits" | "refund" | "jump" | "payout" | "return" | "analyst" | "shapley" | "dispute" | "checks";
   text?: string;        // a sentence for the screen: beat title, line, or "ok"/"failed" on run.end
   data?: Record<string, unknown>;
 }
@@ -84,11 +92,14 @@ There are no wall-clock fields, so a consumer stamps events on arrival.
 `{exposedSales, causedUnits, attributableFraction, liftPoints, lowerBound, credits, creditedMinor,
 levoitCausedUnits, levoitLowerBound}` · `refund` `{captureId, voidedCredits, voidedMinor,
 reviewFlags, creditStates}` · `jump` `{days, payout}` · `payout` `{batches, senderBatchId, items,
-paidMinor, pendingMinor, voidedMinor}` · `return` `{brands:[{brandId, spentMinor, returnedMinor}]}` ·
-`checks` `{checks[]}`.
+paidMinor, pendingMinor, voidedMinor}` · `return` `{brands:[{brandId, spentMinor, returnedMinor}]}` · `shapley` `{sessions, winixBuyers,
+causedUnitsBefore, causedUnitsAfter, earlierSalesCredited, coExposedSalesCredited, splitSale,
+day60, released, lowerBound, exposedSales, coalitionLiftPoints, shapleyPoints}` · `dispute`
+`{day60}` then `{outcome, released}` · `checks` `{checks[]}`.
 
 `run.end.data`: `{sessions, purchased, exposedSales, causedUnits, creditedMinor, paidMinor,
-returnedMinor, levoitCausedUnits, liftPoints, matchesCard, checks}`.
+returnedMinor, levoitCausedUnits, liftPoints, coExposure, matchesCard, checks}` (`sessions` counts
+the 147-session study only).
 
 ## Shopper runner (`npm run run:sessions`)
 
@@ -104,5 +115,8 @@ PayPal creates and captures it in one call (see `cited/spec/AGENT-CHECKOUT.md`).
 PayPal mock (`@pact/paypal`) delivers the same signed webhooks PayPal would
 (`CHECKOUT.ORDER.COMPLETED`, `PAYMENT.CAPTURE.COMPLETED`) to `ENGINE_URL/webhooks/paypal`; the
 runner reports each session's arm to `POST /api/sessions` so lift sees the non-buyers. Sellers
-refund with catalogue `POST /sellers/:id/refunds`. Simulated-only: catalogue `GET /mock/state`;
+refund with catalogue `POST /sellers/:id/refunds`. Simulated-only: a buyer's dispute and PayPal's
+decision with catalogue `POST /mock/disputes {captureId}` and
+`POST /mock/disputes/:id/resolve {favour: seller|buyer}` (signed `CUSTOMER.DISPUTE.CREATED` /
+`.RESOLVED` webhooks); catalogue `GET /mock/state`;
 engine `GET /api/mock/state`.

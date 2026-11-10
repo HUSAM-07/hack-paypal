@@ -132,11 +132,17 @@ async function dispatch(env: Env, eventId: string, type: string, r: Raw): Promis
       const txs = Array.isArray(r.disputed_transactions) ? (r.disputed_transactions as Raw[]) : [];
       const captureId = str(txs[0]?.seller_transaction_id);
       if (!disputeId || !captureId) return true;
+      // A decided dispute is stored as RESOLVED:<outcome_code>; it decides void or release.
+      const outcome = str(obj(r.dispute_outcome)?.outcome_code);
+      const status = str(r.status) ?? type.split(".").at(-1) ?? "UNKNOWN";
       await storeRefund(env, {
         id: disputeId,
         captureId,
         kind: "dispute",
-        status: str(r.status) ?? type.split(".").at(-1) ?? "UNKNOWN",
+        status:
+          type === "CUSTOMER.DISPUTE.RESOLVED" || status === "RESOLVED"
+            ? `RESOLVED:${outcome ?? "NONE"}`
+            : status,
         amount: money(r.dispute_amount),
         eventId,
       });
@@ -208,7 +214,9 @@ async function storeRefund(
   await env.DB.prepare(
     `INSERT INTO refunds (id, capture_id, kind, status, amount_minor, currency, event_id, created_at)
      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-     ON CONFLICT (id) DO UPDATE SET status = excluded.status, event_id = excluded.event_id,
+     ON CONFLICT (id) DO UPDATE SET event_id = excluded.event_id,
+       -- PayPal does not promise order: a late CREATED never reopens a resolved dispute.
+       status = CASE WHEN refunds.status LIKE 'RESOLVED%' THEN refunds.status ELSE excluded.status END,
        amount_minor = COALESCE(excluded.amount_minor, amount_minor),
        currency = COALESCE(excluded.currency, currency)`,
   )

@@ -130,16 +130,22 @@ export interface PayoutLine {
   fee: Money;
 }
 
-/** Pending credits whose hold has ended, grouped per creator (and currency), ready for a batch payout. */
+/**
+ * Pending credits whose hold has ended, grouped per creator (and currency), ready for a batch
+ * payout. Credits on a capture in `frozenCaptures` (an open dispute) stay pending until PayPal
+ * decides it: released if the seller wins, voided if the buyer does.
+ */
 export function releasePayable(
   credits: readonly Credit[],
   now: string | Date,
   feeBps = DEFAULT_NETWORK_FEE_BPS,
+  frozenCaptures: ReadonlySet<string> = new Set(),
 ): PayoutLine[] {
   const t = toDate(now).getTime();
   const groups = new Map<string, Credit[]>();
   for (const c of credits) {
     if (c.state !== "pending" || toDate(c.holdUntil).getTime() > t) continue;
+    if (frozenCaptures.has(c.captureId)) continue;
     const key = `${c.creatorId}|${c.amount.currency}`;
     groups.set(key, [...(groups.get(key) ?? []), c]);
   }
