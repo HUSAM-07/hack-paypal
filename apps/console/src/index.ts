@@ -1,8 +1,8 @@
 import { Hono } from "hono";
-import { type Deps, loadDemo, loadPayout } from "./data";
+import { type Deps, loadDemo, loadPayout, loadStatement } from "./data";
 import { createEngineClient, EngineUnavailable } from "./engine";
 import { runSourceFromEnv } from "./runs";
-import { demoPage, payoutPage } from "./views";
+import { demoPage, payoutPage, statementPage } from "./views";
 
 export const PORT = 8805;
 
@@ -49,6 +49,21 @@ export function createConsoleApp(deps: Deps = depsFromEnv(process.env)) {
       const data = await loadPayout(deps, c.req.query("creator"), c.req.query("batch"));
       return c.html(
         payoutPage(
+          data,
+          view((k) => c.req.query(k)),
+        ),
+      );
+    } catch (e) {
+      if (e instanceof EngineUnavailable) return c.text(e.message, 503);
+      throw e;
+    }
+  });
+
+  app.get("/statement", async (c) => {
+    try {
+      const data = await loadStatement(deps, c.req.query("brand"));
+      return c.html(
+        statementPage(
           data,
           view((k) => c.req.query(k)),
         ),

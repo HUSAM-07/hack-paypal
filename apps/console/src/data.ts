@@ -1,4 +1,10 @@
-import type { EngineClient, EngineJourney, EngineLift, EnginePayoutBatch } from "./engine";
+import type {
+  EngineClient,
+  EngineJourney,
+  EngineLift,
+  EnginePayoutBatch,
+  EngineStatement,
+} from "./engine";
 import { type AgentRun, pickPair, type RunSource } from "./runs";
 
 export interface Deps {
@@ -56,6 +62,19 @@ export interface PayoutData {
   /** What the credit ledger says this creator has been paid; must equal amountMinor. */
   ledgerPaidMinor: number | null;
   rival: { name: string; causedUnits: number; paidMinor: number } | null;
+  /** The brand statement (PayPal Invoicing) that covers this batch, if one was issued. */
+  statement: {
+    brandId: string;
+    brandName: string;
+    invoiceNumber: string;
+    status: string;
+    dueMinor: number | null;
+  } | null;
+}
+
+export interface StatementData {
+  statement: EngineStatement;
+  brandName: string;
 }
 
 /** Mirrors the engine's sender_item_id rule (apps/engine/src/payouts.ts). */
@@ -123,7 +142,18 @@ export async function loadPayout(
   const item = batch.items.find((i) => !creatorId || i.creatorId === creatorId);
   if (!item) return null;
 
-  const [creators, lift] = await Promise.all([engine.credits(), engine.lift()]);
+  const [creators, lift, statements] = await Promise.all([
+    engine.credits(),
+    engine.lift(),
+    // Older engines have no /invoices: the page still shows the payout.
+    engine.statements().catch(() => [] as EngineStatement[]),
+  ]);
+  const covering = statements.find(
+    (s) =>
+      s.invoiceId &&
+      (s.payoutBatchIds.includes(batch.senderBatchId) ||
+        (batch.paypalBatchId !== null && s.payoutBatchIds.includes(batch.paypalBatchId))),
+  );
   const mine = creators.find((c) => c.creatorId === item.creatorId);
   const allCredits = creators.flatMap((c) => c.credits);
   return {
@@ -140,5 +170,30 @@ export async function loadPayout(
     paidAt: batch.createdAt,
     ledgerPaidMinor: mine ? ledgerPaidIn(mine, batch) : null,
     rival: rivalOf(lift, allCredits),
+    statement: covering
+      ? {
+          brandId: covering.brandId,
+          brandName: lift.find((b) => b.brandId === covering.brandId)?.name ?? covering.brandId,
+          invoiceNumber: covering.invoiceNumber,
+          status: covering.status,
+          dueMinor: covering.invoiceDueMinor,
+        }
+      : null,
+  };
+}
+
+/** One brand statement: `brand` picks the brand's latest, else the first one with an invoice. */
+export async function loadStatement(
+  { engine }: Deps,
+  brandId?: string,
+): Promise<StatementData | null> {
+  const [statements, lift] = await Promise.all([engine.statements(), engine.lift()]);
+  const pick = brandId
+    ? statements.filter((s) => s.brandId === brandId).at(-1)
+    : (statements.find((s) => s.invoiceId) ?? statements[0]);
+  if (!pick) return null;
+  return {
+    statement: pick,
+    brandName: lift.find((b) => b.brandId === pick.brandId)?.name ?? pick.brandId,
   };
 }

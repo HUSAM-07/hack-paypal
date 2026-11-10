@@ -1,4 +1,4 @@
-import type { DemoData, PayoutData, RunView } from "./data";
+import type { DemoData, PayoutData, RunView, StatementData } from "./data";
 import { creatorName, dateOnly, esc, shopName, usd } from "./format";
 
 /*
@@ -131,6 +131,13 @@ a{color:inherit}
 .notice footer{background:#F5F7FA;color:var(--muted);font-size:.72rem;padding:.9rem 2.2rem}
 .rival{display:flex;justify-content:space-between;align-items:baseline;gap:1rem;margin-top:1.4rem;padding:1rem .2rem 0;border-top:1px solid var(--line);color:var(--muted)}
 .rival b{color:var(--ink);font-weight:600}
+.stmt-link{margin:1rem .2rem 0;font-size:.85rem;color:var(--muted)}
+.stmt-link a{color:var(--ink);font-weight:500}
+.notice .lines{margin:0;padding:.4rem 2.2rem 1rem;border-bottom:1px solid var(--line)}
+.notice .lines div{display:flex;justify-content:space-between;gap:1rem;padding:.55rem 0;border-top:1px solid var(--line)}
+.notice .lines div:first-child{border-top:0}
+.notice .lines .total{font-weight:600}
+.notice .lines .minus{color:var(--held-ink)}
 .rival .amt{color:var(--ink);font-weight:600}
 
 @media (min-width:1600px){html{font-size:21px}}
@@ -346,7 +353,76 @@ ${
     ? `<div class="rival"><span><b>${esc(p.rival.name)}</b> · <span class="num">${p.rival.causedUnits}</span> extra units caused</span><span class="num amt">${usd(p.rival.paidMinor)} paid · no lift</span></div>`
     : ""
 }
+${
+  p.statement && !opts.clean
+    ? `<p class="stmt-link">${esc(p.statement.brandName)} paid for this from its deposit: <a href="/statement?brand=${encodeURIComponent(p.statement.brandId)}">Statement ${esc(p.statement.invoiceNumber)}</a> · PayPal Invoicing, ${esc(invoiceStatusWord(p.statement.status))}${p.statement.dueMinor === 0 ? ", $0 due" : ""}</p>`
+    : ""
+}
 ${mismatch ? `<p class="warn">Ledger shows ${usd(p.ledgerPaidMinor ?? 0)} paid, which differs from this payout.</p>` : ""}
 </div></main>`;
   return page("CITED · payout", "payout", body, opts);
+}
+
+// ───────────────────────── brand statement ─────────────────────────
+
+const capitalize = (w: string) => w.charAt(0).toUpperCase() + w.slice(1);
+
+function invoiceStatusWord(s: string): string {
+  return s === "MARKED_AS_PAID"
+    ? "marked paid"
+    : s === "NO_CHARGE"
+      ? "no charge"
+      : s.toLowerCase().replace(/_/g, " ");
+}
+
+export function statementPage(d: StatementData | null, opts: Opts): string {
+  if (!d) {
+    return page(
+      "CITED · statement",
+      "payout",
+      `<main class="pay">${waiting("No statement yet. Brands get one when a programme cycle closes.")}</main>`,
+      opts,
+    );
+  }
+  const s = d.statement;
+  const mismatch =
+    s.invoiceId !== null &&
+    (s.invoiceTotalMinor !== s.paidMinor || s.creditedMinor - s.voidedMinor !== s.paidMinor);
+  const row = (label: string, amount: string, cls = "") =>
+    `<div${cls ? ` class="${cls}"` : ""}><span>${label}</span><span class="num">${amount}</span></div>`;
+  const lines = [
+    ...s.lines.map((l) =>
+      row(
+        `Commission credited: ${esc(l.name)} <span class="dim">· ${l.credits} credit${l.credits === 1 ? "" : "s"}</span>`,
+        usd(l.creditedMinor),
+      ),
+    ),
+    ...(s.voidedMinor
+      ? [row("Voided by refunds or lost disputes", `−${usd(s.voidedMinor)}`, "minus")]
+      : []),
+    row("Paid to creators through PayPal Payouts", usd(s.paidMinor), "total"),
+  ].join("");
+  const body = `<main class="pay"><div class="mail">
+<article class="notice">
+<header><span class="pp">Pay<span>Pal</span></span><small>${s.invoiceId ? "Invoice · statement" : "Statement"}</small></header>
+<div class="top">
+  <p class="hello">${esc(d.brandName)} · CITED programme statement</p>
+  <div class="amount num">${usd(s.paidMinor)}<small>${esc(s.currency)}</small></div>
+  <p>${s.invoiceId ? "Settled from your prepaid deposit · nothing due" : "Nothing paid this cycle, so no PayPal invoice"}</p>
+</div>
+<div class="lines">${lines}</div>
+<dl>
+  <div><dt>Status</dt><dd><span class="status">${esc(capitalize(invoiceStatusWord(s.status)))}</span>${s.invoiceDueMinor !== null ? ` <span class="dim">· ${usd(s.invoiceDueMinor)} due</span>` : ""}</dd></div>
+  <div><dt>Invoice number</dt><dd class="mono">${esc(s.invoiceNumber)}</dd></div>
+  ${s.invoiceId ? `<div><dt>PayPal invoice ID</dt><dd class="mono">${esc(s.invoiceId)}</dd></div>` : ""}
+  <div><dt>Programme deposit</dt><dd class="num">${usd(s.depositedMinor)}</dd></div>
+  <div><dt>Returned this cycle</dt><dd><span class="num">${usd(s.returnedMinor)}</span>${s.refundIds.length ? ` <span class="dim">· refund ${esc(s.refundIds.join(", "))}</span>` : ""}</dd></div>
+  ${s.reservedMinor ? `<div><dt>Still in the hold</dt><dd class="num">${usd(s.reservedMinor)}</dd></div>` : ""}
+  ${s.payoutBatchIds.length ? `<div><dt>Payout batch ID</dt><dd class="mono">${esc(s.payoutBatchIds.join(", "))}</dd></div>` : ""}
+</dl>
+<footer>Issued with PayPal Invoicing and marked paid against the deposit capture, so no money moves twice. You pay only for units your creators' tests caused.</footer>
+</article>
+${mismatch ? `<p class="warn">The PayPal invoice shows ${usd(s.invoiceTotalMinor ?? 0)}, which differs from the ${usd(s.paidMinor)} the ledger paid.</p>` : ""}
+</div></main>`;
+  return page("CITED · statement", "payout", body, opts);
 }

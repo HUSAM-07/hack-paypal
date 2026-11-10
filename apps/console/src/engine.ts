@@ -52,6 +52,36 @@ export interface EngineLift {
   lowerBound: number | null;
 }
 
+/** A brand statement: the PayPal Invoicing v2 invoice the engine issues at cycle close. */
+export interface EngineStatement {
+  id: string;
+  brandId: string;
+  invoiceNumber: string;
+  invoiceId: string | null;
+  status: string;
+  currency: string;
+  creditedMinor: number;
+  voidedMinor: number;
+  paidMinor: number;
+  returnedMinor: number;
+  depositedMinor: number;
+  reservedMinor: number;
+  invoiceTotalMinor: number | null;
+  invoicePaidMinor: number | null;
+  invoiceDueMinor: number | null;
+  lines: {
+    creatorId: string;
+    name: string;
+    creditedMinor: number;
+    voidedMinor: number;
+    paidMinor: number;
+    credits: number;
+  }[];
+  payoutBatchIds: string[];
+  refundIds: string[];
+  createdAt: string;
+}
+
 export class EngineUnavailable extends Error {}
 
 export interface EngineClient {
@@ -59,6 +89,7 @@ export interface EngineClient {
   payouts(): Promise<EnginePayoutBatch[]>;
   credits(): Promise<EngineCreatorCredits[]>;
   lift(): Promise<EngineLift[]>;
+  statements(): Promise<EngineStatement[]>;
 }
 
 export function createEngineClient(opts: {
@@ -85,5 +116,6 @@ export function createEngineClient(opts: {
     payouts: async () => (await get<{ batches: EnginePayoutBatch[] }>("/payouts")).batches,
     credits: async () => (await get<{ creators: EngineCreatorCredits[] }>("/credits")).creators,
     lift: async () => (await get<{ brands: EngineLift[] }>("/lift")).brands,
+    statements: async () => (await get<{ statements: EngineStatement[] }>("/invoices")).statements,
   };
 }
