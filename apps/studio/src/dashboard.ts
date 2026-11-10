@@ -376,4 +376,44 @@ export function createEngineApprover(opts: {
   };
 }
 
+/** A reviewer's decision on a guard hold: release (paid at the next payout) or void the credit. */
+export type ReviewAction = "release" | "void";
+
+/** The engine said no (unknown flag, already decided, credit no longer pending). */
+export class ReviewRejected extends Error {
+  constructor(
+    readonly status: 404 | 409,
+    message: string,
+  ) {
+    super(message);
+  }
+}
+
+/** Resolves a guard hold through the engine's review-flags write endpoints. */
+export function createEngineReviewer(opts: {
+  baseUrl: string;
+  token?: string | undefined;
+  fetch?: typeof fetch | undefined;
+}) {
+  const f = opts.fetch ?? fetch;
+  const base = opts.baseUrl.replace(/\/$/, "");
+  return async (id: string, action: ReviewAction) => {
+    let res: Response;
+    try {
+      res = await f(`${base}/api/review-flags/${encodeURIComponent(id)}/${action}`, {
+        method: "POST",
+        headers: opts.token ? { authorization: `Bearer ${opts.token}` } : {},
+      });
+    } catch {
+      throw new EngineUnavailable(`Engine not reachable at ${opts.baseUrl}`);
+    }
+    const body = (await res.json().catch(() => ({}))) as { error?: string; flag?: RawReviewFlag };
+    if (res.status === 404 || res.status === 409)
+      throw new ReviewRejected(res.status, body.error ?? `engine answered ${res.status}`);
+    if (!res.ok || !body.flag)
+      throw new EngineUnavailable(`Engine answered ${res.status} for the review`);
+    return body.flag;
+  };
+}
+
 export class EngineUnavailable extends Error {}

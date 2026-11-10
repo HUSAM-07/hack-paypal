@@ -607,6 +607,76 @@ body {
   font-size: 12.5px;
 }
 
+/* Held-for-review list with the reviewer's decisions */
+.cw-flags-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.cw-flags-table th {
+  text-align: left;
+  font-weight: 500;
+  color: var(--muted);
+  font-size: 12px;
+  padding: 0 10px 6px 0;
+}
+.cw-flags-table td {
+  padding: 8px 10px 8px 0;
+  border-top: 1px solid var(--hair);
+  vertical-align: top;
+}
+.cw-flags-table .is-num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.cw-flags-table small {
+  display: block;
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: 12px;
+}
+.cw-flags-actions {
+  white-space: nowrap;
+  text-align: right;
+}
+.cw-flags-actions button {
+  font: 600 13px / 1 var(--sans);
+  background: var(--proof);
+  color: #fff;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  padding: 9px 12px;
+  margin-left: 6px;
+  min-height: 34px;
+  cursor: pointer;
+}
+.cw-flags-actions button.is-quiet {
+  background: var(--surface);
+  color: var(--ink);
+  border-color: var(--hair);
+}
+.cw-flags-actions button.is-void {
+  background: var(--void);
+}
+.cw-flags-actions button:active {
+  transform: scale(0.96);
+}
+.cw-flags-actions button:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+.cw-flags-actions button:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+.cw-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+}
+
 @media (max-width: 760px) {
   .st-head {
     padding: 14px 16px 12px;
