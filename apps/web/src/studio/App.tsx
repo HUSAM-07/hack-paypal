@@ -3,6 +3,7 @@ import type { AgStudioApi, AgStudioApiReadyEvent } from "ag-studio";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { type StudioContext, scopeStore } from "./context";
 import { diffTables, getJson, POLL_MS, type StudioConfig, type StudioTables } from "./data";
+import { startPolling } from "./poll";
 import { scopeFromParams, searchWithScope } from "./scope";
 
 const CREATORS: Record<string, string> = { housefresh: "HouseFresh", airlab: "AirLab" };
@@ -85,10 +86,10 @@ export function App() {
       .catch((e: Error) => setError(e.message));
   }, []);
 
-  // Poll the engine; turn each change into transactions so widgets update in place.
+  // Poll the engine; turn each change into transactions so widgets update in place. Only while
+  // someone is looking (see poll.ts): every poll reads every table.
   useEffect(() => {
     if (!config) return;
-    let stopped = false;
     const tick = async () => {
       try {
         const next = await getJson<StudioTables>("/data");
@@ -101,16 +102,13 @@ export function App() {
           if (txs.length) await engine.applyTransaction(txs.map((t) => ({ ...t })));
         }
         last.current = next;
+        return true;
       } catch {
         setLive(false);
+        return false;
       }
-      if (!stopped) setTimeout(tick, POLL_MS);
     };
-    const t = setTimeout(tick, POLL_MS);
-    return () => {
-      stopped = true;
-      clearTimeout(t);
-    };
+    return startPolling(tick, POLL_MS);
   }, [config]);
 
   const go = useCallback((v: StudioContext["view"]) => {

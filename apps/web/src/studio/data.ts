@@ -17,7 +17,7 @@ export interface StudioConfig {
 }
 
 export const API = "/studio/api";
-export const POLL_MS = 2_000;
+export const POLL_MS = 15_000;
 
 export async function getJson<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`${API}${path}`, { cache: "no-store", ...init });

@@ -5,7 +5,7 @@
 - **Page:** `apps/web/studio.html` → `apps/web/src/studio/`. Built with the web app; the worker serves it from its assets under a strict CSP (no inline script, no CDN).
 - **API:** `apps/studio` (`createStudioApp`), mounted by the worker at `/studio/api`:
   - `GET /config`: licence keys, which model the Analyst uses, the table schema.
-  - `GET /data`: the engine read API (`/api/cited/api/{clock,lift,deposits,credits,journeys,payouts}`) as Studio tables. The page polls it every 2 s and applies the difference as Studio transactions, so widgets update in place (a refund void shows without a reload).
+  - `GET /data`: the engine read API (`/api/cited/api/{clock,lift,deposits,credits,journeys,payouts}`) as Studio tables. The page polls it every 15 s while the tab is visible and in use (paused when hidden, stopped after 10 min without input, backing off after failures) and applies the difference as Studio transactions, so widgets update in place (a refund void shows without a reload).
   - `GET /analyst?brand=winix`: the cap recommendation, computed from engine numbers (no model).
   - `POST /analyst/approve`: Maya's Approve button. The amount comes from a fresh recommendation, never from the request, and the approval id must match the card she saw. Calls the engine's `POST /api/approvals/:approvalId/approve`.
   - `POST /llm`: one model turn for the Studio agents, streamed. Same-origin only, rate-limited per IP and overall, request and output capped. Keys never reach the browser.
@@ -45,7 +45,7 @@ For the dashboards with hot reload, also run the web dev server (`npm run dev -w
    npm run demo:cited -- --use-running --engine-url http://localhost:8790/api/cited --catalogue-url http://localhost:8790/catalogue --approve-in-studio --pace 4000
    ```
    (Hosted: the deployed URL for both.) The tiles fill as sales land; the refund void ($7.68) appears without a reload; day 30 pays $383.96.
-4. At "Waiting for Maya to approve the top-up in AG Studio", toggle **First payout** to show beat 8's numbers, then ask the Analyst "Should we raise the purifier cap?". It builds its chart and drafts a $500.00 top-up. Expand "Drafted a cap top-up for Maya to approve" and press **Approve**: the deposit meter shows the top-up within 2 s and the demo continues.
+4. At "Waiting for Maya to approve the top-up in AG Studio", toggle **First payout** to show beat 8's numbers, then ask the Analyst "Should we raise the purifier cap?". It builds its chart and drafts a $500.00 top-up. Expand "Drafted a cap top-up for Maya to approve" and press **Approve**: the deposit meter shows the top-up within 15 s and the demo continues.
 5. Toggle back to **Programme to date** for the Shapley and dispute beats (62 caused, $468.43 paid), then switch to **Creator** for HouseFresh's credits.
 
 ## Production settings
