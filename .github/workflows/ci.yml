@@ -2,9 +2,27 @@ name: ci
 on:
   push: { branches: [main] }
   pull_request:
+  # Redeploy main by hand, e.g. after rotating a secret or to retry a failed target.
+  workflow_dispatch:
+    inputs:
+      target:
+        description: Deploy target
+        type: choice
+        options: [all, workers-dev, shipwith]
+        default: all
+
+permissions:
+  contents: read
+
+# A new push to a PR cancels its older run; runs on main always finish.
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.sha }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   check:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -14,23 +32,61 @@ jobs:
       - run: npm run typecheck
       - run: npm test
       - run: npm run evals -- --dry
+      # Builds and bundles exactly what deploy ships, so a broken build or wrangler config
+      # fails the PR instead of the deploy.
+      - run: npm run build:web -w @pact/worker
+      - name: Dry-run every deploy target
+        run: |
+          node apps/worker/scripts/deploy.mjs workers-dev --dry-run
+          node apps/worker/scripts/deploy.mjs shipwith --dry-run
+      - if: github.event_name != 'pull_request'
+        uses: actions/upload-artifact@v4
+        with: { name: web-dist, path: apps/web/dist, retention-days: 7, if-no-files-found: error }
 
-  # CD: every green push to main deploys pact-worker (web build + D1 migrations + worker).
+  # CD: every green push to main deploys pact-worker (D1 migrations, then the worker) to
+  # each target. Each target is its own GitHub environment with its own Cloudflare token.
   deploy:
     needs: check
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    strategy:
+      fail-fast: false
+      matrix:
+        target: ${{ fromJSON(inputs.target && inputs.target != 'all' && format('["{0}"]', inputs.target) || '["workers-dev","shipwith"]') }}
     runs-on: ubuntu-latest
-    environment: production
-    # Never run two deploys at once; a newer push waits for the current one.
-    concurrency: { group: deploy-production, cancel-in-progress: false }
+    timeout-minutes: 15
+    environment:
+      # workers-dev keeps the original environment name so its deploy history carries on.
+      name: ${{ matrix.target == 'workers-dev' && 'production' || matrix.target }}
+      url: ${{ vars.DEPLOY_URL }}
+    # One deploy per target at a time; a newer push waits for the current one.
+    concurrency:
+      group: deploy-${{ matrix.target }}
+      cancel-in-progress: false
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      DEPLOY_URL: ${{ vars.DEPLOY_URL }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with: { node-version: 22, cache: npm }
       - run: npm ci
-      - run: npm run deploy -w @pact/worker
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      # The web build that passed `check`, not a fresh one.
+      - uses: actions/download-artifact@v4
+        with: { name: web-dist, path: apps/web/dist }
+      - name: Deploy
+        id: deploy
+        run: node apps/worker/scripts/deploy.mjs ${{ matrix.target }}
       - name: Smoke test
-        run: curl -fsS "${{ vars.DEPLOY_URL }}/api/cited/health"
+        run: |
+          : "${DEPLOY_URL:?Set the DEPLOY_URL variable on this environment}"
+          for path in / /app /api/cited/health; do
+            curl -fsS -o /dev/null --retry 5 --retry-delay 3 --retry-all-errors \
+              -w "%{http_code} $path\n" "$DEPLOY_URL$path"
+          done
+      # D1 migrations stay applied; they are additive, so the previous worker still runs.
+      - name: Roll back if the smoke test failed
+        if: failure() && steps.deploy.outcome == 'success'
+        run: node apps/worker/scripts/deploy.mjs ${{ matrix.target }} --rollback
+      - if: always()
+        run: echo "${{ matrix.target }} → $DEPLOY_URL (${{ job.status }}, ${GITHUB_SHA::7})" >> "$GITHUB_STEP_SUMMARY"

@@ -12,7 +12,7 @@ Read these first:
 Brands fund a category programme. PayPal's agent catalogue (our mock of Store Sync) randomly shows AI shopping agents a creator's test, a placebo (other content from the same creator), or nothing; ranking never changes. The catalogue issues a signed **Agent Affiliate Passport**, the shop puts it in Orders v2 `purchase_units[].custom_id`, and the capture joins the sale to its arm, even at a different shop. The engine credits only the sales the test caused (attributable fraction at the 80% lower bound, Shapley split across co-exposed creators), holds credits 30 days, voids them on refunds and disputes, then pays creators by batch Payouts and refunds the unspent deposit. AG Studio shows it all to the brand and the creator.
 
 ## Layout
-CITED reuses this monorepo. Pact is the codename: `pact-worker` is the one deployed Worker (https://pact-worker.vincent-wesley-liem.workers.dev; CI deploys it on every green push to `main`), and CITED ships inside it. Don't extend the old Pact chat features.
+CITED reuses this monorepo. Pact is the codename: `pact-worker` is the one deployed Worker. CI deploys it on every green push to `main` to two targets: https://pact-worker.vincent-wesley-liem.workers.dev and https://caaash.shipwith.si (each its own Cloudflare account, D1 and passkey users; see `apps/worker/scripts/deploy.mjs`), and CITED ships inside it. Don't extend the old Pact chat features.
 
 Existing, reused:
 - `packages/protocol`: **the contract.** `src/cited.ts` holds the CITED shapes (Arm, VerifiedTest, HoldoutSchedule, PassportBody, AttributedSale, Credit, ProgrammeDeposit, Money helpers). Change it only additively; if you must break it, say so in your report.
