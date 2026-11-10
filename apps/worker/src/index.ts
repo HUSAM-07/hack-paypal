@@ -7,7 +7,9 @@ import {
   CONSOLE_PREFIX,
   consoleHandler,
   SHOPS_PREFIX,
+  STUDIO_PREFIX,
   statefulDemoHandler,
+  studioHandler,
 } from "./cited-apps";
 import { allowedOrigins, type Env } from "./env";
 import { newId } from "./ids";
@@ -51,6 +53,7 @@ app.get("/app/*", appPage);
 for (const [prefix, handler] of [
   [SHOPS_PREFIX, statefulDemoHandler],
   [CONSOLE_PREFIX, consoleHandler],
+  [STUDIO_PREFIX, studioHandler],
   [CATALOGUE_PREFIX, statefulDemoHandler],
 ] as const) {
   app.all(prefix, handler);

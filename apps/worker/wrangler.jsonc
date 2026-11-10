@@ -24,7 +24,9 @@
       "/console",
       "/console/*",
       "/catalogue",
-      "/catalogue/*"
+      "/catalogue/*",
+      "/studio",
+      "/studio/*"
     ]
   },
   "durable_objects": {

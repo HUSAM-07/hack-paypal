@@ -63,4 +63,17 @@ describe("CITED demo apps mounted in pact-worker", () => {
     expect((await get("/console")).status).toBe(200);
     expect((await get("/console/api/demo")).status).toBe(200);
   });
+
+  it("serves CITED Studio with AG Grid allowed by its CSP and live engine data", async () => {
+    const page = await get("/studio");
+    expect(page.status).toBe(200);
+    const html = await page.text();
+    expect(html).toContain('href="/studio/creator"');
+    const csp = page.headers.get("content-security-policy") ?? "";
+    expect(csp).toContain("https://cdn.jsdelivr.net/npm/ag-grid-enterprise@");
+    expect((await get("/studio/creator")).status).toBe(200);
+    const data = await get("/studio/api/dashboard");
+    expect(data.status).toBe(200);
+    expect(await data.json()).toHaveProperty("brands");
+  });
 });

@@ -7,6 +7,7 @@ import {
 } from "@cited/console";
 import { app as engine } from "@cited/engine";
 import { createShopsApp } from "@cited/shops";
+import { AG_GRID_SRC, createEngineReader, createStudioApp } from "@cited/studio";
 import { createMockPayPal } from "@pact/paypal";
 import type { Context } from "hono";
 import { CITED_PREFIX, citedEnv, serveEngine } from "./cited";
@@ -24,6 +25,7 @@ import type { Env } from "./env";
 export const SHOPS_PREFIX = "/shops";
 export const CATALOGUE_PREFIX = "/catalogue";
 export const CONSOLE_PREFIX = "/console";
+export const STUDIO_PREFIX = "/studio";
 
 type Ctx = Context<{ Bindings: Env }>;
 export type ExecCtx = Ctx["executionCtx"];
@@ -49,10 +51,16 @@ export function prefixLinks(html: string, prefix: string): string {
 export const DEMO_PAGE_CSP =
   "default-src 'self'; script-src 'self' 'unsafe-inline' https://*.paypal.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https://*.paypal.com; frame-src https://*.paypal.com; base-uri 'none'; object-src 'none'; frame-ancestors 'none'";
 
-async function asDemoPage(res: Response, prefix: string): Promise<Response> {
+/** Studio also loads AG Grid from jsDelivr (one pinned file). */
+export const STUDIO_PAGE_CSP = DEMO_PAGE_CSP.replace(
+  "script-src 'self' 'unsafe-inline'",
+  `script-src 'self' 'unsafe-inline' ${AG_GRID_SRC}`,
+);
+
+async function asDemoPage(res: Response, prefix: string, csp = DEMO_PAGE_CSP): Promise<Response> {
   const html = res.headers.get("content-type")?.includes("text/html");
   const out = new Response(html ? prefixLinks(await res.text(), prefix) : res.body, res);
-  out.headers.set("Content-Security-Policy", DEMO_PAGE_CSP);
+  out.headers.set("Content-Security-Policy", csp);
   out.headers.set("X-Content-Type-Options", "nosniff");
   out.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
   return out;
@@ -127,4 +135,19 @@ export async function consoleHandler(c: Ctx): Promise<Response> {
     runs: d1RunSource(c.env.DB),
   });
   return asDemoPage(await app.fetch(strip(c.req.raw, CONSOLE_PREFIX)), CONSOLE_PREFIX);
+}
+
+export async function studioHandler(c: Ctx): Promise<Response> {
+  const app = createStudioApp({
+    read: createEngineReader({
+      baseUrl: "https://engine.internal",
+      fetch: engineFetch(c.env, c.executionCtx),
+    }),
+    licenseKey: c.env.AG_GRID_LICENSE_KEY,
+  });
+  return asDemoPage(
+    await app.fetch(strip(c.req.raw, STUDIO_PREFIX)),
+    STUDIO_PREFIX,
+    STUDIO_PAGE_CSP,
+  );
 }

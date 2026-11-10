@@ -20,6 +20,7 @@
     "@cited/console": "*",
     "@cited/engine": "*",
     "@cited/shops": "*",
+    "@cited/studio": "*",
     "@openuidev/lang-core": "^1.0.2",
     "@pact/catalog": "*",
     "@pact/paypal": "*",
