@@ -1,12 +1,12 @@
 # Devpost submission draft
 
-Paste each section into the matching Devpost field. Numbers come from `npm run demo:cited`, `packages/evals/results/cited*` and [spec/CITED-card.md](spec/CITED-card.md); see the provenance table in [spec/CITED-packet.md](spec/CITED-packet.md). Be precise about money: one Payouts batch and one Invoicing statement ran on the real PayPal sandbox (HUSAM-07/hack-paypal#84); the rest of the hosted demo runs on simulated PayPal.
+Paste each section into the matching Devpost field. Numbers come from `npm run demo:cited`, `packages/evals/results/cited*` and [spec/CITED-card.md](spec/CITED-card.md); see the provenance table in [spec/CITED-packet.md](spec/CITED-packet.md). Be precise about money: one Payouts batch and one Invoicing statement ran on the real PayPal sandbox with the demo's numbers, and the agent checkout ran end to end on the sandbox with small amounts (HUSAM-07/hack-paypal#84, [SANDBOX-EVIDENCE.md](SANDBOX-EVIDENCE.md)); the hosted demo runs on simulated PayPal.
 
 ## Before submitting (requirements from the hackathon rules)
 
 | Requirement | Where it is met | Status |
 |---|---|---|
-| Meaningful use of PayPal (sandbox) and AI | Orders v2, Vault, Webhooks, Payouts (real sandbox batch `ME2KV57B7KYNS`), Invoicing (real sandbox invoice `INV2-TNXC-9GA6-W36V-WTF6`), captures refund, disputes, Log in with PayPal; shopper agents (GPT, Gemini, Sonnet); AG Studio Analyst agent | met |
+| Meaningful use of PayPal (sandbox) and AI | Orders v2 and Vault (real sandbox agent checkout, captured and refunded), Webhooks (verified PayPal deliveries), Payouts (real sandbox batches `ME2KV57B7KYNS` and `GB9U5DYBGHLY4`), Invoicing (real sandbox invoice `INV2-TNXC-9GA6-W36V-WTF6`), captures refund, disputes, Log in with PayPal; shopper agents (GPT, Gemini, Sonnet); AG Studio Analyst agent | met |
 | Public repo with a visible OSS licence | <https://github.com/HUSAM-07/hack-paypal>, MIT | **repo is private today: make it public before submitting** |
 | Working build: hosted URL or full run instructions | Hosted demo below; `npm ci && npm run demo:cited` runs with no keys; sandbox setup in `.env.example` and `cited/spec/AGENT-CHECKOUT.md` | met |
 | Text description, tools used | This file | met |
@@ -22,9 +22,12 @@ Paste each section into the matching Devpost field. Numbers come from `npm run d
 |---|---|---|
 | Payouts | Day-30 batch: $383.96, batch `ME2KV57B7KYNS`, status SUCCESS (HUSAM-07/hack-paypal#84) | simulated |
 | Invoicing v2 | Winix statement `INV2-TNXC-9GA6-W36V-WTF6`: $383.96 invoiced, MARKED_AS_PAID, $0 due (HUSAM-07/hack-paypal#84) | simulated |
-| OAuth, Vault setup tokens | Verified on the sandbox app (setup token returns `PAYER_ACTION_REQUIRED`) | simulated |
-| Orders v2 checkout, Agent Toolkit `get_order` | An order with payee, `custom_id` and UPC created and read back; not yet captured (needs the buyer's vault approval) | simulated |
-| Webhooks, captures refund, disputes, Log in with PayPal | Code paths built against the sandbox APIs; webhook registered | simulated |
+| OAuth, Vault | The sandbox buyer approved a vault setup token once; the agent's orders charge that `vault_id` with no further approval | simulated |
+| Orders v2 agent checkout, Agent Toolkit `get_order` | 3 agent orders ($2.00 each) with the seller as payee, the signed passport in `custom_id` and `items[].upc`, created and captured in one call from the vault (`8E6030344K4198450`, `8F195714E6441535R`, `4XV50799SF6195530`), read back with `get_order`; the engine joined each capture to its arm and credited 2 caused units | simulated |
+| Captures refund (Agent Toolkit `create_refund`) | Refund `81C245246C527113H`; its `PAYMENT.CAPTURE.REFUNDED` webhook voided that sale's credit in the engine | simulated |
+| Webhooks | PayPal-signed captures, refund and payout-batch events delivered to subscription `8042373202922840X` and verified on the hosted engine (`signedFor=subscription`); a local engine received the same events by replay, since PayPal cannot reach it | simulated |
+| Payouts (agent checkout run) | The engine's `runPayouts` sent batch `GB9U5DYBGHLY4`: $0.16 for the one credit left after the refund, SUCCESS | simulated |
+| Disputes, Log in with PayPal | Code paths built against the sandbox APIs | simulated |
 
 The simulated PayPal mirrors the REST shapes and signs webhooks like PayPal, so the same client code runs in both modes (`CITED_PAYPAL_MODE=sandbox` switches it).
 
