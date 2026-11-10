@@ -70,7 +70,7 @@ Judges can run it three ways: watch the recorded two-agent demo at `/console`, r
 ## Accomplishments that we're proud of
 
 - **A pre-registered eval with a real effect.** 147 forced-buy sessions across GPT, Gemini and Sonnet, Winix and Levoit priced the same: shown the test, agents bought Winix 57/57; shown the placebo, 3/54. Lift **+94pp**, 80% lower bound **+90.3pp**, positive in all three models (GPT +89, Gemini +100, Sonnet +94). Across all evals: 963 sessions under two pre-registrations, including the cases where it does not pay (a close verdict: lower bound −6.0pp, $0).
-- **The demo checks itself.** `npm run demo:cited` plays 13 beats and ends with 24 reconciliation checks: 159 orders paid sellers from the buyer's wallet, every capture reached the engine, and the ledger's $468.43 paid equals PayPal's 3 payout batches.
+- **The demo checks itself.** `npm run demo:cited` plays 14 beats and ends with 27 reconciliation checks: 160 orders paid sellers from the buyer's wallet, every capture reached the engine, and the ledger's $468.43 paid equals PayPal's 3 payout batches.
 - **Anyone can try it with their own agent**, through the public MCP server, with live sessions kept apart from the recorded numbers.
 - **Every number on the card traces to a committed result.**
 

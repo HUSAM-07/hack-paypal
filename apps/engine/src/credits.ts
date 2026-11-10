@@ -12,6 +12,7 @@ import {
 } from "@pact/attribution";
 import { type AttributedSale, type Credit, LIVE_CATEGORY } from "@pact/protocol";
 import type { Env } from "./env";
+import { applyGuard, SELF_DEALT_SESSIONS, selfDealtSessions } from "./guard";
 import { brandLiftData, evaluateBrand } from "./lift";
 import { aggregateDeposit, type Brand, listBrands, listDeposits } from "./programme";
 
@@ -128,7 +129,8 @@ export async function coalitionValueFor(env: Env, brand: Brand): Promise<Coaliti
     `SELECT s.arm AS arm, s.creators_seen AS seen,
        EXISTS (SELECT 1 FROM sales x WHERE x.session_id = s.session_id AND x.upc = ?
                AND x.unattributed_reason IS NULL AND x.source = 'agent') AS bought
-     FROM agent_sessions s WHERE s.category = ? AND s.arm IN ('test', 'placebo')`,
+     FROM agent_sessions s WHERE s.category = ? AND s.arm IN ('test', 'placebo')
+       AND s.session_id NOT IN ${SELF_DEALT_SESSIONS}`,
   )
     .bind(brand.upc, brand.category)
     .all<Row>();
@@ -147,6 +149,8 @@ export async function coalitionValueFor(env: Env, brand: Brand): Promise<Coaliti
 
 export interface RecomputeSummary {
   created: number;
+  /** Guard holds on the ledger after this run (new and already open). */
+  held: number;
   brands: {
     brandId: string;
     exposedSales: number;
@@ -159,14 +163,21 @@ export interface RecomputeSummary {
 /**
  * Run lift + Shapley + deposit caps for every brand and add the pending credits that are
  * new. Idempotent: credit ids are `capture:creator`, so a rerun creates nothing twice.
- * Refunds and disputes already on file are applied afterwards.
+ * Refunds and disputes already on file are applied afterwards, then the abuse guard.
+ *
+ * Self-dealt sales (a creator buying through their own PayPal or agent) never enter the lift or
+ * take one of its caused units. They are credited apart, at the full commission they would have
+ * earned, so the guard can hold that credit in plain sight instead of silently dropping it.
  */
 export async function recomputeCredits(env: Env, now: string): Promise<RecomputeSummary> {
   const brands = await listBrands(env);
-  const sales = await loadAttributedSales(env);
+  const all = await loadAttributedSales(env);
+  const selfDealt = await selfDealtSessions(env);
+  const sales = all.filter((s) => !selfDealt.has(s.sessionId));
+  const dealt = all.filter((s) => selfDealt.has(s.sessionId));
   const before = await loadCredits(env);
   let ledger = before;
-  const summary: RecomputeSummary = { created: 0, brands: [] };
+  const summary: RecomputeSummary = { created: 0, held: 0, brands: [] };
 
   for (const brand of brands) {
     const data = await brandLiftData(env, brand);
@@ -181,6 +192,17 @@ export async function recomputeCredits(env: Env, now: string): Promise<Recompute
     });
     ledger = [...ledger, ...fresh];
     summary.created += fresh.length;
+    const own = dealt.filter((s) => s.upc === brand.upc && s.arm === "test");
+    if (own.length) {
+      const held = createCredits({
+        sales: own,
+        brands: [{ brandId: brand.brandId, upc: brand.upc, units: own.length, deposit }],
+        coalitionValue: () => value,
+        existing: ledger,
+      });
+      ledger = [...ledger, ...held];
+      summary.created += held.length;
+    }
     summary.brands.push({
       brandId: brand.brandId,
       exposedSales: data.exposedSales,
@@ -191,6 +213,7 @@ export async function recomputeCredits(env: Env, now: string): Promise<Recompute
   }
   await persistCredits(env, before, ledger, now);
   await applyVoids(env);
+  summary.held = (await applyGuard(env, now)).length;
   return summary;
 }
 
@@ -285,10 +308,17 @@ export async function applyVoids(env: Env, captureId?: string): Promise<ReviewFl
   await persistCredits(env, before, ledger, new Date().toISOString());
   for (const f of flags) {
     await env.DB.prepare(
-      `INSERT OR IGNORE INTO review_flags (credit_id, capture_id, reason, payout_batch_id)
-       VALUES (?, ?, ?, ?)`,
+      `INSERT OR IGNORE INTO review_flags (id, credit_id, capture_id, reason, payout_batch_id, created_at)
+       VALUES (?, ?, ?, ?, ?, ?)`,
     )
-      .bind(f.creditId, f.captureId, f.reason, f.payoutBatchId ?? null)
+      .bind(
+        `${f.reason}:${f.creditId}`,
+        f.creditId,
+        f.captureId,
+        f.reason,
+        f.payoutBatchId ?? null,
+        new Date().toISOString(),
+      )
       .run();
   }
   return flags;

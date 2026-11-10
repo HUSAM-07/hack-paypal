@@ -65,12 +65,38 @@ export interface RawCredit {
   payoutStatus: string | null;
   /** Pending but held back by an open PayPal dispute. */
   frozen?: boolean;
+  /** Pending but held by the abuse guard for a reviewer: never paid automatically. */
+  held?: boolean;
+  /** The guard's open reasons, e.g. `self_purchase`. */
+  holdReasons?: string[];
+}
+
+/** A review flag: a guard hold on a pending credit, or a note on a paid credit whose sale came back. */
+export interface RawReviewFlag {
+  id: string;
+  creditId: string;
+  captureId: string;
+  reason: string;
+  detail: string | null;
+  /** open, released or voided. */
+  status: string;
+  /** True for a guard hold (self_purchase, repeat_buyer, velocity, refund_ring). */
+  hold: boolean;
+  createdAt: string | null;
+  resolvedAt: string | null;
+  credit: {
+    creatorId: string;
+    brandId: string;
+    amountMinor: number;
+    currency: string;
+    state: string;
+  } | null;
 }
 
 export interface RawCreator {
   creatorId: string;
   name: string;
-  totals: { pending: number; voided: number; paid: number; frozen?: number };
+  totals: { pending: number; voided: number; paid: number; frozen?: number; held?: number };
   credits: RawCredit[];
 }
 
@@ -101,6 +127,8 @@ export interface RawEngine {
   journeys: RawJourney[];
   /** Payout batches, oldest first. Optional so older callers (and tests) can omit them. */
   payouts?: RawPayoutBatch[];
+  /** Review flags (guard holds and late-refund notes). Optional, like `payouts`. */
+  reviewFlags?: RawReviewFlag[];
 }
 
 export interface BrandView {
@@ -300,13 +328,14 @@ export function createEngineReader(opts: {
     return (await res.json()) as T;
   }
   return async () => {
-    const [clock, lift, deposits, credits, journeys, payouts] = await Promise.all([
+    const [clock, lift, deposits, credits, journeys, payouts, flags] = await Promise.all([
       get<{ now: string }>("/clock"),
       get<{ brands: RawLift[] }>("/lift"),
       get<{ brands: RawDeposits[] }>("/deposits"),
       get<{ creators: RawCreator[] }>("/credits"),
       get<{ journeys: RawJourney[] }>("/journeys?limit=200"),
       get<{ batches: RawPayoutBatch[] }>("/payouts"),
+      get<{ flags: RawReviewFlag[] }>("/review-flags"),
     ]);
     return {
       now: clock.now,
@@ -315,6 +344,7 @@ export function createEngineReader(opts: {
       creators: credits.creators,
       journeys: journeys.journeys,
       payouts: payouts.batches,
+      reviewFlags: flags.flags,
     };
   };
 }

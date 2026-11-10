@@ -85,6 +85,7 @@ it("records public /mcp sales apart: the study's numbers and ledger do not move"
     voided: 0,
     paid: 0,
     frozen: 0,
+    held: 0,
   });
 
   const study = await call<Json>("GET", "/journeys?limit=200");

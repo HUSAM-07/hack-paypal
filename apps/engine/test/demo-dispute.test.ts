@@ -98,6 +98,7 @@ describe("disputes freeze credits until PayPal decides", () => {
       voided: lost?.amountMinor,
       pending: 0,
       frozen: 0,
+      held: 0,
     });
     const batches = (await call<Json>("GET", "/payouts")).json.batches;
     expect(batches).toHaveLength(2);

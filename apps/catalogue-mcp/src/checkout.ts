@@ -45,6 +45,11 @@ export interface CheckoutDeps {
   paypal: PayPalClient;
   /** `vault_id` of the buyer's PayPal wallet, linked to the agent once. */
   buyerVaultId: string | undefined;
+  /**
+   * Simulated only: the wallet of the buyer behind one agent session (its passport's session
+   * id), so each simulated shopper pays from their own PayPal. Falls back to `buyerVaultId`.
+   */
+  buyerFor?: ((sessionId: string | undefined) => string | undefined) | undefined;
 }
 
 async function shortHash(s: string): Promise<string> {
@@ -68,14 +73,17 @@ export async function checkout(deps: CheckoutDeps, input: CheckoutInput): Promis
     throw new CheckoutError(400, "bad_quantity", "quantity must be an integer from 1 to 10");
   }
   const { passport } = input;
+  let sessionId: string | undefined;
   if (passport !== undefined) {
     if (passport.length > CUSTOM_ID_MAX) {
       throw new CheckoutError(400, "bad_passport", "passport does not fit custom_id");
     }
     const v = await verifyPassport(passport, deps.catalogue.passportKey);
     if (!v.ok) throw new CheckoutError(400, "bad_passport", `passport rejected: ${v.reason}`);
+    sessionId = v.body.sessionId;
   }
-  if (!deps.buyerVaultId) {
+  const buyerVaultId = deps.buyerFor?.(sessionId) ?? deps.buyerVaultId;
+  if (!buyerVaultId) {
     throw new CheckoutError(
       409,
       "buyer_not_linked",
@@ -108,7 +116,7 @@ export async function checkout(deps: CheckoutDeps, input: CheckoutInput): Promis
         ],
         payment_source: {
           paypal: {
-            vault_id: deps.buyerVaultId,
+            vault_id: buyerVaultId,
             // The buyer agreed once, when linking the wallet; the agent pays on their behalf.
             stored_credential: MIT_UNSCHEDULED,
           },

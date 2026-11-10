@@ -29,13 +29,20 @@ non-zero if any check fails or the numbers drift from the card. About 10 s.
 | 10 | `analyst` | "Tests with a clear winner move agents 94 points…"; Maya approves a $500 top-up (scripted amount) |
 | 11 | `shapley` | A later cycle: AirLab joins with its own purifier test; 12 agents (4 per model) see both tests and buy Winix. The bound tightens (51 → 62 units); one co-exposed sale's $7.68 splits HouseFresh $3.84, AirLab $3.84 by Shapley |
 | 12 | `dispute` | The buyer of that sale opens a PayPal dispute: its 2 credits freeze. Day 60: one batch pays HouseFresh $61.43 and AirLab $15.36, the frozen $7.68 held back. PayPal resolves for the seller and the next batch pays $3.84 + $3.84 |
-| 13 | `checks` | Ledger vs PayPal mocks; one line per check |
+| 13 | `guard` | A co-conspirator's agent, shown HouseFresh's test, buys a Winix with HouseFresh's own PayPal (`HOUSEFRESH-PP`). The session stays out of the study (still 62 units over 69 exposed sales) and its $7.68 credit is held for review: self-purchase. Day 90: the payout run pays nothing; a reviewer must release or void it |
+| 14 | `checks` | Ledger vs PayPal mocks; one line per check |
 
 **The later cycle.** Beats 11-12 run after the day-30 payout and the deposit returns, so the
 card's numbers (beats 1-10) never move. They are demo outputs, stated on their own: AirLab's
 cohort draws on Winix's approved $500 top-up. A dispute only freezes a credit; it voids if PayPal
 decides for the buyer (`RESOLVED_BUYER_FAVOUR`) and is released otherwise. The runner pins these
 numbers too (`COEXPOSURE` in `src/demo.ts`).
+
+**The guard.** Beat 13 runs last, so no number above moves: a self-dealt session never enters the
+lift, and its credit is held, never paid (the engine's abuse guard, `@pact/attribution` `guard.ts`).
+Each simulated agent session pays from its own buyer's wallet; the runner links the guard
+session to the creator's PayPal with catalogue `POST /mock/buyers {sessionId, payerId}`. Pinned as
+`GUARD` in `src/demo.ts`.
 
 **Determinism.** The seed fixes everything. The catalogue is stateless and arms are a hash of
 `(seed, sessionId)`, so the runner picks session ids that land on the planned arms (simulated mode
@@ -71,7 +78,7 @@ interface DemoEvent {
   v: 1;
   seq: number;          // 1, 2, 3, … no gaps
   type: "run.start" | "beat.start" | "line" | "session" | "numbers" | "beat.end" | "run.end";
-  beat?: "fund" | "exposed" | "heldout" | "study" | "credits" | "refund" | "jump" | "payout" | "return" | "analyst" | "shapley" | "dispute" | "checks";
+  beat?: "fund" | "exposed" | "heldout" | "study" | "credits" | "refund" | "jump" | "payout" | "return" | "analyst" | "shapley" | "dispute" | "guard" | "checks";
   text?: string;        // a sentence for the screen: beat title, line, or "ok"/"failed" on run.end
   data?: Record<string, unknown>;
 }
@@ -95,7 +102,8 @@ reviewFlags, creditStates}` · `jump` `{days, payout}` · `payout` `{batches, se
 paidMinor, pendingMinor, voidedMinor}` · `return` `{brands:[{brandId, spentMinor, returnedMinor}]}` · `shapley` `{sessions, winixBuyers,
 causedUnitsBefore, causedUnitsAfter, earlierSalesCredited, coExposedSalesCredited, splitSale,
 day60, released, lowerBound, exposedSales, coalitionLiftPoints, shapleyPoints}` · `dispute`
-`{day60}` then `{outcome, released}` · `checks` `{checks[]}`.
+`{day60}` then `{outcome, released}` · `guard` `{captureId, payerId, heldMinor, holdReasons,
+exposedSales, causedUnits, payout}` · `checks` `{checks[]}`.
 
 `run.end.data`: `{sessions, purchased, exposedSales, causedUnits, creditedMinor, paidMinor,
 returnedMinor, levoitCausedUnits, liftPoints, coExposure, matchesCard, checks}` (`sessions` counts

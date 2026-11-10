@@ -31,6 +31,15 @@ the worker sets it only for its own in-process callers). A token always wins ove
    `CUSTOMER.DISPUTE.RESOLVED`, which voids them if the buyer won (`RESOLVED_BUYER_FAVOUR`,
    `RESOLVED_WITH_PAYOUT`, `ACCEPTED`) and releases them to the next payout otherwise.
    Credits already paid are never clawed back; they appear in `reviewFlags`.
+4a. The abuse guard (`@pact/attribution` `guard.ts`, run after every recompute and before every
+   payout) holds pending credits for a person: `self_purchase` (the buyer's PayPal payer id, from
+   `CHECKOUT.ORDER.*`, is the creator's linked PayPal, or the creator owns the agent session),
+   `repeat_buyer` (a buyer's 3rd+ caused purchase of one UPC in 30 days), `velocity` (a creator's
+   caused sales in an hour above max(100, 10× their 7-day baseline)) and `refund_ring` (a buyer
+   who refunded at least half of 3+ credited sales). Held credits stay pending and are never paid
+   until `POST /api/review-flags/:id/release` (paid at the next payout) or `/void` (voided, reason
+   `review`); both need the write token. Self-dealt sessions never enter the lift; their sales are
+   credited apart so the hold is visible.
 5. `POST /api/clock/advance` `{days}` or `{to}` — moves the demo clock forward and sends ONE
    batch `POST /v1/payments/payouts` (`PAYPAL_ID` recipients, one item per creator) for every
    credit whose hold ended. `sender_batch_id` = `cited-` + hash of the credit ids, also the
@@ -50,7 +59,7 @@ the worker sets it only for its own in-process callers). A token always wins ove
 Setup: `POST /api/brands {brandId,name,category,upc,currency?}`,
 `POST /api/creators {creatorId,name,paypalId?}`,
 `POST /api/listings {listings:[{shopId,upc,priceMinor,currency}]}`,
-`POST /api/sessions {sessionId,model,arm,category,creatorsSeen,storesViewed}` (the
+`POST /api/sessions {sessionId,model,arm,category,creatorsSeen,storesViewed,ownerId?}` (the
 catalogue reports every session it assigns an arm; lift needs the non-buyers).
 
 ## Read API (AG Studio)
@@ -61,7 +70,8 @@ catalogue reports every session it assigns an arm; lift needs the non-buyers).
 | `GET /api/lift`, `/api/lift/:brandId` | `{brands: Lift[]}` / `Lift` |
 | `GET /api/caused-units` | `{skus: [{brandId, upc, exposedSales, attributableFraction, causedUnits, lowerBound}]}` |
 | `GET /api/deposits` | `{brands: [{brandId, name, category, currency, deposited, reserved, spent, returned, available, deposits[], refunds[]}]}` |
-| `GET /api/credits?creatorId=` | `{creators: [{creatorId, name, paypalLinked, totals:{pending,voided,paid,frozen}, credits[]}], reviewFlags[]}` (`frozen` is the part of `pending` held by an open dispute) |
+| `GET /api/credits?creatorId=` | `{creators: [{creatorId, name, paypalLinked, totals:{pending,voided,paid,frozen,held}, credits[]}], reviewFlags[]}` (`frozen` is the part of `pending` held by an open dispute; `held`, the part the abuse guard holds for review) |
+| `GET /api/review-flags?status=` | `{flags: [{id, creditId, captureId, reason, detail, status, hold, credit}]}`: guard holds (`hold: true`; `open`, `released` or `voided`) and notes on paid credits whose sale came back |
 | `GET /api/journeys?limit=` | `{journeys: Journey[]}` |
 | `GET /api/journeys?source=mcp` | Sales made through the public `/mcp` endpoint, each with `verdict: {creditable, reason}`. They are kept out of lift, credits and every other number. |
 | `GET /api/shapley` | `{sales: [{captureId, brandId, upc, totalMinor, shares:[{creatorId, amountMinor, state, payoutBatchId}]}]}` |

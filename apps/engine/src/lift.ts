@@ -1,6 +1,7 @@
 import { type BrandCredit, creditBrand, type ModelCounts } from "@pact/attribution";
 import type { Arm } from "@pact/protocol";
 import type { Env } from "./env";
+import { SELF_DEALT_SESSIONS } from "./guard";
 import type { Brand } from "./programme";
 
 export interface BrandLiftData {
@@ -14,12 +15,16 @@ export interface BrandLiftData {
 
 type Row = Record<string, unknown>;
 
-/** Arm counts for one brand: sessions in its category and the ones that bought its SKU. */
+/**
+ * Arm counts for one brand: sessions in its category and the ones that bought its SKU.
+ * Self-dealt sessions (guard.ts) are not shoppers and are left out.
+ */
 export async function brandLiftData(env: Env, brand: Brand): Promise<BrandLiftData> {
   const sessions = (
     await env.DB.prepare(
       `SELECT model, arm, COUNT(*) AS n FROM agent_sessions
-       WHERE category = ? AND arm IS NOT NULL GROUP BY model, arm`,
+       WHERE category = ? AND arm IS NOT NULL AND session_id NOT IN ${SELF_DEALT_SESSIONS}
+       GROUP BY model, arm`,
     )
       .bind(brand.category)
       .all<Row>()
@@ -29,6 +34,7 @@ export async function brandLiftData(env: Env, brand: Brand): Promise<BrandLiftDa
       `SELECT s.model AS model, s.arm AS arm, COUNT(DISTINCT s.session_id) AS n
        FROM sales x JOIN agent_sessions s ON s.session_id = x.session_id
        WHERE x.upc = ? AND s.category = ? AND x.unattributed_reason IS NULL AND x.source = 'agent'
+         AND s.session_id NOT IN ${SELF_DEALT_SESSIONS}
        GROUP BY s.model, s.arm`,
     )
       .bind(brand.upc, brand.category)
@@ -37,7 +43,7 @@ export async function brandLiftData(env: Env, brand: Brand): Promise<BrandLiftDa
   const exposed = await env.DB.prepare(
     `SELECT COUNT(*) AS n FROM sales x JOIN agent_sessions s ON s.session_id = x.session_id
      WHERE x.upc = ? AND s.category = ? AND s.arm = 'test' AND x.unattributed_reason IS NULL
-       AND x.source = 'agent'`,
+       AND x.source = 'agent' AND s.session_id NOT IN ${SELF_DEALT_SESSIONS}`,
   )
     .bind(brand.upc, brand.category)
     .first<{ n: number }>();

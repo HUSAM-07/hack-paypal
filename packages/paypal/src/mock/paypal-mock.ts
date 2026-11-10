@@ -468,9 +468,12 @@ export function createMockPayPal(opts: MockPayPalOptions = {}) {
    * The buyer links their PayPal to an agent once (in PayPal: approve a setup token, then
    * exchange it for a payment token). Returns the wallet whose `id` is the `vault_id`.
    */
-  function vaultWallet(w: { email?: string; payerId?: string } = {}): VaultedWallet {
+  function vaultWallet(w: { email?: string; payerId?: string; id?: string } = {}): VaultedWallet {
+    // A caller-chosen id is idempotent and leaves the id sequence (and every later id) alone.
+    const known = w.id ? wallets.get(w.id) : undefined;
+    if (known) return known;
     const wallet: VaultedWallet = {
-      id: id("VT-", 20),
+      id: w.id ?? id("VT-", 20),
       payerId: w.payerId ?? id("PAYER", 13),
       email: w.email ?? "buyer@example.com",
     };

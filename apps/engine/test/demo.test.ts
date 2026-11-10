@@ -67,6 +67,7 @@ describe("CITED demo money flow (simulated PayPal)", () => {
       voided: 0,
       paid: 0,
       frozen: 0,
+      held: 0,
     });
 
     // Nothing is paid inside the 30-day hold.
@@ -90,6 +91,7 @@ describe("CITED demo money flow (simulated PayPal)", () => {
       voided: 0,
       paid: 39_164,
       frozen: 0,
+      held: 0,
     });
     expect(paid.json.creators[0].credits[0].payoutStatus).toBe("SUCCESS");
 

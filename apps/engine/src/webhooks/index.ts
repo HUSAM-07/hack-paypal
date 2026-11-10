@@ -167,11 +167,15 @@ async function storeOrder(env: Env, r: Raw): Promise<void> {
   const orderId = str(r.id);
   const unit = obj((Array.isArray(r.purchase_units) ? r.purchase_units : [])[0]);
   if (!orderId || !unit || isDeposit(str(unit.custom_id))) return;
+  // The buyer: who paid (the vault owner), for the abuse guard's self-purchase and repeat rules.
+  const payerId =
+    str(obj(r.payer)?.payer_id) ?? str(obj(obj(r.payment_source)?.paypal)?.account_id) ?? null;
   await env.DB.prepare(
-    `INSERT INTO orders (order_id, custom_id, shop_id, items_json, approved_at)
-     VALUES (?, ?, ?, ?, ?)
+    `INSERT INTO orders (order_id, custom_id, shop_id, items_json, approved_at, payer_id)
+     VALUES (?, ?, ?, ?, ?, ?)
      ON CONFLICT (order_id) DO UPDATE SET custom_id = excluded.custom_id,
-       shop_id = excluded.shop_id, items_json = excluded.items_json`,
+       shop_id = excluded.shop_id, items_json = excluded.items_json,
+       payer_id = COALESCE(excluded.payer_id, payer_id)`,
   )
     .bind(
       orderId,
@@ -179,6 +183,7 @@ async function storeOrder(env: Env, r: Raw): Promise<void> {
       shopOf(unit),
       JSON.stringify(readItems(unit.items)),
       now(),
+      payerId,
     )
     .run();
 }

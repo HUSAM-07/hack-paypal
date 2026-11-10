@@ -27,6 +27,7 @@ export const BEATS = [
   "analyst",
   "shapley",
   "dispute",
+  "guard",
   "checks",
 ] as const;
 export type BeatId = (typeof BEATS)[number];
@@ -83,6 +84,8 @@ export interface DemoResult {
     liftPoints: number;
     /** The co-exposure cohort and dispute beats: a later cycle, stated on its own. */
     coExposure: CoExposureNumbers;
+    /** The guard beat: a creator buys through their own PayPal; the credit is held. */
+    guard: GuardNumbers;
   };
   checks: Check[];
   /** True when every number on the card was reproduced (fake provider only). */
@@ -144,6 +147,20 @@ export const COEXPOSURE: Omit<CoExposureNumbers, "splitSale"> & {
   day60: { housefreshMinor: 6_143, airlabMinor: 1_536, frozenMinor: 768 },
   released: { housefreshMinor: 384, airlabMinor: 384 },
 };
+
+export interface GuardNumbers {
+  captureId: string;
+  /** The PayPal payer id PayPal reports for the sale: the creator's own account. */
+  payerId: string;
+  heldMinor: number;
+  holdReasons: string[];
+  /** The study before and after the self-purchase: it must not move. */
+  exposedSales: [number, number];
+  causedUnits: [number, number];
+}
+
+/** What the guard beat must reproduce under the fake provider (seed cited-demo). */
+export const GUARD = { payerId: "HOUSEFRESH-PP", heldMinor: 768, holdReasons: ["self_purchase"] };
 
 /** The card: what the pipeline must reproduce. */
 export const CARD = {
@@ -867,6 +884,77 @@ export async function runDemo(o: DemoOptions): Promise<DemoResult> {
     },
   );
 
+  // ── The guard: a creator cannot pay themselves through their own agent or wallet ──
+  const guardRecords: RunRecord[] = [];
+  const gd: GuardNumbers = {
+    captureId: "",
+    payerId: "",
+    heldMinor: 0,
+    holdReasons: [],
+    exposedSales: [0, 0],
+    causedUnits: [0, 0],
+  };
+  let guardRun: Json | undefined;
+  await beat(
+    "guard",
+    "A creator buys through their own PayPal: the credit is held for review",
+    async () => {
+      let id = "";
+      for (let n = 0; !id; n++) {
+        if (n > 5_000) throw new Error("could not find an exposed session id for the guard beat");
+        const probe = new ShopperSession(ep, `probe-${t}-self-${n}`, {
+          sessionId: `${t}-self-${n.toString(36)}`,
+        });
+        try {
+          await probe.search({ query: "air purifier" });
+        } finally {
+          await probe.close();
+        }
+        if (probe.passportBody()?.arm === "test") id = probe.passportBody()?.sessionId as string;
+      }
+      const before = await eng("GET", "/lift/winix");
+      // A co-conspirator's agent, paying from the PayPal account HouseFresh is paid into.
+      await cat("POST", "/mock/buyers", { sessionId: id, payerId: "HOUSEFRESH-PP" });
+      const r = await play({
+        id,
+        arm: "test",
+        model: "gpt",
+        index: 0,
+        buysWinix: true,
+        browse: "lumen",
+      });
+      guardRecords.push(r);
+      await eng("POST", "/credits/recompute");
+      const after = await eng("GET", "/lift/winix");
+      gd.captureId = r.captureId ?? "";
+      gd.exposedSales = [before.exposedSales, after.exposedSales];
+      gd.causedUnits = [before.causedUnits, after.causedUnits];
+      const mine = hfOf(await eng("GET", "/credits")).credits.filter(
+        (c: Json) => c.captureId === gd.captureId,
+      ) as Json[];
+      gd.heldMinor = mine.filter((c) => c.held).reduce((a, c) => a + c.amountMinor, 0);
+      gd.holdReasons = [...new Set(mine.flatMap((c) => c.holdReasons as string[]))].sort();
+      gd.payerId =
+        ((await cat("GET", "/mock/state")).captures as Json[]).find((c) => c.id === gd.captureId)
+          ?.payerId ?? "";
+      await line(
+        "guard",
+        `A co-conspirator's ${r.model} agent is shown HouseFresh's test and buys a Winix for ${usd(r.total?.amountMinor ?? 0)}, paid from HouseFresh's own PayPal (payer ${gd.payerId}, capture ${gd.captureId}). The buyer is the creator, so the session is kept out of the study: still ${after.causedUnits} caused units over ${after.exposedSales} exposed sales. The ${usd(gd.heldMinor)} credit is held for review: ${gd.holdReasons.join(", ").replace(/_/g, "-")}.`,
+        { sessionId: id, ...gd },
+      );
+      const jump = await eng("POST", "/clock/advance", { days: 30 });
+      guardRun = jump.payout as Json;
+      await numbers("guard", {
+        ...gd,
+        payout: { status: guardRun?.status, held: guardRun?.held },
+      });
+      await line(
+        "guard",
+        `Day 90: its 30-day hold is over, and the payout run still pays nothing (${guardRun?.status}): held credits are never paid automatically. A reviewer releases or voids it (POST /review-flags/:id/release or /void, behind the API token). Repeat buyers, sudden spikes in a creator's sales and buyers who refund most of what they buy are held the same way.`,
+      );
+    },
+  );
+
   // ── The ledger and PayPal must agree ──
   await beat("checks", "Ledger and PayPal agree", async () => {
     const [deposits, credits, payouts, mock, salesMock, journeys, offers] = await Promise.all([
@@ -1029,11 +1117,11 @@ export async function runDemo(o: DemoOptions): Promise<DemoResult> {
     );
     const refunded = sales.filter((s) => s.refunded > 0).length;
     const voided = hf.credits.filter((c: Json) => c.state === "voided").length;
+    const refundFlags = (credits.reviewFlags as Json[]).filter((f) => !f.hold);
     check(
       "one refund by the seller == one voided credit in the ledger",
-      refunded === 1 &&
-        (o.refund === "after-payout" ? credits.reviewFlags.length === 1 : voided === 1),
-      `${refunded} refunded, ${voided} voided, ${credits.reviewFlags.length} flagged`,
+      refunded === 1 && (o.refund === "after-payout" ? refundFlags.length === 1 : voided === 1),
+      `${refunded} refunded, ${voided} voided, ${refundFlags.length} flagged`,
     );
     if (disputeId) {
       const d = (salesMock.disputes as Json[]).find((x) => x.id === disputeId);
@@ -1063,10 +1151,50 @@ export async function runDemo(o: DemoOptions): Promise<DemoResult> {
       );
     }
     check(
-      "every credit ends paid or voided: none left pending or frozen",
-      creators.every((c) => c.totals.frozen === 0 && c.totals.pending === 0),
-      creators.map((c) => `${c.name} pending ${usd(c.totals.pending)}`).join(", "),
+      "every credit ends paid or voided, but the one held for review: none left pending or frozen",
+      creators.every((c) => c.totals.frozen === 0 && c.totals.pending === c.totals.held),
+      creators
+        .map((c) => `${c.name} pending ${usd(c.totals.pending)} (held ${usd(c.totals.held)})`)
+        .join(", "),
     );
+    if (guardRecords.length) {
+      const batchedIds = new Set(
+        (payouts.batches as Json[]).flatMap((b) =>
+          (b.items as Json[]).flatMap((i) => (i.creditIds as string[] | undefined) ?? []),
+        ),
+      );
+      const heldCredits = creators.flatMap((c) =>
+        (c.credits as Json[]).filter((x) => x.captureId === gd.captureId),
+      );
+      const selfSale = sales.find((x) => x.id === gd.captureId);
+      check(
+        "guard: PayPal shows the self-purchase paid from the creator's own PayPal",
+        selfSale?.payerId === "HOUSEFRESH-PP" && gd.payerId === "HOUSEFRESH-PP",
+        `payer ${selfSale?.payerId}`,
+      );
+      check(
+        "guard: the self-purchase credit is held for review and in no PayPal batch",
+        heldCredits.length > 0 &&
+          heldCredits.every(
+            (x) =>
+              x.state === "pending" &&
+              x.held &&
+              (x.holdReasons as string[]).includes("self_purchase") &&
+              !x.payoutBatchId &&
+              !batchedIds.has(x.id),
+          ) &&
+          guardRun?.status === "nothing_due" &&
+          heldCredits.every((x) =>
+            ((guardRun?.held as Json[] | undefined) ?? []).some((h) => h.creditId === x.id),
+          ),
+        `${heldCredits.length} credit, ${usd(gd.heldMinor)} held; payout run ${guardRun?.status}`,
+      );
+      check(
+        "guard: the self-purchase moves no study number",
+        gd.exposedSales[0] === gd.exposedSales[1] && gd.causedUnits[0] === gd.causedUnits[1],
+        `${gd.exposedSales.join(" → ")} exposed sales, ${gd.causedUnits.join(" → ")} caused units`,
+      );
+    }
     check(
       "every session purchased",
       [...records.values()].every((r) => r.status === "purchased"),
@@ -1094,9 +1222,9 @@ export async function runDemo(o: DemoOptions): Promise<DemoResult> {
     (returned.brands as Json[]).find((b) => b.brandId === "winix")?.returnedNow ?? 0;
   const result: DemoResult = {
     numbers: {
-      sessions: records.size - cohort.length,
+      sessions: records.size - cohort.length - guardRecords.length,
       purchased: [...records.values()].filter(
-        (r) => r.status === "purchased" && !cohort.includes(r),
+        (r) => r.status === "purchased" && !cohort.includes(r) && !guardRecords.includes(r),
       ).length,
       exposedSales,
       causedUnits,
@@ -1106,6 +1234,7 @@ export async function runDemo(o: DemoOptions): Promise<DemoResult> {
       levoitCausedUnits: levoitUnits,
       liftPoints,
       coExposure: co,
+      guard: gd,
     },
     checks,
     matchesCard: false,
@@ -1115,7 +1244,7 @@ export async function runDemo(o: DemoOptions): Promise<DemoResult> {
     const expectPaid =
       o.refund === "before-payout" ? CARD.creditedMinor - voidedMinor : CARD.creditedMinor;
     const cardOk =
-      records.size - cohort.length === CARD.sessions &&
+      records.size - cohort.length - guardRecords.length === CARD.sessions &&
       exposedSales === CARD.exposedSales &&
       causedUnits === CARD.causedUnits &&
       creditedMinor === CARD.creditedMinor &&
@@ -1127,6 +1256,16 @@ export async function runDemo(o: DemoOptions): Promise<DemoResult> {
       "numbers match the card (57 → 51 → $391.64; Levoit $0)",
       cardOk,
       `${exposedSales} → ${causedUnits} → ${usd(creditedMinor)}`,
+    );
+    const guardOk =
+      gd.payerId === GUARD.payerId &&
+      gd.heldMinor === GUARD.heldMinor &&
+      JSON.stringify(gd.holdReasons) === JSON.stringify(GUARD.holdReasons) &&
+      gd.causedUnits[1] === COEXPOSURE.causedUnitsAfter;
+    check(
+      "guard: held self-purchase matches the pinned demo outputs",
+      guardOk,
+      `${usd(gd.heldMinor)} held (${gd.holdReasons.join(", ")}); ${gd.causedUnits[1]} caused units`,
     );
     const { captureId: _id, ...split } = co.splitSale;
     const coOk = JSON.stringify({ ...co, splitSale: split }) === JSON.stringify(COEXPOSURE);

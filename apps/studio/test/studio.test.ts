@@ -45,6 +45,69 @@ describe("buildTables", () => {
     });
   });
 
+  it("splits held-for-review credits out of pending and lists review flags", () => {
+    const c2 = raw.creators[0]?.credits[1];
+    if (!c2) throw new Error("fixture changed");
+    const held = {
+      ...c2,
+      id: "C9:housefresh",
+      captureId: "C9",
+      state: "pending",
+      payoutBatchId: null,
+      held: true,
+      holdReasons: ["self_purchase"],
+    };
+    const withHold: RawEngine = {
+      ...raw,
+      creators: raw.creators.map((c, i) => (i === 0 ? { ...c, credits: [...c.credits, held] } : c)),
+      reviewFlags: [
+        {
+          id: "self_purchase:C9:housefresh",
+          creditId: "C9:housefresh",
+          captureId: "C9",
+          reason: "self_purchase",
+          detail: "the buyer's PayPal account is the creator's",
+          status: "open",
+          hold: true,
+          createdAt: "2026-12-01T00:00:00.000Z",
+          resolvedAt: null,
+          credit: {
+            creatorId: "housefresh",
+            brandId: held.brandId,
+            amountMinor: held.amountMinor,
+            currency: "USD",
+            state: "pending",
+          },
+        },
+      ],
+    };
+    const h = buildTables(withHold);
+    const before = row(t, "creators", "housefresh");
+    expect(row(h, "creators", "housefresh")).toMatchObject({
+      pending: before?.pending,
+      held: held.amountMinor / 100,
+      heldCount: 1,
+      heldReasons: "Self-purchase",
+    });
+    expect(row(h, "credits", "C9:housefresh")).toMatchObject({
+      state: "held",
+      holdReason: "Self-purchase",
+      payoutBatch: "Not paid yet",
+    });
+    expect(row(h, "brands", "winix:todate")).toMatchObject({ held: held.amountMinor / 100 });
+    expect(row(h, "brands", "winix:first")).toMatchObject({ held: 0 });
+    expect(h.tables.flags).toEqual([
+      expect.objectContaining({
+        id: "self_purchase:C9:housefresh",
+        creator: "HouseFresh",
+        kind: "Held for review",
+        reason: "Self-purchase",
+        status: "Waiting for a reviewer",
+      }),
+    ]);
+    expect(t.tables.flags).toEqual([]);
+  });
+
   it("changes version only when the data changes", () => {
     expect(buildTables(raw).version).toBe(t.version);
     const voided: RawEngine = {

@@ -85,7 +85,22 @@ export function createCatalogueApp(opts: CatalogueAppOptions = {}) {
     sellers,
   });
   const { paypal, buyerVaultId, mock } = buildPayPal(env, opts);
-  const deps = { paypal, buyerVaultId };
+  // Simulated: every agent session shops for its own buyer, with their own PayPal wallet, unless
+  // a test injected one buyer. `/mock/buyers` links a session to a named PayPal account instead.
+  const linked = new Map<string, string>();
+  const buyerFor =
+    mock && !opts.buyerVaultId
+      ? (sessionId: string | undefined) => {
+          if (!sessionId) return undefined;
+          const payerId = linked.get(sessionId) ?? `BUYER-${sessionId}`;
+          return mock.vaultWallet({
+            id: `VT-${payerId}-${sessionId}`,
+            payerId,
+            email: `${payerId.toLowerCase()}@agent.example`,
+          }).id;
+        }
+      : undefined;
+  const deps = { paypal, buyerVaultId, buyerFor };
   const app = new Hono();
 
   app.onError((e, c) => {
@@ -215,6 +230,26 @@ export function createCatalogueApp(opts: CatalogueAppOptions = {}) {
     });
   });
 
+  /**
+   * Simulated only: the buyer behind one agent session linked this PayPal account (a payer id)
+   * to the agent. The demo's guard beat links a session to the creator's own PayPal.
+   */
+  app.post("/mock/buyers", async (c) => {
+    if (!mock || !buyerFor)
+      return c.json({ error: { code: "not_available", message: "simulated only" } }, 404);
+    const body = (await c.req.json().catch(() => ({}))) as {
+      sessionId?: unknown;
+      payerId?: unknown;
+    };
+    const ok = (v: unknown): v is string =>
+      typeof v === "string" && /^[A-Za-z0-9_-]{1,40}$/.test(v);
+    if (!ok(body.sessionId) || !ok(body.payerId)) {
+      return c.json({ error: { code: "bad_request", message: "sessionId and payerId" } }, 400);
+    }
+    linked.set(body.sessionId, body.payerId);
+    return c.json({ sessionId: body.sessionId, payerId: body.payerId }, 201);
+  });
+
   /** Simulated only: the sales PayPal holds, to check the engine's ledger against. */
   app.get("/mock/state", (c) => {
     if (!mock) return c.json({ error: { code: "not_available", message: "simulated only" } }, 404);
@@ -227,6 +262,8 @@ export function createCatalogueApp(opts: CatalogueAppOptions = {}) {
         payee: x.payee,
         customId: x.customId ?? null,
         vaulted: Boolean(mock.state.orders.get(x.orderId)?.vaultId),
+        payerId:
+          mock.state.wallets.get(mock.state.orders.get(x.orderId)?.vaultId ?? "")?.payerId ?? null,
       })),
       disputes: [...mock.state.disputes.values()].map((d) => ({
         id: d.dispute_id,
