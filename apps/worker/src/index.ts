@@ -6,7 +6,9 @@ import {
   CATALOGUE_PREFIX,
   CONSOLE_PREFIX,
   consoleHandler,
+  STUDIO_PREFIX,
   statefulDemoHandler,
+  studioHandler,
 } from "./cited-apps";
 import { allowedOrigins, type Env } from "./env";
 import { newId } from "./ids";
@@ -51,6 +53,7 @@ app.get("/app/*", appPage);
 // CITED demo apps: their pages set their own headers (inline CSS and scripts).
 for (const [prefix, handler] of [
   [CONSOLE_PREFIX, consoleHandler],
+  [STUDIO_PREFIX, studioHandler],
   [CATALOGUE_PREFIX, statefulDemoHandler],
 ] as const) {
   app.all(prefix, handler);

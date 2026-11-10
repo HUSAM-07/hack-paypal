@@ -23,6 +23,8 @@
       "/console/*",
       "/catalogue",
       "/catalogue/*",
+      "/studio",
+      "/studio/*",
       "/mcp",
       "/try",
       "/try/*"
