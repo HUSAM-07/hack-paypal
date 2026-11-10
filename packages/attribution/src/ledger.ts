@@ -149,7 +149,10 @@ export function releasePayable(
     if (c.state !== "pending" || toDate(c.holdUntil).getTime() > t) continue;
     if (frozenCaptures.has(c.captureId) || heldCredits.has(c.id)) continue;
     const key = `${c.creatorId}|${c.amount.currency}`;
-    groups.set(key, [...(groups.get(key) ?? []), c]);
+    // Push, not spread: copying the group per credit made a payout run O(n²) in its credits.
+    const group = groups.get(key);
+    if (group) group.push(c);
+    else groups.set(key, [c]);
   }
   return [...groups.entries()]
     .sort(([a], [b]) => (a < b ? -1 : 1))

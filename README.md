@@ -101,6 +101,7 @@ The deploy job pushes these GitHub secrets to the worker with `wrangler secret p
 - `apps/studio`: the API behind the AG Studio dashboards (`/studio`, `/studio/creator`) and the Analyst; the page is `apps/web/studio.html`. See [cited/STUDIO.md](cited/STUDIO.md).
 - `apps/console`: the demo console (two agents side by side, payout moment).
 - `packages/evals`: the eval harness and committed results.
+- Scale: [cited/BENCHMARK.md](cited/BENCHMARK.md): the engine at 50k agent sessions (8,006 signed captures at ~300/s, full recompute in 0.64 s) with the ledger reconciled to PayPal; `npm run bench:cited`.
 
 - `apps/web`: the static pages the worker serves: the landing (`/`), `/proof` and the AG Studio page (`studio.html`), prerendered by Vite. It also still holds the original Pact chat app (`app.html`, `/app`), which CITED does not use.
 

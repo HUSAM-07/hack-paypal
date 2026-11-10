@@ -40,6 +40,14 @@ export async function loadCredits(env: Env): Promise<Credit[]> {
   return results.map(toCredit);
 }
 
+/** One capture's credits (a split partial refund keeps the capture id, so it is included). */
+export async function loadCreditsOf(env: Env, captureId: string): Promise<Credit[]> {
+  const { results } = await env.DB.prepare("SELECT * FROM credits WHERE capture_id = ? ORDER BY id")
+    .bind(captureId)
+    .all<Row>();
+  return results.map(toCredit);
+}
+
 export async function loadStoredCredits(env: Env): Promise<StoredCredit[]> {
   const { results } = await env.DB.prepare("SELECT * FROM credits ORDER BY id").all<Row>();
   return results.map((r) => ({
@@ -48,7 +56,19 @@ export async function loadStoredCredits(env: Env): Promise<StoredCredit[]> {
   }));
 }
 
-/** Write the difference between two ledger states: new rows are inserted, changed rows updated. */
+/**
+ * Rows per bulk statement. Each statement binds one JSON array (D1 allows 100 bound parameters
+ * but 2 MB per value), so ~200 bytes a row keeps a statement well under that.
+ */
+export const BULK_ROWS = 2_000;
+
+/**
+ * Write the difference between two ledger states: new rows are inserted, changed rows updated.
+ *
+ * Bulk through `json_each`, one statement per BULK_ROWS rows, all in one `batch()` (one D1
+ * transaction, and one query against a Worker invocation's 1,000-query limit). One statement
+ * per row put 10k credits at 200 round trips; 50k would have hit that limit.
+ */
 export async function persistCredits(
   env: Env,
   before: readonly Credit[],
@@ -56,41 +76,62 @@ export async function persistCredits(
   now: string,
 ): Promise<void> {
   const prior = new Map(before.map((c) => [c.id, JSON.stringify(c)]));
-  const stmts: D1PreparedStatement[] = [];
+  const inserts: unknown[][] = [];
+  const updates: unknown[][] = [];
   for (const c of after) {
     const was = prior.get(c.id);
     if (was === JSON.stringify(c)) continue;
     if (was === undefined) {
-      stmts.push(
-        env.DB.prepare(
-          `INSERT INTO credits (id, capture_id, creator_id, brand_id, upc, amount_minor, currency,
-             state, void_reason, hold_until, payout_batch_id, created_at)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        ).bind(
-          c.id,
-          c.captureId,
-          c.creatorId,
-          c.brandId,
-          c.upc,
-          c.amount.amountMinor,
-          c.amount.currency,
-          c.state,
-          c.voidReason ?? null,
-          c.holdUntil,
-          c.payoutBatchId ?? null,
-          now,
-        ),
-      );
+      inserts.push([
+        c.id,
+        c.captureId,
+        c.creatorId,
+        c.brandId,
+        c.upc,
+        c.amount.amountMinor,
+        c.amount.currency,
+        c.state,
+        c.voidReason ?? null,
+        c.holdUntil,
+        c.payoutBatchId ?? null,
+        now,
+      ]);
     } else {
-      stmts.push(
-        env.DB.prepare(
-          `UPDATE credits SET amount_minor = ?, state = ?, void_reason = ?, payout_batch_id = ?
-           WHERE id = ?`,
-        ).bind(c.amount.amountMinor, c.state, c.voidReason ?? null, c.payoutBatchId ?? null, c.id),
-      );
+      updates.push([
+        c.id,
+        c.amount.amountMinor,
+        c.state,
+        c.voidReason ?? null,
+        c.payoutBatchId ?? null,
+      ]);
     }
   }
-  for (let i = 0; i < stmts.length; i += 50) await env.DB.batch(stmts.slice(i, i + 50));
+  const stmts: D1PreparedStatement[] = [];
+  for (let i = 0; i < inserts.length; i += BULK_ROWS) {
+    stmts.push(
+      env.DB.prepare(
+        `INSERT INTO credits (id, capture_id, creator_id, brand_id, upc, amount_minor, currency,
+           state, void_reason, hold_until, payout_batch_id, created_at)
+         SELECT j.value ->> 0, j.value ->> 1, j.value ->> 2, j.value ->> 3, j.value ->> 4,
+           j.value ->> 5, j.value ->> 6, j.value ->> 7, j.value ->> 8, j.value ->> 9,
+           j.value ->> 10, j.value ->> 11
+         FROM json_each(?) AS j`,
+      ).bind(JSON.stringify(inserts.slice(i, i + BULK_ROWS))),
+    );
+  }
+  for (let i = 0; i < updates.length; i += BULK_ROWS) {
+    stmts.push(
+      env.DB.prepare(
+        `UPDATE credits SET amount_minor = u.amount_minor, state = u.state,
+           void_reason = u.void_reason, payout_batch_id = u.payout_batch_id
+         FROM (SELECT j.value ->> 0 AS id, j.value ->> 1 AS amount_minor, j.value ->> 2 AS state,
+                 j.value ->> 3 AS void_reason, j.value ->> 4 AS payout_batch_id
+               FROM json_each(?) AS j) AS u
+         WHERE credits.id = u.id`,
+      ).bind(JSON.stringify(updates.slice(i, i + BULK_ROWS))),
+    );
+  }
+  if (stmts.length) await env.DB.batch(stmts);
 }
 
 /**
@@ -139,11 +180,18 @@ export async function coalitionValueFor(env: Env, brand: Brand): Promise<Coaliti
     .map((r) => ({ seen: new Set(JSON.parse(r.seen as string) as string[]), bought: !!r.bought }));
   const placebo = results.filter((r) => r.arm === "placebo");
   const placeboRate = placebo.length ? placebo.filter((r) => r.bought).length / placebo.length : 0;
+  // Shapley asks for the same few coalitions on every sale; each answer scans every exposed
+  // session, so remember it (subsets arrive in sorted order, so the joined ids are a key).
+  const memo = new Map<string, number>();
   return (subset) => {
     if (subset.length === 0) return 0;
+    const key = subset.join("+");
+    const hit = memo.get(key);
+    if (hit !== undefined) return hit;
     const who = exposed.filter((e) => subset.every((c) => e.seen.has(c)));
-    if (who.length === 0) return 0;
-    return who.filter((e) => e.bought).length / who.length - placeboRate;
+    const v = who.length === 0 ? 0 : who.filter((e) => e.bought).length / who.length - placeboRate;
+    memo.set(key, v);
+    return v;
   };
 }
 
@@ -259,21 +307,48 @@ export async function applyVoids(env: Env, captureId?: string): Promise<ReviewFl
   ).results;
   if (refunds.length === 0) return [];
 
-  const before = await loadCredits(env);
-  let ledger = before;
+  // One webhook touches one capture: load only its credits and sale, not the whole ledger
+  // (a refund at 10k sales used to read every credit). Without a capture, everything refunded.
+  const before = captureId ? await loadCreditsOf(env, captureId) : await loadCredits(env);
+  const saleTotals = new Map(
+    (
+      await (captureId
+        ? env.DB.prepare(
+            `SELECT capture_id, SUM(amount_minor) AS total, MAX(currency) AS currency
+             FROM sales WHERE capture_id = ? GROUP BY capture_id`,
+          ).bind(captureId)
+        : env.DB.prepare(
+            `SELECT capture_id, SUM(amount_minor) AS total, MAX(currency) AS currency
+             FROM sales WHERE capture_id IN (SELECT capture_id FROM refunds) GROUP BY capture_id`,
+          )
+      ).all<Row>()
+    ).results.map((r) => [
+      r.capture_id as string,
+      { total: r.total as number | null, currency: r.currency as string | null },
+    ]),
+  );
+  const creditsOf = new Map<string, Credit[]>();
+  for (const c of before) {
+    const list = creditsOf.get(c.captureId);
+    if (list) list.push(c);
+    else creditsOf.set(c.captureId, [c]);
+  }
+  const untouched = new Set(before);
+  const changed: Credit[] = [];
   const flags: ReviewFlag[] = [];
   const byCapture = new Map<string, Row[]>();
   for (const r of refunds) {
     const k = r.capture_id as string;
-    byCapture.set(k, [...(byCapture.get(k) ?? []), r]);
+    const list = byCapture.get(k);
+    if (list) list.push(r);
+    else byCapture.set(k, [r]);
   }
 
   for (const [capture, rows] of byCapture) {
-    const sale = await env.DB.prepare(
-      "SELECT SUM(amount_minor) AS total, MAX(currency) AS currency FROM sales WHERE capture_id = ?",
-    )
-      .bind(capture)
-      .first<{ total: number | null; currency: string | null }>();
+    const sale = saleTotals.get(capture);
+    // applyVoid only reads and writes the credits of `event.captureId`, so it runs on that slice.
+    let ledger: readonly Credit[] = creditsOf.get(capture) ?? [];
+    for (const c of ledger) untouched.delete(c);
     const events: VoidEvent[] = [];
     // An open dispute only freezes the credit (see frozenCaptures); it voids if the buyer wins.
     if (rows.some((r) => r.kind === "dispute" && disputeState(r.status as string) === "buyer"))
@@ -303,24 +378,25 @@ export async function applyVoids(env: Env, captureId?: string): Promise<ReviewFl
       ledger = out.credits;
       flags.push(...out.flags);
     }
+    changed.push(...ledger);
   }
 
-  await persistCredits(env, before, ledger, new Date().toISOString());
-  for (const f of flags) {
-    await env.DB.prepare(
+  await persistCredits(env, before, [...untouched, ...changed], new Date().toISOString());
+  const at = new Date().toISOString();
+  const stmts = flags.map((f) =>
+    env.DB.prepare(
       `INSERT OR IGNORE INTO review_flags (id, credit_id, capture_id, reason, payout_batch_id, created_at)
        VALUES (?, ?, ?, ?, ?, ?)`,
-    )
-      .bind(
-        `${f.reason}:${f.creditId}`,
-        f.creditId,
-        f.captureId,
-        f.reason,
-        f.payoutBatchId ?? null,
-        new Date().toISOString(),
-      )
-      .run();
-  }
+    ).bind(
+      `${f.reason}:${f.creditId}`,
+      f.creditId,
+      f.captureId,
+      f.reason,
+      f.payoutBatchId ?? null,
+      at,
+    ),
+  );
+  for (let i = 0; i < stmts.length; i += 500) await env.DB.batch(stmts.slice(i, i + 500));
   return flags;
 }
 

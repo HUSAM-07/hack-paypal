@@ -1,0 +1,362 @@
+{
+  "machine": {
+    "cpu": "Apple M2 Pro",
+    "cores": 12,
+    "memGb": 32,
+    "os": "Darwin 27.2.0 arm64",
+    "node": "v22.23.4",
+    "wrangler": "4.156.0"
+  },
+  "at": "2026-11-10T15:17:44.902Z",
+  "pure": {
+    "lift": {
+      "sessions": 1000000,
+      "tallyMs": 29,
+      "liftMs": 0.3,
+      "lowerBound": 0.07792,
+      "fraction": 0.38929,
+      "units": 46706,
+      "repeatedMs": 237.7
+    },
+    "shapley": {
+      "sales": 1000000,
+      "msByCoExposed": {
+        "1": 488.9,
+        "2": 821.5,
+        "3": 1288.5,
+        "4": 2457.6
+      }
+    },
+    "ledger": {
+      "sales": 1000000,
+      "credits": 1000547,
+      "createCreditsMs": 2935.3,
+      "releasePayableMs": 723.8,
+      "payoutLines": 24
+    }
+  },
+  "engine": [
+    {
+      "sessions": 1000,
+      "concurrency": 32,
+      "creators": 24,
+      "sales": 160,
+      "refunds": 3,
+      "disputes": 1,
+      "sessionReports": {
+        "count": 1000,
+        "wallMs": 2892.6,
+        "perSec": 346,
+        "p50": 85.1,
+        "p95": 143,
+        "p99": 161.2,
+        "max": 167.7
+      },
+      "orderWebhooks": {
+        "count": 160,
+        "wallMs": 466.7,
+        "perSec": 343,
+        "p50": 90.4,
+        "p95": 109.7,
+        "p99": 110.1,
+        "max": 110.9
+      },
+      "captureWebhooks": {
+        "count": 160,
+        "wallMs": 985.8,
+        "perSec": 162,
+        "p50": 174.3,
+        "p95": 292.9,
+        "p99": 293.6,
+        "max": 293.8
+      },
+      "duplicateWebhooks": {
+        "count": 2,
+        "wallMs": 15.5,
+        "perSec": 129,
+        "p50": 15.4,
+        "p95": 15.4,
+        "p99": 15.4,
+        "max": 15.4
+      },
+      "recompute1": {
+        "ms": 57.8,
+        "created": 16
+      },
+      "refundWebhooks": {
+        "count": 3,
+        "wallMs": 24.7,
+        "perSec": 121,
+        "p50": 24.5,
+        "p95": 24.5,
+        "p99": 24.5,
+        "max": 24.5
+      },
+      "disputeWebhooks": {
+        "count": 1,
+        "wallMs": 23.5,
+        "perSec": 43,
+        "p50": 23.5,
+        "p95": 23.5,
+        "p99": 23.5,
+        "max": 23.5
+      },
+      "disputeResolved": {
+        "count": 1,
+        "wallMs": 17,
+        "perSec": 59,
+        "p50": 17,
+        "p95": 17,
+        "p99": 17,
+        "max": 17
+      },
+      "recompute2": {
+        "ms": 46.6,
+        "created": 0
+      },
+      "payoutInsideHold": {
+        "ms": 13.8,
+        "status": "nothing_due"
+      },
+      "payout": {
+        "ms": 77.9,
+        "status": "sent",
+        "items": 11,
+        "batches": 1
+      },
+      "cycleClose": {
+        "ms": 44.9,
+        "brands": 3
+      },
+      "checks": {
+        "ok": true,
+        "fails": [],
+        "credits": 16,
+        "refundedSalesWithCredits": 0,
+        "byState": {
+          "paid": 16
+        },
+        "paidMinor": 4152,
+        "payoutItems": 11,
+        "payoutBatches": 1,
+        "returnedMinor": 299995848
+      }
+    },
+    {
+      "sessions": 10000,
+      "concurrency": 32,
+      "creators": 24,
+      "sales": 1571,
+      "refunds": 31,
+      "disputes": 8,
+      "sessionReports": {
+        "count": 10000,
+        "wallMs": 18103.5,
+        "perSec": 552,
+        "p50": 54.8,
+        "p95": 79.4,
+        "p99": 125.5,
+        "max": 225.9
+      },
+      "orderWebhooks": {
+        "count": 1571,
+        "wallMs": 4971,
+        "perSec": 316,
+        "p50": 90.7,
+        "p95": 199.7,
+        "p99": 261.4,
+        "max": 266.1
+      },
+      "captureWebhooks": {
+        "count": 1571,
+        "wallMs": 7333.9,
+        "perSec": 214,
+        "p50": 143,
+        "p95": 212.1,
+        "p99": 281.5,
+        "max": 285.3
+      },
+      "duplicateWebhooks": {
+        "count": 16,
+        "wallMs": 34.4,
+        "perSec": 465,
+        "p50": 34,
+        "p95": 34.1,
+        "p99": 34.1,
+        "max": 34.1
+      },
+      "recompute1": {
+        "ms": 123.3,
+        "created": 824
+      },
+      "refundWebhooks": {
+        "count": 31,
+        "wallMs": 142.1,
+        "perSec": 218,
+        "p50": 111.5,
+        "p95": 141.4,
+        "p99": 141.4,
+        "max": 141.4
+      },
+      "disputeWebhooks": {
+        "count": 8,
+        "wallMs": 47.7,
+        "perSec": 168,
+        "p50": 47.5,
+        "p95": 47.5,
+        "p99": 47.5,
+        "max": 47.5
+      },
+      "disputeResolved": {
+        "count": 6,
+        "wallMs": 42.4,
+        "perSec": 141,
+        "p50": 42.2,
+        "p95": 42.2,
+        "p99": 42.2,
+        "max": 42.2
+      },
+      "recompute2": {
+        "ms": 123.5,
+        "created": 0
+      },
+      "payoutInsideHold": {
+        "ms": 27.1,
+        "status": "nothing_due"
+      },
+      "payout": {
+        "ms": 45.7,
+        "status": "sent",
+        "items": 24,
+        "batches": 1
+      },
+      "cycleClose": {
+        "ms": 127.4,
+        "brands": 3
+      },
+      "checks": {
+        "ok": true,
+        "fails": [],
+        "credits": 826,
+        "refundedSalesWithCredits": 9,
+        "byState": {
+          "paid": 799,
+          "pending": 5,
+          "voided": 22
+        },
+        "paidMinor": 191807,
+        "payoutItems": 24,
+        "payoutBatches": 1,
+        "returnedMinor": 299806750
+      }
+    },
+    {
+      "sessions": 50000,
+      "concurrency": 32,
+      "creators": 24,
+      "sales": 8006,
+      "refunds": 160,
+      "disputes": 40,
+      "sessionReports": {
+        "count": 50000,
+        "wallMs": 94608.8,
+        "perSec": 528,
+        "p50": 54.1,
+        "p95": 101.2,
+        "p99": 148.5,
+        "max": 320.6
+      },
+      "orderWebhooks": {
+        "count": 8006,
+        "wallMs": 16514.3,
+        "perSec": 485,
+        "p50": 58.1,
+        "p95": 108.8,
+        "p99": 162.1,
+        "max": 225.4
+      },
+      "captureWebhooks": {
+        "count": 8006,
+        "wallMs": 26798.9,
+        "perSec": 299,
+        "p50": 99.6,
+        "p95": 157.9,
+        "p99": 206.8,
+        "max": 268.8
+      },
+      "duplicateWebhooks": {
+        "count": 81,
+        "wallMs": 139.6,
+        "perSec": 580,
+        "p50": 47.1,
+        "p95": 75,
+        "p99": 75.5,
+        "max": 75.5
+      },
+      "recompute1": {
+        "ms": 643.3,
+        "created": 4014
+      },
+      "refundWebhooks": {
+        "count": 160,
+        "wallMs": 551.7,
+        "perSec": 290,
+        "p50": 113.6,
+        "p95": 127.7,
+        "p99": 128,
+        "max": 128
+      },
+      "disputeWebhooks": {
+        "count": 40,
+        "wallMs": 121.5,
+        "perSec": 329,
+        "p50": 101.4,
+        "p95": 101.9,
+        "p99": 102,
+        "max": 102
+      },
+      "disputeResolved": {
+        "count": 27,
+        "wallMs": 85,
+        "perSec": 318,
+        "p50": 83.6,
+        "p95": 84.4,
+        "p99": 84.4,
+        "max": 84.4
+      },
+      "recompute2": {
+        "ms": 630.6,
+        "created": 0
+      },
+      "payoutInsideHold": {
+        "ms": 154.1,
+        "status": "nothing_due"
+      },
+      "payout": {
+        "ms": 190.8,
+        "status": "sent",
+        "items": 24,
+        "batches": 1
+      },
+      "cycleClose": {
+        "ms": 54.4,
+        "brands": 3
+      },
+      "checks": {
+        "ok": true,
+        "fails": [],
+        "credits": 4038,
+        "refundedSalesWithCredits": 54,
+        "byState": {
+          "paid": 2307,
+          "pending": 1585,
+          "voided": 146
+        },
+        "paidMinor": 548414,
+        "payoutItems": 24,
+        "payoutBatches": 1,
+        "returnedMinor": 299080635
+      }
+    }
+  ]
+}
