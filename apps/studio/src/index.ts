@@ -3,8 +3,12 @@ import { recommend } from "./analyst";
 import {
   createEngineApprover,
   createEngineReader,
+  createEngineReviewer,
   EngineUnavailable,
   type RawEngine,
+  type RawReviewFlag,
+  type ReviewAction,
+  ReviewRejected,
 } from "./dashboard";
 import {
   MAX_REQUEST_BYTES,
@@ -24,6 +28,8 @@ export interface StudioDeps {
   approve?:
     | ((a: { approvalId: string; brandId: string; amountMinor: number }) => Promise<unknown>)
     | undefined;
+  /** Release or void a credit the abuse guard held, through the engine's review endpoints. */
+  review?: ((id: string, action: ReviewAction) => Promise<RawReviewFlag>) | undefined;
   llm?: StudioLlmChoice | undefined;
   /** Fetch used for model calls (tests inject a fake). */
   llmFetch?: typeof fetch | undefined;
@@ -43,6 +49,7 @@ export function depsFromEnv(env: Record<string, string | undefined>): StudioDeps
   return {
     read: createEngineReader(engine),
     approve: createEngineApprover(engine),
+    review: createEngineReviewer(engine),
     llm: studioLlmChoice(env as StudioLlmEnv),
     licenseKey: env.AG_STUDIO_LICENSE_KEY,
     gridLicenseKey: env.AG_GRID_LICENSE_KEY,
@@ -122,6 +129,23 @@ export function createStudioApp(deps: StudioDeps = depsFromEnv(process.env)) {
         deposit,
       });
     } catch (e) {
+      return c.json(engineError(e), 503);
+    }
+  });
+
+  // A reviewer decides a guard hold from the brand view. Only open holds can be decided (the
+  // engine checks), and the header keeps a plain cross-site form from reaching it.
+  app.post("/api/review-flags/:id/:action", async (c) => {
+    if (c.req.header("x-studio") !== "review") return c.json({ error: "forbidden" }, 403);
+    if (!deps.review) return c.json({ error: "reviews are not configured" }, 501);
+    const action = c.req.param("action");
+    const id = c.req.param("id");
+    if (action !== "release" && action !== "void") return c.json({ error: "unknown action" }, 404);
+    if (!/^[A-Za-z0-9_:-]{1,200}$/.test(id)) return c.json({ error: "bad flag id" }, 400);
+    try {
+      return c.json({ flag: await deps.review(id, action) });
+    } catch (e) {
+      if (e instanceof ReviewRejected) return c.json({ error: e.message }, e.status);
       return c.json(engineError(e), 503);
     }
   });

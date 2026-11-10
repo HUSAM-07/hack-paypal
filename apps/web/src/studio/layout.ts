@@ -58,22 +58,9 @@ export function initialState(view: "brand" | "creator", creatorName: string): Ag
             },
           },
           flags: {
-            type: "grid",
-            dataMapping: {
-              cols: [
-                { id: "flags.creator" },
-                { id: "flags.amount" },
-                { id: "flags.reason" },
-                { id: "flags.detail" },
-                { id: "flags.status" },
-                { id: "flags.orderId" },
-              ],
-            },
+            type: "cited-flags",
             format: {
-              title: {
-                enabled: true,
-                text: "Held for review: credits a person must release or void",
-              },
+              title: { enabled: true, text: "Held for review: release or void" },
             },
           },
         },

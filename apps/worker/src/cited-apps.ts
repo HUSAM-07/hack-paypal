@@ -9,6 +9,7 @@ import { app as engine } from "@cited/engine";
 import {
   createEngineApprover,
   createEngineReader,
+  createEngineReviewer,
   createStudioApp,
   studioLlmChoice,
 } from "@cited/studio";
@@ -212,6 +213,7 @@ export async function studioHandler(c: Ctx): Promise<Response> {
       fetch: engineFetch(env, c.executionCtx),
     }),
     approve: createEngineApprover({ baseUrl: "https://engine.internal", fetch: engineWrite }),
+    review: createEngineReviewer({ baseUrl: "https://engine.internal", fetch: engineWrite }),
     llm: studioLlmChoice(env),
     limit: async (req) => {
       const ip = clientIp(req);

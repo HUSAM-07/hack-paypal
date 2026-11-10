@@ -299,4 +299,51 @@ describe("studio routes", () => {
     expect(ok.status).toBe(200);
     expect(approvals).toEqual([{ approvalId: "analyst-1", brandId: "winix", amountMinor: 50_000 }]);
   });
+
+  it("passes a reviewer's release or void to the engine, and refuses anything else", async () => {
+    const { createEngineReviewer, ReviewRejected } = await import("../src/dashboard");
+    const calls: { url: string; auth: string | null }[] = [];
+    const engineFetch = (async (input: string | URL | Request, init?: RequestInit) => {
+      const url = String(input);
+      calls.push({ url, auth: new Headers(init?.headers).get("authorization") });
+      if (url.includes("/done%3A"))
+        return Response.json({ error: "already_released" }, { status: 409 });
+      return Response.json({
+        flag: { id: "x", status: url.endsWith("/void") ? "voided" : "released" },
+      });
+    }) as typeof fetch;
+    const review = createEngineReviewer({
+      baseUrl: "http://e.test/",
+      token: "t0k",
+      fetch: engineFetch,
+    });
+    const studio = createStudioApp({ read: async () => raw, review });
+    const post = (path: string, headers: Record<string, string> = { "x-studio": "review" }) =>
+      studio.request(path, { method: "POST", headers });
+
+    expect((await post("/api/review-flags/self_purchase:C9:housefresh/release", {})).status).toBe(
+      403,
+    );
+    expect((await post("/api/review-flags/self_purchase:C9:housefresh/pay")).status).toBe(404);
+    expect((await post("/api/review-flags/a%20b/release")).status).toBe(400);
+    const ok = await post("/api/review-flags/self_purchase:C9:housefresh/void");
+    expect(ok.status).toBe(200);
+    expect(await ok.json()).toEqual({ flag: { id: "x", status: "voided" } });
+    expect(calls[0]).toEqual({
+      url: "http://e.test/api/review-flags/self_purchase%3AC9%3Ahousefresh/void",
+      auth: "Bearer t0k",
+    });
+    const late = await post("/api/review-flags/done:C1:housefresh/release");
+    expect(late.status).toBe(409);
+    expect(await late.json()).toEqual({ error: "already_released" });
+    expect(ReviewRejected).toBeDefined();
+    expect(
+      (
+        await createStudioApp({ read: async () => raw }).request("/api/review-flags/x/void", {
+          method: "POST",
+          headers: { "x-studio": "review" },
+        })
+      ).status,
+    ).toBe(501);
+  });
 });

@@ -16,7 +16,7 @@ import { type StudioContext, scopeStore } from "./context";
 import { diffTables, getJson, POLL_MS, type StudioConfig, type StudioTables } from "./data";
 import { initialState, sourcesFor } from "./layout";
 import { citedTheme } from "./theme";
-import { ArmStrip, CausedTile, CreatorTiles, DepositMeter } from "./widgets/cited";
+import { ArmStrip, CausedTile, CreatorTiles, DepositMeter, ReviewFlags } from "./widgets/cited";
 import { JourneysGrid } from "./widgets/JourneysGrid";
 
 const CREATORS: Record<string, string> = { housefresh: "HouseFresh", airlab: "AirLab" };
@@ -60,6 +60,14 @@ const widgets = (defaults: AgWidgetsConfig<AgCoreDefaultRegistry>) =>
         minSize: { width: 300, height: 120 },
       },
       {
+        id: "cited-flags",
+        label: "Held for review",
+        comp: ReviewFlags,
+        form,
+        defaultSize: { width: 900, height: 220 },
+        minSize: { width: 360, height: 160 },
+      },
+      {
         id: "cited-journeys",
         label: "Journeys & Shapley split",
         comp: JourneysGrid,
@@ -78,6 +86,7 @@ const widgets = (defaults: AgWidgetsConfig<AgCoreDefaultRegistry>) =>
           "cited-deposit",
           "cited-creator",
           "cited-journeys",
+          "cited-flags",
         ],
       },
     ],

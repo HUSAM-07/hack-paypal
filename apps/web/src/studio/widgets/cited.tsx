@@ -4,8 +4,9 @@
  * the proof behind a number, not just the number.
  */
 import type { AgWidgetParams } from "ag-studio";
-import { useSyncExternalStore } from "react";
+import { useState, useSyncExternalStore } from "react";
 import { type StudioContext, scopeStore } from "../context";
+import { API } from "../data";
 import { money, num, useRows } from "./useRows";
 
 type P = AgWidgetParams<never, unknown, StudioContext>;
@@ -293,6 +294,152 @@ export function CreatorTiles(p: P) {
       <p className="cw-note cw-tiles-note">
         {num(row.credits)} credits in all; {num(row.coExposed)} shared with another creator the
         agent also read, split by Shapley value.
+      </p>
+    </div>
+  );
+}
+
+const FLAG_FIELDS = [
+  "id",
+  "creator",
+  "amount",
+  "reason",
+  "detail",
+  "status",
+  "hold",
+  "kind",
+  "orderId",
+];
+const WAITING = "Waiting for a reviewer";
+
+/**
+ * Credits the abuse guard held, with the reviewer's two decisions. Release: the credit is paid at
+ * the next payout. Void: it is voided for good, so it asks once more before it goes.
+ */
+export function ReviewFlags(p: P) {
+  const rows = useRows(p.widgetApi, "flags", FLAG_FIELDS);
+  const [busy, setBusy] = useState<string | null>(null);
+  const [confirming, setConfirming] = useState<string | null>(null);
+  const [note, setNote] = useState<{ id: string; text: string; error?: boolean } | null>(null);
+  const decide = async (id: string, action: "release" | "void") => {
+    setBusy(id);
+    setConfirming(null);
+    try {
+      const res = await fetch(`${API}/review-flags/${encodeURIComponent(id)}/${action}`, {
+        method: "POST",
+        headers: { "x-studio": "review" },
+      });
+      const body = (await res.json().catch(() => ({}))) as { error?: string };
+      if (!res.ok) throw new Error(body.error ?? `review answered ${res.status}`);
+      setNote({
+        id,
+        text:
+          action === "release"
+            ? "Released: paid at the next payout run."
+            : "Voided: the credit will never be paid, and its share of the deposit is freed.",
+      });
+    } catch (e) {
+      setNote({ id, text: (e as Error).message, error: true });
+    } finally {
+      setBusy(null);
+    }
+  };
+  if (!rows) return <div className="cw-empty">Loading review flags…</div>;
+  if (!rows.length)
+    return (
+      <div className="cw-empty">
+        Nothing held for review. Self-purchases, repeat buyers, sales spikes and refund rings land
+        here.
+      </div>
+    );
+  return (
+    <div className="cw cw-flags">
+      <table className="cw-flags-table">
+        <thead>
+          <tr>
+            <th scope="col">Creator</th>
+            <th scope="col" className="is-num">
+              Credit
+            </th>
+            <th scope="col">Reason</th>
+            <th scope="col">Status</th>
+            <th scope="col">
+              <span className="cw-sr">Decision</span>
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((r) => {
+            const id = String(r.id);
+            const open = r.hold === true && r.status === WAITING;
+            return (
+              <tr key={id}>
+                <td>{String(r.creator)}</td>
+                <td className="is-num">{money(num(r.amount))}</td>
+                <td>
+                  {String(r.reason)}
+                  <small>{String(r.detail)}</small>
+                </td>
+                <td>
+                  <span className={`cw-pill ${open ? "is-held" : ""}`}>{String(r.status)}</span>
+                  {note?.id === id ? (
+                    <small
+                      className={note.error ? "cw-approval-error" : ""}
+                      role={note.error ? "alert" : "status"}
+                    >
+                      {note.text}
+                    </small>
+                  ) : null}
+                </td>
+                <td className="cw-flags-actions">
+                  {open ? (
+                    confirming === id ? (
+                      <>
+                        <button
+                          type="button"
+                          className="is-void"
+                          onClick={() => decide(id, "void")}
+                          disabled={busy !== null}
+                        >
+                          Void {money(num(r.amount))} for good
+                        </button>
+                        <button
+                          type="button"
+                          className="is-quiet"
+                          onClick={() => setConfirming(null)}
+                        >
+                          Keep it held
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => decide(id, "release")}
+                          disabled={busy !== null}
+                        >
+                          {busy === id ? "Saving…" : "Release"}
+                        </button>
+                        <button
+                          type="button"
+                          className="is-quiet"
+                          onClick={() => setConfirming(id)}
+                          disabled={busy !== null}
+                        >
+                          Void
+                        </button>
+                      </>
+                    )
+                  ) : null}
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+      <p className="cw-note">
+        A held credit is never paid automatically. Release pays it at the next payout run; void
+        cancels it and frees its share of the deposit.
       </p>
     </div>
   );
