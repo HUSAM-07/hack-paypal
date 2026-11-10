@@ -199,7 +199,7 @@ export function App() {
           <p>
             {view === "brand"
               ? "Maya, brand manager. Winix pays only for the sales its creators' tests caused."
-              : "Every credit from the purifier test: held, frozen, voided or paid."}
+              : "Every credit from the purifier test: pending, held for review, frozen, voided or paid."}
           </p>
         </div>
         <div className="st-controls">

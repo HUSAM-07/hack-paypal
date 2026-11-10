@@ -25,6 +25,7 @@ const BRAND_FIELDS = [
   "credited",
   "pending",
   "frozen",
+  "held",
   "voided",
   "paid",
   "deposited",
@@ -110,6 +111,12 @@ export function CausedTile(p: P) {
           <dt>Paid</dt>
           <dd className="is-paid">{money(num(row.paid))}</dd>
         </div>
+        {num(row.held) > 0 ? (
+          <div>
+            <dt title="Held for review by the abuse guard: never paid automatically">Held</dt>
+            <dd className="is-held">{money(num(row.held))}</dd>
+          </div>
+        ) : null}
       </dl>
       {rival ? (
         <div className="cw-rival">
@@ -188,7 +195,7 @@ export function DepositMeter(p: P) {
   const deposited = num(row.deposited);
   const parts = [
     { key: "paid", label: "Paid to creators", value: num(row.spent) },
-    { key: "held", label: "Held for pending credits", value: num(row.reserved) },
+    { key: "held", label: "Reserved for pending credits", value: num(row.reserved) },
     { key: "left", label: "Left in the programme", value: num(row.available) },
     { key: "returned", label: "Returned to the brand", value: num(row.returned) },
   ];
@@ -236,6 +243,7 @@ export function DepositMeter(p: P) {
 const STATES = [
   { key: "pending", label: "Pending", hint: "30-day hold" },
   { key: "frozen", label: "Frozen", hint: "open PayPal dispute" },
+  { key: "held", label: "Held for review", hint: "never paid automatically" },
   { key: "voided", label: "Voided", hint: "refund or lost dispute" },
   { key: "paid", label: "Paid", hint: "PayPal Payouts" },
 ] as const;
@@ -248,11 +256,14 @@ export function CreatorTiles(p: P) {
     "creator",
     "pending",
     "frozen",
+    "held",
     "voided",
     "paid",
     "credits",
     "voidedCount",
     "frozenCount",
+    "heldCount",
+    "heldReasons",
     "coExposed",
     "firstPayout",
   ]);
@@ -269,9 +280,13 @@ export function CreatorTiles(p: P) {
               ? `${num(row.voidedCount)} credit${num(row.voidedCount) === 1 ? "" : "s"} · ${s.hint}`
               : s.key === "frozen"
                 ? `${num(row.frozenCount)} credit${num(row.frozenCount) === 1 ? "" : "s"} · ${s.hint}`
-                : s.key === "paid"
-                  ? `${money(num(row.firstPayout))} in the first payout`
-                  : s.hint}
+                : s.key === "held"
+                  ? num(row.heldCount) > 0
+                    ? `${num(row.heldCount)} credit${num(row.heldCount) === 1 ? "" : "s"} · ${String(row.heldReasons).toLowerCase()}`
+                    : s.hint
+                  : s.key === "paid"
+                    ? `${money(num(row.firstPayout))} in the first payout`
+                    : s.hint}
           </small>
         </div>
       ))}

@@ -34,7 +34,8 @@ export type TableId =
   | "journeys"
   | "shares"
   | "payouts"
-  | "deposits";
+  | "deposits"
+  | "flags";
 
 const usd = (minor: number) => Math.round(minor) / 100;
 const HOLD_DAYS = 30;
@@ -98,7 +99,23 @@ export function inFirstPayout(x: CreditWithCreator, first: RawPayoutBatch | unde
   );
 }
 
-const stateOf = (x: RawCredit) => (x.state === "pending" && x.frozen ? "frozen" : x.state);
+/** Why the abuse guard held a credit, in words. */
+export const HOLD_LABEL: Record<string, string> = {
+  self_purchase: "Self-purchase",
+  repeat_buyer: "Repeat buyer",
+  velocity: "Sales spike",
+  refund_ring: "Refund ring",
+  refund: "Refunded after payout",
+  partial_refund: "Part-refunded after payout",
+  dispute: "Disputed after payout",
+};
+const holdLabel = (r: string) => HOLD_LABEL[r] ?? r;
+
+/** Pending splits three ways: held for review by the guard, frozen by a dispute, or on its 30-day hold. */
+const isHeld = (x: RawCredit) => x.state === "pending" && !!x.held;
+const isFrozen = (x: RawCredit) => x.state === "pending" && !x.held && !!x.frozen;
+const isPending = (x: RawCredit) => x.state === "pending" && !x.held && !x.frozen;
+const stateOf = (x: RawCredit) => (isHeld(x) ? "held" : isFrozen(x) ? "frozen" : x.state);
 
 export function buildTables(raw: RawEngine): StudioTables {
   const batches = orderedBatches(raw);
@@ -177,8 +194,9 @@ export function buildTables(raw: RawEngine): StudioTables {
         lowerBound: scope === "todate" ? b.lowerBound : null,
         attributableFraction: scope === "todate" ? b.attributableFraction : null,
         credited: usd(sum(xs, () => true)),
-        pending: usd(sum(xs, (x) => x.state === "pending" && !x.frozen)),
-        frozen: usd(sum(xs, (x) => x.state === "pending" && !!x.frozen)),
+        pending: usd(sum(xs, isPending)),
+        frozen: usd(sum(xs, isFrozen)),
+        held: usd(sum(xs, isHeld)),
         voided: usd(sum(xs, (x) => x.state === "voided")),
         paid: usd(paid),
         deposited: usd(deposit.deposited),
@@ -218,6 +236,7 @@ export function buildTables(raw: RawEngine): StudioTables {
       state: stateOf(x),
       // Text cells read "–" rather than blank: a grid shows a null as "(Blanks)".
       voidReason: x.voidReason ?? "–",
+      holdReason: isHeld(x) ? (x.holdReasons ?? []).map(holdLabel).join(", ") || "–" : "–",
       holdUntil: x.holdUntil ? x.holdUntil.slice(0, 10) : null,
       payoutBatch: x.payoutBatchId
         ? (labels.get(x.payoutBatchId) ?? x.payoutBatchId)
@@ -238,13 +257,19 @@ export function buildTables(raw: RawEngine): StudioTables {
       id: c.creatorId,
       creatorId: c.creatorId,
       creator: c.name,
-      pending: usd(sum(xs, (x) => x.state === "pending" && !x.frozen)),
-      frozen: usd(sum(xs, (x) => x.state === "pending" && !!x.frozen)),
+      pending: usd(sum(xs, isPending)),
+      frozen: usd(sum(xs, isFrozen)),
+      held: usd(sum(xs, isHeld)),
       voided: usd(sum(xs, (x) => x.state === "voided")),
       paid: usd(sum(xs, (x) => x.state === "paid")),
       credits: xs.length,
       voidedCount: xs.filter((x) => x.state === "voided").length,
-      frozenCount: xs.filter((x) => x.state === "pending" && x.frozen).length,
+      frozenCount: xs.filter(isFrozen).length,
+      heldCount: xs.filter(isHeld).length,
+      heldReasons:
+        [...new Set(xs.filter(isHeld).flatMap((x) => x.holdReasons ?? []))]
+          .map(holdLabel)
+          .join(", ") || "–",
       coExposed: xs.filter((x) => (byCapture.get(x.captureId)?.length ?? 0) > 1).length,
       firstPayout: usd(
         first?.items
@@ -335,6 +360,31 @@ export function buildTables(raw: RawEngine): StudioTables {
     })),
   );
 
+  const brandOf = new Map(raw.lift.map((b) => [b.brandId, b.name]));
+  const flags: Row[] = (raw.reviewFlags ?? []).map((f) => ({
+    id: f.id,
+    creditId: f.creditId,
+    creatorId: f.credit?.creatorId ?? null,
+    creator: f.credit ? nameOf(f.credit.creatorId) : "–",
+    brand: f.credit ? (brandOf.get(f.credit.brandId) ?? f.credit.brandId) : "–",
+    captureId: f.captureId,
+    orderId: orderOfCapture.get(f.captureId) ?? null,
+    amount: usd(f.credit?.amountMinor ?? 0),
+    kind: f.hold ? "Held for review" : "Note on a paid credit",
+    hold: f.hold,
+    reason: holdLabel(f.reason),
+    detail: f.detail ?? "–",
+    status: f.hold
+      ? f.status === "open"
+        ? "Waiting for a reviewer"
+        : f.status === "released"
+          ? "Released"
+          : "Voided"
+      : f.status,
+    creditState: f.credit?.state ?? "–",
+    createdAt: f.createdAt ?? null,
+  }));
+
   const tables: Record<TableId, Row[]> = {
     brands,
     arms,
@@ -344,6 +394,7 @@ export function buildTables(raw: RawEngine): StudioTables {
     shares,
     payouts,
     deposits,
+    flags,
   };
   return {
     asOf: raw.now,
@@ -421,6 +472,11 @@ export const TABLES: TableMeta[] = [
       m("credited", "Credited"),
       m("pending", "Pending (30-day hold)"),
       m("frozen", "Frozen by a dispute"),
+      m(
+        "held",
+        "Held for review",
+        "Pending credits the abuse guard holds (e.g. a creator buying through their own PayPal). Never paid until a reviewer releases them.",
+      ),
       m("voided", "Voided"),
       m("paid", "Paid"),
       m("deposited", "Deposited"),
@@ -458,11 +514,14 @@ export const TABLES: TableMeta[] = [
       t("creator", "Creator"),
       m("pending", "Pending (30-day hold)"),
       m("frozen", "Frozen by a dispute"),
+      m("held", "Held for review", "Held by the abuse guard; never paid automatically."),
       m("voided", "Voided"),
       m("paid", "Paid"),
       n("credits", "Credits"),
       n("voidedCount", "Voided credits"),
       n("frozenCount", "Frozen credits"),
+      n("heldCount", "Credits held for review"),
+      t("heldReasons", "Why they are held"),
       n("coExposed", "Co-exposed credits"),
       m("firstPayout", "Paid in the first payout"),
     ],
@@ -471,7 +530,7 @@ export const TABLES: TableMeta[] = [
     id: "credits",
     name: "Credits",
     description:
-      "One row per creator per credited sale. State is pending, frozen, voided or paid; void reason is refund or dispute.",
+      "One row per creator per credited sale. State is pending, held (for review by the abuse guard), frozen, voided or paid; void reason is refund, dispute or review.",
     fields: [
       t("id", "Credit id"),
       t("creatorId", "Creator id"),
@@ -482,6 +541,7 @@ export const TABLES: TableMeta[] = [
       m("amount", "Amount"),
       t("state", "State"),
       t("voidReason", "Void reason"),
+      t("holdReason", "Held for review because"),
       t("holdUntil", "Hold ends"),
       t("payoutBatch", "Payout batch"),
       b("firstPayout", "In the first payout"),
@@ -561,6 +621,29 @@ export const TABLES: TableMeta[] = [
       m("returned", "Returned"),
       t("status", "Status"),
       t("createdAt", "Created at"),
+    ],
+  },
+  {
+    id: "flags",
+    name: "Review flags",
+    description:
+      "Credits a person must look at. 'Held for review': the abuse guard held a pending credit (self-purchase, repeat buyer, sales spike, refund ring); it is never paid until a reviewer releases it, and voided if they void it. 'Note on a paid credit': the sale was refunded or disputed after the payout.",
+    fields: [
+      t("id", "Flag id"),
+      t("creditId", "Credit id"),
+      t("creatorId", "Creator id"),
+      t("creator", "Creator"),
+      t("brand", "Brand"),
+      t("captureId", "PayPal capture"),
+      t("orderId", "PayPal order"),
+      m("amount", "Credit"),
+      t("kind", "Kind"),
+      b("hold", "Held for review"),
+      t("reason", "Reason"),
+      t("detail", "Detail"),
+      t("status", "Status"),
+      t("creditState", "Credit state"),
+      t("createdAt", "Flagged at"),
     ],
   },
 ];

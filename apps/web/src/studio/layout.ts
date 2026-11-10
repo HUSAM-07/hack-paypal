@@ -57,12 +57,32 @@ export function initialState(view: "brand" | "creator", creatorName: string): Ag
               title: { enabled: true, text: "Cross-store journeys and the Shapley split" },
             },
           },
+          flags: {
+            type: "grid",
+            dataMapping: {
+              cols: [
+                { id: "flags.creator" },
+                { id: "flags.amount" },
+                { id: "flags.reason" },
+                { id: "flags.detail" },
+                { id: "flags.status" },
+                { id: "flags.orderId" },
+              ],
+            },
+            format: {
+              title: {
+                enabled: true,
+                text: "Held for review: credits a person must release or void",
+              },
+            },
+          },
         },
         widgetLayout: {
           caused: { xTrack: 0, yTrack: 0, xSpan: 9, ySpan: 23 },
           arms: { xTrack: 9, yTrack: 0, xSpan: 7, ySpan: 23 },
           deposit: { xTrack: 16, yTrack: 0, xSpan: 8, ySpan: 23 },
           journeys: { xTrack: 0, yTrack: 23, xSpan: 24, ySpan: 33 },
+          flags: { xTrack: 0, yTrack: 56, xSpan: 24, ySpan: 16 },
         },
       },
       {
@@ -81,12 +101,32 @@ export function initialState(view: "brand" | "creator", creatorName: string): Ag
                 { id: "credits.amount" },
                 { id: "credits.state" },
                 { id: "credits.voidReason" },
+                { id: "credits.holdReason" },
                 { id: "credits.holdUntil" },
                 { id: "credits.payoutBatch" },
                 { id: "credits.splitWith" },
               ],
             },
             format: { title: { enabled: true, text: "Every credit, live from the ledger" } },
+          },
+          flags: {
+            type: "grid",
+            dataMapping: {
+              cols: [
+                { id: "flags.creator" },
+                { id: "flags.amount" },
+                { id: "flags.reason" },
+                { id: "flags.detail" },
+                { id: "flags.status" },
+                { id: "flags.orderId" },
+              ],
+            },
+            format: {
+              title: {
+                enabled: true,
+                text: "Review flags on your credits",
+              },
+            },
           },
           batches: {
             type: "column-chart-grouped",
@@ -101,10 +141,14 @@ export function initialState(view: "brand" | "creator", creatorName: string): Ag
           tiles: { xTrack: 0, yTrack: 0, xSpan: 24, ySpan: 11 },
           credits: { xTrack: 0, yTrack: 11, xSpan: 16, ySpan: 45 },
           batches: { xTrack: 16, yTrack: 11, xSpan: 8, ySpan: 45 },
+          flags: { xTrack: 0, yTrack: 56, xSpan: 24, ySpan: 14 },
         },
         filter: {
           page: [creatorFilter("credits", creatorName)],
-          widget: { batches: [creatorFilter("payouts", creatorName)] },
+          widget: {
+            batches: [creatorFilter("payouts", creatorName)],
+            flags: [creatorFilter("flags", creatorName)],
+          },
         },
       },
     ],

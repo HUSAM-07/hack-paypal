@@ -243,7 +243,8 @@ body {
 }
 .cw-figures {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
   gap: 8px;
   margin: 2px 0 0;
   padding-top: 10px;
@@ -262,6 +263,9 @@ body {
 }
 .cw-figures dd.is-void {
   color: var(--void);
+}
+.cw-figures dd.is-held {
+  color: var(--amber);
 }
 .cw-rival {
   display: grid;
@@ -398,7 +402,7 @@ body {
 /* Creator tiles */
 .cw-tiles {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(5, 1fr);
   gap: 12px;
   align-content: start;
 }
@@ -427,7 +431,8 @@ body {
   color: var(--proof);
 }
 .cw-tile.is-pending .cw-tile-value,
-.cw-tile.is-frozen .cw-tile-value {
+.cw-tile.is-frozen .cw-tile-value,
+.cw-tile.is-held .cw-tile-value {
   color: var(--amber);
 }
 .cw-tile.is-voided .cw-tile-value {
