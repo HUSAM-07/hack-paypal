@@ -175,9 +175,10 @@ describe("side-by-side runs (#28)", () => {
     expect(html).toContain("Winix A230");
     expect(html).toContain("Levoit Core 300");
     expect(html).toMatch(
-      /Northwind<small>Saw the test here[\s\S]*Passport[\s\S]*→[\s\S]*Lumen<small>Paid here/,
+      /Northwind<small>Read the test on this offer[\s\S]*Passport[\s\S]*→[\s\S]*Lumen<small>Paid through PayPal/,
     );
-    expect(html).toContain("$4.00 cheaper");
+    expect(html).toContain("offer was $4.00 under");
+    expect(html).toContain("the buyer’s saved PayPal");
     expect(html).toContain("Order ORD-W");
     expect(html).toContain("Caused by the test");
     expect(html).toContain("$7.68 commission</span> · held 30 days");

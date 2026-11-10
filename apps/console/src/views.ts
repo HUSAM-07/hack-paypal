@@ -72,7 +72,7 @@ a{color:inherit}
 .ticket.mini .body{padding:.22rem .55rem}
 .ticket.mini .body b{font-size:.66rem}
 
-/* shop hop */
+/* offer → seller */
 .hop{display:flex;align-items:center;gap:0;flex-wrap:nowrap}
 .store{font-family:var(--serif);font-size:1.55rem;font-weight:500;line-height:1.1;padding:.15rem 0}
 .store small{display:block;font-family:var(--sans);font-size:.68rem;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-top:.25rem}
@@ -173,7 +173,7 @@ type Here = "console" | "payout";
 function nav(here: Here): string {
   const cur = (p: Here) => (p === here ? ' aria-current="page"' : "");
   return `<nav class="nav" aria-label="CITED"><a class="mark" href="../">CITED</a>
-<a href="/"${cur("console")}>Console</a><a href="/payout"${cur("payout")}>Payout</a><a href="../shops">Shops</a><a href="../studio">Studio</a></nav>`;
+<a href="/"${cur("console")}>Console</a><a href="/payout"${cur("payout")}>Payout</a><a href="../studio">Studio</a></nav>`;
 }
 
 function page(title: string, here: Here, body: string, opts: Opts): string {
@@ -229,7 +229,7 @@ function runColumn(v: RunView | null, kind: "exposed" | "held"): string {
   const creator = run.creatorsSeen[0] ? creatorName(run.creatorsSeen[0]) : null;
   const hops = run.storesViewed.length ? run.storesViewed : run.shop ? [run.shop] : [];
   const paidAt = journey?.storeChosen ?? run.shop;
-  // The hop worth drawing: the store where the agent read the test, then the one it paid at.
+  // The hop worth drawing: the seller whose offer carried the test, then the one the agent paid.
   const path = paidAt && !hops.includes(paidAt) ? [...hops, paidAt] : hops;
   const sawTest = run.creatorsSeen.length > 0;
   const armWord = run.arm === "test" ? "test" : run.arm === "none" ? "held out" : (run.arm ?? "?");
@@ -237,7 +237,11 @@ function runColumn(v: RunView | null, kind: "exposed" | "held"): string {
   const stores = path
     .map((s, i) => {
       const note =
-        s === paidAt ? "Paid here" : sawTest && i === 0 ? "Saw the test here" : "Browsed";
+        s === paidAt
+          ? "Paid through PayPal"
+          : sawTest && i === 0
+            ? "Read the test on this offer"
+            : "Offer read";
       return `<div class="store${s === paidAt ? " paid" : ""}">${esc(shopName(s))}<small>${esc(note)}</small></div>`;
     })
     .join(
@@ -260,7 +264,7 @@ function runColumn(v: RunView | null, kind: "exposed" | "held"): string {
       }</p>`
     : `<p class="product dim">No purchase</p>`;
   const capture = journey
-    ? `<p class="capture"><span class="pp">PayPal</span> captured <code>Order ${esc(journey.orderId)}</code>${
+    ? `<p class="capture"><span class="pp">PayPal</span> captured <code>Order ${esc(journey.orderId)}</code><span class="dim via">The agent paid with the buyer’s saved PayPal${paidAt ? `, straight to ${esc(shopName(paidAt))}’s PayPal account` : ""}. No website, no redirect.</span>${
         run.passportAttached
           ? `<span class="dim via">Passport read from <code>custom_id</code> · sale joined to the ${kind === "exposed" ? "test" : "held-out"} arm</span>`
           : ""
@@ -271,9 +275,9 @@ function runColumn(v: RunView | null, kind: "exposed" | "held"): string {
   <div class="lane-head"><h2>${laneTitle(kind, creator)}</h2><span class="model">${esc(run.model)}</span></div>
   <ol class="steps">
     <li class="step"><span class="k">Catalogue</span><div>${catalogue}${passport}</div></li>
-    <li class="step"><span class="k">${path.length > 1 ? "Shop hop" : "Shop"}</span><div><div class="hop">${stores}</div>${
+    <li class="step"><span class="k">${path.length > 1 ? "Offer → seller" : "Seller"}</span><div><div class="hop">${stores}</div>${
       saved && saved > 0 && other
-        ? `<p class="note good num">${esc(shopName(paidAt ?? ""))} was ${usd(saved)} cheaper than ${esc(shopName(other))}</p>`
+        ? `<p class="note good num">${esc(shopName(paidAt ?? ""))}’s offer was ${usd(saved)} under ${esc(shopName(other))}’s</p>`
         : ""
     }</div></li>
     <li class="step"><span class="k">Checkout</span><div>${bought}${capture}</div></li>
@@ -285,7 +289,7 @@ function runColumn(v: RunView | null, kind: "exposed" | "held"): string {
 export function demoPage(d: DemoData, opts: Opts): string {
   const request = (d.exposed ?? d.heldOut)?.run.request;
   const body = `<main class="stage">
-<div class="lede"><h1>Same request, two agents</h1><p>Same shops, same prices, same ranking. Only the creator’s test differs.</p></div>
+<div class="lede"><h1>Same request, two agents</h1><p>Same offers, same prices, same ranking. Only the creator’s test differs.</p></div>
 ${request ? `<p class="request"><q>${esc(request)}</q></p>` : ""}
 ${
   d.exposed || d.heldOut
