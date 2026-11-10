@@ -2,7 +2,7 @@ import { createExecutionContext, SELF } from "cloudflare:test";
 import { env as rawEnv } from "cloudflare:workers";
 import { createEngineApprover } from "@cited/studio";
 import { describe, expect, it } from "vitest";
-import { citedEnv, citedWriteDenied, internalEngineFetch } from "../src/cited";
+import { citedEnv, citedWriteDenied, internalEngineFetch, withReadRetry } from "../src/cited";
 import type { Env } from "../src/env";
 import worker from "../src/index";
 
@@ -96,6 +96,27 @@ describe("CITED writes are locked on the deployed worker", () => {
     expect(citedEnv(tokenAndOptIn).ENGINE_OPEN_API).toBeUndefined();
     expect(citedEnv(none).ENGINE_OPEN_API).toBeUndefined();
     expect(citedEnv(env, "internal")).toMatchObject({ ENGINE_OPEN_API: "1" });
+  });
+
+  it("retries an engine read that fails for a moment, never a write", async () => {
+    const flaky = (fails: number) => {
+      let calls = 0;
+      const run = async () => new Response("x", { status: ++calls <= fails ? 500 : 200 });
+      return { run, calls: () => calls };
+    };
+    const get = flaky(2);
+    const ok = await withReadRetry(new Request("https://x/api/lift"), get.run, [0, 0, 0]);
+    expect([ok.status, get.calls()]).toEqual([200, 3]);
+    const post = flaky(2);
+    const req = new Request("https://x/api/payouts/run", { method: "POST" });
+    const failed = await withReadRetry(req, post.run, [0, 0, 0]);
+    expect([failed.status, post.calls()]).toEqual([500, 1]);
+  });
+
+  it("starts the engine's simulated PayPal ids from the clock", () => {
+    // The demo Durable Object restarts with an empty mock while D1 keeps every id it issued.
+    expect(citedEnv(env).MOCK_IDS_FROM_CLOCK).toBe("1");
+    expect(citedEnv(env, "internal").MOCK_IDS_FROM_CLOCK).toBe("1");
   });
 
   it("accepts writes with the token", async () => {

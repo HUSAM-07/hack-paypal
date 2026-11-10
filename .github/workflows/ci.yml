@@ -2,6 +2,13 @@ name: ci
 on:
   push: { branches: [main] }
   pull_request:
+  # Manual deploy of main, the only way to deploy while DEPLOY_FREEZE is true (with force).
+  workflow_dispatch:
+    inputs:
+      force:
+        description: Deploy even while DEPLOY_FREEZE is true
+        type: boolean
+        default: false
 jobs:
   check:
     runs-on: ubuntu-latest
@@ -15,20 +22,33 @@ jobs:
       - run: npm test
       - run: npm run evals -- --dry
 
-  # CD: every green push to main deploys pact-worker (web build + D1 migrations + worker).
+  # CD: every green push to main deploys pact-worker (web build + D1 migrations + worker),
+  # unless the repo variable DEPLOY_FREEZE is "true" (the judging window): then only a manual
+  # run of this workflow on main with force: true deploys.
   deploy:
     needs: check
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: >-
+      github.ref == 'refs/heads/main' &&
+      (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
     runs-on: ubuntu-latest
     environment: production
     # Never run two deploys at once; a newer push waits for the current one.
     concurrency: { group: deploy-production, cancel-in-progress: false }
     steps:
       - uses: actions/checkout@v4
-      - name: Skip unless this is still the newest main
+      - name: Skip if frozen or no longer the newest main
         id: latest
         # Deploys queue; an older commit finishing last would roll production back.
+        # While DEPLOY_FREEZE is "true", only a forced manual run deploys; a push is skipped.
+        env:
+          FREEZE: ${{ vars.DEPLOY_FREEZE }}
+          FORCED: ${{ github.event_name == 'workflow_dispatch' && inputs.force }}
         run: |
+          if [ "$FREEZE" = "true" ] && [ "$FORCED" != "true" ]; then
+            echo "::warning::DEPLOY_FREEZE is true: not deploying. Run ci manually on main with force: true to deploy anyway."
+            echo "stale=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
           newest=$(git ls-remote origin refs/heads/main | cut -f1)
           if [ "$newest" != "$GITHUB_SHA" ]; then
             echo "main moved on to $newest; leaving the deploy to that run"

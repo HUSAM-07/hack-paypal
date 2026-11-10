@@ -302,7 +302,7 @@ ${
   d.exposed || d.heldOut
     ? `<div class="lanes">${runColumn(d.exposed, "exposed")}${runColumn(d.heldOut, "held")}</div>`
     : waiting(
-        "No agent runs yet. Write run records with the agents CLI (<code>--out .cited/runs.jsonl</code>) or start the demo runner.",
+        'No agent runs to show yet. <a href="../try">Run an agent yourself</a> and watch it shop.',
       )
 }
 ${d.engineError ? `<p class="warn">${esc(d.engineError)}</p>` : ""}
