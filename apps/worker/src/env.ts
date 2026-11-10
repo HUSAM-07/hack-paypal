@@ -7,7 +7,7 @@ export interface Env {
   THREAD: DurableObjectNamespace<ThreadDO>;
   USER: DurableObjectNamespace<UserDO>;
   PACT: DurableObjectNamespace<PactDO>;
-  /** One instance: the CITED demo's in-memory state (shops' PayPal mock, catalogue clock). */
+  /** One instance: the CITED demo's in-memory state (the agents' PayPal mock, catalogue clock). */
   CITED_DEMO: DurableObjectNamespace<CitedDemoDO>;
   DB: D1Database;
   /** The built web app (apps/web/dist). */
@@ -52,6 +52,12 @@ export interface Env {
   CITED_PASSPORT_KEY?: string;
   /** Bearer token for the CITED API; required unless CITED runs simulated. */
   CITED_API_TOKEN?: string;
+  /** Sandbox: the buyer's vaulted PayPal wallet the agents pay with (see AGENT-CHECKOUT.md). */
+  CITED_BUYER_VAULT_ID?: string;
+  /** Sandbox: each seller's PayPal account (merchant id or email), the orders' payee. */
+  CITED_SELLER_NORTHWIND_PAYEE?: string;
+  CITED_SELLER_LUMEN_PAYEE?: string;
+  CITED_SELLER_MEGAMART_PAYEE?: string;
 }
 
 export function allowedOrigins(env: Env): string[] {

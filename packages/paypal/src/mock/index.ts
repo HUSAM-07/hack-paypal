@@ -10,10 +10,12 @@ export {
   type Dispute,
   MOCK_API_BASE,
   MOCK_CERT_URL,
+  MOCK_DEFAULT_PAYEE,
   MOCK_WEBHOOK_ID,
   type MockPayPal,
   type MockPayPalOptions,
   type MockWebhookEvent,
+  type VaultedWallet,
   type WebhookDelivery,
   type WebhookHandler,
 } from "./paypal-mock";

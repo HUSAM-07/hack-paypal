@@ -129,6 +129,47 @@ describe("orders", () => {
     expect(c.json.id).not.toBe(a.json.id);
     expect(s.mock.state.orders.size).toBe(2);
   });
+
+  it("pays a named payee from a vaulted wallet in one call, order event before capture", async () => {
+    const s = setup();
+    const wallet = s.mock.vaultWallet({ email: "buyer@agent.test" });
+    const payee = { merchant_id: "SELLERLUMEN01" };
+    const created = await s.raw("POST", "/v2/checkout/orders", {
+      intent: "CAPTURE",
+      purchase_units: [{ ...rawUnit, reference_id: "lumen", payee }],
+      payment_source: { paypal: { vault_id: wallet.id } },
+    });
+    expect(created.status).toBe(201);
+    expect(created.json.status).toBe("COMPLETED");
+    expect(validateResponse(ORDERS, "POST", "/v2/checkout/orders", created.json)).toEqual([]);
+    const u = created.json.purchase_units[0];
+    expect(u.payee).toEqual(payee);
+    expect(u.payments.captures[0].custom_id).toBe("passport.v1.abc");
+    expect(created.json.payment_source.paypal.email_address).toBe("buyer@agent.test");
+    const [cap] = [...s.mock.state.captures.values()];
+    expect(cap?.payee).toEqual(payee);
+    await s.mock.flush();
+    expect(s.deliveries.map((d) => d.event.event_type)).toEqual([
+      "CHECKOUT.ORDER.COMPLETED",
+      "PAYMENT.CAPTURE.COMPLETED",
+    ]);
+    expect(WebhookEvent.safeParse(s.deliveries[0]?.event).success).toBe(true);
+  });
+
+  it("rejects an unknown vault_id and a payee without an account", async () => {
+    const s = setup();
+    const bad = await s.raw("POST", "/v2/checkout/orders", {
+      intent: "CAPTURE",
+      purchase_units: [rawUnit],
+      payment_source: { paypal: { vault_id: "nope" } },
+    });
+    expect(bad.json.details[0].issue).toBe("INVALID_PAYMENT_TOKEN");
+    const noPayee = await s.raw("POST", "/v2/checkout/orders", {
+      intent: "CAPTURE",
+      purchase_units: [{ ...rawUnit, payee: {} }],
+    });
+    expect(noPayee.status).toBe(422);
+  });
 });
 
 describe("refunds", () => {

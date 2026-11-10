@@ -10,7 +10,8 @@ import {
 } from "@pact/protocol";
 import { assignArm } from "./arms";
 import { DemoClock, testDay } from "./clock";
-import { creatorContent, type Listing, searchListings } from "./listings";
+import { buildOffers, creatorContent, type Offer, searchOffers } from "./offers";
+import { isSellerId, type Seller, type SellerId, sellersFromEnv } from "./sellers";
 
 export interface CatalogueOptions {
   seed: string;
@@ -21,6 +22,8 @@ export interface CatalogueOptions {
   schedule?: HoldoutSchedule;
   /** When the housefresh Winix test went live; the schedule's day 0. */
   testPublishedAt?: Date;
+  /** The synced merchants and their PayPal payees. Default: the demo sellers with mock payees. */
+  sellers?: Record<SellerId, Seller>;
 }
 
 export interface SearchInput {
@@ -30,12 +33,12 @@ export interface SearchInput {
   coExposed?: boolean | undefined;
   /** Demo only: pick the session id (so a seeded run is reproducible). Ignored unless allowed. */
   sessionId?: string | undefined;
-  /** Shop the agent is browsing, recorded as a store viewed. */
-  shopId?: string | undefined;
+  /** Seller whose offer the agent is looking at, recorded in the passport as a store viewed. */
+  sellerId?: string | undefined;
 }
 
 export interface SearchResult {
-  listings: Listing[];
+  offers: Offer[];
   creatorContent: VerifiedTest[];
   passport: string;
 }
@@ -47,6 +50,8 @@ export function createCatalogue(opts: CatalogueOptions) {
   const clock = opts.clock ?? new DemoClock();
   const schedule = opts.schedule ?? DEFAULT_SCHEDULE;
   const publishedAt = opts.testPublishedAt ?? DEFAULT_PUBLISHED_AT;
+  const sellers = opts.sellers ?? sellersFromEnv();
+  const offers = buildOffers(sellers);
 
   async function search(input: SearchInput): Promise<SearchResult> {
     const verified = input.passport ? await verifyPassport(input.passport, opts.passportKey) : null;
@@ -58,9 +63,9 @@ export function createCatalogue(opts: CatalogueOptions) {
               crypto.randomUUID().replaceAll("-", "").slice(0, 20),
             input.coExposed ?? false,
           );
-    if (input.shopId) body = addStoreViewed(body, input.shopId);
+    if (input.sellerId && isSellerId(input.sellerId)) body = addStoreViewed(body, input.sellerId);
     return {
-      listings: searchListings(input.query),
+      offers: searchOffers(input.query, offers),
       creatorContent: creatorContent(body.arm, body.creatorsSeen.includes("airlab")),
       passport: await signPassport(body, opts.passportKey),
     };
@@ -78,6 +83,8 @@ export function createCatalogue(opts: CatalogueOptions) {
     };
   }
 
-  return { search, clock, newSession };
+  const offer = (offerId: string) => offers.find((o) => o.offerId === offerId);
+
+  return { search, clock, newSession, sellers, offers, offer, passportKey: opts.passportKey };
 }
 export type Catalogue = ReturnType<typeof createCatalogue>;

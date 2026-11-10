@@ -19,8 +19,6 @@
       "/ws",
       "/app",
       "/app/*",
-      "/shops",
-      "/shops/*",
       "/console",
       "/console/*",
       "/catalogue",

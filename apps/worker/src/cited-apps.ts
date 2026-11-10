@@ -1,4 +1,4 @@
-import { app as catalogue } from "@cited/catalogue-mcp";
+import { type CatalogueApp, createCatalogueApp } from "@cited/catalogue-mcp";
 import {
   createConsoleApp,
   createEngineClient,
@@ -6,22 +6,22 @@ import {
   type RunSource,
 } from "@cited/console";
 import { app as engine } from "@cited/engine";
-import { createShopsApp } from "@cited/shops";
 import { createMockPayPal } from "@pact/paypal";
 import type { Context } from "hono";
 import { CITED_PREFIX, citedEnv, serveEngine } from "./cited";
 import type { Env } from "./env";
 
 /**
- * The CITED demo apps (shops, catalogue, console) mounted inside pact-worker next to the
- * engine, so a judge gets one clickable link. They call the engine in-process: a workers.dev
- * worker can't fetch its own account's workers.dev URLs (Cloudflare error 1042).
+ * The CITED demo apps (catalogue, console) mounted inside pact-worker next to the engine, so a
+ * judge gets one clickable link. They call the engine in-process: a workers.dev worker can't
+ * fetch its own account's workers.dev URLs (Cloudflare error 1042).
  *
- * Shops and engine (each with a simulated PayPal's orders and captures) and the catalogue (its
- * demo clock) keep state in memory, and Cloudflare spreads requests over many isolates. In
- * simulated mode they therefore run inside one Durable Object instance (CitedDemoDO).
+ * There are no storefronts: agents read offers from the catalogue (our mock of PayPal Store
+ * Sync) and its `checkout` tool pays the seller through PayPal from the buyer's vaulted wallet.
+ * The catalogue (its PayPal mock and demo clock) and the engine (its own simulated PayPal) keep
+ * state in memory, and Cloudflare spreads requests over many isolates. In simulated mode they
+ * therefore run inside one Durable Object instance (CitedDemoDO).
  */
-export const SHOPS_PREFIX = "/shops";
 export const CATALOGUE_PREFIX = "/catalogue";
 export const CONSOLE_PREFIX = "/console";
 
@@ -37,9 +37,7 @@ function strip(req: Request, prefix: string): Request {
 
 /** Our apps' HTML uses root-relative links; mounted under a prefix they need it too. */
 export function prefixLinks(html: string, prefix: string): string {
-  return html
-    .replaceAll('href="/', `href="${prefix}/`)
-    .replaceAll('const base="/"+cfg.shop', `const base="${prefix}/"+cfg.shop`);
+  return html.replaceAll('href="/', `href="${prefix}/`);
 }
 
 /**
@@ -64,43 +62,45 @@ function engineFetch(env: Env, ctx: ExecCtx): typeof fetch {
     engine.fetch(new Request(input, init), citedEnv(env), ctx) as Promise<Response>;
 }
 
-let shops: ReturnType<typeof createShopsApp> | undefined;
+let catalogue: CatalogueApp | undefined;
 
-function shopsFor(env: Env, ctx: ExecCtx) {
-  if (shops) return shops;
+function catalogueFor(env: Env, ctx: ExecCtx): CatalogueApp {
+  if (catalogue) return catalogue;
   const mode = env.CITED_PAYPAL_MODE ?? env.PAYPAL_MODE;
-  const shopEnv = {
+  const catalogueEnv = {
     PAYPAL_MODE: mode,
     PAYPAL_CLIENT_ID: env.PAYPAL_CLIENT_ID,
     PAYPAL_CLIENT_SECRET: env.PAYPAL_CLIENT_SECRET,
+    PASSPORT_SIGNING_KEY: env.CITED_PASSPORT_KEY,
+    CITED_BUYER_VAULT_ID: env.CITED_BUYER_VAULT_ID,
+    CITED_SELLER_NORTHWIND_PAYEE: env.CITED_SELLER_NORTHWIND_PAYEE,
+    CITED_SELLER_LUMEN_PAYEE: env.CITED_SELLER_LUMEN_PAYEE,
+    CITED_SELLER_MEGAMART_PAYEE: env.CITED_SELLER_MEGAMART_PAYEE,
     MODEL_PROVIDER: "fake",
   };
   if (mode === "sandbox") {
-    shops = createShopsApp({ env: shopEnv });
-    return shops;
+    catalogue = createCatalogueApp({ env: catalogueEnv });
+    return catalogue;
   }
-  // Simulated: the mock signs captures and refunds as webhooks and delivers them straight to
-  // the engine, the way PayPal would.
+  // Simulated: the mock signs the agents' captures and the sellers' refunds as webhooks and
+  // delivers them straight to the engine, the way PayPal would.
   const mock = createMockPayPal({ autoSettlePayouts: true, deliverFetch: engineFetch(env, ctx) });
   mock.registerWebhook("https://engine.internal/webhooks/paypal");
-  shops = createShopsApp({ env: shopEnv, mock });
-  return shops;
+  catalogue = createCatalogueApp({ env: catalogueEnv, mock });
+  return catalogue;
 }
 
 /** Runs inside CitedDemoDO: the stateful demo apps, by path prefix. */
 export async function serveStatefulDemo(req: Request, env: Env, ctx: ExecCtx): Promise<Response> {
   const path = new URL(req.url).pathname;
-  if (path === SHOPS_PREFIX || path.startsWith(`${SHOPS_PREFIX}/`)) {
-    return asDemoPage(await shopsFor(env, ctx).fetch(strip(req, SHOPS_PREFIX)), SHOPS_PREFIX);
-  }
   if (path === CATALOGUE_PREFIX || path.startsWith(`${CATALOGUE_PREFIX}/`)) {
-    return catalogue.fetch(strip(req, CATALOGUE_PREFIX));
+    return catalogueFor(env, ctx).fetch(strip(req, CATALOGUE_PREFIX));
   }
   if (path.startsWith(`${CITED_PREFIX}/`)) return serveEngine(req, env, ctx);
   return new Response("not found", { status: 404 });
 }
 
-/** /shops/* and /catalogue/*: forwarded to the one demo Durable Object. */
+/** /catalogue/*: forwarded to the one demo Durable Object. */
 export function statefulDemoHandler(c: Ctx): Promise<Response> {
   const ns = c.env.CITED_DEMO;
   return ns.get(ns.idFromName("demo")).fetch(c.req.raw);

@@ -16,7 +16,6 @@ const { values } = parseArgs({
     "use-running": { type: "boolean", default: false },
     "engine-url": { type: "string", default: `http://localhost:${DEFAULT_PORTS.engine}` },
     "catalogue-url": { type: "string", default: `http://localhost:${DEFAULT_PORTS.catalogue}` },
-    "shops-url": { type: "string", default: `http://localhost:${DEFAULT_PORTS.shops}` },
     verbose: { type: "boolean", default: false },
     help: { type: "boolean", default: false },
   },
@@ -55,7 +54,7 @@ function printHuman(e: DemoEvent) {
   else if (e.type === "line") console.log(`  ${e.text}`);
   else if (e.type === "session" && e.data) {
     const d = e.data as Record<string, unknown>;
-    if (values.verbose) console.log(`    · ${d.model} ${d.arm} → ${d.product} @ ${d.shop}`);
+    if (values.verbose) console.log(`    · ${d.model} ${d.arm} → ${d.product}, paid ${d.seller}`);
   } else if (e.type === "run.end") console.log(`\n${e.text === "ok" ? "✔ done" : "✘ failed"}`);
 }
 
@@ -107,9 +106,9 @@ try {
   const urls = stack ?? {
     engineUrl: values["engine-url"] as string,
     catalogueUrl: values["catalogue-url"] as string,
-    shopsUrl: values["shops-url"] as string,
   };
-  if (!jsonlOnly) console.error("stack up (engine, catalogue, shops; simulated PayPal)");
+  if (!jsonlOnly)
+    console.error("stack up (engine, catalogue with PayPal checkout; simulated PayPal)");
   const result = await runDemo({
     ...urls,
     seed: values.seed as string,

@@ -7,10 +7,9 @@ import { fileURLToPath } from "node:url";
 export interface StackUrls {
   engineUrl: string;
   catalogueUrl: string;
-  shopsUrl: string;
 }
 
-export const DEFAULT_PORTS = { engine: 8800, catalogue: 8801, shops: 8802 };
+export const DEFAULT_PORTS = { engine: 8800, catalogue: 8801 };
 
 export interface Stack extends StackUrls {
   /** Where the throwaway engine database lives (for debugging). */
@@ -47,8 +46,8 @@ function run(cmd: string, args: string[], cwd: string): Promise<void> {
 }
 
 /**
- * Starts the engine (wrangler dev on a throwaway D1), catalogue and shops, wired together and
- * keyless (PAYPAL_MODE=simulated). A fresh database every time, so a run is reproducible.
+ * Starts the engine (wrangler dev on a throwaway D1) and the catalogue (offers and the agents'
+ * PayPal checkout), wired together and keyless (PAYPAL_MODE=simulated). A fresh database every time, so a run is reproducible.
  */
 export async function startStack(
   o: {
@@ -67,7 +66,6 @@ export async function startStack(
   const urls: StackUrls = {
     engineUrl: `http://localhost:${ports.engine}${inWorker ? "/api/cited" : ""}`,
     catalogueUrl: `http://localhost:${ports.catalogue}`,
-    shopsUrl: `http://localhost:${ports.shops}`,
   };
   const state = mkdtempSync(join(tmpdir(), "cited-demo-"));
   const env = {
@@ -112,13 +110,9 @@ export async function startStack(
     start("catalogue", "npx", ["tsx", "src/dev.ts"], join(root, "apps/catalogue-mcp"), {
       PORT: String(ports.catalogue),
     });
-    start("shops", "npx", ["tsx", "src/dev.ts"], join(root, "apps/shops"), {
-      PORT: String(ports.shops),
-    });
     await Promise.all([
       waitHealthy(urls.engineUrl, "engine"),
       waitHealthy(urls.catalogueUrl, "catalogue"),
-      waitHealthy(urls.shopsUrl, "shops"),
     ]);
   } catch (e) {
     await stop();

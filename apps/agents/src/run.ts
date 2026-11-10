@@ -96,7 +96,7 @@ export async function runSession(o: RunOptions): Promise<RunRecord> {
 
   const body = session.passportBody();
   const bought = session.purchase;
-  const listing = session.lastSearch?.listings.find((l) => l.upc === bought?.upc);
+  const offer = session.lastSearch?.offers.find((o) => o.offerId === bought?.offerId);
   return {
     sessionId: body?.sessionId ?? null,
     runIndex: o.runIndex,
@@ -110,12 +110,14 @@ export async function runSession(o: RunOptions): Promise<RunRecord> {
     storesViewed: body?.storesViewed ?? [],
     searches: session.searches,
     product: bought
-      ? { upc: bought.upc, name: listing ? `${listing.brand} ${listing.name}` : bought.upc }
+      ? { upc: bought.upc, name: offer ? `${offer.brand} ${offer.name}` : bought.upc }
       : null,
-    shop: bought?.shopId ?? null,
+    seller: bought?.seller.id ?? null,
+    sellerName: bought?.seller.name ?? null,
     orderId: bought?.orderId ?? null,
     captureId: bought?.captureId ?? null,
     total: bought?.total ?? null,
+    paidWith: bought ? "vaulted_paypal" : null,
     passportAttached: session.checkedOutWithPassport,
     reason: outcome.reason,
     status: error ? "error" : bought ? "purchased" : "no_purchase",

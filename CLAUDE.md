@@ -22,9 +22,8 @@ Existing, reused:
 
 New for CITED (create when the issue says so):
 - `packages/attribution`: pure functions only. Attributable fraction, lower bound, Shapley split, ledger rules. Property tests.
-- `apps/catalogue-mcp`: MCP server with `search_product`, arm assignment, passport issuing.
+- `apps/catalogue-mcp`: MCP server with `search_product` (offers from sellers synced to PayPal), arm assignment, passport issuing, and `checkout`: the agent platform creates the Orders v2 order itself (payee = seller, passport in `custom_id`, buyer's vaulted wallet). Also the sellers' config and refund action. See `cited/spec/AGENT-CHECKOUT.md`.
 - `apps/engine`: Hono + D1 app. Webhooks, the arm-checkout join, credit ledger, payouts, refunds, and the read API for AG Studio. Runs standalone for dev and tests; deployed inside `apps/worker` at `/api/cited`. Its migrations live in `apps/worker/migrations`. Deployed settings are `CITED_*` vars on the worker.
-- `apps/shops`: Northwind, Lumen and MegaMart storefronts with PayPal checkout.
 - `apps/agents`: shopper-agent runner (GPT, Gemini, Sonnet) and the one-command demo runner.
 - `apps/studio`: AG Studio dashboards and the custom Analyst agent.
 - `cited/`: specs, PayPal OpenAPI specs (for the mock layer) and eval reference. Docs only.

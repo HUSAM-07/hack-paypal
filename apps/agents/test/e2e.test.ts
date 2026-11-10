@@ -1,6 +1,7 @@
 /**
- * End to end against a real local stack: engine (wrangler dev), catalogue and shops, all
- * PAYPAL_MODE=simulated. 147 agent sessions across arms and models become real shop orders, their
+ * End to end against a real local stack: engine (wrangler dev) and the catalogue, all
+ * PAYPAL_MODE=simulated. 147 agent sessions across arms and models become PayPal orders paid to
+ * the sellers from the buyer's vaulted wallet, their
  * captures reach the engine through the PayPal mock's signed webhooks, credits accrue, the clock
  * jumps 30 days, one batch payout lands, one refund voids (or flags) one credit, unspent deposits
  * return, and the engine's ledger agrees with what the PayPal mocks hold.
@@ -15,7 +16,7 @@ afterAll(async () => {
 });
 
 async function play(refund: "before-payout" | "after-payout", base: number) {
-  const stack = await startStack({ ports: { engine: base, catalogue: base + 1, shops: base + 2 } });
+  const stack = await startStack({ ports: { engine: base, catalogue: base + 1 } });
   stacks.push(stack);
   const events: DemoEvent[] = [];
   const result = await runDemo({
