@@ -10,6 +10,7 @@ import { createMockPayPal } from "@pact/paypal";
 import type { Context } from "hono";
 import { CITED_PREFIX, citedEnv, serveEngine } from "./cited";
 import type { Env } from "./env";
+import { PUBLIC_MCP_PATH } from "./mcp";
 
 /**
  * The CITED demo apps (catalogue, console) mounted inside pact-worker next to the engine, so a
@@ -103,6 +104,8 @@ export async function serveStatefulDemo(req: Request, env: Env, ctx: ExecCtx): P
     return catalogueFor(env, ctx).fetch(strip(req, CATALOGUE_PREFIX));
   }
   if (path.startsWith(`${CITED_PREFIX}/`)) return serveEngine(req, env, ctx);
+  // Reached only through the rate-limited /mcp mount (apps/worker/src/mcp.ts).
+  if (path === PUBLIC_MCP_PATH) return catalogueFor(env, ctx).publicMcp.handle(req);
   return new Response("not found", { status: 404 });
 }
 

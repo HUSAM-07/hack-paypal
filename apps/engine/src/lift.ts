@@ -28,7 +28,7 @@ export async function brandLiftData(env: Env, brand: Brand): Promise<BrandLiftDa
     await env.DB.prepare(
       `SELECT s.model AS model, s.arm AS arm, COUNT(DISTINCT s.session_id) AS n
        FROM sales x JOIN agent_sessions s ON s.session_id = x.session_id
-       WHERE x.upc = ? AND s.category = ? AND x.unattributed_reason IS NULL
+       WHERE x.upc = ? AND s.category = ? AND x.unattributed_reason IS NULL AND x.source = 'agent'
        GROUP BY s.model, s.arm`,
     )
       .bind(brand.upc, brand.category)
@@ -36,7 +36,8 @@ export async function brandLiftData(env: Env, brand: Brand): Promise<BrandLiftDa
   ).results;
   const exposed = await env.DB.prepare(
     `SELECT COUNT(*) AS n FROM sales x JOIN agent_sessions s ON s.session_id = x.session_id
-     WHERE x.upc = ? AND s.category = ? AND s.arm = 'test' AND x.unattributed_reason IS NULL`,
+     WHERE x.upc = ? AND s.category = ? AND s.arm = 'test' AND x.unattributed_reason IS NULL
+       AND x.source = 'agent'`,
   )
     .bind(brand.upc, brand.category)
     .first<{ n: number }>();

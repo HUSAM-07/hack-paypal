@@ -1,4 +1,10 @@
-import { type AttributedSale, fromPayPalValue, type Money, verifyPassport } from "@pact/protocol";
+import {
+  type AttributedSale,
+  fromPayPalValue,
+  type Money,
+  saleSource,
+  verifyPassport,
+} from "@pact/protocol";
 import type { Env } from "../env";
 
 export interface OrderItem {
@@ -112,8 +118,8 @@ export async function recordCapture(env: Env, f: CaptureFacts): Promise<Attribut
     stmts.push(
       env.DB.prepare(
         `INSERT OR IGNORE INTO sales (capture_id, upc, order_id, shop_id, amount_minor, currency,
-           session_id, arm, creators_seen, model, captured_at, unattributed_reason)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+           session_id, arm, creators_seen, model, captured_at, unattributed_reason, source)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       ).bind(
         f.captureId,
         it.upc,
@@ -127,9 +133,11 @@ export async function recordCapture(env: Env, f: CaptureFacts): Promise<Attribut
         why ? null : model,
         f.capturedAt,
         why ?? null,
+        saleSource(body?.sessionId),
       ),
     );
-    if (!why && body && model) {
+    // Public /mcp sales are recorded, never credited: they must not move the study's numbers.
+    if (!why && body && model && saleSource(body.sessionId) === "agent") {
       sold.push({
         captureId: f.captureId,
         orderId: f.orderId,

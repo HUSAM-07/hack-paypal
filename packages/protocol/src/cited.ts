@@ -118,6 +118,17 @@ export function decodePassportBody(s: string): PassportBody {
   });
 }
 
+/**
+ * Sessions opened through the public MCP endpoint (`/mcp`) carry this session-id prefix, set by
+ * the catalogue when it signs the passport. The engine records their sales as source `mcp` and
+ * keeps them out of the study, the ledger and the console's numbers.
+ */
+export const PUBLIC_MCP_SESSION_PREFIX = "mcp_";
+export type SaleSource = "agent" | "mcp";
+export function saleSource(sessionId: string | null | undefined): SaleSource {
+  return sessionId?.startsWith(PUBLIC_MCP_SESSION_PREFIX) ? "mcp" : "agent";
+}
+
 // ── Sales, credits and money movements ──
 
 /** A captured PayPal sale joined to the session that produced it. */

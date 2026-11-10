@@ -23,6 +23,7 @@
       "/console/*",
       "/catalogue",
       "/catalogue/*",
+      "/mcp",
       "/try",
       "/try/*"
     ]

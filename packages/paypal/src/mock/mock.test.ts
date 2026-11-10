@@ -430,3 +430,13 @@ describe("PAYPAL_MODE toggle", () => {
     expect(() => createPayPalFromEnv({ PAYPAL_MODE: "live" })).toThrow(/simulated/);
   });
 });
+
+describe("ids", () => {
+  it("start from idOffset, so a recreated mock never repeats an old id", () => {
+    const first = createMockPayPal().vaultWallet().id;
+    expect(createMockPayPal().vaultWallet().id).toBe(first);
+    const fresh = createMockPayPal({ idOffset: 1_000_000 }).vaultWallet().id;
+    expect(fresh).not.toBe(first);
+    expect(fresh.startsWith("VT-")).toBe(true);
+  });
+});
