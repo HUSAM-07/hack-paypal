@@ -174,10 +174,13 @@ describe("side-by-side runs (#28)", () => {
     const html = await (await appWith(RUNS).request("/")).text();
     expect(html).toContain("Winix A230");
     expect(html).toContain("Levoit Core 300");
-    expect(html).toMatch(/Northwind<small>Saw the test here[\s\S]*→[\s\S]*Lumen<small>Paid here/);
+    expect(html).toMatch(
+      /Northwind<small>Saw the test here[\s\S]*Passport[\s\S]*→[\s\S]*Lumen<small>Paid here/,
+    );
     expect(html).toContain("$4.00 cheaper");
     expect(html).toContain("Order ORD-W");
-    expect(html).toContain("Commission $7.68 held 30 days");
+    expect(html).toContain("Caused by the test");
+    expect(html).toContain("$7.68 commission</span> · held 30 days");
     expect(html).toContain("No commission");
   });
 
