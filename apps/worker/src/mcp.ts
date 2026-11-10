@@ -1,4 +1,4 @@
-import { siteNavLinks } from "@pact/protocol";
+import { SITE_NAV_TOUCH_CSS, siteNavLinks } from "@pact/protocol";
 import type { Context } from "hono";
 import type { Env } from "./env";
 import { clientIp } from "./security";
@@ -100,6 +100,8 @@ code,pre{font-family:var(--mono);font-size:.9rem}
 pre{background:#fff;border:1px solid var(--line);border-radius:6px;padding:12px 14px;overflow-x:auto;color:var(--ink)}
 .url{font-size:1.05rem;color:var(--ink)}
 a{color:inherit}
+:focus-visible{outline:2px solid var(--ink);outline-offset:3px;border-radius:2px}
+${SITE_NAV_TOUCH_CSS}
 </style></head><body>
 <nav class="nav" aria-label="CITED"><a class="mark" href="/">CITED</a>${siteNavLinks("mcp")}</nav>
 <main>
@@ -108,15 +110,15 @@ a{color:inherit}
 <p class="url"><code>${u}</code></p>
 
 <h2>Claude Code</h2>
-<pre>claude mcp add --transport http cited ${u}</pre>
+<pre tabindex="0" aria-label="Claude Code command">claude mcp add --transport http cited ${u}</pre>
 
 <h2>Claude Desktop</h2>
 <p>Settings → Connectors → Add custom connector, and paste the URL. Or add this to <code>claude_desktop_config.json</code>:</p>
-<pre>${esc(desktop)}</pre>
+<pre tabindex="0" aria-label="Claude Desktop config">${esc(desktop)}</pre>
 
 <h2>Cursor</h2>
 <p>Add to <code>~/.cursor/mcp.json</code>:</p>
-<pre>${esc(cursor)}</pre>
+<pre tabindex="0" aria-label="Cursor config">${esc(cursor)}</pre>
 
 <h2>ChatGPT</h2>
 <p>Settings → Connectors → Advanced → Developer mode, then create a connector with the URL above and no authentication.</p>

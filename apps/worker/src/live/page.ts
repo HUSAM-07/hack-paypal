@@ -4,7 +4,7 @@
  * passes through, so each row compares the two agents at the same moment of their run.
  * Everything a model or a third party wrote is rendered with textContent, never as HTML.
  */
-import { siteNavLinks, UPC_WINIX_A230 } from "@pact/protocol";
+import { SITE_NAV_TOUCH_CSS, siteNavLinks, UPC_WINIX_A230 } from "@pact/protocol";
 
 const esc = (s: string) => s.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
 
@@ -49,7 +49,7 @@ form{margin:0}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
 textarea{display:block;width:100%;max-width:34ch;resize:none;border:0;border-bottom:1.5px solid var(--line);background:transparent;color:var(--ink);
   font-family:var(--serif);font-weight:400;font-size:2.4rem;line-height:1.12;letter-spacing:-.012em;padding:0 0 .35rem;field-sizing:content;min-height:2.4em}
-textarea:focus{outline:none;border-bottom-color:var(--ink)}
+textarea:focus{outline:none;border-bottom-color:var(--ink);box-shadow:0 1.5px 0 var(--ink)}
 textarea:disabled{color:var(--muted)}
 .controls{display:flex;align-items:center;gap:.8rem 1.2rem;flex-wrap:wrap;margin:1.3rem 0 0}
 button{font:inherit;font-size:.9rem;font-weight:600;background:var(--ink);color:var(--bg);border:1.5px solid var(--ink);border-radius:999px;padding:.65rem 1.4rem;min-height:44px;cursor:pointer}
@@ -377,10 +377,10 @@ export function tryPage(o: { request: string; agent: string; scripted: boolean }
 <meta name="twitter:description" content="Type what the buyer wants. An agent shops, pays a seller through PayPal, and CITED decides whether the creator earns." />
 <meta name="twitter:image" content="https://pact-worker.vincent-wesley-liem.workers.dev/og/cited-proof-v1.png" />
 <meta name="twitter:image:alt" content="Bar chart: 100% of AI agents shown a creator's test bought the Winix, against 6% shown a placebo and 8% shown nothing." />
-<style>${CSS}</style></head><body>
+<style>${CSS}${SITE_NAV_TOUCH_CSS}</style></head><body>
 <nav class="nav" aria-label="CITED"><a class="mark" href="/">CITED</a>${siteNavLinks("try")}</nav>
 <main>
-<p class="eyebrow">One request, two live shopping agents</p>
+<h1 class="eyebrow">One request, two live shopping agents</h1>
 <form id="ask">
 <label class="sr" for="request">What should the agents buy?</label>
 <textarea id="request" name="request" rows="2" maxlength="280" spellcheck="false">${esc(o.request)}</textarea>

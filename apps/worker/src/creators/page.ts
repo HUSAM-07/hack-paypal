@@ -4,7 +4,7 @@
  * schedule is drawn to scale. Every value a creator typed is escaped; the specimen script only
  * ever writes textContent.
  */
-import { DEFAULT_SCHEDULE, siteNavLinks } from "@pact/protocol";
+import { DEFAULT_SCHEDULE, SITE_NAV_TOUCH_CSS, siteNavLinks } from "@pact/protocol";
 
 const esc = (s: string) => s.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
 
@@ -68,6 +68,8 @@ h2{font-family:var(--serif);font-weight:500;font-size:1.6rem;line-height:1.1;let
 .btn.ghost:hover{box-shadow:inset 0 0 0 1.5px var(--ink)}
 .ppword{font-weight:800;font-style:italic;letter-spacing:-.02em}
 .ppword .p1{color:var(--pp-navy)}.ppword .p2{color:var(--pp-blue)}
+/* light blue on the yellow button is 3:1; the wordmark goes all navy there */
+.btn.pp .ppword .p2{color:var(--pp-navy)}
 
 .how{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:2rem;margin:2.8rem 0 0;padding:1.4rem 0 0;border-top:1px solid var(--ink)}
 .how div{font-size:.85rem}
@@ -86,7 +88,7 @@ label.f{display:block;font-size:.78rem;font-weight:600;margin:.9rem 0 .3rem}
 input[type=text],textarea{display:block;width:100%;font:inherit;font-size:.92rem;color:var(--ink);background:var(--paper);border:1px solid var(--line);border-radius:8px;padding:.6rem .75rem;min-height:44px}
 textarea{resize:vertical;line-height:1.45}
 textarea.long{min-height:7.5rem;font-family:var(--serif);font-size:1.02rem}
-input:focus,textarea:focus{outline:none;border-color:var(--ink)}
+input:focus,textarea:focus{outline:none;border-color:var(--ink);box-shadow:0 0 0 1px var(--ink)}
 .opts{display:grid;gap:.5rem}
 .opt{display:grid;grid-template-columns:auto minmax(0,1fr);gap:.7rem;align-items:start;padding:.65rem .8rem;border:1px solid var(--line);border-radius:8px;background:var(--paper);cursor:pointer;min-height:44px}
 .opt:has(input:checked){border-color:var(--ink)}
@@ -169,7 +171,7 @@ function shell(title: string, body: string, script = ""): string {
   return `<!doctype html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>${esc(title)}</title><link rel="icon" href="/favicon.svg">
-<style>${CSS}</style></head><body>${body}${script ? `<script>${script}</script>` : ""}</body></html>`;
+<style>${CSS}${SITE_NAV_TOUCH_CSS}</style></head><body>${body}${script ? `<script>${script}</script>` : ""}</body></html>`;
 }
 
 const PAYPAL_WORD = `<span class="ppword"><span class="p1">Pay</span><span class="p2">Pal</span></span>`;

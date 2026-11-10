@@ -27,3 +27,10 @@ export function siteNavLinks(
       `<a href="${href(l.href)}"${l.key === current ? ' aria-current="page"' : ""}>${l.label}</a>`,
   ).join("");
 }
+
+/**
+ * Touch screens get 44px-tall nav links (the pages' nav is small type on a tight line).
+ * Server-rendered pages append this to their CSS; the landing has the same rule for `.top-nav`.
+ */
+export const SITE_NAV_TOUCH_CSS =
+  "@media (pointer:coarse){.nav a{display:inline-flex;align-items:center;justify-content:center;min-width:44px;min-height:44px}}";
