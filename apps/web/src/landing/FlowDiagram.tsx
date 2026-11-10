@@ -7,7 +7,7 @@
 type Node = { title: string; sub: string };
 
 const NODES: Node[] = [
-  { title: "Shopper agent", sub: "GPT · Gemini · Sonnet" },
+  { title: "Shopper agent", sub: "Any agent, over MCP" },
   { title: "Agent catalogue", sub: "" },
   { title: "PayPal checkout", sub: "saved wallet · seller as payee" },
   { title: "Seller paid", sub: "Northwind · Lumen · MegaMart" },

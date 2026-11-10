@@ -4,7 +4,7 @@
  * schedule is drawn to scale. Every value a creator typed is escaped; the specimen script only
  * ever writes textContent.
  */
-import { DEFAULT_SCHEDULE } from "@pact/protocol";
+import { DEFAULT_SCHEDULE, siteNavLinks } from "@pact/protocol";
 
 const esc = (s: string) => s.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
 
@@ -163,8 +163,7 @@ aside{position:sticky;top:24px}
 }
 `;
 
-const NAV = `<nav class="nav" aria-label="CITED"><a class="mark" href="/">CITED</a>
-<a href="/console">Console</a><a href="/try">Run an agent</a><a href="/creators" aria-current="page">For creators</a></nav>`;
+const NAV = `<nav class="nav" aria-label="CITED"><a class="mark" href="/">CITED</a>${siteNavLinks("creators")}</nav>`;
 
 function shell(title: string, body: string, script = ""): string {
   return `<!doctype html><html lang="en"><head><meta charset="utf-8">

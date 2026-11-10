@@ -10,8 +10,14 @@ Built for the [PayPal AI Hackathon](https://paypalaihackathon.devpost.com/). Lic
 
 Hosted demo (one Cloudflare Worker, `pact-worker`; Pact is the project's codename):
 
+- <https://pact-worker.vincent-wesley-liem.workers.dev/>: the landing page
+- <https://pact-worker.vincent-wesley-liem.workers.dev/console>: the demo console (two agents, side by side) and [`/console/payout`](https://pact-worker.vincent-wesley-liem.workers.dev/console/payout), the day-30 payout
+- <https://pact-worker.vincent-wesley-liem.workers.dev/try>: run a shopping agent yourself (a live model when the host has a model key, scripted otherwise; the page says which)
+- <https://pact-worker.vincent-wesley-liem.workers.dev/proof>: the pre-registered eval behind every number, with every session to download
+- <https://pact-worker.vincent-wesley-liem.workers.dev/studio>: the AG Studio brand and creator dashboards
+- <https://pact-worker.vincent-wesley-liem.workers.dev/creators>: creator onboarding (connect PayPal, publish a test)
+- <https://pact-worker.vincent-wesley-liem.workers.dev/mcp>: the catalogue as a public MCP server (below)
 - <https://pact-worker.vincent-wesley-liem.workers.dev/catalogue/offers>: the offers agents read, synced to PayPal by Northwind, Lumen and MegaMart
-- <https://pact-worker.vincent-wesley-liem.workers.dev/console>: the demo console (two agents, side by side)
 - <https://pact-worker.vincent-wesley-liem.workers.dev/api/cited/health>: the CITED engine's health check
 
 ### Use it from your agent
@@ -62,6 +68,8 @@ Every number traces to a committed, pre-registered eval ([`packages/evals/result
 | Vault (PayPal wallet) | `apps/catalogue-mcp`, `packages/paypal/src/vault.ts` | The buyer links PayPal to the agent once; every checkout charges that `vault_id` |
 | Payments v2 `captures/{id}/refund` (seller) | `apps/catalogue-mcp` | A seller refunds a returned item; the refund webhook voids the credit |
 
+The payout and the brand statement have also run once against the real PayPal sandbox with the demo's numbers: batch Payout `ME2KV57B7KYNS` ($383.96, `SUCCESS`) and invoice `INV2-TNXC-9GA6-W36V-WTF6` (`MARKED_AS_PAID`). Ids and statuses are in [cited/SANDBOX-EVIDENCE.md](cited/SANDBOX-EVIDENCE.md).
+
 Every mutating call sets a deterministic `PayPal-Request-Id`. Mode is `simulated` by default (an in-memory mock in `packages/paypal`). The deployed worker reads `CITED_PAYPAL_MODE`; locally it is `PAYPAL_MODE`. Set either to `sandbox` with the credentials from [`.env.example`](.env.example) to use the PayPal sandbox; for example `PAYPAL_MODE=sandbox npm run dev -w @cited/catalogue-mcp` (`npm run dev:cited` always forces simulated).
 
 ## Configuration
@@ -94,7 +102,7 @@ The deploy job pushes these GitHub secrets to the worker with `wrangler secret p
 - `apps/console`: the demo console (two agents side by side, payout moment).
 - `packages/evals`: the eval harness and committed results.
 
-`apps/web` is placeholder code from an earlier project and is not part of CITED.
+- `apps/web`: the static pages the worker serves: the landing (`/`), `/proof` and the AG Studio page (`studio.html`), prerendered by Vite. It also still holds the original Pact chat app (`app.html`, `/app`), which CITED does not use.
 
 ## Run the evals
 
@@ -113,6 +121,8 @@ Outputs are in `packages/evals/results/cited` and `packages/evals/results/cited-
 - [Product card](cited/spec/CITED-card.md)
 - [Workboard](cited/WORKBOARD.md)
 - [Spec folder](cited/spec): [build plan](cited/spec/BUILD-PLAN.md), [demo packet](cited/spec/CITED-packet.md)
+- [Sandbox evidence](cited/SANDBOX-EVIDENCE.md): the real PayPal sandbox payout and invoice
+- [Agent checkout](cited/spec/AGENT-CHECKOUT.md), [creator onboarding](cited/spec/CREATOR-ONBOARDING.md), [AG Studio](cited/STUDIO.md)
 - [CITED folder overview](cited/README.md)
 
 ## License

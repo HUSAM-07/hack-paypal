@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { FlowTall, FlowWide } from "./FlowDiagram";
+import { SiteHeader } from "./SiteHeader";
 
 /**
  * CITED landing. Every number on this page comes from cited/spec/CITED-card.md and
@@ -139,8 +140,8 @@ function ArmsFigure() {
         </div>
       </div>
       <figcaption className="caption">
-        <span className="fig-no">Fig. 1</span> 147 forced-buy sessions across GPT, Gemini and
-        Sonnet, Levoit priced the same as Winix.
+        <span className="fig-no">Fig. 1</span> 147 forced-buy sessions across gpt-6-luna,
+        gemini-3.8-flash and claude-sonnet-5-5, Levoit priced the same as Winix.
         <Ref n={2} />
       </figcaption>
     </figure>
@@ -195,9 +196,10 @@ const STEPS: { title: string; body: ReactNode }[] = [
 ];
 
 const MODELS = [
-  { name: "GPT", lift: "+89pp" },
-  { name: "Gemini", lift: "+100pp" },
-  { name: "Sonnet", lift: "+94pp" },
+  // Names exactly as recorded in packages/evals/results/cited-price-matched/results.jsonl.
+  { name: "gpt-6-luna", lift: "+89pp" },
+  { name: "gemini-3.8-flash", lift: "+100pp" },
+  { name: "claude-sonnet-5-5", lift: "+94pp" },
 ];
 
 const LEDGER: { label: string; value: string; kind?: "sub" | "void" | "total" | "return" }[] = [
@@ -214,6 +216,8 @@ const LEDGER: { label: string; value: string; kind?: "sub" | "void" | "total" | 
   { label: "Returned to Winix from its $1,000 deposit", value: "$616.04", kind: "return" },
   { label: "Levoit: no lift, so no credit", value: "$0.00", kind: "return" },
 ];
+
+const MCP_URL = "https://pact-worker.vincent-wesley-liem.workers.dev/mcp";
 
 const TRY = [
   {
@@ -232,9 +236,19 @@ const TRY = [
     body: "Type what the buyer wants. A live agent shops, pays a seller through PayPal, and the engine decides whether the creator earns.",
   },
   {
+    href: "/proof",
+    title: "The proof",
+    body: "The pre-registration, every interval, and every eval session to download.",
+  },
+  {
     href: "/studio",
     title: "Studio dashboards",
     body: "The brand and creator views of the same ledger.",
+  },
+  {
+    href: "/creators",
+    title: "For creators",
+    body: "Connect PayPal and publish a test; see the holdout schedule it will run on.",
   },
   {
     href: REPO,
@@ -249,27 +263,7 @@ export function Landing() {
       <a className="skip" href="#main">
         Skip to content
       </a>
-      <header className="top">
-        <div className="wrap top-inner">
-          <a className="wordmark" href="/">
-            CITED
-          </a>
-          <nav aria-label="Sections" className="top-nav">
-            <a href="#how" className="hide-sm">
-              How it works
-            </a>
-            <a href="/proof" className="hide-sm">
-              Proof
-            </a>
-            <a href="#money" className="hide-sm">
-              Payout
-            </a>
-            <a href="/console?clean=1" className="top-cta">
-              Live demo
-            </a>
-          </nav>
-        </div>
-      </header>
+      <SiteHeader />
 
       <main id="main">
         <div className="wrap hero">
@@ -429,7 +423,29 @@ export function Landing() {
             </p>
           </Section>
 
-          <Section id="try" kicker="Try it" title="Everything here runs live.">
+          <Section id="try" kicker="Try it" title="Open it, or point your own agent at it.">
+            <div className="own-agent">
+              <div>
+                <h3 className="h3">Run it with your own agent</h3>
+                <p>
+                  The catalogue is a public MCP server. Your agent searches the offers and checks
+                  out through PayPal; the creator is credited only if the test it was shown caused
+                  the sale.{" "}
+                  <a className="proof-link" href="/mcp">
+                    Setup for other clients
+                    <span className="try-arrow" aria-hidden="true">
+                      →
+                    </span>
+                  </a>
+                </p>
+              </div>
+              <div className="own-agent-cmd">
+                <p className="own-agent-label">Server URL</p>
+                <pre>{MCP_URL}</pre>
+                <p className="own-agent-label">Claude Code</p>
+                <pre>claude mcp add --transport http cited {MCP_URL}</pre>
+              </div>
+            </div>
             <ul className="try">
               {TRY.map((t) => (
                 <li key={t.href}>
@@ -445,6 +461,31 @@ export function Landing() {
                 </li>
               ))}
             </ul>
+            <div className="runs">
+              <h3 className="h3">What is real here</h3>
+              <ul>
+                <li>
+                  <strong>The eval used real models:</strong> gpt-6-luna, gemini-3.8-flash and
+                  claude-sonnet-5-5, 147 sessions per study condition.
+                  <Ref n={2} />
+                </li>
+                <li>
+                  <strong>The hosted demo simulates PayPal.</strong> Orders, webhooks and Payouts
+                  run against an in-memory mock, so no money moves.
+                </li>
+                <li>
+                  <strong>
+                    <a href="/try">/try</a> runs a scripted agent
+                  </strong>{" "}
+                  until the host has a model key; the page says which one you got.
+                </li>
+                <li>
+                  <strong>The payout ran once for real in the PayPal sandbox:</strong> batch Payout{" "}
+                  <code>ME2KV57B7KYNS</code>, $383.96, status SUCCESS.{" "}
+                  <a href={blob("cited/SANDBOX-EVIDENCE.md")}>Sandbox evidence</a>
+                </li>
+              </ul>
+            </div>
           </Section>
         </div>
       </main>
