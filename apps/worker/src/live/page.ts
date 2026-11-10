@@ -3,6 +3,7 @@
  * the timeline takes the colour of the arm the catalogue drew (test green, placebo/held amber).
  * Everything a model or a third party wrote is rendered with textContent, never as HTML.
  */
+import { siteNavLinks } from "@pact/protocol";
 
 const esc = (s: string) => s.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
 
@@ -98,7 +99,8 @@ aside{align-self:start;position:sticky;top:24px}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 @media (max-width:900px){
   .nav,main{padding-left:20px;padding-right:20px}
-  .nav{gap:.9rem;font-size:.72rem}
+  .nav{gap:.2rem .9rem;font-size:.72rem;flex-wrap:wrap}
+  .nav .mark{flex-basis:100%}
   main{padding-top:28px}
   textarea{font-size:1.75rem;max-width:none}
   .run{grid-template-columns:1fr;gap:1.8rem}
@@ -236,9 +238,23 @@ form.addEventListener("submit", async (ev) => {
 export function tryPage(o: { request: string; agent: string; scripted: boolean }): string {
   return `<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Run a shopping agent · CITED</title>
 <meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="description" content="Type what the buyer wants. An agent shops, pays a seller through PayPal, and CITED decides whether the creator earns.">
+<meta property="og:type" content="website" />
+<meta property="og:site_name" content="CITED" />
+<meta property="og:title" content="CITED · Run a shopping agent" />
+<meta property="og:description" content="Type what the buyer wants. An agent shops, pays a seller through PayPal, and CITED decides whether the creator earns." />
+<meta property="og:url" content="https://pact-worker.vincent-wesley-liem.workers.dev/try" />
+<meta property="og:image" content="https://pact-worker.vincent-wesley-liem.workers.dev/og/cited-proof-v1.png" />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+<meta property="og:image:alt" content="Bar chart: 100% of AI agents shown a creator's test bought the Winix, against 6% shown a placebo and 8% shown nothing." />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="CITED · Run a shopping agent" />
+<meta name="twitter:description" content="Type what the buyer wants. An agent shops, pays a seller through PayPal, and CITED decides whether the creator earns." />
+<meta name="twitter:image" content="https://pact-worker.vincent-wesley-liem.workers.dev/og/cited-proof-v1.png" />
+<meta name="twitter:image:alt" content="Bar chart: 100% of AI agents shown a creator's test bought the Winix, against 6% shown a placebo and 8% shown nothing." />
 <style>${CSS}</style></head><body>
-<nav class="nav" aria-label="CITED"><a class="mark" href="/">CITED</a>
-<a href="/console">Console</a><a href="/console/payout">Payout</a><a href="/try" aria-current="page">Run an agent</a></nav>
+<nav class="nav" aria-label="CITED"><a class="mark" href="/">CITED</a>${siteNavLinks("try")}</nav>
 <main>
 <p class="eyebrow">Run a live shopping agent</p>
 <form id="ask">

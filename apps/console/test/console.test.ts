@@ -208,6 +208,23 @@ describe("payout moment (#29)", () => {
     expect(html).not.toContain("differs from this payout");
   });
 
+  it("dates the payout relative to the demo, never by the demo clock's future date", async () => {
+    for (const path of ["/payout", "/payout?clean=1"]) {
+      const html = await (await appWith(RUNS).request(path)).text();
+      expect(html).toContain("After the 30-day hold");
+      expect(html).not.toMatch(/\b20\d\d-\d\d-\d\d\b/);
+    }
+  });
+
+  it("carries the shared site nav, hidden with ?clean=1", async () => {
+    const html = await (await appWith(RUNS).request("/payout")).text();
+    for (const href of ["../try", "../mcp", "../proof", "../studio", "../creators", 'href="/"'])
+      expect(html).toContain(href);
+    expect(html).toContain('href="/payout" aria-current="page"');
+    const clean = await (await appWith(RUNS).request("/payout?clean=1")).text();
+    expect(clean).toContain('class="clean');
+  });
+
   it("flags a payout that disagrees with the ledger", async () => {
     const bad = structuredClone(ENGINE) as any;
     bad["/api/credits"].creators[0].totals.paid = 100;

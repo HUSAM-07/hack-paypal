@@ -79,10 +79,11 @@ export const studies = {
   narrowForced: need(C["narrow-forced"], "narrow-forced"),
 };
 
+/** Shown exactly as the results files record them, so every label greps back to the data. */
 export const MODEL_NAMES: Record<string, string> = {
-  "gpt-6-luna": "GPT",
-  "gemini-3.8-flash": "Gemini",
-  "claude-sonnet-5-5": "Sonnet",
+  "gpt-6-luna": "gpt-6-luna",
+  "gemini-3.8-flash": "gemini-3.8-flash",
+  "claude-sonnet-5-5": "claude-sonnet-5-5",
 };
 
 /**

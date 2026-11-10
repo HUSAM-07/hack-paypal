@@ -1,3 +1,4 @@
+import { siteNavLinks } from "@pact/protocol";
 import type { Context } from "hono";
 import type { Env } from "./env";
 import { clientIp } from "./security";
@@ -80,11 +81,18 @@ export function howToPage(origin: string): Response {
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>CITED catalogue MCP server</title>
 <style>
+@font-face{font-family:"Newsreader";font-style:normal;font-weight:200 800;font-display:swap;src:url("/fonts/newsreader-latin-opsz-v1.woff2") format("woff2-variations")}
 @font-face{font-family:"Geist";font-style:normal;font-weight:100 900;font-display:swap;src:url("/fonts/geist-latin-v1.woff2") format("woff2-variations")}
 @font-face{font-family:"Geist Mono";font-style:normal;font-weight:100 900;font-display:swap;src:url("/fonts/geist-mono-latin-v1.woff2") format("woff2-variations")}
 :root{--bg:#FAF8F4;--ink:#16181D;--muted:#5B5F68;--line:#E6E2DA;--sans:"Geist",ui-sans-serif,-apple-system,"Segoe UI",Helvetica,Arial,sans-serif;--mono:"Geist Mono",ui-monospace,SFMono-Regular,Menlo,monospace}
 body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);line-height:1.5}
-main{max-width:720px;margin:0 auto;padding:48px 24px 64px}
+main{max-width:720px;margin:0 auto;padding:40px 24px 64px}
+.nav{display:flex;align-items:baseline;gap:2rem;max-width:1180px;margin:0 auto;padding:22px 48px 0;font-size:.8rem}
+.nav .mark{font-family:"Newsreader",Georgia,serif;font-size:1.15rem;font-weight:600;letter-spacing:.06em;text-decoration:none;margin-right:auto;color:var(--ink)}
+.nav a{color:var(--muted);text-decoration:none;padding:.3rem 0;white-space:nowrap}
+.nav a:hover{color:var(--ink)}
+.nav a[aria-current]{color:var(--ink);box-shadow:inset 0 -1.5px 0 var(--ink)}
+@media (max-width:760px){.nav{padding:18px 20px 0;gap:.2rem .9rem;font-size:.72rem;flex-wrap:wrap}.nav .mark{flex-basis:100%}}
 h1{font-size:1.6rem;margin:0 0 .5rem}
 h2{font-size:1.05rem;margin:2rem 0 .4rem}
 p,li{color:var(--muted)}
@@ -92,7 +100,9 @@ code,pre{font-family:var(--mono);font-size:.9rem}
 pre{background:#fff;border:1px solid var(--line);border-radius:6px;padding:12px 14px;overflow-x:auto;color:var(--ink)}
 .url{font-size:1.05rem;color:var(--ink)}
 a{color:inherit}
-</style></head><body><main>
+</style></head><body>
+<nav class="nav" aria-label="CITED"><a class="mark" href="/">CITED</a>${siteNavLinks("mcp")}</nav>
+<main>
 <h1>Shop through CITED from your own agent</h1>
 <p>A remote MCP server (Streamable HTTP) with two tools: <code>search_product</code> and <code>checkout</code>. Your agent searches offers synced to PayPal and buys one; the order pays the seller through PayPal with a signed passport in <code>custom_id</code>, and the creator is credited only if the test your agent was shown caused the sale. Simulated PayPal: no real money moves. No sign-in.</p>
 <p class="url"><code>${u}</code></p>
