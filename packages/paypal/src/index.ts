@@ -63,10 +63,12 @@ export {
 } from "./webhooks/events";
 export {
   type HeaderSource,
+  hasPayPalSignatureHeaders,
   isAllowedCertUrl,
   type PostbackVerifyInput,
   readWebhookHeaders,
   type SelfVerifyInput,
+  SIMULATOR_WEBHOOK_ID,
   type VerifyFailure,
   type VerifyResult,
   verifyWebhookSelf,

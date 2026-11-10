@@ -10,7 +10,8 @@ import {
   type SearchResult,
   ShopperSession,
 } from "@cited/agents";
-import { LIVE_CATEGORY, type Money } from "@pact/protocol";
+import { LIVE_CATEGORY, type Money, UPC_LEVOIT_CORE300 } from "@pact/protocol";
+import { type PairArm, passportInArm } from "./arms";
 import { type LiveAgentChoice, type LiveProviderEnv, liveAgentChoice } from "./provider";
 import { type JoinedSale, liveVerdict, type ProgrammeFacts, type Verdict } from "./verdict";
 
@@ -33,6 +34,7 @@ export type LiveEvent =
       captureId: string | null;
       seller: string;
       product: string;
+      upc: string;
       total: Money;
       passportChars: number;
     }
@@ -59,12 +61,22 @@ export interface LiveRunDeps {
   choice?: LiveAgentChoice;
   /** How long to wait for the capture webhook to land in D1. */
   joinWaitMs?: number;
+  /**
+   * The side-by-side on /try fixes each lane's arm instead of drawing it. The real catalogue
+   * always draws at random; this only picks which drawn session the lane shops in.
+   */
+  arm?: PairArm;
+  /** Shared by the two lanes of one side-by-side. */
+  pairId?: string;
 }
 
 export interface LiveRunRecord {
   runId: string;
   source: "live";
   request: string;
+  /** Set when /try's side-by-side fixed this run's arm. */
+  forcedArm?: PairArm;
+  pairId?: string;
   agent: string;
   scripted: boolean;
   sessionId: string | null;
@@ -131,6 +143,7 @@ class NarratedSession extends ShopperSession {
       captureId: r.captureId,
       seller: r.seller.name,
       product: offer ? `${offer.brand} ${offer.name}` : r.upc,
+      upc: r.upc,
       total: r.total,
       passportChars: r.customId?.length ?? 0,
     });
@@ -217,8 +230,12 @@ export async function runLive(deps: LiveRunDeps): Promise<LiveRunRecord> {
   const session: NarratedSession = new NarratedSession(deps.endpoints, deps.runId, emit, () =>
     reportSession(deps.endpoints, session, choice.model, LIVE_CATEGORY),
   );
+  // Scripted and held out, the stand-in takes the Levoit, so the scripted pair still contrasts
+  // with the test lane, which reads the test and takes the Winix.
   const agent =
-    choice.kind === "scripted" ? new FakeAgent() : new LlmAgent(choice.llm, choice.model);
+    choice.kind === "scripted"
+      ? new FakeAgent(deps.arm === "none" ? { baselineUpc: UPC_LEVOIT_CORE300 } : {})
+      : new LlmAgent(choice.llm, choice.model);
 
   let outcome: AgentOutcome = { reason: null, steps: 0 };
   let error: string | undefined;
@@ -226,6 +243,13 @@ export async function runLive(deps: LiveRunDeps): Promise<LiveRunRecord> {
     abort.signal.addEventListener("abort", () => rej(new Error("the run hit its time limit"))),
   );
   try {
+    if (deps.arm) {
+      const prefix = deps.runId.replace(/[^A-Za-z0-9]/g, "").slice(-14);
+      session.passport = await Promise.race([
+        passportInArm(deps.endpoints, deps.arm, prefix),
+        deadline,
+      ]);
+    }
     outcome = await Promise.race([
       agent.run({
         request: deps.request,
@@ -278,9 +302,11 @@ export async function runLive(deps: LiveRunDeps): Promise<LiveRunRecord> {
       type: "error",
       message: bought
         ? "The agent paid, then stopped early."
-        : /time limit/.test(error)
-          ? "The agent ran out of time before buying anything."
-          : "The agent stopped with an error before buying anything.",
+        : /could not fix/.test(error)
+          ? "The catalogue didn't give this lane the arm it needs."
+          : /time limit/.test(error)
+            ? "The agent ran out of time before buying anything."
+            : "The agent stopped with an error before buying anything.",
     });
   } else if (!bought) {
     await emit({ type: "error", message: "The agent finished without buying anything." });
@@ -291,6 +317,8 @@ export async function runLive(deps: LiveRunDeps): Promise<LiveRunRecord> {
     runId: deps.runId,
     source: "live",
     request: deps.request,
+    ...(deps.arm ? { forcedArm: deps.arm } : {}),
+    ...(deps.pairId ? { pairId: deps.pairId } : {}),
     agent: choice.label,
     scripted,
     sessionId: body?.sessionId ?? null,

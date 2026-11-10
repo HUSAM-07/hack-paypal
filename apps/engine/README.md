@@ -12,7 +12,11 @@ Reads under `/api` (`GET`) are public. Writes need `Authorization: Bearer $ENGIN
 (`401` without it). With no token set, writes answer `503` in every PayPal mode unless
 `ENGINE_OPEN_API=1` opts in to keyless writes (`npm run dev`, tests and the demo stack set it;
 the worker sets it only for its own in-process callers). A token always wins over the opt-in.
-`/webhooks/paypal` is authenticated by PayPal's signature instead.
+`/webhooks/paypal` is authenticated by PayPal's signature instead. In simulated mode, unsigned
+events are trusted (the demo's own), but any request carrying PayPal signature headers is
+verified for real (our webhook id, then the simulator's `WEBHOOK_ID`), recorded in
+`webhook_proofs` and not dispatched. Outside simulated mode, only events signed for our
+subscription are dispatched; simulator-signed ones are recorded only.
 
 ## Money flow
 
@@ -76,6 +80,7 @@ catalogue reports every session it assigns an arm; lift needs the non-buyers).
 | `GET /api/journeys?source=mcp` | Sales made through the public `/mcp` endpoint, each with `verdict: {creditable, reason}`. They are kept out of lift, credits and every other number. |
 | `GET /api/shapley` | `{sales: [{captureId, brandId, upc, totalMinor, shares:[{creatorId, amountMinor, state, payoutBatchId}]}]}` |
 | `GET /api/invoices?brandId=` | `{statements: [{id, brandId, invoiceNumber, invoiceId, status, currency, creditedMinor, voidedMinor, paidMinor, returnedMinor, depositedMinor, reservedMinor, invoiceTotalMinor, invoicePaidMinor, invoiceDueMinor, lines[], payoutBatchIds[], refundIds[], creditIds[], recipientViewUrl, invoicerViewUrl, error, createdAt}]}` |
+| `GET /api/webhook-proof` | `{subscriptionId, paypalMode, proofs: [{transmissionId, eventId, eventType, source, signedFor: subscription\|simulator, verified, transmissionTime, certUrl, resourceId, dispatched, receivedAt}]}` |
 | `GET /api/payouts` | `{batches: [{senderBatchId, paypalBatchId, status, items[], createdAt}]}` |
 
 `Lift`: `{brandId, name, category, upc, arms:{test|placebo|none:{sessions,purchases}},

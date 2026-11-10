@@ -40,6 +40,8 @@ export function citedEnv(env: Env, caller: Caller = "public"): EngineEnv {
     PAYPAL_CLIENT_SECRET: env.PAYPAL_CLIENT_SECRET,
     ENGINE_API_TOKEN: caller === "internal" ? undefined : env.CITED_API_TOKEN,
     ENGINE_OPEN_API: caller === "internal" || citedOpen(env) ? "1" : undefined,
+    // The demo Durable Object restarts with an empty simulated PayPal; D1 keeps the old ids.
+    MOCK_IDS_FROM_CLOCK: "1",
   };
 }
 
@@ -67,7 +69,32 @@ export function serveEngine(
 ): Response | Promise<Response> {
   const url = new URL(req.url);
   url.pathname = url.pathname.slice(CITED_PREFIX.length) || "/";
-  return engine.fetch(new Request(url, req), citedEnv(env, caller), ctx);
+  return withReadRetry(
+    new Request(url, req),
+    async (r) => engine.fetch(r, citedEnv(env, caller), ctx) as Promise<Response>,
+  );
+}
+
+const READ_RETRY_MS = [150, 400, 1000];
+
+/**
+ * D1 can refuse a read for a moment, for example while the hosted reseed's one atomic import
+ * holds the database. Engine GETs retry a 5xx briefly so a page shows the old or the new
+ * ledger, never an error. Writes are never retried here (they carry their own idempotency).
+ */
+export async function withReadRetry(
+  req: Request,
+  run: (req: Request) => Promise<Response>,
+  delays: readonly number[] = READ_RETRY_MS,
+): Promise<Response> {
+  if (req.method !== "GET" && req.method !== "HEAD") return run(req);
+  let res = await run(req.clone());
+  for (const ms of delays) {
+    if (res.status < 500) return res;
+    await new Promise((r) => setTimeout(r, ms));
+    res = await run(req.clone());
+  }
+  return res;
 }
 
 /** The engine's write API lives under /api/cited/api; webhooks are signature-checked instead. */

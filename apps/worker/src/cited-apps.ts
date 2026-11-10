@@ -22,6 +22,7 @@ import {
   citedWriteDenied,
   internalEngineFetch,
   serveEngine,
+  withReadRetry,
 } from "./cited";
 import type { Env } from "./env";
 import { PUBLIC_MCP_PATH } from "./mcp";
@@ -87,7 +88,10 @@ async function asDemoPage(res: Response, prefix: string, csp = DEMO_PAGE_CSP): P
  */
 function engineFetch(env: Env, ctx: ExecCtx): typeof fetch {
   return async (input, init) =>
-    engine.fetch(new Request(input, init), citedEnv(env, "internal"), ctx) as Promise<Response>;
+    withReadRetry(
+      new Request(input, init),
+      async (r) => engine.fetch(r, citedEnv(env, "internal"), ctx) as Promise<Response>,
+    );
 }
 
 /**
@@ -169,9 +173,12 @@ export function statefulDemoHandler(c: Ctx): Response | Promise<Response> {
 export function d1RunSource(db: D1Database): RunSource {
   return {
     async runs() {
-      const { results } = await db
-        .prepare("SELECT record FROM cited_agent_runs ORDER BY id")
-        .all<{ record: string }>();
+      const read = () =>
+        db.prepare("SELECT record FROM cited_agent_runs ORDER BY id").all<{ record: string }>();
+      // One retry: D1 can refuse a read for a moment while the hosted reseed's import runs.
+      const { results } = await read().catch(() =>
+        new Promise((r) => setTimeout(r, 300)).then(read),
+      );
       return parseRunRecords(results.map((r) => r.record).join("\n"));
     },
   };

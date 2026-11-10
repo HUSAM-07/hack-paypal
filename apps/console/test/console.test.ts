@@ -193,7 +193,8 @@ describe("side-by-side runs (#28)", () => {
 
   it("shows a waiting state with no runs", async () => {
     const html = await (await appWith("").request("/")).text();
-    expect(html).toContain("No agent runs yet");
+    expect(html).toContain("No agent runs to show yet");
+    expect(html).not.toContain("CLI");
   });
 });
 

@@ -17,4 +17,10 @@ export interface Env {
   ENGINE_OPEN_API?: string | undefined;
   /** Who brand statements (Invoicing v2) are addressed to; default billing@<brandId>.example.com. */
   STATEMENT_RECIPIENT_EMAIL?: string | undefined;
+  /**
+   * "1": simulated PayPal ids start from the clock. Set by pact-worker, whose demo Durable Object
+   * restarts with an empty mock while D1 keeps the ledger. Unset (dev, tests), ids start at 0 so
+   * a replay with the same seed is byte-identical.
+   */
+  MOCK_IDS_FROM_CLOCK?: string | undefined;
 }

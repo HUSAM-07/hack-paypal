@@ -264,7 +264,7 @@ export function App() {
       </header>
       {error ? (
         <p className="st-error" role="alert">
-          {error}. Start the engine, then reload.
+          The programme figures could not load ({error}). Reload the page in a moment.
         </p>
       ) : null}
       {config && data && ai ? (

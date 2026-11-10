@@ -86,6 +86,10 @@ The deploy job pushes these GitHub secrets to the worker with `wrangler secret p
 - `AG_STUDIO_LICENSE_KEY`: AG Studio licence key (watermark without it)
 - `ANTHROPIC_API_KEY`: model key for `/try` and the Studio agents (scripted without it)
 
+**Refreshing the hosted data.** Run the `reseed-hosted` workflow (manual only). By default it replays the demo against a local `wrangler dev` of the worker inside the job, checks the locked numbers, and swaps the CITED tables in production D1 with one atomic `wrangler d1 execute --file` (Pact's tables are never touched), so the site is never empty. It then checks the hosted API and pages (`apps/worker/scripts/verify-cited.mjs`) and fails if a number is off. `mode: replay` keeps the old wipe-and-replay path, which leaves the site empty for 10+ minutes. To build the file yourself: `node apps/worker/scripts/cited-snapshot.mjs --out cited-snapshot.sql`.
+
+**Deploy freeze.** Set the repository variable `DEPLOY_FREEZE` to `true` to freeze the hosted demo (for example during judging): pushes to `main` still run the checks but skip the deploy, and `reseed-hosted` refuses to run. To deploy or reseed anyway, run the `ci` or `reseed-hosted` workflow manually with `force: true`. Unset it, or set it to anything else, to resume.
+
 ## Architecture
 
 - `packages/protocol`: the shared contract (arms, passport, credits, `Money`).
