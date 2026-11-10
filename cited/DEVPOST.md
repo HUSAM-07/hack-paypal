@@ -1,19 +1,53 @@
 # Devpost submission draft
 
-Paste each section into the matching Devpost field. Numbers come from `npm run demo:cited`, `packages/evals/results/cited*` and [spec/CITED-card.md](spec/CITED-card.md); see the provenance table in [spec/CITED-packet.md](spec/CITED-packet.md). Items marked [confirm after AG Studio PR] describe the planned AG Studio build; check them against the merged PR before submitting.
+Paste each section into the matching Devpost field. Numbers come from `npm run demo:cited`, `packages/evals/results/cited*` and [spec/CITED-card.md](spec/CITED-card.md); see the provenance table in [spec/CITED-packet.md](spec/CITED-packet.md). Be precise about money: one Payouts batch and one Invoicing statement ran on the real PayPal sandbox (HUSAM-07/hack-paypal#84); the rest of the hosted demo runs on simulated PayPal.
 
 ## Before submitting (requirements from the hackathon rules)
 
 | Requirement | Where it is met | Status |
 |---|---|---|
-| Meaningful use of PayPal (sandbox) and AI | Orders v2, Vault, Webhooks, Payouts, captures refund, disputes; shopper agents (GPT, Gemini, Sonnet); AG Studio Analyst agent | met |
+| Meaningful use of PayPal (sandbox) and AI | Orders v2, Vault, Webhooks, Payouts (real sandbox batch `ME2KV57B7KYNS`), Invoicing (real sandbox invoice `INV2-TNXC-9GA6-W36V-WTF6`), captures refund, disputes, Log in with PayPal; shopper agents (GPT, Gemini, Sonnet); AG Studio Analyst agent | met |
 | Public repo with a visible OSS licence | <https://github.com/HUSAM-07/hack-paypal>, MIT | **repo is private today: make it public before submitting** |
 | Working build: hosted URL or full run instructions | Hosted demo below; `npm ci && npm run demo:cited` runs with no keys; sandbox setup in `.env.example` and `cited/spec/AGENT-CHECKOUT.md` | met |
 | Text description, tools used | This file | met |
 | YouTube video under 3 minutes showing it working | Script: `cited/spec/CITED-packet.md` (b) | **record and paste the link** |
 | New or significantly updated since 1 Oct 2026 | All CITED code was written during the period (git history) | met |
 | Legible to an LLM grader | README, this file and the card state problem, user, numbers and sources in plain text | met |
-| AG Grid sponsor prize: polish beyond plain AG Grid/AG Charts, plus Studio Agent Framework | Studio brand and creator views; custom Analyst agent delegating to the built-in Data and Chart agents | [confirm after AG Studio PR] |
+| AG Grid sponsor prize: polish beyond plain AG Grid/AG Charts, plus Studio Agent Framework | `/studio` and `/studio/creator`: AG Studio themed in CITED's palette and fonts, live tables updated by transactions, a master-detail AG Grid widget (cross-seller journey + Shapley split), a First payout / Programme to date toggle, Release / Void buttons on held credits; custom Agent Framework Analyst delegating to the built-in Data, Page and Widget agents, with Maya's Approve button on its tool card | met (needs `AG_STUDIO_LICENSE_KEY` on the worker, else a watermark shows) |
+
+
+## PayPal APIs: real sandbox vs simulated
+
+| API | Real PayPal sandbox | Hosted demo |
+|---|---|---|
+| Payouts | Day-30 batch: $383.96, batch `ME2KV57B7KYNS`, status SUCCESS (HUSAM-07/hack-paypal#84) | simulated |
+| Invoicing v2 | Winix statement `INV2-TNXC-9GA6-W36V-WTF6`: $383.96 invoiced, MARKED_AS_PAID, $0 due (HUSAM-07/hack-paypal#84) | simulated |
+| OAuth, Vault setup tokens | Verified on the sandbox app (setup token returns `PAYER_ACTION_REQUIRED`) | simulated |
+| Orders v2 checkout, Agent Toolkit `get_order` | An order with payee, `custom_id` and UPC created and read back; not yet captured (needs the buyer's vault approval) | simulated |
+| Webhooks, captures refund, disputes, Log in with PayPal | Code paths built against the sandbox APIs; webhook registered | simulated |
+
+The simulated PayPal mirrors the REST shapes and signs webhooks like PayPal, so the same client code runs in both modes (`CITED_PAYPAL_MODE=sandbox` switches it).
+
+## Testing instructions
+
+No login, no keys. Open in this order:
+
+1. <https://pact-worker.vincent-wesley-liem.workers.dev/>: the problem and how it works.
+2. <https://pact-worker.vincent-wesley-liem.workers.dev/console?clean=1>: two agents, same request; one shown the test buys the Winix, one held out buys the Levoit.
+3. <https://pact-worker.vincent-wesley-liem.workers.dev/console/payout?clean=1>: the $383.96 payout; "Statement" opens Winix's PayPal invoice.
+4. <https://pact-worker.vincent-wesley-liem.workers.dev/proof>: the pre-registered eval (147 headline sessions, +94pp, 80% bound +90.3pp); all 963 sessions download as CSV.
+5. <https://pact-worker.vincent-wesley-liem.workers.dev/studio?clean=1>: the brand's AG Studio dashboard; ask the Analyst "Should we raise the purifier cap?". `/studio/creator?clean=1` is the creator's view.
+6. <https://pact-worker.vincent-wesley-liem.workers.dev/try>: run a shopping agent yourself.
+7. Your own agent: `claude mcp add --transport http cited https://pact-worker.vincent-wesley-liem.workers.dev/mcp`, then ask it to buy an air purifier.
+8. <https://pact-worker.vincent-wesley-liem.workers.dev/creators>: onboard as a creator (simulated Log in with PayPal) and publish a test.
+
+Fallback, locally with Node 22+ (no keys; simulated PayPal, scripted agents):
+
+```bash
+npm ci && npm run demo:cited
+```
+
+It plays the 14 beats and ends with 32 ledger-vs-PayPal checks.
 
 ---
 
@@ -39,11 +73,12 @@ CITED pays creators for sales their tests cause, measured with a randomised hold
 2. **The catalogue randomises what agents see.** Sellers (Northwind, Lumen, MegaMart) sync their catalogues to PayPal; there are no storefronts. Each agent session randomly gets the creator's test, a placebo (other content from the same creator) or nothing: 50/50 for a new test's first 7 days, then a permanent 5% holdout. Ranking is identical in every arm; only the test is added or withheld.
 3. **Agents check out through PayPal themselves.** The agent platform creates an Orders v2 order with the seller as `payee`, charges the wallet the buyer linked once through PayPal Vault, and puts a signed Agent Affiliate Passport in `purchase_units[].custom_id`. In the demo the exposed agent reads Northwind's offer, pays Lumen $4 less, and the sale still joins its arm.
 4. **The engine credits only caused sales.** From PayPal's webhooks it computes the attributable fraction at the 80% lower bound: 57 exposed sales become 51 caused units, $391.64 at 8% commission. Levoit's bound is below zero: $0.
-5. **Unhappy paths are first-class.** A seller refund voids the pending credit before it can pay (−$7.68). A buyer dispute freezes credits until PayPal decides, then releases them (or voids them if the buyer wins). Credits are held 30 days.
-6. **Creators are paid by PayPal Payouts.** Day 30: $383.96 to HouseFresh in one batch, and $616.04 of Winix's deposit returns through `captures/{id}/refund`. When a second creator, AirLab, publishes its own test, co-exposed sales split by Shapley value ($3.84 each on a $7.68 commission). Programme to date: $468.43 paid in 3 batches, and the ledger matches PayPal to the cent.
-7. **AG Studio shows it to the brand and the creator.** Maya, Winix's brand manager, sees caused units, credits, voids and the deposit; her Analyst agent recommends where to spend, and she approves. The creator sees pending, frozen, voided and paid credits and the Shapley split. [confirm after AG Studio PR]
+5. **Unhappy paths are first-class.** A seller refund voids the pending credit before it can pay (−$7.68). A buyer dispute freezes credits until PayPal decides, then releases them (or voids them if the buyer wins). Credits are held 30 days. A self-dealing guard holds credits for review when a creator buys through their own PayPal (also repeat buyers, sudden spikes and serial refunders): the sale stays out of the study and the credit is never paid automatically.
+6. **Creators are paid by PayPal Payouts; brands get a PayPal invoice.** Day 30: $383.96 to HouseFresh in one batch, and $616.04 of Winix's deposit returns through `captures/{id}/refund`. We ran that payout on the real PayPal sandbox: batch `ME2KV57B7KYNS`, status SUCCESS. At cycle close each brand gets a statement through PayPal Invoicing, marked paid against its deposit ($383.96 invoiced, $0 due; sandbox invoice `INV2-TNXC-9GA6-W36V-WTF6`). When a second creator, AirLab, publishes its own test, co-exposed sales split by Shapley value ($3.84 each on a $7.68 commission). Programme to date: $468.43 paid in 3 batches, and the ledger matches PayPal to the cent.
+7. **AG Studio shows it to the brand and the creator.** Maya, Winix's brand manager, sees "+51 extra Winix sales" at the 80% lower bound, Levoit's $0, the arm strip, the deposit meter and every cross-seller journey; a toggle switches between the first payout and programme to date. Her Analyst, a custom Agent Framework agent, reads the data through Studio's built-in Data agent, adds a chart with the Page and Widget agents, and drafts a $500 top-up that changes nothing until she presses Approve. The creator view shows pending, frozen, held, voided and paid credits and the Shapley split.
+8. **Creators onboard with PayPal.** At `/creators` a creator connects with Log in with PayPal (its payer id becomes the Payouts receiver) and publishes a test, which enters the holdout schedule. Hosted, the sign-in is a labelled simulated PayPal page.
 
-Judges can run it three ways: watch the recorded two-agent demo at `/console`, run a live agent at `/try`, or point their own agent at the public MCP server at `/mcp` and buy a purifier.
+Judges can check it four ways: read the pre-registration and per-model results at `/proof` (all 963 sessions downloadable), watch the recorded two-agent demo at `/console` and Studio, run a live agent at `/try`, or point their own agent at the public MCP server at `/mcp` and buy a purifier.
 
 ## How we built it
 
@@ -52,12 +87,15 @@ Judges can run it three ways: watch the recorded two-agent demo at `/console`, r
 - **PayPal Webhooks:** signature-verified intake of `CHECKOUT.ORDER.COMPLETED`, `PAYMENT.CAPTURE.COMPLETED`, `PAYMENT.CAPTURE.REFUNDED` and `CUSTOMER.DISPUTE.CREATED` / `RESOLVED`. If a capture arrives before its order, the engine reads the order back with `GET /v2/checkout/orders/{id}`.
 - **Payments v2 captures refund:** sellers refund returned items (voiding the credit); the programme refunds each brand's unspent deposit.
 - **Disputes:** an open dispute freezes the sale's credits; a seller-favour resolution releases them, a buyer win voids them.
-- **PayPal Payouts:** batch payouts to creators' `PAYPAL_ID`, with a deterministic `sender_batch_id`, after the 30-day hold.
-- **AI agents:** shopper agents on GPT, Gemini and Claude Sonnet through an OpenAI-compatible gateway, shopping through an MCP catalogue (`search_product`, `checkout`). The catalogue is also a public remote MCP server (Streamable HTTP) that Claude, Cursor or any MCP client can use.
+- **PayPal Payouts:** batch payouts to creators' `PAYPAL_ID`, with a deterministic `sender_batch_id`, after the 30-day hold. Proven on the real sandbox: $383.96, batch `ME2KV57B7KYNS`, SUCCESS.
+- **PayPal Invoicing v2:** one statement per brand at cycle close, recorded as paid against the prepaid deposit; a brand with nothing to pay gets no invoice.
+- **Log in with PayPal:** creator onboarding; the payer id from `userinfo` is the Payouts receiver.
+- **AI agents:** shopper agents on GPT, Gemini and Claude Sonnet through an OpenAI-compatible gateway, shopping through an MCP catalogue (`search_product`, `checkout`). Checkout uses the PayPal Agent Toolkit (`@paypal/agent-toolkit`) for every call it can express: `pay_order` (capture), `get_order` (read-back, also exposed as an MCP tool) and `create_refund` (seller refunds). Order creation stays on our Orders v2 client, because the toolkit's `create_order` cannot set the payee, `custom_id`, `items[].upc` or a vaulted `payment_source`. The catalogue is also a public remote MCP server (Streamable HTTP) that Claude, Cursor or any MCP client can use.
 - **Attribution:** pure TypeScript functions for the model-stratified attributable fraction, its one-sided 80% lower bound, the Shapley split and the ledger rules, with property tests. Money is integer minor units throughout.
-- **AG Studio + Agent Framework:** brand and creator dashboards built on AG Studio with AG Grid, including a cross-seller journey and Shapley split table; a custom Analyst agent that delegates to Studio's built-in Data and Chart agents and asks Maya for approval through an approval tool before any budget change. [confirm after AG Studio PR]
-- **Cloudflare:** one Worker (Hono) serves the landing page, console, Studio, `/try`, `/mcp` and the engine; D1 holds the ledger; a Durable Object holds the demo stack (catalogue, simulated PayPal, engine state).
-- **Evals:** a pre-registered eval harness that reruns the agent study across three models and writes committed results.
+- **AG Studio + Agent Framework:** `ag-studio` + `ag-studio-react`, themed with CITED's colours and fonts. The engine's read API becomes eight Studio tables, polled every 2 s and applied as transactions, so a refund void appears without a reload. A master-detail AG Grid widget shows each cross-seller journey with its Shapley split. The custom Analyst agent delegates to the built-in Data, Page and Widget agents (Studio has no separate chart agent; the Widget agent configures charts), then calls a `draft_cap_top_up` tool whose card carries Maya's Approve button; the server recomputes the amount and never trusts the request. The model runs server-side, rate-limited, keys never reach the browser.
+- **Cloudflare:** one Worker (Hono) serves the landing page, `/proof`, console, Studio, `/creators`, `/try`, `/mcp` and the engine; D1 holds the ledger; a Durable Object holds the demo stack (catalogue, simulated PayPal, engine state).
+- **Evals:** a pre-registered eval harness that reruns the agent study across three models and writes committed results; `/proof` renders them at build time.
+- **Hardening:** the hosted engine's write endpoints (clock, payouts, cycle close, approvals, refunds, disputes) are locked behind a bearer token and fail closed; reads, `/try` and `/mcp` stay public and rate-limited.
 
 ## Challenges we ran into
 
@@ -65,12 +103,14 @@ Judges can run it three ways: watch the recorded two-agent demo at `/console`, r
 - **Keeping money out of rank.** Every arm must see the same offers in the same order. We enforce it with a test and never let a deposit touch ranking or verdicts.
 - **Joining a sale back to its arm without the merchant's help.** The signed passport has to fit PayPal's 127-character `custom_id` and survive the agent paying a different seller than the one whose offer it read.
 - **Agent checkout without storefronts.** Midway through we dropped demo shops entirely: agents now pay sellers through PayPal from a vaulted wallet. That meant rebuilding the checkout, the mock and the engine's join around Orders v2 payees.
+- **Self-dealing.** A creator can pay for its own sales. The guard keeps those sessions out of the study and holds their credits for a human, without moving any measured number.
 - **Unhappy paths in the right order.** Void before pay, freeze while a dispute is open, never pay inside the hold, and keep ledger and PayPal reconciled when the demo clock jumps 60 days.
 
 ## Accomplishments that we're proud of
 
 - **A pre-registered eval with a real effect.** 147 forced-buy sessions across GPT, Gemini and Sonnet, Winix and Levoit priced the same: shown the test, agents bought Winix 57/57; shown the placebo, 3/54. Lift **+94pp**, 80% lower bound **+90.3pp**, positive in all three models (GPT +89, Gemini +100, Sonnet +94). Across all evals: 963 sessions under two pre-registrations, including the cases where it does not pay (a close verdict: lower bound −6.0pp, $0).
-- **The demo checks itself.** `npm run demo:cited` plays 14 beats and ends with 27 reconciliation checks: 160 orders paid sellers from the buyer's wallet, every capture reached the engine, and the ledger's $468.43 paid equals PayPal's 3 payout batches.
+- **The demo checks itself.** `npm run demo:cited` plays 14 beats and ends with 32 reconciliation checks: 160 orders paid sellers from the buyer's wallet, every capture reached the engine, and the ledger's $468.43 paid equals PayPal's 3 payout batches.
+- **A real PayPal sandbox payout** of the headline $383.96 (batch `ME2KV57B7KYNS`, SUCCESS) and a matching Invoicing statement.
 - **Anyone can try it with their own agent**, through the public MCP server, with live sessions kept apart from the recorded numbers.
 - **Every number on the card traces to a committed result.**
 
@@ -82,14 +122,15 @@ Judges can run it three ways: watch the recorded two-agent demo at `/console`, r
 
 ## What's next for CITED
 
-- Run the agent checkout end to end on the PayPal sandbox with three seller accounts and real webhook delivery.
+- Run the agent checkout end to end on the PayPal sandbox with three seller accounts and real webhook delivery (payouts and invoicing already run there).
+- Feed tests published at `/creators` into the live catalogue's holdout.
 - More categories and creators, so tests compete and Shapley splits get richer.
-- Creator-side onboarding (Payouts to PayPal and Venmo) and a brand self-serve programme flow in AG Studio.
+- Venmo payouts for creators and a brand self-serve programme flow in AG Studio.
 - Integrate with PayPal's real agent catalogue and Honey's affiliate contracts.
 
 ## Built with
 
-`paypal` `paypal-orders-v2` `paypal-vault` `paypal-webhooks` `paypal-payouts` `paypal-disputes` `ag-grid` `ag-studio` `ag-studio-agent-framework` `mcp` `cloudflare-workers` `cloudflare-d1` `durable-objects` `hono` `typescript` `vitest` `openai` `gemini` `claude`
+`paypal` `paypal-orders-v2` `paypal-vault` `paypal-webhooks` `paypal-payouts` `paypal-invoicing` `paypal-disputes` `log-in-with-paypal` `ag-grid` `ag-studio` `ag-studio-agent-framework` `mcp` `cloudflare-workers` `cloudflare-d1` `durable-objects` `hono` `typescript` `vitest` `openai` `gemini` `claude`
 
 ## Try it out (links)
 
@@ -98,6 +139,10 @@ Judges can run it three ways: watch the recorded two-agent demo at `/console`, r
 - The payout: <https://pact-worker.vincent-wesley-liem.workers.dev/console/payout?clean=1>
 - Run a live agent: <https://pact-worker.vincent-wesley-liem.workers.dev/try>
 - Public MCP server: <https://pact-worker.vincent-wesley-liem.workers.dev/mcp> (`claude mcp add --transport http cited https://pact-worker.vincent-wesley-liem.workers.dev/mcp`)
-- AG Studio: <https://pact-worker.vincent-wesley-liem.workers.dev/studio> [confirm after AG Studio PR]
+- The proof (pre-registration, per-model results, all 963 sessions): <https://pact-worker.vincent-wesley-liem.workers.dev/proof>
+- AG Studio, brand view: <https://pact-worker.vincent-wesley-liem.workers.dev/studio?clean=1>
+- AG Studio, creator view: <https://pact-worker.vincent-wesley-liem.workers.dev/studio/creator?clean=1>
+- Winix's statement (PayPal Invoicing): <https://pact-worker.vincent-wesley-liem.workers.dev/console/statement?brand=winix&clean=1>
+- Creator onboarding: <https://pact-worker.vincent-wesley-liem.workers.dev/creators>
 - Repository: <https://github.com/HUSAM-07/hack-paypal>
 - Video: VIDEO_LINK_TODO
