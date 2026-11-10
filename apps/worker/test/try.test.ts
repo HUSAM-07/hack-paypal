@@ -1,9 +1,17 @@
 import { SELF } from "cloudflare:test";
 import { env as rawEnv } from "cloudflare:workers";
-import { LIVE_CATEGORY, UPC_WINIX_A230 } from "@pact/protocol";
+import { assignArm } from "@cited/catalogue-mcp";
+import {
+  armProbabilities,
+  DEFAULT_SCHEDULE,
+  LIVE_CATEGORY,
+  UPC_LEVOIT_CORE300,
+  UPC_WINIX_A230,
+} from "@pact/protocol";
 import { describe, expect, it } from "vitest";
+import { CATALOGUE_SEED, sessionIdsFor } from "../src/live/arms";
 import { liveAgentChoice } from "../src/live/provider";
-import { cleanRequest } from "../src/live/routes";
+import { cleanRequest, type PairEvent, type PairLane } from "../src/live/routes";
 import type { LiveEvent } from "../src/live/run";
 import { type JoinedSale, liveVerdict } from "../src/live/verdict";
 
@@ -158,5 +166,64 @@ describe("/try", () => {
       n: number;
     }>();
     expect(demoRuns?.n).toBe(0);
+  });
+});
+
+describe("/try side by side", () => {
+  it("picks catalogue session ids whose bucket lands in the wanted arm on any day", () => {
+    const sched = (day: number) => armProbabilities(day, DEFAULT_SCHEDULE);
+    for (const arm of ["test", "none"] as const) {
+      const ids = sessionIdsFor(arm, "livex", 6);
+      expect(ids).toHaveLength(6);
+      for (const id of ids)
+        for (const day of [0, 3, 7, 30])
+          expect(assignArm(CATALOGUE_SEED, id, day, DEFAULT_SCHEDULE)).toBe(arm);
+    }
+    expect(sched(30).none).toBeGreaterThan(0);
+  });
+
+  it("runs two scripted agents at once: test lane buys the Winix, held out does not; same offers", async () => {
+    const res = await get("/try/pair", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ request: "Small bedroom purifier, around $100, just buy it" }),
+    });
+    expect(res.headers.get("content-type")).toContain("text/event-stream");
+    const ev = (await events(res)) as unknown as PairEvent[];
+    expect(ev.at(-1)?.type).toBe("end");
+    const lane = (l: PairLane) =>
+      ev.filter((e): e is LiveEvent & { lane: PairLane } => "lane" in e && e.lane === l);
+    const results = (l: PairLane) => lane(l).find((e) => e.type === "results");
+    const paid = (l: PairLane) => lane(l).find((e) => e.type === "paid");
+
+    const t = results("test"),
+      h = results("held");
+    expect(t?.type === "results" && t.arm).toBe("test");
+    expect(h?.type === "results" && h.arm).toBe("none");
+    expect(t?.type === "results" && t.content.map((c) => c.kind)).toEqual(["test"]);
+    expect(h?.type === "results" && h.content).toEqual([]);
+    // Ranking is identical across arms.
+    expect(t?.type === "results" && t.offers).toEqual(h?.type === "results" && h.offers);
+
+    expect(paid("test")?.type === "paid" && paid("test")).toMatchObject({ upc: UPC_WINIX_A230 });
+    expect(paid("held")?.type === "paid" && paid("held")).toMatchObject({
+      upc: UPC_LEVOIT_CORE300,
+    });
+    for (const l of ["test", "held"] as const) {
+      expect(lane(l).find((e) => e.type === "start")).toMatchObject({ scripted: true });
+      expect(lane(l).at(-1)?.type).toBe("done");
+    }
+
+    const rows = await env.DB.prepare(
+      "SELECT record FROM cited_live_runs WHERE record LIKE '%pair_%'",
+    ).all<{ record: string }>();
+    const records = rows.results.map((r) => JSON.parse(r.record));
+    expect(records.map((r) => r.forcedArm).sort()).toEqual(["none", "test"]);
+    expect(new Set(records.map((r) => r.pairId)).size).toBe(1);
+    for (const r of records) expect(r).toMatchObject({ source: "live", status: "purchased" });
+    const live = await env.DB.prepare("SELECT COUNT(*) AS n FROM agent_sessions WHERE category = ?")
+      .bind(LIVE_CATEGORY)
+      .first<{ n: number }>();
+    expect(live?.n).toBeGreaterThanOrEqual(2);
   });
 });

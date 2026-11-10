@@ -1,12 +1,12 @@
-import { Hono } from "hono";
+import { type Context, Hono } from "hono";
 import { CITED_PREFIX, internalEngineFetch } from "../cited";
 import { DEMO_PAGE_CSP } from "../cited-apps";
 import type { Env } from "../env";
 import { newId } from "../ids";
 import { clientIp } from "../security";
 import { tryPage } from "./page";
-import { liveAgentChoice } from "./provider";
-import { type LiveEvent, runLive } from "./run";
+import { type LiveAgentChoice, liveAgentChoice } from "./provider";
+import { type LiveEvent, type LiveRunRecord, runLive } from "./run";
 
 /** /try: a judge types a shopping request and watches a real agent buy through PayPal. */
 export const TRY_PREFIX = "/try";
@@ -65,22 +65,40 @@ live.get("/", (c) => {
   );
 });
 
-live.post("/run", async (c) => {
+type LiveCtx = Context<{ Bindings: Env }>;
+type Denied = { status: 400 | 403 | 429; body: { error: string; message?: string } };
+
+/**
+ * Origin, burst limit, request text and the model-run caps. `runs` is how many model runs the
+ * request will start (a side-by-side pair is 2), so a pair can't slip past the hourly cap.
+ */
+async function admit(
+  c: LiveCtx,
+  runs: number,
+): Promise<{ denied: Denied } | { request: string; hash: string; choice: LiveAgentChoice }> {
   const env = c.env;
   const ip = clientIp(c.req.raw);
   const { success } = await env.IP_LIMITER.limit({ key: `try:${ip}` });
   if (!success)
-    return c.json({ error: "rate_limited", message: "Too many runs. Try again in a minute." }, 429);
+    return {
+      denied: {
+        status: 429,
+        body: { error: "rate_limited", message: "Too many runs. Try again in a minute." },
+      },
+    };
   const origin = c.req.header("Origin");
-  if (origin && origin !== new URL(c.req.url).origin) return c.json({ error: "forbidden" }, 403);
+  if (origin && origin !== new URL(c.req.url).origin)
+    return { denied: { status: 403, body: { error: "forbidden" } } };
 
   const body = (await c.req.json().catch(() => null)) as { request?: unknown } | null;
   const request = cleanRequest(body?.request);
   if (!request)
-    return c.json(
-      { error: "bad_request", message: "Write a shopping request of 3 to 280 characters." },
-      400,
-    );
+    return {
+      denied: {
+        status: 400,
+        body: { error: "bad_request", message: "Write a shopping request of 3 to 280 characters." },
+      },
+    };
 
   const choice = liveAgentChoice(env);
   const hash = await ipHash(ip, env.SESSION_SECRET ?? "cited");
@@ -90,69 +108,71 @@ live.post("/run", async (c) => {
     )
       .bind(hash)
       .first<{ n: number }>();
-    if ((mine?.n ?? 0) >= LIVE_RUNS_PER_HOUR)
-      return c.json(
-        {
-          error: "rate_limited",
-          message: `You've run ${LIVE_RUNS_PER_HOUR} agents this hour. Try again later.`,
+    if ((mine?.n ?? 0) + runs > LIVE_RUNS_PER_HOUR)
+      return {
+        denied: {
+          status: 429,
+          body: {
+            error: "rate_limited",
+            message:
+              runs > 1
+                ? `A side by side counts as ${runs} runs, and you have ${Math.max(0, LIVE_RUNS_PER_HOUR - (mine?.n ?? 0))} of ${LIVE_RUNS_PER_HOUR} left this hour. Try again later.`
+                : `You've run ${LIVE_RUNS_PER_HOUR} agents this hour. Try again later.`,
+          },
         },
-        429,
-      );
+      };
     const all = await env.DB.prepare(
       "SELECT COUNT(*) AS n FROM cited_live_runs WHERE created_at > datetime('now', '-1 day')",
     ).first<{ n: number }>();
-    if ((all?.n ?? 0) >= LIVE_RUNS_PER_DAY)
-      return c.json(
-        {
-          error: "rate_limited",
-          message: "Today's live runs are used up. The recorded demo is on the console.",
+    if ((all?.n ?? 0) + runs > LIVE_RUNS_PER_DAY)
+      return {
+        denied: {
+          status: 429,
+          body: {
+            error: "rate_limited",
+            message: "Today's live runs are used up. The recorded demo is on the console.",
+          },
         },
-        429,
-      );
+      };
   }
+  return { request, hash, choice };
+}
 
-  // The catalogue (and, simulated, the engine) live in the one demo Durable Object.
-  const demo = env.CITED_DEMO.get(env.CITED_DEMO.idFromName("demo"));
+/** The catalogue (and, simulated, the engine) live in the one demo Durable Object. */
+function endpointsFor(c: LiveCtx) {
+  const demo = c.env.CITED_DEMO.get(c.env.CITED_DEMO.idFromName("demo"));
   const toDemo: typeof fetch = (input, init) => demo.fetch(new Request(input, init));
-  // Server-side engine access: internal, so /try needs no token and never handles one.
-  const engineFetch = internalEngineFetch(env, c.executionCtx);
+  return {
+    catalogueUrl: `${INTERNAL}/catalogue`,
+    catalogueFetch: toDemo,
+    engineUrl: `${INTERNAL}${CITED_PREFIX}`,
+    // Server-side engine access: internal, so /try needs no token and never handles one.
+    engineFetch: internalEngineFetch(c.env, c.executionCtx),
+  };
+}
 
-  const runId = newId("live");
+/** An event stream fed by `work`, which keeps running (and is recorded) if the viewer leaves. */
+function stream(
+  c: LiveCtx,
+  work: (emit: (e: unknown) => Promise<void>) => Promise<void>,
+  onCrash: (emit: (e: unknown) => Promise<void>) => Promise<void>,
+): Response {
   const enc = new TextEncoder();
   const { readable, writable } = new TransformStream<Uint8Array, Uint8Array>();
   const writer = writable.getWriter();
-  const emit = (e: LiveEvent) => writer.write(enc.encode(`data: ${JSON.stringify(e)}\n\n`));
-
-  const work = (async () => {
-    try {
-      const record = await runLive({
-        env,
-        db: env.DB,
-        emit,
-        runId,
-        request,
-        endpoints: {
-          catalogueUrl: `${INTERNAL}/catalogue`,
-          catalogueFetch: toDemo,
-          engineUrl: `${INTERNAL}${CITED_PREFIX}`,
-          engineFetch,
-        },
-      });
-      await env.DB.prepare(
-        "INSERT INTO cited_live_runs (id, record, provider, ip_hash) VALUES (?, ?, ?, ?)",
-      )
-        .bind(runId, JSON.stringify(record), choice.kind, hash)
-        .run();
-    } catch (e) {
-      console.error("live run crashed", runId, (e as Error).name);
-      await emit({ type: "error", message: "The run crashed before it finished." }).catch(() => {});
-      await emit({ type: "done" }).catch(() => {});
-    } finally {
-      await writer.close().catch(() => {});
-    }
-  })();
-  c.executionCtx.waitUntil(work);
-
+  const emit = (e: unknown) => writer.write(enc.encode(`data: ${JSON.stringify(e)}\n\n`));
+  c.executionCtx.waitUntil(
+    (async () => {
+      try {
+        await work(emit);
+      } catch (e) {
+        console.error("live run crashed", (e as Error).name);
+        await onCrash(emit).catch(() => {});
+      } finally {
+        await writer.close().catch(() => {});
+      }
+    })(),
+  );
   return new Response(readable, {
     headers: {
       "content-type": "text/event-stream; charset=utf-8",
@@ -160,4 +180,83 @@ live.post("/run", async (c) => {
       "x-content-type-options": "nosniff",
     },
   });
+}
+
+async function record(c: LiveCtx, r: LiveRunRecord, kind: string, hash: string) {
+  await c.env.DB.prepare(
+    "INSERT INTO cited_live_runs (id, record, provider, ip_hash) VALUES (?, ?, ?, ?)",
+  )
+    .bind(r.runId, JSON.stringify(r), kind, hash)
+    .run();
+}
+
+live.post("/run", async (c) => {
+  const a = await admit(c, 1);
+  if ("denied" in a) return c.json(a.denied.body, a.denied.status);
+  const runId = newId("live");
+  return stream(
+    c,
+    async (emit) => {
+      const r = await runLive({
+        env: c.env,
+        db: c.env.DB,
+        emit,
+        runId,
+        request: a.request,
+        endpoints: endpointsFor(c),
+      });
+      await record(c, r, a.choice.kind, a.hash);
+    },
+    async (emit) => {
+      await emit({ type: "error", message: "The run crashed before it finished." });
+      await emit({ type: "done" });
+    },
+  );
+});
+
+/** Which lane of a side-by-side an event belongs to. */
+export type PairLane = "test" | "held";
+export type PairEvent = (LiveEvent & { lane: PairLane }) | { type: "end"; pairId: string };
+
+/**
+ * The side-by-side: the same request, two live agents at once, one in the test arm and one
+ * held out. Each lane is an ordinary live run (tagged live, recorded, counted against the caps).
+ */
+live.post("/pair", async (c) => {
+  const a = await admit(c, 2);
+  if ("denied" in a) return c.json(a.denied.body, a.denied.status);
+  const pairId = newId("pair");
+  const endpoints = endpointsFor(c);
+  const lanes: [PairLane, "test" | "none"][] = [
+    ["test", "test"],
+    ["held", "none"],
+  ];
+  return stream(
+    c,
+    async (emit) => {
+      const records = await Promise.all(
+        lanes.map(([lane, arm]) =>
+          runLive({
+            env: c.env,
+            db: c.env.DB,
+            emit: (e) => emit({ ...e, lane } satisfies PairEvent),
+            runId: newId("live"),
+            request: a.request,
+            endpoints,
+            arm,
+            pairId,
+          }),
+        ),
+      );
+      for (const r of records) await record(c, r, a.choice.kind, a.hash);
+      await emit({ type: "end", pairId } satisfies PairEvent);
+    },
+    async (emit) => {
+      for (const [lane] of lanes) {
+        await emit({ type: "error", message: "The run crashed before it finished.", lane });
+        await emit({ type: "done", lane });
+      }
+      await emit({ type: "end", pairId });
+    },
+  );
 });
