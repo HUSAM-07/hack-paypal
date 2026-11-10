@@ -2,81 +2,74 @@
 
 **PayPal's affiliate network, rebuilt for AI agents: it pays creators on proven lift, not last-click cookies.**
 
-Built for the [PayPal AI Hackathon](https://paypalaihackathon.devpost.com/). Runs locally with no API keys: PayPal is simulated and the shopper agents are scripted by default.
+AI shopping agents read product tests but never click an affiliate link, so creators go unpaid when an agent buys on their verdict. CITED fixes that. Brands fund a category programme (say, air purifiers), never a verdict. In PayPal's agent catalogue (our mock of Store Sync), each shopping session randomly sees a creator's test, a placebo (other content from the same creator), or nothing; ranking never changes. A signed **Agent Affiliate Passport** rides in the PayPal Orders v2 `purchase_units[].custom_id`, so the sale joins back to its arm even at a different shop. The engine credits only the sales the test caused (80% lower bound, Shapley split across co-exposed creators), holds credits 30 days, voids them on refunds and disputes, then pays creators by batch Payouts and refunds the unspent deposit. AG Studio shows it to the brand and the creator.
 
-## Problem
+Built for the [PayPal AI Hackathon](https://paypalaihackathon.devpost.com/). Licensed [MIT](LICENSE). Everything runs with no API keys: PayPal is simulated and the shopper agents are scripted by default.
 
-US affiliate spend ($13.81B/year, eMarketer) pays per click. AI shopping agents read creators' tests but never click. Meta's Muse sold on Vacuum Wars' tests, unpaid (Fast Company, 13 Oct 2026).
+## Try it
 
-## Who it is for
+Hosted demo (one Cloudflare Worker, `pact-worker`; Pact is the project's codename):
 
-US product-testing creators and the brands they review.
+- <https://pact-worker.vincent-wesley-liem.workers.dev/shops>: the Northwind, Lumen and MegaMart storefronts
+- <https://pact-worker.vincent-wesley-liem.workers.dev/console>: the demo console (two agents, side by side)
+- <https://pact-worker.vincent-wesley-liem.workers.dev/api/cited/health>: the CITED engine's health check
 
-## What it does
-
-Agent Search Optimisation measurement, not ads.
-
-- Brands fund a category programme (say, purifiers), never a verdict. Creators pick rivals and write verdicts.
-- In PayPal's agent catalogue, sessions randomly get the test, a same-creator placebo, or nothing: 50/50 for a new test's first 7 days, then a permanent 5% holdout. Only the test is withheld; organic reviews remain; ranking never changes. Agents reading the test elsewhere only shrink measured lift, so pay is a conservative floor.
-- Creators earn 8% on units the test caused (cautious 80% lower bound); $0 on no lift. Each brand pays only for its own lifted units, so an honest "buy the rival" verdict still earns. Credits are held 30 days and voided on refunds and disputes.
-- Only PayPal combines an affiliate network (Honey), the agent catalogue (Store Sync) and creator Payouts to PayPal/Venmo. PayPal earns a network fee plus settlement volume.
-
-## Evidence
-
-Every number comes from a committed, pre-registered eval ([`packages/evals/results/cited*`](packages/evals/results), pre-registrations in [`packages/evals/scenarios/cited`](packages/evals/scenarios/cited)). Three models (GPT, Gemini, Sonnet), 963 sessions across the studies. Labels: **measured** = observed in the eval, **derived** = computed from measured numbers, **scripted** = a fixed assumption of the demo.
-
-- **Measured, price-matched (headline; Levoit priced like Winix at every shop):** purifiers, 147 forced-buy sessions. Winix share: exposed 57/57 (100%), placebo 3/54 (6%), nothing 3/36 (8%). Lift +94pp (80% lower bound +90.3pp), positive in all three models. Agents otherwise default to Levoit and flip when shown a test that names Winix, so this mostly measures deference to an explicit verdict. With Levoit $4 cheaper: +96pp (bound +92.6pp). Abstain allowed: +82pp (bound +77.2pp).
-- **Measured, Winix already cheaper (catalogue prices):** 147 sessions, share 100% / 76% / 69%, lift +24pp (bound +18.8pp). Price decided most picks, so exposure had little to add. Narrow verdict (81 sessions): lift 0, bound −6.0pp, $0.
-- **Derived:** 57 exposed sales × 90.3% = 51 caused units × $95.99 × 8% = $391.64 credited. In the demo one refund voids one credit (−$7.68), so $383.96 is paid to the creator at day 30 and $616.04 of the $1,000 deposit returns; Levoit pays $0.
-- **Scripted:** Lumen's $4 discount, the $1,000 deposit, equal Winix and Levoit prices, the Analyst approval.
-
-Full details and caveats: [`cited/spec/CITED-card.md`](cited/spec/CITED-card.md).
-
-## Run it in 3 lines
+### Run it locally in 3 lines
 
 Needs Node 22+.
 
 ```bash
-git clone https://github.com/HUSAM-07/hack-paypal.git && cd hack-paypal
 npm ci
-npm run dev:cited      # no .env needed: PAYPAL_MODE=simulated, MODEL_PROVIDER=fake
+npm run demo:cited     # the full demo in your terminal, 11 beats, self-checking
+npm run dev:cited      # every app locally: shops, console, catalogue, agents, studio, engine
 ```
 
-Then open the shops at <http://localhost:8802> (Northwind, Lumen, MegaMart). Health checks: engine `:8800`, catalogue `:8801`, shops `:8802`, agents `:8803`, studio `:8804` (`curl localhost:<port>/health`).
+`npm run dev:cited` serves the shops at <http://localhost:8802> and the console at <http://localhost:8805>; each app answers `/health` (engine `:8800`, catalogue `:8801`, shops `:8802`, agents `:8803`, studio `:8804`, console `:8805`). It forces `PAYPAL_MODE=simulated` and `MODEL_PROVIDER=fake`, so no `.env` is needed. `npm run demo:cited` starts its own private stack (ports 8800 to 8805 must be free) and ends with ledger-versus-PayPal reconciliation checks. Flags: `npm run demo:cited -- --help`.
 
-Coming from open PRs: `npm run demo:cited` (one-command demo runner, `apps/agents`) and the demo console (`apps/console`).
+## What the demo shows
 
-Checks: `npm test`, `npm run typecheck`, `npm run lint`.
+Purifier programme, price-matched, 147 scripted sessions (the same numbers as the [product card](cited/spec/CITED-card.md)):
 
-### Configuration
+| Beat | Result |
+|---|---|
+| Exposed agents buy Winix | 57 exposed sales, lift +94pp → **51 caused units** |
+| Credit | 51 × $95.99 × 8% = **$391.64** credited to HouseFresh, held 30 days |
+| A buyer returns one Winix | the refund webhook voids that pending credit: **−$7.68** |
+| Day 30 payout | **$383.96** paid to the creator (batch Payouts); **$616.04** of Winix's $1,000 deposit returned |
+| Levoit | lift bound below 0, 0 caused units: **$0** paid, the whole $1,000 returned |
 
-Defaults need no keys. [`.env.example`](.env.example) lists every variable (PayPal sandbox credentials and webhook id, `PAYPAL_MODE=simulated|sandbox`, `MODEL_PROVIDER`, LLM gateway, passport signing key, ports); the engine reads [`apps/engine/.dev.vars.example`](apps/engine/.dev.vars.example). Apps read `process.env`, so export what you change or run `node --env-file=.env <command>`. `npm run dev:cited` always forces simulated mode; to try the PayPal sandbox run one app, for example `PAYPAL_MODE=sandbox npm run dev -w @cited/shops`.
+Every number traces to a committed, pre-registered eval ([`packages/evals/results/cited*`](packages/evals/results)). Lumen's $4 discount, the deposits, equal Winix and Levoit prices and the Analyst approval are scripted assumptions of the demo.
+
+## How PayPal is used
+
+| API | Where | Use |
+|---|---|---|
+| Orders v2 | `apps/shops`, `apps/engine/src/programme.ts` | Shop checkout carries the signed passport in `purchase_units[].custom_id`, with `items[].upc`; brand deposits are `CAPTURE` orders |
+| Webhooks | `apps/engine/src/webhooks` | Signature-verified intake; the capture is joined to its arm; refund and dispute events void pending credits |
+| Payouts | `apps/engine/src/payouts.ts` | One batch to `PAYPAL_ID` recipients after the 30-day hold, split by Shapley value across co-exposed creators |
+| Payments v2 `captures/{id}/refund` | `apps/engine/src/cycle.ts` | Returns each brand's unspent deposit |
+| Store Sync (agent catalogue) | `apps/catalogue-mcp` | Our MCP mock of it: listings across 3 shops, per-session arm, signed passport |
+
+Every mutating call sets a deterministic `PayPal-Request-Id`. Mode is `simulated` by default (an in-memory mock in `packages/paypal`). The deployed worker reads `CITED_PAYPAL_MODE`; locally it is `PAYPAL_MODE`. Set either to `sandbox` with the credentials from [`.env.example`](.env.example) to use the PayPal sandbox; for example `PAYPAL_MODE=sandbox npm run dev -w @cited/shops` (`npm run dev:cited` always forces simulated).
+
+## Configuration
+
+Defaults need no keys. [`.env.example`](.env.example) lists every variable (PayPal sandbox credentials and webhook id, `MODEL_PROVIDER`, LLM gateway, passport signing key, ports); the engine reads [`apps/engine/.dev.vars.example`](apps/engine/.dev.vars.example). Apps read `process.env`, so export what you change or run `node --env-file=.env <command>`. Checks: `npm test`, `npm run typecheck`, `npm run lint`.
 
 ## Architecture
 
 - `packages/protocol`: the shared contract (arms, passport, credits, `Money`).
 - `packages/attribution`: pure functions: attributable fraction, 80% lower bound, Shapley split, ledger rules.
 - `packages/paypal`: fetch-based PayPal REST client (Orders, Payouts, webhooks) plus an in-memory mock.
-- `apps/catalogue-mcp`: MCP server (our mock of Store Sync): `search_product`, arm assignment, signed passports.
+- `apps/catalogue-mcp`: MCP server: `search_product`, arm assignment, signed passports.
 - `apps/shops`: Northwind, Lumen and MegaMart storefronts with PayPal checkout.
-- `apps/agents`: shopper agents (GPT, Gemini, Sonnet; scripted by default).
-- `apps/engine`: Worker (Hono + D1): webhooks, arm-checkout join, credit ledger, payouts, refunds, read API.
+- `apps/agents`: shopper agents (GPT, Gemini, Sonnet; scripted by default) and the demo runner.
+- `apps/engine`: Hono + D1: webhooks, arm-checkout join, credit ledger, payouts, refunds, read API. Deployed inside `apps/worker` at `/api/cited`.
 - `apps/studio`: AG Studio dashboards for brands and creators.
+- `apps/console`: the demo console (two agents side by side, payout moment).
 - `packages/evals`: the eval harness and committed results.
 
-`apps/web` and `apps/worker` are placeholder code from an earlier project (Pact) and are not part of CITED.
-
-## PayPal APIs used
-
-| API | Where | Use |
-|---|---|---|
-| Store Sync (agent catalogue) | `apps/catalogue-mcp` | Our MCP mock of it: listings across 3 shops, per-session arm, signed Agent Affiliate Passport |
-| Orders v2 | `apps/shops`, `apps/engine/src/programme.ts` | Shop checkout carries the passport in `purchase_units[].custom_id` with `items[].upc`; brand deposits are `CAPTURE` orders |
-| Payments v2 `captures/{id}/refund` | `apps/engine/src/cycle.ts` | Refunds each brand's unspent deposit |
-| Webhooks | `apps/engine/src/webhooks` | Signature-verified intake; the capture is joined to its arm; refund and dispute events void pending credits |
-| Payouts | `apps/engine/src/payouts.ts` | Batch payout to `PAYPAL_ID` recipients after the 30-day hold, split by Shapley value across co-exposed creators |
-
-Every mutating call sets a deterministic `PayPal-Request-Id`. In `simulated` mode these go to the in-memory mock in `packages/paypal`.
+`apps/web` is placeholder code from an earlier project and is not part of CITED.
 
 ## Run the evals
 
@@ -99,4 +92,4 @@ Outputs are in `packages/evals/results/cited` and `packages/evals/results/cited-
 
 ## License
 
-MIT
+[MIT](LICENSE), Copyright (c) 2026 Mohammed Husamuddin.
