@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { createEngineClient } from "../src/engine";
 import { createConsoleApp } from "../src/index";
-import { parseRunRecords, pickPair, type RunSource } from "../src/runs";
+import { type AgentRun, parseRunRecords, pickPair, type RunSource } from "../src/runs";
 
 const record = (o: Record<string, unknown>) =>
   JSON.stringify({
@@ -131,6 +131,36 @@ describe("run source", () => {
     const { exposed, heldOut } = pickPair(runs);
     expect(exposed?.product?.name).toBe("Winix A230");
     expect(heldOut?.product?.name).toBe("Levoit Core 300");
+  });
+});
+
+describe("picking the video pair", () => {
+  const run = (o: Record<string, unknown>) => parseRunRecords(record(o))[0] as AgentRun;
+  const winix = { upc: "111111111111", name: "Winix A230" };
+  const levoit = { upc: "222222222222", name: "Levoit Core 300" };
+
+  it("prefers a credited, cross-shop exposed run and a held-out run that bought the other purifier", () => {
+    const runs = [
+      run({ orderId: "ORD-A", storesViewed: ["northwind"], shop: "lumen" }),
+      run({ orderId: "ORD-B", storesViewed: ["lumen"], shop: "lumen" }),
+      run({ orderId: "ORD-C", storesViewed: ["megamart"], shop: "lumen" }),
+      run({ arm: "none", orderId: "ORD-D", product: levoit }),
+      run({ arm: "none", orderId: "ORD-E", product: winix }),
+    ];
+    const { exposed, heldOut } = pickPair(runs, new Set(["ORD-A", "ORD-B"]));
+    expect(exposed?.orderId).toBe("ORD-A");
+    expect(heldOut?.orderId).toBe("ORD-D");
+  });
+
+  it("falls back to the latest runs when nothing tells the story", () => {
+    const runs = [
+      run({ orderId: "ORD-A", storesViewed: ["lumen"] }),
+      run({ orderId: "ORD-B", storesViewed: ["lumen"] }),
+      run({ arm: "none", orderId: "ORD-C", product: winix }),
+    ];
+    const { exposed, heldOut } = pickPair(runs);
+    expect(exposed?.orderId).toBe("ORD-B");
+    expect(heldOut?.orderId).toBe("ORD-C");
   });
 });
 

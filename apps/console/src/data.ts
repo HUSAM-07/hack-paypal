@@ -21,7 +21,7 @@ export interface DemoData {
 }
 
 export async function loadDemo({ engine, runs }: Deps): Promise<DemoData> {
-  const { exposed, heldOut } = pickPair(await runs.runs());
+  const all = await runs.runs();
   let journeys: EngineJourney[] = [];
   let engineError: string | null = null;
   try {
@@ -29,6 +29,10 @@ export async function loadDemo({ engine, runs }: Deps): Promise<DemoData> {
   } catch (e) {
     engineError = e instanceof Error ? e.message : String(e);
   }
+  const credited = new Set(
+    journeys.filter((j) => j.commission.pending + j.commission.paid > 0).map((j) => j.orderId),
+  );
+  const { exposed, heldOut } = pickPair(all, credited);
   const view = (run: AgentRun | null): RunView | null =>
     run ? { run, journey: journeys.find((j) => j.orderId === run.orderId) ?? null } : null;
   return { exposed: view(exposed), heldOut: view(heldOut), engineError };
