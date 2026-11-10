@@ -9,8 +9,8 @@ type Node = { title: string; sub: string };
 const NODES: Node[] = [
   { title: "Shopper agent", sub: "GPT · Gemini · Sonnet" },
   { title: "Agent catalogue", sub: "" },
-  { title: "Any shop", sub: "Northwind · Lumen · MegaMart" },
-  { title: "PayPal", sub: "Orders v2 capture" },
+  { title: "PayPal checkout", sub: "saved wallet · seller as payee" },
+  { title: "Seller paid", sub: "Northwind · Lumen · MegaMart" },
   { title: "CITED engine", sub: "join · hold · void" },
   { title: "Creator", sub: "batch Payouts" },
 ];

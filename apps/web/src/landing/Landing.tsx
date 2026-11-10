@@ -18,7 +18,7 @@ const SOURCES = [
   },
   {
     id: "src-2",
-    text: "Measured. Pre-registered price-matched eval, purifier-parity-forced: 147 sessions, Levoit priced like Winix at every shop.",
+    text: "Measured. Pre-registered price-matched eval, purifier-parity-forced: 147 sessions, Levoit priced like Winix at every seller.",
     href: blob("packages/evals/results/cited-price-matched/summary.md"),
     label: "packages/evals/results/cited-price-matched/summary.md",
   },
@@ -172,10 +172,12 @@ const STEPS: { title: string; body: ReactNode }[] = [
     title: "The passport travels with the sale.",
     body: (
       <>
-        The catalogue signs an Agent Affiliate Passport. The shop puts it in Orders v2{" "}
-        <code>purchase_units[].custom_id</code>, so the capture joins the sale to its arm even at
-        another shop. In the demo, all 57 exposed Winix buys settled at Lumen, $4 cheaper
-        <Ref n={5} />, not at Northwind where the test appeared.
+        The catalogue signs an Agent Affiliate Passport. The shopping agent checks out through
+        PayPal itself, with the buyer's saved PayPal and the seller as payee, and puts the passport
+        in Orders v2 <code>purchase_units[].custom_id</code>, so the capture joins the sale to its
+        arm even when another seller gets paid. No storefront, no redirect, nothing for the seller
+        to install. In the demo, all 57 exposed Winix buys settled at Lumen, $4 cheaper
+        <Ref n={5} />, not Northwind, whose offer carried the test.
       </>
     ),
   },
@@ -224,11 +226,6 @@ const TRY = [
     body: "Day 30: the voided refund, the batch Payout to HouseFresh, the deposit returned to Winix.",
   },
   {
-    href: "/shops",
-    title: "The three shops",
-    body: "Northwind, Lumen and MegaMart, each with PayPal checkout.",
-  },
-  {
     href: "/studio",
     title: "Studio dashboards",
     body: "The brand and creator views of the same ledger.",
@@ -236,7 +233,7 @@ const TRY = [
   {
     href: REPO,
     title: "Source on GitHub",
-    body: "Engine, catalogue, shops, evals, and every number on this page.",
+    body: "Engine, catalogue, agent checkout, evals, and every number on this page.",
   },
 ];
 
@@ -315,8 +312,8 @@ export function Landing() {
                 </div>
                 <figcaption className="caption">
                   <span className="fig-no">Fig. 2</span> The sale's path. The catalogue assigns an
-                  arm and signs the passport; the passport rides through any shop's PayPal checkout
-                  to the engine, which pays the creator.
+                  arm and signs the passport; the agent pays the seller through PayPal with the
+                  passport in tow to the engine, which pays the creator.
                 </figcaption>
               </figure>
             }
