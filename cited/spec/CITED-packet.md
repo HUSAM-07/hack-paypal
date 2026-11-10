@@ -18,7 +18,7 @@ The README intro, where every number comes from, and the 3-minute video script f
 - Creators earn 8% on units the test caused (cautious lower bound); $0 on no lift. Co-exposed creators split by Shapley value. Each brand pays only for its own lifted units, so an honest "buy the rival" verdict still earns.
 - Only PayPal combines an affiliate network (Honey), the agent catalogue (Store Sync) and creator Payouts to PayPal/Venmo.
 
-**Try it.** Hosted: <https://pact-worker.vincent-wesley-liem.workers.dev> (`/console`, `/try`, `/mcp`). Local: `npm ci && npm run demo:cited` (13 beats, self-checking, no keys).
+**Try it.** Hosted: <https://pact-worker.vincent-wesley-liem.workers.dev> (`/console`, `/try`, `/mcp`). Local: `npm ci && npm run demo:cited` (14 beats, self-checking, no keys).
 
 ## (a2) Number provenance
 
@@ -28,7 +28,8 @@ The README intro, where every number comes from, and the 3-minute video script f
 | Measured, Winix already cheaper | 147 sessions, lift +24pp (bound +18.8pp); narrow verdict 81 sessions, bound −6.0pp, $0 | `packages/evals/results/cited/summary.md` |
 | All evals | 963 sessions, three models, two pre-registrations | `packages/evals/scenarios/cited/PREREGISTRATION*.md` |
 | Derived, first cycle (demo beats 1-10) | 57 exposed sales → 51 caused units → $391.64 credited; one refund voids $7.68; day 30: $383.96 paid to HouseFresh, $616.04 of Winix's $1,000 returned; Levoit $0, $1,000 returned | `npm run demo:cited`, `cited/spec/CITED-card.md` |
-| Derived, later cycle (demo beats 11-13, not on the card) | AirLab joins; 12 co-exposed agents, 12/12 buy Winix; bound tightens 51 → 62 caused units over 69 exposed sales; one sale's $7.68 splits $3.84 / $3.84; dispute freezes 2 credits; day-60 batch HouseFresh $61.43, AirLab $15.36; after PayPal resolves for the seller, $3.84 + $3.84; programme to date $468.43 over 3 batches (HouseFresh $449.23, AirLab $19.20); 159 orders, $15,262.41 | `npm run demo:cited` |
+| Derived, later cycle (demo beats 11-12, not on the card) | AirLab joins; 12 co-exposed agents, 12/12 buy Winix; bound tightens 51 → 62 caused units over 69 exposed sales; one sale's $7.68 splits $3.84 / $3.84; dispute freezes 2 credits; day-60 batch HouseFresh $61.43, AirLab $15.36; after PayPal resolves for the seller, $3.84 + $3.84; programme to date $468.43 over 3 batches (HouseFresh $449.23, AirLab $19.20) | `npm run demo:cited` |
+| Derived, guard (demo beat 13, not on the card) | a co-conspirator's agent buys a Winix with HouseFresh's own PayPal: the session stays out of the study (62 units over 69 exposed sales, unchanged), its $7.68 credit is held for review (self-purchase) and is in no payout batch; 160 orders, $15,358.40 in all | `npm run demo:cited` |
 | Scripted | Lumen's $4 discount, the $1,000 deposits, equal Winix and Levoit prices (Northwind $99.99, Lumen $95.99, MegaMart $102.99), Maya's $500 top-up, AirLab's test, the dispute and its outcome | demo seed |
 
 Never mix the two cycles: $383.96 is the first payout; $468.43 is everything paid after the later cycle.

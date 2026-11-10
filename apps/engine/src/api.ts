@@ -11,6 +11,7 @@ import { advanceClock, nowOf } from "./clock";
 import { brandBalances, frozenCaptures, loadStoredCredits, recomputeCredits } from "./credits";
 import { closeCycle } from "./cycle";
 import type { Env } from "./env";
+import { heldCredits, listFlags, resolveHold } from "./guard";
 import { brandLiftData, evaluateBrand } from "./lift";
 import { payoutItemIds, refreshPayouts, runPayouts, senderItemId } from "./payouts";
 import { getPayPal } from "./paypal";
@@ -152,16 +153,20 @@ api.post("/sessions", async (c) => {
       creatorsSeen: z.array(Short).max(4).default([]),
       storesViewed: z.array(Short).max(4).default([]),
       createdAt: z.iso.datetime().optional(),
+      /** Who runs this agent (creator id or PayPal id), when the agent platform knows it. */
+      ownerId: Short.optional(),
     }),
   );
   if ("error" in r) return c.json(r, 400);
   const s = r.data;
   await c.env.DB.prepare(
-    `INSERT INTO agent_sessions (session_id, model, created_at, arm, category, creators_seen, stores_viewed)
-     VALUES (?, ?, ?, ?, ?, ?, ?)
+    `INSERT INTO agent_sessions (session_id, model, created_at, arm, category, creators_seen,
+       stores_viewed, owner_id)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?)
      ON CONFLICT (session_id) DO UPDATE SET model = excluded.model, arm = excluded.arm,
        category = excluded.category, creators_seen = excluded.creators_seen,
-       stores_viewed = excluded.stores_viewed`,
+       stores_viewed = excluded.stores_viewed,
+       owner_id = COALESCE(excluded.owner_id, agent_sessions.owner_id)`,
   )
     .bind(
       s.sessionId,
@@ -171,6 +176,7 @@ api.post("/sessions", async (c) => {
       s.category,
       JSON.stringify(s.creatorsSeen),
       JSON.stringify(s.storesViewed),
+      s.ownerId ?? null,
     )
     .run();
   return c.json({ ok: true }, 201);
@@ -247,6 +253,17 @@ api.post("/clock/advance", async (c) => {
 });
 
 api.post("/payouts/run", async (c) => c.json(await runPayouts(c.env)));
+
+/**
+ * A reviewer decides a credit the abuse guard held. `release`: paid at the next payout (once no
+ * other hold on it is open). `void`: the credit is voided (reason `review`). Writes, so locked.
+ */
+for (const action of ["release", "void"] as const) {
+  api.post(`/review-flags/:id/${action}`, async (c) => {
+    const out = await resolveHold(c.env, c.req.param("id"), action, await nowOf(c.env));
+    return out.ok ? c.json({ flag: out.flag }) : c.json({ error: out.error }, out.status);
+  });
+}
 api.post("/payouts/refresh", async (c) => {
   await refreshPayouts(c.env);
   return c.json({ ok: true });
@@ -371,11 +388,14 @@ api.get("/credits", async (c) => {
   for (const x of credits) by.set(x.creatorId, [...(by.get(x.creatorId) ?? []), x]);
   const sum = (xs: typeof credits, state: string) =>
     xs.filter((x) => x.state === state).reduce((a, x) => a + x.amount.amountMinor, 0);
-  const flags = (await c.env.DB.prepare("SELECT * FROM review_flags ORDER BY credit_id").all<Row>())
-    .results;
+  const flags = await listFlags(c.env);
   const frozen = await frozenCaptures(c.env);
   const isFrozen = (x: (typeof credits)[number]) =>
     x.state === "pending" && frozen.has(x.captureId);
+  const held = await heldCredits(c.env);
+  const isHeld = (x: (typeof credits)[number]) => x.state === "pending" && held.has(x.id);
+  const holdReasons = (id: string) =>
+    flags.filter((f) => f.hold && f.status === "open" && f.creditId === id).map((f) => f.reason);
   return c.json({
     creators: [...by.entries()]
       .sort(([a], [b]) => (a < b ? -1 : 1))
@@ -389,6 +409,8 @@ api.get("/credits", async (c) => {
           paid: sum(xs, "paid"),
           /** Part of `pending`: held back by an open PayPal dispute. */
           frozen: xs.filter(isFrozen).reduce((a, x) => a + x.amount.amountMinor, 0),
+          /** Part of `pending`: held by the abuse guard for a reviewer; never paid automatically. */
+          held: xs.filter(isHeld).reduce((a, x) => a + x.amount.amountMinor, 0),
         },
         credits: xs.map((x) => ({
           id: x.id,
@@ -403,13 +425,18 @@ api.get("/credits", async (c) => {
           payoutBatchId: x.payoutBatchId ?? null,
           payoutStatus: x.payoutStatus,
           frozen: isFrozen(x),
+          held: isHeld(x),
+          holdReasons: isHeld(x) ? holdReasons(x.id) : [],
         })),
       })),
     reviewFlags: flags.map((f) => ({
-      creditId: f.credit_id,
-      captureId: f.capture_id,
+      id: f.id,
+      creditId: f.creditId,
+      captureId: f.captureId,
       reason: f.reason,
-      payoutBatchId: f.payout_batch_id,
+      payoutBatchId: f.payoutBatchId,
+      status: f.status,
+      hold: f.hold,
     })),
   });
 });
@@ -520,6 +547,12 @@ async function journeys(env: Env, limit: number, source: "agent" | "mcp" = "agen
 }
 
 /** `?source=mcp` lists the public /mcp sales instead, each with its credit verdict. */
+/** Review flags: guard holds (`hold: true`) and notes on paid credits whose sale came back. */
+api.get("/review-flags", async (c) => {
+  const status = c.req.query("status");
+  return c.json({ flags: await listFlags(c.env, status || undefined) });
+});
+
 api.get("/journeys", async (c) =>
   c.json({
     journeys: await journeys(

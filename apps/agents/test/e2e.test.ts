@@ -9,7 +9,7 @@
  * PayPal resolves the dispute for the seller.
  */
 import { afterAll, describe, expect, it } from "vitest";
-import { CARD, COEXPOSURE, type DemoEvent, runDemo } from "../src/demo";
+import { CARD, COEXPOSURE, type DemoEvent, GUARD, runDemo } from "../src/demo";
 import { type Stack, startStack } from "../src/stack";
 
 const stacks: Stack[] = [];
@@ -58,6 +58,14 @@ describe("CITED end to end (simulated PayPal)", () => {
     // resolves for the seller.
     expect(a.result.numbers.coExposure).toMatchObject(COEXPOSURE);
 
+    // The guard: a creator buying through their own PayPal is held for review, never paid, and
+    // moves no number above.
+    expect(a.result.numbers.guard).toMatchObject({
+      ...GUARD,
+      exposedSales: [69, 69],
+      causedUnits: [COEXPOSURE.causedUnitsAfter, COEXPOSURE.causedUnitsAfter],
+    });
+
     // Every beat plays, in order, and a seed replays byte for byte on a fresh stack.
     const beats = a.events.filter((e) => e.type === "beat.start").map((e) => e.beat);
     expect(beats).toEqual([
@@ -73,6 +81,7 @@ describe("CITED end to end (simulated PayPal)", () => {
       "analyst",
       "shapley",
       "dispute",
+      "guard",
       "checks",
     ]);
     expect(a.events.map((e) => e.seq)).toEqual(a.events.map((_, i) => i + 1));
@@ -89,6 +98,7 @@ describe("CITED end to end (simulated PayPal)", () => {
       paidMinor: 39_164,
       returnedMinor: CARD.returnedMinor,
       coExposure: COEXPOSURE,
+      guard: GUARD,
     });
   }, 240_000);
 });

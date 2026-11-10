@@ -148,7 +148,8 @@ export const AttributedSale = z.object({
 export type AttributedSale = z.infer<typeof AttributedSale>;
 
 export const CreditState = z.enum(["pending", "voided", "paid"]);
-export const VoidReason = z.enum(["refund", "partial_refund", "dispute"]);
+/** `review`: a person voided a credit the abuse guard held (see @pact/attribution guard.ts). */
+export const VoidReason = z.enum(["refund", "partial_refund", "dispute", "review"]);
 
 /** One creator's share of one caused sale, paid by the brand whose SKU lifted. */
 export const Credit = z.object({

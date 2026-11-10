@@ -3,6 +3,7 @@ import { PayPalError } from "@pact/paypal";
 import { nowOf } from "./clock";
 import { frozenCaptures, loadCredits, persistCredits } from "./credits";
 import type { Env } from "./env";
+import { applyGuard, heldCredits } from "./guard";
 import { getPayPal } from "./paypal";
 
 type Row = Record<string, unknown>;
@@ -27,6 +28,8 @@ export interface PayoutRun {
   }[];
   /** Creators with due credits but no PayPal account on file; their credits stay pending. */
   skipped: { creatorId: string; amountMinor: number; reason: "no_paypal_id" }[];
+  /** Credits past their hold that the abuse guard keeps for a reviewer: never in this batch. */
+  held: { creditId: string; creatorId: string; amountMinor: number }[];
 }
 
 /**
@@ -36,9 +39,24 @@ export interface PayoutRun {
  */
 export async function runPayouts(env: Env): Promise<PayoutRun> {
   const now = await nowOf(env);
+  // The guard runs first, so nothing it would hold can slip into this batch.
+  await applyGuard(env, now);
   const credits = await loadCredits(env);
-  const lines = releasePayable(credits, now, undefined, await frozenCaptures(env));
-  const run: PayoutRun = { now, status: "nothing_due", items: [], skipped: [] };
+  const held = await heldCredits(env);
+  const lines = releasePayable(credits, now, undefined, await frozenCaptures(env), held);
+  const run: PayoutRun = {
+    now,
+    status: "nothing_due",
+    items: [],
+    skipped: [],
+    held: releasePayable(credits, now, 0)
+      .flatMap((l) => l.creditIds)
+      .filter((id) => held.has(id))
+      .map((id) => {
+        const c = credits.find((x) => x.id === id) as (typeof credits)[number];
+        return { creditId: id, creatorId: c.creatorId, amountMinor: c.amount.amountMinor };
+      }),
+  };
 
   const payable = [];
   for (const line of lines) {
