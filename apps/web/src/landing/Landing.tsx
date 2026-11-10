@@ -1,244 +1,458 @@
-import { ArrowRight } from "lucide-react";
-import type { CSSProperties } from "react";
-import { ArtImage } from "./ArtImage";
-import { ChapterPill, TopBar } from "./ChapterNav";
-import { type Card, CHAPTERS, type Chapter, SCENES } from "./chapters";
-import { MediaFrame } from "./Media";
-import { Mark } from "./Mockups";
-import { RingTitle } from "./RingTitle";
-
-const d = (ms: number) => ({ "--d": ms }) as CSSProperties;
-const sceneIndex = (c: Chapter) => SCENES.indexOf(c.scene);
+import type { ReactNode } from "react";
+import { FlowTall, FlowWide } from "./FlowDiagram";
 
 /**
- * The fixed scene layer: photos that paint immediately (and stay as the fallback),
- * the WebGL canvas that takes over once ready, and a CSS grain for the static case.
+ * CITED landing. Every number on this page comes from cited/spec/CITED-card.md and
+ * the committed eval summaries; each one carries a footnote to its source.
  */
-function SceneLayer() {
-  return (
-    <div
-      className="scene-layer fixed inset-0 z-0 h-lvh overflow-hidden bg-[#090909]"
-      data-scene="0"
-    >
-      {SCENES.map((s, i) => (
-        <picture key={s}>
-          <source
-            type="image/avif"
-            sizes="100vw"
-            {...{
-              [i === 0 ? "srcSet" : "data-srcset"]:
-                `/art/bg-${s}-1280.avif 1280w, /art/bg-${s}-1920.avif 1920w`,
-            }}
-          />
-          <img
-            alt=""
-            data-scene-img={i}
-            {...{ [i === 0 ? "src" : "data-src"]: `/art/bg-${s}-1280.webp` }}
-            decoding="async"
-            className="scene-img absolute inset-0 size-full object-cover"
-          />
-        </picture>
-      ))}
-      <canvas className="scene-canvas absolute inset-0 size-full" />
-      <div className="scene-grain absolute inset-0" />
-      <div className="absolute inset-0 bg-[radial-gradient(120%_90%_at_40%_45%,rgb(9_9_9/0.25)_20%,rgb(9_9_9/0.75)_100%)]" />
-    </div>
-  );
-}
 
-function Hero() {
-  return (
-    <section id="top" data-transparent data-scene-index={0} className="relative h-[135svh]">
-      <h1 className="sr-only">Pact: group money that moves together</h1>
-      <div className="hero-ring pointer-events-none fixed inset-x-0 top-[30svh] z-[1] flex justify-center sm:top-[26svh]">
-        <RingTitle word="Together" />
-      </div>
-      <div className="hero-exit fixed inset-x-0 bottom-0 z-20 flex flex-col gap-6 px-4 pb-6 sm:flex-row sm:items-end sm:justify-between sm:px-6 sm:pb-8">
-        <p className="max-w-[17rem] text-[14px] leading-snug text-white/85">
-          Watch prices, split the bill, pay on a schedule and settle up. On PayPal, with your
-          approval.
-        </p>
-        <nav aria-label="Chapters" className="grid grid-cols-3 gap-x-8 gap-y-1">
-          {CHAPTERS.map((c) => (
-            <a
-              key={c.id}
-              href={`#${c.id}`}
-              className="text-[14px] text-white/85 underline decoration-white/30 underline-offset-4 transition-colors hover:decoration-white"
-            >
-              {c.nav}
-            </a>
-          ))}
-        </nav>
-      </div>
-    </section>
-  );
-}
+const REPO = "https://github.com/HUSAM-07/hack-paypal";
+const blob = (path: string) => `${REPO}/blob/main/${path}`;
 
-function CardItem({ card, i }: { card: Card; i: number }) {
-  return (
-    <article data-reveal style={d((i % 3) * 90)} className="group">
-      {card.art ? (
-        <div className="overflow-hidden rounded-[16px] bg-[#141216]">
-          <ArtImage
-            name={card.art}
-            sizes="(min-width: 1024px) 420px, (min-width: 640px) 45vw, 92vw"
-            className="aspect-[4/3] h-auto w-full object-cover transition-transform duration-[1.2s] ease-swift group-hover:scale-[1.04]"
-          />
-        </div>
-      ) : card.icon ? (
-        <span className="flex size-11 items-center justify-center rounded-[12px] bg-white/[0.06] text-lav-200">
-          <card.icon className="size-5" strokeWidth={1.6} />
-        </span>
-      ) : null}
-      <h3
-        className={
-          card.art || card.icon
-            ? "mt-4 text-[15px] text-white/90"
-            : "border-t border-white/15 pt-4 text-[15px] text-white/90"
-        }
-      >
-        {card.title}
-      </h3>
-      <p className="mt-1.5 max-w-[26rem] text-[14px] leading-relaxed text-white/55">{card.body}</p>
-    </article>
-  );
-}
+const SOURCES = [
+  {
+    id: "src-1",
+    text: "US affiliate marketing spend per year, eMarketer, as cited in the CITED card.",
+    href: blob("cited/spec/CITED-card.md"),
+    label: "cited/spec/CITED-card.md",
+  },
+  {
+    id: "src-2",
+    text: "Measured. Pre-registered price-matched eval, purifier-parity-forced: 147 sessions, Levoit priced like Winix at every shop.",
+    href: blob("packages/evals/results/cited-price-matched/summary.md"),
+    label: "packages/evals/results/cited-price-matched/summary.md",
+  },
+  {
+    id: "src-3",
+    text: "Measured. Pre-registered eval at catalogue prices (Winix already cheaper), including the close-verdict test.",
+    href: blob("packages/evals/results/cited/summary.md"),
+    label: "packages/evals/results/cited/summary.md",
+  },
+  {
+    id: "src-4",
+    text: "Derived from the measured lower bound: 57 exposed sales × 90.3% = 51 units × $95.99 × 8%.",
+    href: blob("cited/spec/CITED-card.md"),
+    label: "cited/spec/CITED-card.md",
+  },
+  {
+    id: "src-5",
+    text: "Scripted for the demo: Lumen's $4 discount and the $1,000 deposit.",
+    href: blob("cited/spec/CITED-packet.md"),
+    label: "cited/spec/CITED-packet.md",
+  },
+] as const;
 
-function ChapterSection({ chapter, index }: { chapter: Chapter; index: number }) {
+function Ref({ n }: { n: 1 | 2 | 3 | 4 | 5 }) {
   return (
-    <section
-      id={chapter.id}
-      data-chapter={index}
-      aria-labelledby={`${chapter.id}-title`}
-      className="relative"
-    >
-      <header
-        data-transparent
-        data-scene-index={sceneIndex(chapter)}
-        className="relative z-10 flex min-h-[100svh] items-center px-4 sm:px-6"
-      >
-        <div className="max-w-[1400px]">
-          <p className="mb-4 font-mono text-[13px] text-white/50" data-reveal>
-            {String(index + 1).padStart(2, "0")}
-          </p>
-          <h2 id={`${chapter.id}-title`} className="chapter-title" data-reveal style={d(60)}>
-            {chapter.title}
-          </h2>
-          <p
-            className="mt-5 max-w-[34rem] text-[18px] text-white/85 sm:text-[22px]"
-            data-reveal
-            style={d(140)}
-          >
-            {chapter.subtitle}
-          </p>
-        </div>
-      </header>
-      <div className="relative z-10 bg-[#090909] px-4 pt-24 pb-36 sm:px-6 sm:pt-32">
-        <div className="mx-auto max-w-[1400px]">
-          {chapter.features.map((f, i) => (
-            <div key={f.title} className={i > 0 ? "mt-32" : undefined}>
-              <div className="grid gap-6 lg:grid-cols-12 lg:items-end">
-                <h3 data-reveal className="feature-title lg:col-span-7">
-                  {f.title}
-                </h3>
-                <div data-reveal style={d(100)} className="lg:col-span-4 lg:col-start-9">
-                  <p className="text-[16px] leading-relaxed text-white/65">{f.body}</p>
-                  {f.link && (
-                    <a
-                      href={f.link.href}
-                      className="mt-4 inline-flex items-center gap-1.5 text-[14px] text-white underline decoration-white/30 underline-offset-4 hover:decoration-white"
-                    >
-                      {f.link.label} <ArrowRight className="size-3.5" />
-                    </a>
-                  )}
-                </div>
-              </div>
-              <MediaFrame media={f.media} label={chapter.nav} />
-            </div>
-          ))}
-          {chapter.cards.length > 0 && (
-            <div
-              className={
-                chapter.features.length
-                  ? "mt-20 grid gap-x-6 gap-y-14 sm:grid-cols-2 lg:grid-cols-3"
-                  : "grid gap-x-6 gap-y-14 sm:grid-cols-2 lg:grid-cols-3"
-              }
-            >
-              {chapter.cards.map((card, i) => (
-                <CardItem key={card.title} card={card} i={i} />
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function Closing() {
-  return (
-    <section
-      data-transparent
-      data-scene-index={0}
-      className="relative z-10 flex min-h-[90svh] flex-col items-start justify-center px-4 sm:px-6"
-    >
-      <h2 className="chapter-title max-w-[12ch]" data-reveal>
-        Start a pact
-      </h2>
-      <p className="mt-5 max-w-[30rem] text-[18px] text-white/85 sm:text-[22px]" data-reveal>
-        Pact is invite-only during the preview. Sign in with a passkey in seconds.
-      </p>
-      <a
-        href="/app"
-        data-reveal
-        className="mt-8 inline-flex h-12 items-center gap-2 rounded-full bg-white px-6 text-[16px] font-medium text-[#090909] transition-transform duration-150 ease-snappy active:scale-[0.96]"
-      >
-        Open Pact <ArrowRight className="size-4" />
+    <sup className="ref">
+      <a href={`#src-${n}`} aria-label={`Source ${n}`}>
+        {n}
       </a>
+    </sup>
+  );
+}
+
+function Section({
+  id,
+  kicker,
+  title,
+  children,
+  wide,
+}: {
+  id: string;
+  kicker: string;
+  title: ReactNode;
+  children: ReactNode;
+  wide?: ReactNode;
+}) {
+  return (
+    <section id={id} className="section" aria-labelledby={`${id}-h`}>
+      <div className="section-head">
+        <p className="kicker">{kicker}</p>
+        <h2 id={`${id}-h`} className="h2">
+          {title}
+        </h2>
+      </div>
+      <div className="section-body">{children}</div>
+      {wide ? <div className="section-wide">{wide}</div> : null}
     </section>
   );
 }
 
-function Footer() {
+const ARMS = [
+  {
+    label: "Shown the test",
+    note: "HouseFresh: Winix A230 vs Levoit Core 300",
+    count: "57 / 57",
+    pct: 100,
+    cls: "bar-test",
+  },
+  {
+    label: "Placebo",
+    note: "another HouseFresh article",
+    count: "3 / 54",
+    pct: 6,
+    cls: "bar-placebo",
+  },
+  {
+    label: "Nothing",
+    note: "test withheld, nothing added",
+    count: "3 / 36",
+    pct: 8,
+    cls: "bar-none",
+  },
+];
+
+function ArmsFigure() {
   return (
-    <footer className="relative z-10 bg-[#090909] px-4 pt-16 pb-28 sm:px-6">
-      <div className="mx-auto flex max-w-[1400px] flex-col gap-10 border-t border-white/10 pt-10 sm:flex-row sm:justify-between">
-        <div>
-          <Mark />
-          <p className="mt-3 max-w-[22rem] text-[14px] text-white/50">
-            Group money agents in chat. Built for the PayPal AI Hackathon.
-          </p>
-        </div>
-        <nav aria-label="Footer" className="grid grid-cols-2 gap-x-12 gap-y-2 sm:grid-cols-3">
-          {CHAPTERS.map((c) => (
-            <a key={c.id} href={`#${c.id}`} className="text-[14px] text-white/60 hover:text-white">
-              {c.nav}
-            </a>
-          ))}
-        </nav>
+    <figure className="fig fig-arms">
+      <p className="fig-title">Agents that bought the Winix</p>
+      <div className="fig-rows">
+        {ARMS.map((a) => (
+          <div key={a.label} className="arm-row">
+            <div className="arm-label">
+              <span className="arm-name">{a.label}</span>
+              <span className="arm-note">{a.note}</span>
+            </div>
+            <div
+              className="arm-track"
+              role="img"
+              aria-label={`${a.pct}% bought the Winix (${a.count})`}
+            >
+              <span className={`arm-bar ${a.cls}`} style={{ width: `${a.pct}%` }} />
+            </div>
+            <div className="arm-value num">
+              <span className="arm-pct">{a.pct}%</span>
+              <span className="arm-count">{a.count}</span>
+            </div>
+          </div>
+        ))}
       </div>
-      <p className="mx-auto mt-12 max-w-[1400px] text-[12px] leading-relaxed text-white/55">
-        Pact is a hackathon preview. Payments in the preview use test money. PayPal is a trademark
-        of PayPal, Inc.
-      </p>
-    </footer>
+      <div className="lift num">
+        <div>
+          <span className="lift-value">+94pp</span>
+          <span className="lift-label">lift, test vs placebo</span>
+        </div>
+        <div>
+          <span className="lift-value">+90.3pp</span>
+          <span className="lift-label">80% lower bound: what pays</span>
+        </div>
+      </div>
+      <figcaption className="caption">
+        <span className="fig-no">Fig. 1</span> 147 forced-buy sessions across GPT, Gemini and
+        Sonnet, Levoit priced the same as Winix.
+        <Ref n={2} />
+      </figcaption>
+    </figure>
   );
 }
+
+const STEPS: { title: string; body: ReactNode }[] = [
+  {
+    title: "A brand funds a category, never a verdict.",
+    body: (
+      <>
+        Winix and Levoit each deposit into the purifier programme. Creators choose the rivals and
+        write the verdict. Each brand pays only for its own lifted units, so an honest &ldquo;buy
+        the rival&rdquo; verdict still earns.
+      </>
+    ),
+  },
+  {
+    title: "The catalogue randomises what agents see.",
+    body: (
+      <>
+        PayPal's agent catalogue shows each shopping session the creator's test, a placebo from the
+        same creator, or nothing: 50/50 for a test's first 7 days, then a permanent 5% holdout. Only
+        the test is added or withheld. <strong>Ranking never changes.</strong>
+      </>
+    ),
+  },
+  {
+    title: "The passport travels with the sale.",
+    body: (
+      <>
+        The catalogue signs an Agent Affiliate Passport. The shop puts it in Orders v2{" "}
+        <code>purchase_units[].custom_id</code>, so the capture joins the sale to its arm even at
+        another shop. In the demo, all 57 exposed Winix buys settled at Lumen, $4 cheaper
+        <Ref n={5} />, not at Northwind where the test appeared.
+      </>
+    ),
+  },
+  {
+    title: "The engine pays only what the test caused.",
+    body: (
+      <>
+        Credit is the attributable fraction at its 80% lower bound, at 8% commission, split by
+        Shapley value across co-exposed creators. Credits wait 30 days; refunds and disputes void
+        them. Then one batch Payout pays the creators and the unspent deposit is refunded.
+      </>
+    ),
+  },
+];
+
+const MODELS = [
+  { name: "GPT", lift: "+89pp" },
+  { name: "Gemini", lift: "+100pp" },
+  { name: "Sonnet", lift: "+94pp" },
+];
+
+const LEDGER: { label: string; value: string; kind?: "sub" | "void" | "total" | "return" }[] = [
+  { label: "Exposed Winix sales", value: "57" },
+  { label: "× attributable fraction, 80% lower bound", value: "90.3%" },
+  { label: "Credited units", value: "51", kind: "sub" },
+  { label: "× $95.99 × 8% commission", value: "$391.64" },
+  {
+    label: "A buyer returns one Winix: its pending credit is voided",
+    value: "−$7.68",
+    kind: "void",
+  },
+  { label: "Paid to HouseFresh on day 30, by batch Payout", value: "$383.96", kind: "total" },
+  { label: "Returned to Winix from its $1,000 deposit", value: "$616.04", kind: "return" },
+  { label: "Levoit: no lift, so no credit", value: "$0.00", kind: "return" },
+];
+
+const TRY = [
+  {
+    href: "/console?clean=1",
+    title: "Two agents, side by side",
+    body: "Same request. One sees the test and buys the Winix; the held-out one buys the Levoit.",
+  },
+  {
+    href: "/console/payout?clean=1",
+    title: "The payout",
+    body: "Day 30: the voided refund, the batch Payout to HouseFresh, the deposit returned to Winix.",
+  },
+  {
+    href: "/shops",
+    title: "The three shops",
+    body: "Northwind, Lumen and MegaMart, each with PayPal checkout.",
+  },
+  {
+    href: "/studio",
+    title: "Studio dashboards",
+    body: "The brand and creator views of the same ledger.",
+  },
+  {
+    href: REPO,
+    title: "Source on GitHub",
+    body: "Engine, catalogue, shops, evals, and every number on this page.",
+  },
+];
 
 export function Landing() {
   return (
     <>
-      <SceneLayer />
-      <TopBar />
-      <main className="relative">
-        <Hero />
-        {CHAPTERS.map((c, i) => (
-          <ChapterSection key={c.id} chapter={c} index={i} />
-        ))}
-        <Closing />
+      <a className="skip" href="#main">
+        Skip to content
+      </a>
+      <header className="top">
+        <div className="wrap top-inner">
+          <a className="wordmark" href="/">
+            CITED
+          </a>
+          <nav aria-label="Sections" className="top-nav">
+            <a href="#how" className="hide-sm">
+              How it works
+            </a>
+            <a href="#proof" className="hide-sm">
+              Proof
+            </a>
+            <a href="#money" className="hide-sm">
+              Payout
+            </a>
+            <a href="/console?clean=1" className="top-cta">
+              Live demo
+            </a>
+          </nav>
+        </div>
+      </header>
+
+      <main id="main">
+        <div className="wrap hero">
+          <div className="hero-copy">
+            <p className="kicker">Built on PayPal Orders, webhooks and Payouts</p>
+            <h1 className="h1">PayPal's affiliate network, rebuilt for AI&nbsp;agents.</h1>
+            <p className="lede">It pays creators on proven lift, not last-click cookies.</p>
+            <div className="ctas">
+              <a className="btn btn-primary" href="/console?clean=1">
+                Watch two agents shop
+              </a>
+              <a className="btn btn-quiet" href="/console/payout?clean=1">
+                See the payout
+              </a>
+            </div>
+          </div>
+          <ArmsFigure />
+        </div>
+
+        <div className="wrap">
+          <Section id="problem" kicker="The problem" title="Agents read. They never click.">
+            <div className="prose two-col">
+              <p>
+                Affiliate marketing is a $13.81B a year business in the US
+                <Ref n={1} />, and it pays per click. An AI shopping agent reads a creator's product
+                test, decides, and buys wherever the price is best. No link is clicked, no cookie is
+                set, and the creator who did the testing is paid nothing.
+              </p>
+              <p>
+                Last-click credit was always easy to overwrite; with agents it disappears. What a
+                creator can still prove is that their test <em>changed what agents bought</em>. That
+                proof needs a holdout, not a cookie.
+              </p>
+            </div>
+          </Section>
+
+          <Section
+            id="how"
+            kicker="How it works"
+            title="Four steps from a review to a payout."
+            wide={
+              <figure className="fig fig-flow">
+                <div className="flow-frame">
+                  <FlowWide />
+                  <FlowTall />
+                </div>
+                <figcaption className="caption">
+                  <span className="fig-no">Fig. 2</span> The sale's path. The catalogue assigns an
+                  arm and signs the passport; the passport rides through any shop's PayPal checkout
+                  to the engine, which pays the creator.
+                </figcaption>
+              </figure>
+            }
+          >
+            <ol className="steps">
+              {STEPS.map((s, i) => (
+                <li key={s.title} className="step">
+                  <span className="step-no num" aria-hidden="true">
+                    {i + 1}
+                  </span>
+                  <div>
+                    <h3 className="h3">{s.title}</h3>
+                    <p className="step-body">{s.body}</p>
+                  </div>
+                </li>
+              ))}
+            </ol>
+          </Section>
+
+          <Section id="proof" kicker="The proof" title="Measured on three models, pre-registered.">
+            <div className="proof">
+              <div className="prose">
+                <p>
+                  In 147 agent sessions with the Winix and Levoit priced the same, agents shown
+                  HouseFresh's test chose the Winix 94 points more often than agents shown other
+                  HouseFresh content. The lower bound, +90.3pp, is what pays.
+                  <Ref n={2} />
+                </p>
+                <p>
+                  Agents otherwise default to the Levoit and flip when a test names the Winix, so
+                  this mostly measures deference to an explicit verdict. When the Winix was already
+                  the cheaper one, the lift fell to +24pp; a close-verdict test moved nothing and
+                  paid $0.
+                  <Ref n={3} /> Agents that read the test elsewhere only shrink the measured lift,
+                  so pay is a floor.
+                </p>
+              </div>
+              <figure className="fig fig-models">
+                <table className="table num">
+                  <thead>
+                    <tr>
+                      <th scope="col">Model</th>
+                      <th scope="col">Lift</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {MODELS.map((m) => (
+                      <tr key={m.name}>
+                        <th scope="row">{m.name}</th>
+                        <td className="pos">{m.lift}</td>
+                      </tr>
+                    ))}
+                    <tr className="row-total">
+                      <th scope="row">Pooled, model-stratified</th>
+                      <td className="pos">+94pp</td>
+                    </tr>
+                    <tr>
+                      <th scope="row">80% lower bound</th>
+                      <td className="pos">+90.3pp</td>
+                    </tr>
+                  </tbody>
+                </table>
+                <figcaption className="caption">
+                  <span className="fig-no">Table 1</span> Lift by model, test vs placebo,
+                  price-matched study.
+                  <Ref n={2} />
+                </figcaption>
+              </figure>
+            </div>
+          </Section>
+
+          <Section
+            id="money"
+            kicker="The payout"
+            title="Only caused sales are paid. The rest goes back."
+          >
+            <figure className="fig fig-ledger">
+              <table className="ledger num">
+                <tbody>
+                  {LEDGER.map((r) => (
+                    <tr key={r.label} className={r.kind ? `l-${r.kind}` : undefined}>
+                      <th scope="row">{r.label}</th>
+                      <td>{r.value}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              <figcaption className="caption">
+                <span className="fig-no">Table 2</span> The demo ledger for HouseFresh's purifier
+                test.
+                <Ref n={4} />
+                <Ref n={5} />
+              </figcaption>
+            </figure>
+            <p className="note">
+              Money never buys rank or verdicts. Brands fund a category; funding buys measurement of
+              which tests move agents.
+            </p>
+          </Section>
+
+          <Section id="try" kicker="Try it" title="Everything here runs live.">
+            <ul className="try">
+              {TRY.map((t) => (
+                <li key={t.href}>
+                  <a className="try-link" href={t.href}>
+                    <span className="try-title">
+                      {t.title}
+                      <span className="try-arrow" aria-hidden="true">
+                        →
+                      </span>
+                    </span>
+                    <span className="try-body">{t.body}</span>
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </Section>
+        </div>
       </main>
-      <Footer />
-      <ChapterPill />
+
+      <footer className="foot">
+        <div className="wrap">
+          <h2 className="foot-h">Sources</h2>
+          <ol className="sources">
+            {SOURCES.map((s) => (
+              <li key={s.id} id={s.id}>
+                {s.text}{" "}
+                <a href={s.href} className="src-link">
+                  {s.label}
+                </a>
+              </li>
+            ))}
+          </ol>
+          <p className="foot-line">CITED, built for the PayPal AI Hackathon, 2026.</p>
+        </div>
+      </footer>
     </>
   );
 }
