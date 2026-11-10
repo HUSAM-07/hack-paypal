@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { recommend } from "../src/analyst";
+import { points, recommend } from "../src/analyst";
 import { createStudioApp, type RawEngine } from "../src/index";
 import {
   parseTurn,
@@ -144,6 +144,34 @@ describe("Analyst recommendation", () => {
 
   it("never funds a brand whose lift isn't proven", () => {
     expect(recommend(raw, "levoit")).toMatchObject({ action: "none" });
+  });
+
+  it("gives the Analyst a summary with the point lift and arm counts it can say as is", () => {
+    const short: RawEngine = {
+      ...raw,
+      deposits: raw.deposits.map((d) => ({ ...d, available: 0, deposits: d.deposits.slice(0, 1) })),
+    };
+    const rec = recommend(short, "winix");
+    expect(rec?.summary).toBe(
+      "Shown the test, agents bought Winix 4 of 4 times against 1 of 4 on the same creator's placebo: +75 points, +50 at the 80% lower bound. " +
+        "Raise the purifier cap by $500: $0 is left and a payout cycle credits $15.36.",
+    );
+    expect(rec?.citations[0]).toEqual({
+      label: "Lift, shown the test vs the same creator's placebo",
+      value: "+75 points (bought 4 of 4 vs 1 of 4)",
+      source: "/api/cited/api/lift",
+    });
+    // Every number in the summary is in a citation or the amount: nothing for the model to invent.
+    expect(recommend(raw, "levoit")?.summary).toBe(
+      "Shown the test, agents bought Levoit 0 of 4 times against 3 of 4 on the same creator's placebo: −75 points, so the test caused no Levoit sales and Levoit pays nothing.",
+    );
+    expect(recommend(raw, "winix")?.summary).toMatch(/: \+75 points\. Keep the purifier cap/);
+  });
+
+  it("says lift in whole, signed points", () => {
+    expect(points(0.9444)).toBe("+94 points");
+    expect(points(-0.9444)).toBe("−94 points");
+    expect(points(0.004)).toBe("0 points");
   });
 });
 
