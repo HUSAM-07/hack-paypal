@@ -2,6 +2,7 @@ import { SELF } from "cloudflare:test";
 import { env as rawEnv } from "cloudflare:workers";
 import { describe, expect, it } from "vitest";
 import { d1RunSource, prefixLinks } from "../src/cited-apps";
+import { clearReadCache } from "../src/read-cache";
 
 const env = rawEnv as unknown as { DB: D1Database };
 const get = (path: string, init?: RequestInit) => SELF.fetch(`https://example.com${path}`, init);
@@ -91,5 +92,76 @@ describe("CITED demo apps mounted in pact-worker", () => {
     const data = await get("/studio/api/data");
     expect(data.status).toBe(200);
     expect(await data.json()).toHaveProperty("tables.brands");
+  });
+});
+
+describe("AG Studio on the hosted demo", () => {
+  const studio = (path: string, kind: string, cookie?: string, body?: unknown) =>
+    get(`/studio/api${path}`, {
+      method: "POST",
+      headers: {
+        "x-studio": kind,
+        "content-type": "application/json",
+        ...(cookie ? { cookie } : {}),
+      },
+      body: JSON.stringify(body ?? {}),
+    });
+  const ledger = async () =>
+    Promise.all(
+      ["/credits", "/deposits", "/review-flags", "/payouts"].map(async (p) =>
+        (await get(`/api/cited/api${p}`)).text(),
+      ),
+    );
+
+  it("a visitor's Approve, Release and Void never change the shared ledger", async () => {
+    // One guard hold, as the demo leaves it: a self-purchase credit waiting for a reviewer.
+    await env.DB.batch([
+      env.DB.prepare(
+        "INSERT OR IGNORE INTO creators (creator_id, name, paypal_id) VALUES ('housefresh', 'HouseFresh', 'hf@example.com')",
+      ),
+      env.DB.prepare(
+        `INSERT INTO credits (id, capture_id, creator_id, brand_id, upc, amount_minor, currency,
+           state, void_reason, hold_until, payout_batch_id, payout_status, created_at)
+         VALUES ('CAPV:housefresh', 'CAPV', 'housefresh', 'winix', 'W', 768, 'USD', 'pending',
+           NULL, '2026-12-01T00:00:00Z', NULL, NULL, '2026-11-01T00:00:00Z')`,
+      ),
+      env.DB.prepare(
+        `INSERT INTO review_flags (credit_id, capture_id, reason, id, status, detail, created_at)
+         VALUES ('CAPV:housefresh', 'CAPV', 'self_purchase', 'self_purchase:CAPV:housefresh',
+           'open', 'test', '2026-11-01T00:00:00Z')`,
+      ),
+    ]);
+    const before = await ledger();
+    clearReadCache(); // Studio's reads are cached for 10s; earlier tests read the empty ledger
+
+    const config = (await (await get("/studio/api/config")).json()) as {
+      privateWrites: { ttlMinutes: number } | null;
+    };
+    expect(config.privateWrites).toEqual({ ttlMinutes: 30 });
+
+    const approve = await studio("/analyst/approve", "approve", undefined, {
+      approvalId: "analyst-1",
+      brandId: "winix",
+    });
+    expect([200, 409]).toContain(approve.status);
+
+    for (const action of ["release", "void"] as const) {
+      const res = await studio(`/review-flags/self_purchase:CAPV:housefresh/${action}`, "review");
+      expect(res.status).toBe(200);
+      expect(await res.json()).toMatchObject({ private: true });
+      const cookie = (res.headers.get("set-cookie") ?? "").split(";")[0] ?? "";
+      const mine = (await (await get("/studio/api/data", { headers: { cookie } })).json()) as {
+        tables: { flags: { id: string; status: string }[] };
+      };
+      expect(
+        mine.tables.flags.find((f) => f.id === "self_purchase:CAPV:housefresh")?.status,
+      ).not.toBe("Waiting for a reviewer");
+    }
+
+    expect(await ledger()).toEqual(before);
+    const flags = (await (await get("/api/cited/api/review-flags")).json()) as {
+      flags: { id: string; status: string }[];
+    };
+    expect(flags.flags.find((f) => f.id === "self_purchase:CAPV:housefresh")?.status).toBe("open");
   });
 });

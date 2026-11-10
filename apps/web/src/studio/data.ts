@@ -14,10 +14,20 @@ export interface StudioConfig {
   gridLicenseKey: string;
   llm: { kind: "gateway" | "anthropic" | "scripted"; label: string };
   tables: TableMeta[];
+  /** Set on the hosted demo: Approve, Release and Void stay private to the visitor. */
+  privateWrites?: { ttlMinutes: number } | null;
 }
 
 export const API = "/studio/api";
-export const POLL_MS = 2_000;
+export const POLL_MS = 15_000;
+
+/** The hosted demo keeps a visitor's decisions to their own browser; say so plainly. */
+export function privateNote(resetsAt?: string): string {
+  const at = resetsAt
+    ? new Date(resetsAt).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })
+    : "";
+  return `This demo keeps your changes private to this browser: the dashboards show them, the shared ledger stays as it was${at ? `, and they reset at ${at}` : " for 30 minutes"}.`;
+}
 
 export async function getJson<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`${API}${path}`, { cache: "no-store", ...init });

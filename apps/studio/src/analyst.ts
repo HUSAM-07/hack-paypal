@@ -28,6 +28,11 @@ export interface Facts {
   causedUnits: number;
   /** Lift at the 80% lower bound, as a fraction. Null when there is no data. */
   lowerBound: number | null;
+  /** Point lift, shown the test vs the same creator's placebo, as a fraction. */
+  lift: number | null;
+  /** Purchases of this brand per arm. */
+  test: { sessions: number; purchases: number };
+  placebo: { sessions: number; purchases: number };
   creditedMinor: number;
   paidMinor: number;
   voidedMinor: number;
@@ -50,6 +55,8 @@ export interface Recommendation {
   amountMinor: number | null;
   headline: string;
   rationale: string;
+  /** Two plain sentences the Analyst can say as they are: every number in them is cited. */
+  summary: string;
   citations: Citation[];
   guard: string;
 }
@@ -63,7 +70,15 @@ export const usd = (minor: number) => {
     .toString()
     .replace(/\B(?=(\d{3})+(?!\d))/g, ",")}.${String(a % 100).padStart(2, "0")}`;
 };
+/** usd() without ".00" on whole dollars, for spoken sentences. */
+const say = (minor: number) => usd(minor).replace(/\.00$/, "");
 const pct = (x: number) => `${(x * 100).toFixed(1).replace(/\.0$/, "")}%`;
+/** A lift in percentage points, signed and whole: 0.944 -> "+94 points". */
+export const points = (x: number) => {
+  const n = Math.round(x * 100);
+  return `${n > 0 ? "+" : n < 0 ? "−" : ""}${Math.abs(n)} points`;
+};
+const bought = (a: { sessions: number; purchases: number }) => `${a.purchases} of ${a.sessions}`;
 
 export function facts(raw: RawEngine, brandId = "winix"): Facts | null {
   const b = buildDashboard(raw).brands.find((x) => x.brandId === brandId);
@@ -71,6 +86,11 @@ export function facts(raw: RawEngine, brandId = "winix"): Facts | null {
   const dep = raw.deposits.find((x) => x.brandId === brandId);
   const days = new Set([...batchLabels(raw).values()].map((l) => l.split(" · ")[1] ?? l));
   const cycles = Math.max(1, days.size);
+  const l = raw.lift.find((x) => x.brandId === brandId);
+  const arm = (a: "test" | "placebo") => ({
+    sessions: l?.arms[a]?.sessions ?? 0,
+    purchases: l?.arms[a]?.purchases ?? 0,
+  });
   return {
     brandId: b.brandId,
     brandName: b.name,
@@ -79,6 +99,9 @@ export function facts(raw: RawEngine, brandId = "winix"): Facts | null {
     exposedSales: b.exposedSales,
     causedUnits: b.causedUnits,
     lowerBound: b.lowerBound,
+    lift: l?.lift ?? null,
+    test: arm("test"),
+    placebo: arm("placebo"),
     creditedMinor: b.credited,
     paidMinor: b.paid,
     voidedMinor: b.voided,
@@ -105,6 +128,14 @@ export function recommendAmount(f: Facts): number | null {
 
 export function citations(f: Facts): Citation[] {
   return [
+    {
+      label: "Lift, shown the test vs the same creator's placebo",
+      value:
+        f.lift === null
+          ? "none yet"
+          : `${points(f.lift)} (bought ${bought(f.test)} vs ${bought(f.placebo)})`,
+      source: "/api/cited/api/lift",
+    },
     {
       label: "Sales the test caused",
       value: `${f.causedUnits} of ${f.exposedSales} exposed`,
@@ -141,8 +172,9 @@ export function recommend(raw: RawEngine, brandId = "winix"): Recommendation | n
     citations: citations(f),
     guard: GUARD,
   };
+  const proven = f.lowerBound !== null && f.lowerBound > 0 && f.causedUnits > 0;
+  const shown = `Shown the test, agents bought ${f.brandName} ${bought(f.test)} times against ${bought(f.placebo)} on the same creator's placebo`;
   if (amount === null) {
-    const proven = f.lowerBound !== null && f.lowerBound > 0 && f.causedUnits > 0;
     return {
       ...base,
       action: "none",
@@ -152,7 +184,11 @@ export function recommend(raw: RawEngine, brandId = "winix"): Recommendation | n
         : "No top-up: the deposit covers the next cycle",
       rationale: proven
         ? `${usd(f.availableMinor)} is left against ${usd(f.perCycleMinor)} credited per payout cycle.`
-        : "A close verdict pays nothing, so there is nothing to fund.",
+        : "A test that does not lift a brand's sales pays nothing, so there is nothing to fund.",
+      summary: !proven
+        ? `${shown}: ${f.lift === null ? "no lift yet" : points(f.lift)}, so the test caused no ${f.brandName} sales and ${f.brandName} pays nothing.` +
+          (f.returnedMinor > 0 ? ` Its ${say(f.returnedMinor)} deposit came back unspent.` : "")
+        : `${shown}: ${points(f.lift ?? 0)}. Keep the ${f.category} cap: ${say(f.availableMinor)} is left, and a payout cycle credits ${say(f.perCycleMinor)}.`,
     };
   }
   return {
@@ -164,5 +200,8 @@ export function recommend(raw: RawEngine, brandId = "winix"): Recommendation | n
       `${f.brandName}'s test caused ${f.causedUnits} of ${f.exposedSales} exposed sales at the 80% lower bound (${pct(f.lowerBound ?? 0)} lift), so the lift is proven. ` +
       `A payout cycle credits ${usd(f.perCycleMinor)} at this rate, but only ${usd(f.availableMinor)} of the deposit is left. ` +
       `Raise the ${f.category} programme cap by ${usd(amount)}.`,
+    summary:
+      `${shown}: ${points(f.lift ?? 0)}, ${points(f.lowerBound ?? 0).replace(" points", "")} at the 80% lower bound. ` +
+      `Raise the ${f.category} cap by ${say(amount)}: ${say(f.availableMinor)} is left and a payout cycle credits ${say(f.perCycleMinor)}.`,
   };
 }
