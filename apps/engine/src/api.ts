@@ -18,6 +18,7 @@ import { payoutItemIds, refreshPayouts, runPayouts, senderItemId } from "./payou
 import { getPayPal } from "./paypal";
 import { captureDeposit, getBrand, listBrands, requestDeposit, upsertBrand } from "./programme";
 import { issueStatements, listStatements } from "./statements";
+import { listProofs } from "./webhooks/proof";
 
 export const api = new Hono<{ Bindings: Env }>();
 
@@ -595,6 +596,18 @@ api.get("/shapley", async (c) => {
     })),
   });
 });
+
+/**
+ * Webhook deliveries whose PayPal signature verified against PayPal's signing cert, newest
+ * first. Proof that the intake checks real PayPal signatures; see cited/WEBHOOK-PROOF.md.
+ */
+api.get("/webhook-proof", async (c) =>
+  c.json({
+    subscriptionId: c.env.PAYPAL_WEBHOOK_ID ?? null,
+    paypalMode: c.env.PAYPAL_MODE,
+    proofs: await listProofs(c.env),
+  }),
+);
 
 /** Brand statements: one PayPal invoice per brand per cycle close, settled from the deposit. */
 api.get("/invoices", async (c) =>

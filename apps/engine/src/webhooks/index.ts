@@ -1,9 +1,11 @@
 /**
  * POST /webhooks/paypal. The PayPal signature is the authentication: verify the raw bytes,
  * then parse, then claim the event id (atomic), then dispatch. A dispatch failure releases
- * the claim and returns 500 so PayPal redelivers. PAYPAL_MODE=simulated skips verification.
+ * the claim and returns 500 so PayPal redelivers. PAYPAL_MODE=simulated skips verification
+ * for the demo's own unsigned events, but anything carrying PayPal signature headers is
+ * verified for real and only recorded as proof (./proof.ts), never dispatched into the demo.
  */
-import { parseWebhookEvent, verifyWebhookSelf } from "@pact/paypal";
+import { hasPayPalSignatureHeaders, MOCK_CERT_URL, parseWebhookEvent } from "@pact/paypal";
 import { fromPayPalValue, type Money } from "@pact/protocol";
 import { Hono } from "hono";
 import { applyVoids } from "../credits";
@@ -11,6 +13,7 @@ import type { Env } from "../env";
 import { applyBatchStatus } from "../payouts";
 import { getPayPal } from "../paypal";
 import { type CaptureFacts, readItems, recordCapture, shopOf } from "./join";
+import { recordProof, verifyPayPalSignature } from "./proof";
 
 /** Programme deposits are Orders v2 captures too; they are money in, not sales. */
 const isDeposit = (customId: string | undefined) => !!customId?.startsWith("cited-dep:");
@@ -41,15 +44,17 @@ webhooks.post("/paypal", async (c) => {
   const raw = await c.req.text();
   if (raw.length > MAX_BODY) return c.json({ error: "too_large" }, 413);
 
-  if (c.env.PAYPAL_MODE !== "simulated") {
-    if (!c.env.PAYPAL_WEBHOOK_ID) return c.json({ error: "paypal_unavailable" }, 503);
-    const verified = await verifyWebhookSelf({
-      env: c.env.PAYPAL_MODE === "live" ? "live" : "sandbox",
-      webhookId: c.env.PAYPAL_WEBHOOK_ID,
-      headers: c.req.raw.headers,
-      rawBody: raw,
-    });
+  const simulated = c.env.PAYPAL_MODE === "simulated";
+  let signedFor: "subscription" | "simulator" | undefined;
+  // The simulated PayPal signs the demo's events with its own cert, which real PayPal never
+  // serves: those take the demo path like unsigned events. Any other PayPal headers are real.
+  const mockSigned = c.req.header("paypal-cert-url") === MOCK_CERT_URL;
+  const claimsPayPal = hasPayPalSignatureHeaders(c.req.raw.headers) && !mockSigned;
+  if (!simulated || claimsPayPal) {
+    if (!simulated && !c.env.PAYPAL_WEBHOOK_ID) return c.json({ error: "paypal_unavailable" }, 503);
+    const verified = await verifyPayPalSignature(c.env, c.req.raw.headers, raw);
     if (!verified.ok) return c.json({ error: verified.reason }, 400);
+    signedFor = verified.signedFor;
   }
 
   let parsed: ReturnType<typeof parseWebhookEvent>;
@@ -60,6 +65,22 @@ webhooks.post("/paypal", async (c) => {
   }
   const id = parsed.known ? parsed.event.id : parsed.id;
   const type = parsed.known ? parsed.event.event_type : parsed.eventType;
+
+  if (signedFor) {
+    // Only an event PayPal sent to our own subscription may move money, and only when the
+    // engine runs real PayPal: the simulated demo's ledger keeps its recorded numbers.
+    const dispatched = !simulated && signedFor === "subscription";
+    const fresh = await recordProof(c.env, {
+      eventId: id,
+      eventType: type,
+      signedFor,
+      headers: c.req.raw.headers,
+      resourceId: str(obj((JSON.parse(raw) as Raw).resource)?.id),
+      dispatched,
+    });
+    if (!dispatched)
+      return c.json({ ok: true, proof: signedFor, ...(fresh ? {} : { duplicate: true }) });
+  }
 
   const claim = await c.env.DB.prepare(
     "INSERT OR IGNORE INTO webhook_events (id, event_type, received_at) VALUES (?, ?, ?)",
