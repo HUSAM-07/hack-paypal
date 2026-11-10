@@ -125,7 +125,13 @@ export interface Dispute {
   captureId: string;
   reason: string;
   amount: Money;
+  status: "OPEN" | "RESOLVED";
+  /** PayPal's `dispute_outcome.outcome_code`, once resolved. */
+  outcome?: DisputeOutcome;
 }
+
+/** The outcome codes the mock can resolve a dispute with (PayPal `dispute_outcome.outcome_code`). */
+export type DisputeOutcome = "RESOLVED_SELLER_FAVOUR" | "RESOLVED_BUYER_FAVOUR";
 
 class HttpError extends Error {
   constructor(
@@ -488,6 +494,27 @@ export function createMockPayPal(opts: MockPayPalOptions = {}) {
     }
   }
 
+  function disputeJson(d: Dispute, c: StoredCapture) {
+    return {
+      dispute_id: d.dispute_id,
+      reason: d.reason,
+      status: d.status,
+      dispute_amount: amountJson(d.amount),
+      dispute_life_cycle_stage: d.status === "OPEN" ? "INQUIRY" : "CHARGEBACK",
+      ...(d.outcome ? { dispute_outcome: { outcome_code: d.outcome } } : {}),
+      disputed_transactions: [
+        {
+          seller_transaction_id: d.captureId,
+          ...(c.customId ? { custom: c.customId } : {}),
+          gross_amount: amountJson(c.amount),
+        },
+      ],
+      create_time: iso(),
+      update_time: iso(),
+      links: [link("self", `${MOCK_API_BASE}/v1/customer/disputes/${d.dispute_id}`)],
+    };
+  }
+
   /** The buyer opens a dispute on a capture. Emits `CUSTOMER.DISPUTE.CREATED`. */
   function openDispute(captureId: string, d: { reason?: string; amount?: Money } = {}): Dispute {
     const c = captures.get(captureId);
@@ -503,26 +530,34 @@ export function createMockPayPal(opts: MockPayPalOptions = {}) {
       captureId,
       reason: d.reason ?? "MERCHANDISE_OR_SERVICE_NOT_RECEIVED",
       amount: d.amount ?? c.amount,
+      status: "OPEN",
     };
     disputes.set(dispute.dispute_id, dispute);
-    emit("CUSTOMER.DISPUTE.CREATED", "dispute", "A new dispute is created with Dispute ID.", {
-      dispute_id: dispute.dispute_id,
-      reason: dispute.reason,
-      status: "OPEN",
-      dispute_amount: amountJson(dispute.amount),
-      dispute_life_cycle_stage: "INQUIRY",
-      disputed_transactions: [
-        {
-          seller_transaction_id: captureId,
-          ...(c.customId ? { custom: c.customId } : {}),
-          gross_amount: amountJson(c.amount),
-        },
-      ],
-      create_time: iso(),
-      update_time: iso(),
-      links: [link("self", `${MOCK_API_BASE}/v1/customer/disputes/${dispute.dispute_id}`)],
-    });
+    emit(
+      "CUSTOMER.DISPUTE.CREATED",
+      "dispute",
+      "A new dispute is created with Dispute ID.",
+      disputeJson(dispute, c),
+    );
     return dispute;
+  }
+
+  /** PayPal decides an open dispute. Emits `CUSTOMER.DISPUTE.RESOLVED` with the outcome. */
+  function resolveDispute(disputeId: string, outcome: DisputeOutcome): Dispute {
+    const d = disputes.get(disputeId);
+    const c = d && captures.get(d.captureId);
+    if (!d || !c)
+      throw fail(
+        404,
+        "RESOURCE_NOT_FOUND",
+        "The specified resource does not exist.",
+        "INVALID_RESOURCE_ID",
+      );
+    if (d.status === "RESOLVED") return d;
+    d.status = "RESOLVED";
+    d.outcome = outcome;
+    emit("CUSTOMER.DISPUTE.RESOLVED", "dispute", "A dispute was resolved.", disputeJson(d, c));
+    return d;
   }
 
   // ---------- routing ----------
@@ -953,6 +988,7 @@ export function createMockPayPal(opts: MockPayPalOptions = {}) {
     approveOrder,
     vaultWallet,
     openDispute,
+    resolveDispute,
     settlePayouts,
     /** Await all in-flight webhook deliveries. */
     async flush(): Promise<void> {

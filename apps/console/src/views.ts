@@ -339,7 +339,7 @@ export function payoutPage(p: PayoutData | null, opts: Opts): string {
   <div><dt>Payout batch ID</dt><dd class="mono">${esc(p.paypalBatchId ?? p.senderBatchId)}</dd></div>
   <div><dt>${p.itemIdKind === "payout_item_id" ? "Payout item ID" : "Item reference"}</dt><dd class="mono">${esc(p.itemId)}</dd></div>
 </dl>
-<footer>Sent with PayPal Payouts. Refunds and disputes during the hold void credits before anything is paid.</footer>
+<footer>Sent with PayPal Payouts. A refund during the hold voids the credit; a dispute holds it until PayPal decides.</footer>
 </article>
 ${
   p.rival

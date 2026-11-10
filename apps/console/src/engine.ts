@@ -34,8 +34,14 @@ export interface EnginePayoutBatch {
 export interface EngineCreatorCredits {
   creatorId: string;
   name: string;
-  totals: { pending: number; voided: number; paid: number };
-  credits: { brandId: string; amountMinor: number; state: string }[];
+  totals: { pending: number; voided: number; paid: number; frozen?: number };
+  credits: {
+    brandId: string;
+    amountMinor: number;
+    state: string;
+    /** The PayPal batch that paid it (engine `payout_batch_id`). */
+    payoutBatchId?: string | null;
+  }[];
 }
 
 export interface EngineLift {

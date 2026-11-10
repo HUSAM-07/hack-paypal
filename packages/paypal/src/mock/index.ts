@@ -8,6 +8,7 @@ export {
 export {
   createMockPayPal,
   type Dispute,
+  type DisputeOutcome,
   MOCK_API_BASE,
   MOCK_CERT_URL,
   MOCK_DEFAULT_PAYEE,

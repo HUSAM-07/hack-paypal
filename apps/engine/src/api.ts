@@ -6,7 +6,7 @@
 import { Hono } from "hono";
 import { z } from "zod";
 import { advanceClock, nowOf } from "./clock";
-import { brandBalances, loadStoredCredits, recomputeCredits } from "./credits";
+import { brandBalances, frozenCaptures, loadStoredCredits, recomputeCredits } from "./credits";
 import { closeCycle } from "./cycle";
 import type { Env } from "./env";
 import { brandLiftData, evaluateBrand } from "./lift";
@@ -358,6 +358,9 @@ api.get("/credits", async (c) => {
     xs.filter((x) => x.state === state).reduce((a, x) => a + x.amount.amountMinor, 0);
   const flags = (await c.env.DB.prepare("SELECT * FROM review_flags ORDER BY credit_id").all<Row>())
     .results;
+  const frozen = await frozenCaptures(c.env);
+  const isFrozen = (x: (typeof credits)[number]) =>
+    x.state === "pending" && frozen.has(x.captureId);
   return c.json({
     creators: [...by.entries()]
       .sort(([a], [b]) => (a < b ? -1 : 1))
@@ -365,7 +368,13 @@ api.get("/credits", async (c) => {
         creatorId,
         name: names.get(creatorId)?.name ?? creatorId,
         paypalLinked: names.get(creatorId)?.paypalLinked ?? false,
-        totals: { pending: sum(xs, "pending"), voided: sum(xs, "voided"), paid: sum(xs, "paid") },
+        totals: {
+          pending: sum(xs, "pending"),
+          voided: sum(xs, "voided"),
+          paid: sum(xs, "paid"),
+          /** Part of `pending`: held back by an open PayPal dispute. */
+          frozen: xs.filter(isFrozen).reduce((a, x) => a + x.amount.amountMinor, 0),
+        },
         credits: xs.map((x) => ({
           id: x.id,
           captureId: x.captureId,
@@ -378,6 +387,7 @@ api.get("/credits", async (c) => {
           holdUntil: x.holdUntil,
           payoutBatchId: x.payoutBatchId ?? null,
           payoutStatus: x.payoutStatus,
+          frozen: isFrozen(x),
         })),
       })),
     reviewFlags: flags.map((f) => ({
@@ -486,6 +496,7 @@ api.get("/shapley", async (c) => {
         creatorId: x.creatorId,
         amountMinor: x.amount.amountMinor,
         state: x.state,
+        payoutBatchId: x.payoutBatchId ?? null,
       })),
     })),
   });

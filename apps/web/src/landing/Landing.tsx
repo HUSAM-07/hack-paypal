@@ -186,8 +186,9 @@ const STEPS: { title: string; body: ReactNode }[] = [
     body: (
       <>
         Credit is the attributable fraction at its 80% lower bound, at 8% commission, split by
-        Shapley value across co-exposed creators. Credits wait 30 days; refunds and disputes void
-        them. Then one batch Payout pays the creators and the unspent deposit is refunded.
+        Shapley value across co-exposed creators. Credits wait 30 days; refunds void them, and a
+        dispute holds them until PayPal decides. Then one batch Payout pays the creators and the
+        unspent deposit is refunded.
       </>
     ),
   },

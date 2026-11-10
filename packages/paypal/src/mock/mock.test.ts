@@ -333,6 +333,33 @@ describe("webhooks", () => {
     });
   });
 
+  it("resolves a dispute with a CUSTOMER.DISPUTE.RESOLVED carrying the outcome", async () => {
+    const s = setup();
+    const { cap } = await paidOrder(s);
+    const d = s.mock.openDispute(cap.id);
+    s.mock.resolveDispute(d.dispute_id, "RESOLVED_SELLER_FAVOUR");
+    s.mock.resolveDispute(d.dispute_id, "RESOLVED_BUYER_FAVOUR"); // already decided: no-op
+    await s.mock.flush();
+    const disputes = s.deliveries.filter((x) => x.event.event_type.startsWith("CUSTOMER.DISPUTE"));
+    expect(disputes.map((x) => x.event.event_type)).toEqual([
+      "CUSTOMER.DISPUTE.CREATED",
+      "CUSTOMER.DISPUTE.RESOLVED",
+    ]);
+    const resolved = disputes[1]?.event.resource as Record<string, unknown>;
+    expect(resolved).toMatchObject({
+      dispute_id: d.dispute_id,
+      status: "RESOLVED",
+      dispute_outcome: { outcome_code: "RESOLVED_SELLER_FAVOUR" },
+      disputed_transactions: [{ seller_transaction_id: cap.id }],
+    });
+    // Signed like every other event (the cert is cached per URL, so verification itself is
+    // covered by the test above, which owns the first certificate).
+    expect(Object.keys((disputes[1] as WebhookDelivery).headers)).toContain(
+      "paypal-transmission-sig",
+    );
+    expect(s.mock.state.disputes.get(d.dispute_id)?.outcome).toBe("RESOLVED_SELLER_FAVOUR");
+  });
+
   it("POSTs signed events to a registered callback URL", async () => {
     const calls: { url: string; body: string; sig?: string | null }[] = [];
     const s = setup({
