@@ -38,7 +38,14 @@ the worker sets it only for its own in-process callers). A token always wins ove
    at the current clock; `POST /api/payouts/refresh` polls batch status.
 6. `POST /api/cycle/close` `{brandIds?}` — refunds each brand's unspent deposit through
    `captures/{id}/refund` (deposited − paid − still-pending − returned). A brand with no lift
-   gets everything back.
+   gets everything back. It then states the cycle to each brand through PayPal Invoicing v2
+   (`src/statements.ts`): one line per creator for the commission credited, credits voided by
+   refunds or lost disputes as item discounts, so the invoice total is exactly what Payouts paid.
+   The brand prepaid, so the invoice is sent without notifying anyone and marked paid against the
+   deposit capture (`invoices/{id}/payments`, method OTHER): `MARKED_AS_PAID`, $0 due. A brand
+   with nothing paid gets a `NO_CHARGE` statement and no invoice. Ids, the invoice number and
+   every request id derive from the credits and refunds covered, so a retried close issues
+   nothing twice. The response adds `statements[]`.
 
 Setup: `POST /api/brands {brandId,name,category,upc,currency?}`,
 `POST /api/creators {creatorId,name,paypalId?}`,
@@ -58,6 +65,7 @@ catalogue reports every session it assigns an arm; lift needs the non-buyers).
 | `GET /api/journeys?limit=` | `{journeys: Journey[]}` |
 | `GET /api/journeys?source=mcp` | Sales made through the public `/mcp` endpoint, each with `verdict: {creditable, reason}`. They are kept out of lift, credits and every other number. |
 | `GET /api/shapley` | `{sales: [{captureId, brandId, upc, totalMinor, shares:[{creatorId, amountMinor, state, payoutBatchId}]}]}` |
+| `GET /api/invoices?brandId=` | `{statements: [{id, brandId, invoiceNumber, invoiceId, status, currency, creditedMinor, voidedMinor, paidMinor, returnedMinor, depositedMinor, reservedMinor, invoiceTotalMinor, invoicePaidMinor, invoiceDueMinor, lines[], payoutBatchIds[], refundIds[], creditIds[], recipientViewUrl, invoicerViewUrl, error, createdAt}]}` |
 | `GET /api/payouts` | `{batches: [{senderBatchId, paypalBatchId, status, items[], createdAt}]}` |
 
 `Lift`: `{brandId, name, category, upc, arms:{test|placebo|none:{sessions,purchases}},
