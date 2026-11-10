@@ -55,6 +55,20 @@ export type VerifyFailure =
 
 export type VerifyResult = { ok: true } | { ok: false; reason: VerifyFailure };
 
+/**
+ * PayPal's webhook simulator (`POST /v1/notifications/simulate-event`) signs its deliveries
+ * with PayPal's real cert but over this literal webhook id, not the subscription's, and the
+ * postback API answers FAILURE for them. Self-verify with this id to check a simulator event.
+ */
+export const SIMULATOR_WEBHOOK_ID = "WEBHOOK_ID";
+
+/** True when a request carries any PayPal signature header, so it claims to be from PayPal. */
+export function hasPayPalSignatureHeaders(h: HeaderSource): boolean {
+  const names = ["paypal-transmission-sig", "paypal-cert-url", "paypal-transmission-id"];
+  if (h instanceof Headers) return names.some((n) => h.has(n));
+  return Object.keys(h).some((k) => names.includes(k.toLowerCase()));
+}
+
 const CERT_HOSTS: Record<PayPalEnv, readonly string[]> = {
   sandbox: ["api.sandbox.paypal.com", "api-m.sandbox.paypal.com"],
   live: ["api.paypal.com", "api-m.paypal.com"],

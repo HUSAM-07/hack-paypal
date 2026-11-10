@@ -34,6 +34,34 @@ Winix's first-cycle statement, issued through Invoicing v2 by the engine's own s
 | Invoiced | $383.96, the same as Payouts batch `ME2KV57B7KYNS` |
 | Payment recorded | $383.96 against the prepaid deposit (`invoices/{id}/payments`, method `OTHER`); $616.04 of the $1,000.00 deposit returned |
 
+## Webhooks: PayPal-signed events, verified on the hosted engine
+
+The hosted engine runs simulated PayPal, so its demo webhooks carry no signature. A delivery that does carry PayPal's signature headers (`paypal-transmission-sig`, `paypal-cert-url`, …) is verified for real anyway: SHA256withRSA over `transmissionId|transmissionTime|webhookId|crc32(body)`, with the key from the cert at `paypal-cert-url`, which must be on `api.sandbox.paypal.com` or `api-m.sandbox.paypal.com` under `/v1/notifications/certs/`. Verified deliveries are recorded in D1 (`webhook_proofs`) and listed at [`/api/cited/api/webhook-proof`](https://pact-worker.vincent-wesley-liem.workers.dev/api/cited/api/webhook-proof). They are never dispatched into the simulated demo, so sales, lift, credits and payouts don't change. A delivery with PayPal headers that does not verify is rejected `400`.
+
+Each proof row says what the signature binds to:
+
+| `signedFor` | Meaning |
+|---|---|
+| `subscription` | Signed over our subscription id `8042373202922840X`: PayPal sent this event to CITED's webhook. |
+| `simulator` | Signed by PayPal's cert over the literal id `WEBHOOK_ID`. The simulator deliveries captured below were signed this way, and PayPal's `verify-webhook-signature` API answered `FAILURE` for them. The run against the subscription will show which id it signs those with. It proves PayPal signed these exact bytes, not that they were sent to our subscription. |
+
+What was verified on 2026-11-10, before deploy: two deliveries from PayPal's sandbox simulator (`POST /v1/notifications/simulate-event`), sent through a tunnel to a local `pact-worker` in simulated mode (the hosted configuration). Both were recorded `verified=1`, `signedFor=simulator`, with 0 sales and 0 ledger events. The captured headers and bodies, with PayPal's sandbox cert, are test fixtures that verify offline ([simulator.test.ts](../packages/paypal/src/webhooks/simulator.test.ts)).
+
+| Event | `event_id` (fixed by the simulator) | `paypal-transmission-id` |
+|---|---|---|
+| `PAYMENT.CAPTURE.COMPLETED` | `WH-58D329510W468432D-8HN650336L201105X` | `6692b44f-dd18-11f1-9e97-111303fc7a16` |
+| `PAYMENT.CAPTURE.REFUNDED` | `WH-1GE84257G0350133W-6RW800890C634293G` | `67aed2b4-dd18-11f1-84a3-03f739a3e2c9` |
+
+Cert: `https://api.sandbox.paypal.com/v1/notifications/certs/CERT-360caa42-fca2a594-9eaebfdf` (CN `messageverificationcerts.sandbox.paypal.com`, valid to 2027-05-07).
+
+To prove it on the hosted engine once this is deployed, with the sandbox app's credentials in an env file:
+
+```bash
+node --env-file=<env file with PAYPAL_CLIENT_ID and PAYPAL_CLIENT_SECRET> scripts/webhook-proof.mjs
+```
+
+It asks the simulator to deliver both events to subscription `8042373202922840X` and polls `/api/cited/api/webhook-proof` until both show `verified=true`, printing the event id, `signedFor`, transmission id and cert URL. Proof rows are keyed by transmission id, because the simulator reuses the event ids above on every run. A `subscription` row appears whenever PayPal sends a real event to the subscription, for example `PAYMENT.PAYOUTSBATCH.SUCCESS` after a sandbox payout.
+
 ## Not yet run in the sandbox
 
 The steps before the payout (the buyer's vault approval, the agent's Orders v2 checkouts, captures and the refund webhook) need the sandbox buyer to approve the vault, and have so far run only against the simulated PayPal. The eval numbers behind the $383.96 come from the committed results in [`packages/evals/results`](../packages/evals/results).
