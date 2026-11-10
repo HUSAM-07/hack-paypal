@@ -27,7 +27,9 @@
       "/studio/*",
       "/mcp",
       "/try",
-      "/try/*"
+      "/try/*",
+      "/creators",
+      "/creators/*"
     ]
   },
   "durable_objects": {

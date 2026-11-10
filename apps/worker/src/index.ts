@@ -10,6 +10,7 @@ import {
   statefulDemoHandler,
   studioHandler,
 } from "./cited-apps";
+import { CREATORS_PREFIX, creators } from "./creators/routes";
 import { allowedOrigins, type Env } from "./env";
 import { newId } from "./ids";
 import { live, TRY_PREFIX } from "./live/routes";
@@ -62,6 +63,7 @@ for (const [prefix, handler] of [
 
 app.all(PUBLIC_MCP_PATH, publicMcpHandler);
 app.route(TRY_PREFIX, live);
+app.route(CREATORS_PREFIX, creators);
 
 app.use("*", securityHeaders);
 app.use("/api/auth/*", ipRateLimit);

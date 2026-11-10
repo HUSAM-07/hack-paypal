@@ -8,6 +8,7 @@ import { LIVE_CATEGORY } from "@pact/protocol";
 import { Hono } from "hono";
 import { z } from "zod";
 import { advanceClock, nowOf } from "./clock";
+import { listCreatorTests, PublishTestInput, publishTest } from "./creator-tests";
 import { brandBalances, frozenCaptures, loadStoredCredits, recomputeCredits } from "./credits";
 import { closeCycle } from "./cycle";
 import type { Env } from "./env";
@@ -109,6 +110,14 @@ api.post("/creators", async (c) => {
     .bind(r.data.creatorId, r.data.name, r.data.paypalId ?? null)
     .run();
   return c.json(r.data, 201);
+});
+
+/** An onboarded creator publishes a test and its placebo (from /creators). Never a demo creator. */
+api.post("/tests", async (c) => {
+  const r = await body(c, PublishTestInput);
+  if ("error" in r) return c.json(r, 400);
+  const out = await publishTest(c.env, r.data);
+  return out.ok ? c.json(out, 201) : c.json({ error: out.error }, out.status);
 });
 
 api.post("/listings", async (c) => {
@@ -607,6 +616,14 @@ api.get("/mock/state", (c) => {
       })),
     })),
   });
+});
+
+/** Tests published through /creators. `?creatorId=` narrows to one creator. */
+api.get("/tests", async (c) => {
+  const creatorId = c.req.query("creatorId");
+  if (creatorId !== undefined && !/^[A-Za-z0-9_-]{1,24}$/.test(creatorId))
+    return c.json({ error: "invalid_creator" }, 400);
+  return c.json({ tests: await listCreatorTests(c.env, creatorId) });
 });
 
 api.get("/brands", async (c) => c.json({ brands: await listBrands(c.env) }));

@@ -431,6 +431,29 @@ describe("PAYPAL_MODE toggle", () => {
   });
 });
 
+describe("Log in with PayPal", () => {
+  it("exchanges a code for a user token and returns a stable payer id", async () => {
+    const { paypal } = createPayPalFromEnv({});
+    const tokens = await paypal.identity.exchangeCode("sim_code_123", {
+      redirectUri: "https://x.test/cb",
+    });
+    const info = await paypal.identity.userinfo(tokens.access_token);
+    expect(info.payer_id).toMatch(/^[A-Z2-9]{13}$/);
+    const again = await paypal.identity.userinfo(
+      (await paypal.identity.exchangeCode("sim_code_123")).access_token,
+    );
+    expect(again.payer_id).toBe(info.payer_id);
+    const other = await paypal.identity.exchangeCode("sim_code_456");
+    expect((await paypal.identity.userinfo(other.access_token)).payer_id).not.toBe(info.payer_id);
+  });
+
+  it("rejects a malformed code and an app token at userinfo", async () => {
+    const { paypal } = createPayPalFromEnv({});
+    await expect(paypal.identity.exchangeCode("x")).rejects.toThrow();
+    await expect(paypal.identity.userinfo("A21AAmock-1")).rejects.toThrow();
+  });
+});
+
 describe("ids", () => {
   it("start from idOffset, so a recreated mock never repeats an old id", () => {
     const first = createMockPayPal().vaultWallet().id;
