@@ -47,6 +47,15 @@ Each proof row says what the signature binds to:
 
 What was verified on 2026-11-10, before deploy: two deliveries from PayPal's sandbox simulator (`POST /v1/notifications/simulate-event`), sent through a tunnel to a local `pact-worker` in simulated mode (the hosted configuration). Both were recorded `verified=1`, `signedFor=simulator`, with 0 sales and 0 ledger events. The captured headers and bodies, with PayPal's sandbox cert, are test fixtures that verify offline ([simulator.test.ts](../packages/paypal/src/webhooks/simulator.test.ts)).
 
+After deploy, on 2026-11-11, `scripts/webhook-proof.mjs` ran against the hosted site. Both simulator deliveries reached subscription `8042373202922840X` and were recorded `verified=true`, `signedFor=subscription`: PayPal signed them for our webhook id, not only for the simulator.
+
+| Event | Event id | Transmission id |
+|---|---|---|
+| `PAYMENT.CAPTURE.COMPLETED` | `WH-58D329510W468432D-8HN650336L201105X` | `ef0da7ce-dd1f-11f1-98c7-4f63a0ac1ba3` |
+| `PAYMENT.CAPTURE.REFUNDED` | `WH-1GE84257G0350133W-6RW800890C634293G` | `ef99e1a9-dd1f-11f1-9e97-094a4f799862` |
+
+Live record: [/api/cited/api/webhook-proof](https://pact-worker.vincent-wesley-liem.workers.dev/api/cited/api/webhook-proof).
+
 | Event | `event_id` (fixed by the simulator) | `paypal-transmission-id` |
 |---|---|---|
 | `PAYMENT.CAPTURE.COMPLETED` | `WH-58D329510W468432D-8HN650336L201105X` | `6692b44f-dd18-11f1-9e97-111303fc7a16` |

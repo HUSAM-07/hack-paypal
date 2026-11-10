@@ -15,7 +15,7 @@
 
 **AI + depth:** Model-stratified attributable fraction, 80% lower bound.
 
-**AG Studio:** Brand: arm strip, "+51 extra Winix", deposit meter, and an expandable **Cross-Store Journey & Shapley Split** AG Grid table; custom Analyst delegates to built-in Data and Chart agents. Creator: pending, voided, paid, and co-exposure splits.
+**AG Studio:** Brand: arm strip, "+51 extra Winix", deposit meter, and an expandable **Cross-Store Journey & Shapley Split** AG Grid table; custom Analyst delegates to built-in Data, Page and Widget agents. Creator: pending, voided, paid, and co-exposure splits.
 
 **60-second demo:**
 1. Winix and Levoit fund the purifier programme.
