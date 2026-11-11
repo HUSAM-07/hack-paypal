@@ -56,9 +56,12 @@ export async function cachedRead(
 
   let pending = inflight.get(key);
   if (!pending) {
+    // A read that started before a write finished may carry the old state: keep it only if no
+    // clearReadCache ran while it was loading.
+    const gen = generation;
     pending = (async (): Promise<Entry> => {
       const cache = edgeCache();
-      const edgeKey = new Request(`https://cited-read-cache.internal/g${generation}${key}`);
+      const edgeKey = new Request(`https://cited-read-cache.internal/g${gen}${key}`);
       const fromEdge = await cache?.match(edgeKey).catch(() => undefined);
       const res = fromEdge ?? (await load(req));
       const entry: Entry = {
@@ -67,7 +70,7 @@ export async function cachedRead(
         headers: [...res.headers].filter(([k]) => k !== "set-cookie"),
         body: await res.text(),
       };
-      if (entry.status === 200) {
+      if (entry.status === 200 && gen === generation) {
         memory.set(key, entry);
         if (cache && !fromEdge) {
           const stored = toResponse(entry);
@@ -76,7 +79,9 @@ export async function cachedRead(
         }
       }
       return entry;
-    })().finally(() => inflight.delete(key));
+    })().finally(() => {
+      if (inflight.get(key) === pending) inflight.delete(key);
+    });
     inflight.set(key, pending);
   }
   return toResponse(await pending);

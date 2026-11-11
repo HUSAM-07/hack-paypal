@@ -68,10 +68,16 @@ app.route(CREATORS_PREFIX, creators);
 
 app.use("*", securityHeaders);
 // Any write (an engine call, a PayPal webhook, a Studio action) can change what the shared read
-// cache holds, so it starts this isolate's cache over. Reads stay cached for up to 10s.
+// cache holds, so it starts this isolate's cache over, before the write and again after it so a
+// read that ran during the write is not kept. Reads stay cached for up to 10s.
 app.use("*", async (c, next) => {
-  if (c.req.method !== "GET" && c.req.method !== "HEAD") clearReadCache();
-  await next();
+  const write = c.req.method !== "GET" && c.req.method !== "HEAD";
+  if (write) clearReadCache();
+  try {
+    await next();
+  } finally {
+    if (write) clearReadCache();
+  }
 });
 app.use("/api/auth/*", ipRateLimit);
 
