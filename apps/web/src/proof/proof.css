@@ -627,3 +627,20 @@
 .fig-ledger + .prose {
   margin-top: 1.75rem;
 }
+
+/* Sandbox runs */
+.sandbox-runs {
+  width: 100%;
+}
+.sandbox-runs thead th {
+  text-align: left;
+}
+.sandbox-runs tbody th,
+.sandbox-runs tbody td {
+  vertical-align: top;
+  padding-right: 1rem;
+}
+.sandbox-runs code {
+  font-size: 0.82rem;
+  overflow-wrap: anywhere;
+}
