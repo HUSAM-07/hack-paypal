@@ -39,4 +39,27 @@ describe("cachedRead", () => {
     clearReadCache(); // also stands in for the edge copy expiring
     expect(await (await get("/api/credits")).json()).toEqual({ n: 6, method: "GET" });
   });
+
+  it("does not keep a read that was loading when the cache was cleared", async () => {
+    clearReadCache();
+    let state = "before";
+    let release: () => void = () => {};
+    const gate = new Promise<void>((r) => (release = r));
+    let started: () => void = () => {};
+    const loading = new Promise<void>((r) => (started = r));
+    const load = async () => {
+      const seen = state;
+      started();
+      await gate;
+      return Response.json({ state: seen });
+    };
+    const req = () => new Request("https://engine.internal/api/credits");
+    const stale = cachedRead(req(), load);
+    await loading;
+    state = "after";
+    clearReadCache(); // a write landed while the read was loading
+    release();
+    expect(await (await stale).json()).toEqual({ state: "before" });
+    expect(await (await cachedRead(req(), load)).json()).toEqual({ state: "after" });
+  });
 });
