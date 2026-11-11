@@ -33,6 +33,20 @@ describe("buildTables", () => {
     expect(row(t, "brands", "levoit:todate")).toMatchObject({ causedUnits: 0, paid: 0 });
   });
 
+  it("scopes the arm strip like the tile: the first payout counts only its cycle's sessions", () => {
+    const j = raw.journeys[0];
+    if (!j) throw new Error("fixture has no journey");
+    // A second-cycle sale, captured after the first batch's hold window closed.
+    const later = { ...j, orderId: "O-later", capturedAt: "2026-12-20T00:00:00Z" };
+    const s = buildTables({ ...raw, journeys: [...raw.journeys, later] });
+    const testArm = (scope: string) => row(s, "arms", `winix:test:${scope}`);
+    expect(testArm("first")).toMatchObject({ scopeKey: "first", sessions: 1, purchases: 1 });
+    expect(testArm("todate")).toMatchObject({
+      scopeKey: "todate",
+      sessions: raw.lift[0]?.arms.test.sessions,
+    });
+  });
+
   it("writes text cells as – instead of blank, and a voided credit has no batch", () => {
     expect(row(t, "credits", "C1:housefresh")).toMatchObject({
       state: "voided",

@@ -146,9 +146,11 @@ const ARM_CLASS: Record<string, string> = {
 /** The three arms side by side: the same offers in the same order; only the test differs. */
 export function ArmStrip(p: P) {
   const brandId = p.context?.brandId ?? "winix";
+  const scope = useSyncExternalStore(scopeStore.subscribe, scopeStore.get);
   const rows = useRows(p.widgetApi, "arms", [
     "brandId",
     "brand",
+    "scopeKey",
     "armKey",
     "arm",
     "sessions",
@@ -156,7 +158,7 @@ export function ArmStrip(p: P) {
     "share",
   ]);
   const mine = ARM_ORDER.map((k) =>
-    rows?.find((r) => r.brandId === brandId && r.armKey === k),
+    rows?.find((r) => r.brandId === brandId && r.scopeKey === scope && r.armKey === k),
   ).filter((r): r is NonNullable<typeof r> => !!r);
   if (!mine.length) return <div className="cw-empty">No agent sessions yet.</div>;
   const test = mine.find((r) => r.armKey === "test");
