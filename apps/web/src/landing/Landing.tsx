@@ -102,7 +102,7 @@ function VRandomise() {
   return (
     <div className="vis vis-rand">
       <div className="vis-split">
-        <span className="vis-k">Days 1–7</span>
+        <span className="vis-k">Days 1 to 7</span>
         <span className="vis-bar">
           <span className="vb-test" style={{ width: "50%" }}>
             test 50%
@@ -140,7 +140,7 @@ function VPassport() {
       {"\n  custom_id  "}
       <span className="c-pass">"v1|s_8f2c|test|housefresh|northwind,lumen.sig"</span>
       {"\n\n"}
-      <span className="c-dim">→ the capture joins the sale to its arm</span>
+      <span className="c-dim">The capture joins the sale to its arm.</span>
     </pre>
   );
 }
@@ -196,7 +196,7 @@ const STEPS: HowStep[] = [
   {
     tab: "Passport",
     visual: <VPassport />,
-    title: "The passport travels with the sale.",
+    title: "The passport goes into the PayPal order.",
     body: (
       <>
         The catalogue signs an Agent Affiliate Passport. The shopping agent checks out through
@@ -356,7 +356,11 @@ export function Landing() {
         </section>
 
         <div className="wrap">
-          <Section id="problem" kicker="The problem" title="Agents read. They never click.">
+          <Section
+            id="problem"
+            kicker="The problem"
+            title="Agents read reviews. They don't click links."
+          >
             <div className="prose two-col">
               <p>
                 Affiliate marketing is a $13.81B a year business in the US
@@ -366,8 +370,8 @@ export function Landing() {
               </p>
               <p>
                 Last-click credit was always easy to overwrite; with agents it disappears. What a
-                creator can still prove is that their test <em>changed what agents bought</em>. That
-                proof needs a holdout, not a cookie.
+                creator can still prove is that their test <em>changed what agents bought</em>.
+                Proving it takes a holdout: some agents never see the test.
               </p>
             </div>
           </Section>
@@ -384,8 +388,8 @@ export function Landing() {
                 </div>
                 <figcaption className="caption">
                   <span className="fig-no">Fig. 2</span> The sale's path. The catalogue assigns an
-                  arm and signs the passport; the agent pays the seller through PayPal with the
-                  passport in tow to the engine, which pays the creator.
+                  arm and signs the passport. The agent pays the seller through PayPal, the capture
+                  carries the passport to the engine, and the engine pays the creator.
                 </figcaption>
               </figure>
             }
@@ -408,7 +412,7 @@ export function Landing() {
                   the cheaper one, the lift fell to +24pp; a close-verdict test moved nothing and
                   paid $0.
                   <Ref n={3} /> Agents that read the test elsewhere only shrink the measured lift,
-                  so pay is a floor.
+                  so the payout is a lower limit.
                 </p>
                 <p>
                   <a className="proof-link" href="/proof">

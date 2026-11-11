@@ -236,8 +236,8 @@ const handlers = {
   thought(lane, e) { cell(lane, lanes[lane].stage).append(el("p", { class: "thought" }, e.text)); },
   search(lane, e) {
     const c = at(lane, "catalogue");
-    c.append(el("p", {}, "search_product “" + e.query + "”"));
-    if (e.sellerId) c.append(el("p", { class: "sub" }, "reading " + e.sellerId + "’s offer"));
+    c.append(el("p", {}, "search_product '" + e.query + "'"));
+    if (e.sellerId) c.append(el("p", { class: "sub" }, "reading " + e.sellerId + "'s offer"));
   },
   results(lane, e) {
     const st = lanes[lane];
@@ -259,13 +259,13 @@ const handlers = {
     lanes[lane].paid = e;
     at(lane, "chooses").prepend(el("p", { class: "pick" }, e.product, el("span", { class: "price num" }, usd(e.total.amountMinor))));
     at(lane, "paypal").append(
-      el("p", {}, "Paid " + e.seller + " through ", el("span", { class: "pp" }, "PayPal"), " from the buyer’s linked wallet"),
+      el("p", {}, "Paid " + e.seller + " through ", el("span", { class: "pp" }, "PayPal"), " from the buyer's linked wallet"),
       el("div", { class: "ids" }, "order", el("code", {}, e.orderId), "capture", el("code", {}, e.captureId || "–")),
       el("p", { class: "sub" }, "Passport in custom_id: " + e.passportChars + " of 127 characters"));
   },
   joined(lane, e) {
     at(lane, "engine").append(el("p", {}, e.unattributedReason
-      ? (e.unattributedReason === "capture_not_received" ? "The capture webhook hasn’t arrived." : "Passport rejected: " + e.unattributedReason)
+      ? (e.unattributedReason === "capture_not_received" ? "The capture webhook hasn't arrived." : "Passport rejected: " + e.unattributedReason)
       : "Capture webhook joined to the " + (e.arm === "none" ? "held-out" : e.arm) + " arm by the signed passport."));
   },
   verdict(lane, e) {
@@ -278,7 +278,7 @@ const handlers = {
     } else {
       credit = el("p", { class: "credit" }, el("b", {}, "HouseFresh not credited"), " · " + v.why.replace(/^Not credited: /, ""));
     }
-    setOut(lane, LANE[lane] + (p ? " · bought from " + p.seller + " · " + usd(p.total.amountMinor) : ""), head, credit, e.reason ? "“" + e.reason + "”" : null, false);
+    setOut(lane, LANE[lane] + (p ? " · bought from " + p.seller + " · " + usd(p.total.amountMinor) : ""), head, credit, e.reason ? '"' + e.reason + '"' : null, false);
   },
   error(lane, e) {
     lanes[lane].error = e.message;
@@ -292,7 +292,7 @@ async function runPair(request) {
   const res = await fetch("/try/pair", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ request }) });
   if (!res.ok || !res.body) {
     const j = await res.json().catch(() => ({}));
-    throw new Error(j.message || "The side by side didn’t start (" + res.status + ").");
+    throw new Error(j.message || "The side by side didn't start (" + res.status + ").");
   }
   reset();
   board.hidden = false;
@@ -396,19 +396,19 @@ ${siteHeader("try")}
 <div class="controls">
 <button id="go" type="submit">Run side by side</button>
 <button id="five" type="button" class="quiet">Run 5 pairs</button>
-<p class="who${o.scripted ? " scripted" : ""}">Agents: <b>${esc(o.agent)}</b> · each pays the seller through PayPal from the buyer’s linked wallet (simulated PayPal)</p>
+<p class="who${o.scripted ? " scripted" : ""}">Agents: <b>${esc(o.agent)}</b> · each pays the seller through PayPal from the buyer's linked wallet (simulated PayPal)</p>
 </div>
 <p class="fixed">Both agents get the same request and the same offers in the same order. For this side by side we fix the arms; the real catalogue assigns them at random.</p>
 <p id="status" class="status" role="status" aria-live="polite"></p>
 </form>
 <section id="board" class="board" hidden aria-label="The two agents' runs">
-<div class="spine head" style="--r:1"></div>${laneHead("test", "Test arm", "Sees HouseFresh’s test of the Winix A230", o.agent)}${laneHead("held", "Held out", "Sees everything except the test", o.agent)}
+<div class="spine head" style="--r:1"></div>${laneHead("test", "Test arm", "Sees HouseFresh's test of the Winix A230", o.agent)}${laneHead("held", "Held out", "Sees everything except the test", o.agent)}
 ${rows}
 <div class="spine result" style="--r:${last}"><span>Bought</span></div><div class="result-cell test" style="--r:${last}"><div id="test-out" class="out test wait" aria-live="polite"></div></div><div class="result-cell held" style="--r:${last}"><div id="held-out" class="out held wait" aria-live="polite"></div></div>
 </section>
 <section class="after">
-<div class="note"><p>One pair is an anecdote. Across 147 forced-buy sessions on GPT, Gemini and Sonnet, agents shown the test bought the Winix every time, held-out agents 8% of the time: a lift of +94 percentage points. <a href="/proof">See the proof</a>.</p>
-<p>Live runs keep their own record. They never change the recorded demo’s numbers on the console, and a side by side counts as two runs against the hourly limit.</p></div>
+<div class="note"><p>One pair shows one outcome, not a lift. Across 147 forced-buy sessions on GPT, Gemini and Sonnet, agents shown the test bought the Winix every time, held-out agents 8% of the time: a lift of +94 percentage points. <a href="/proof">See the proof</a>.</p>
+<p>Live runs keep their own record. They never change the recorded demo's numbers on the console, and a side by side counts as two runs against the hourly limit.</p></div>
 <div id="tally" class="tally" hidden aria-live="polite"><h3>Winix picks over five pairs</h3>
 <div class="trow test"><b>Test arm</b><span class="dots" id="test-dots"></span><span id="test-count" class="num"></span></div>
 <div class="trow held"><b>Held out</b><span class="dots" id="held-dots"></span><span id="held-count" class="num"></span></div>

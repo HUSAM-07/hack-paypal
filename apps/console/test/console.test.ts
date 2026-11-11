@@ -186,13 +186,13 @@ describe("side-by-side runs (#28)", () => {
   it("plays both runs as aligned transcripts: the review, the Northwind → Lumen hop, the verdicts", async () => {
     const html = await (await appWith(RUNS).request("/")).text();
     expect(html).toContain("Without the review");
-    expect(html).toContain("With HouseFresh’s review");
+    expect(html).toContain("With HouseFresh's review");
     expect(html).toContain("Levoit Core 300</b> at Northwind");
-    expect(html).toContain("HouseFresh’s review, on Northwind’s offer");
+    expect(html).toContain("HouseFresh's review, on Northwind's offer");
     expect(html).toMatch(
-      /Winix A230<\/b> at Lumen · \$95\.99<small>\$4\.00 under Northwind’s offer/,
+      /Winix A230<\/b> at Lumen · \$95\.99<small>\$4\.00 under Northwind's offer/,
     );
-    expect(html).toContain("the buyer’s saved PayPal");
+    expect(html).toContain("the buyer's saved PayPal");
     expect(html).toContain("order ORD-W");
     expect(html).toContain(
       "+$7.68</span><small>to HouseFresh · caused by the review · held 30 days",

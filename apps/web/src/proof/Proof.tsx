@@ -587,11 +587,7 @@ export function Proof() {
             </div>
           </Section>
 
-          <Section
-            id="design"
-            kicker="The design"
-            title="Only the test changes. Nothing else does."
-          >
+          <Section id="design" kicker="The design" title="Only the test changes between arms.">
             <div className="design">
               <div className="design-item">
                 <h3 className="h3">Three arms</h3>
@@ -633,7 +629,7 @@ export function Proof() {
           <Section
             id="result"
             kicker="The result"
-            title="Positive in every model, with room to spare."
+            title="The lift was positive in every model."
             wide={<IntervalFigure />}
           >
             <div className="prose">
@@ -778,9 +774,9 @@ export function Proof() {
                 </tbody>
               </table>
               <p className="caption">
-                P1–P4: <Src path={PATHS.priceReg}>PREREGISTRATION-PRICE-MATCHED.md</Src>. H1–H4:{" "}
-                <Src path={PATHS.catalogueReg}>PREREGISTRATION.md</Src>. Verdicts are computed on
-                this page from the summaries, not typed in.
+                P1 to P4: <Src path={PATHS.priceReg}>PREREGISTRATION-PRICE-MATCHED.md</Src>. H1 to
+                H4: <Src path={PATHS.catalogueReg}>PREREGISTRATION.md</Src>. Verdicts are computed
+                on this page from the summaries, not typed in.
               </p>
             </div>
           </Section>
@@ -788,7 +784,7 @@ export function Proof() {
           <Section
             id="money"
             kicker="From bound to payout"
-            title="The bound, not the estimate, sets the pay."
+            title="Pay uses the lower bound, not the estimate."
           >
             <div className="prose">
               <p>
@@ -830,7 +826,7 @@ export function Proof() {
           <Section
             id="sandbox"
             kicker="On PayPal's sandbox"
-            title="Every money step, run against real PayPal."
+            title="Every money step also ran on the PayPal sandbox."
           >
             <div className="prose">
               <p>
@@ -877,12 +873,12 @@ export function Proof() {
           <Section id="limits" kicker="Limitations" title="What this does not show.">
             <ul className="limits">
               <li>
-                <strong>Deference, not persuasion.</strong> Without a test, agents default to the
+                <strong>Agents defer to verdicts.</strong> Without a test, agents default to the
                 Levoit; shown a test that names the Winix, they flip. This mostly measures how far
                 agents defer to an explicit verdict.
               </li>
               <li>
-                <strong>A lab, not a market.</strong> Three sellers, two purifiers, four buyer
+                <strong>A small lab setup.</strong> Three sellers, two purifiers, four buyer
                 requests, our own fixtures. Lift in a real catalogue with many rivals is unmeasured.
               </li>
               <li>
@@ -890,12 +886,12 @@ export function Proof() {
                 temperature 0.7 is not. A re-run reproduces the design, not the outputs.
               </li>
               <li>
-                <strong>Small cells.</strong> 18–19 sessions per model and arm. Per-model bounds are
-                wide (Fig. 2), so pay uses only the pooled bound.
+                <strong>Small cells.</strong> 18 or 19 sessions per model and arm. Per-model bounds
+                are wide (Fig. 2), so pay uses only the pooled bound.
               </li>
               <li>
-                <strong>Pay is a floor.</strong> A held-out agent that reads the test somewhere else
-                still counts as held out, which can only shrink the measured lift.
+                <strong>The payout is a lower limit.</strong> A held-out agent that reads the test
+                somewhere else still counts as held out, which can only shrink the measured lift.
               </li>
               <li>
                 <strong>Earlier runs were weaker.</strong> Before these studies, earlier models
