@@ -1,7 +1,10 @@
 #!/usr/bin/env node
 // Deploys pact-worker to one target: D1 migrations, then the Worker.
 //
-//   node scripts/deploy.mjs [target] [--dry-run | --rollback]
+//   node scripts/deploy.mjs [target] [--dry-run | --rollback | --print-config]
+//
+// --print-config writes the target's wrangler config and prints its file name (relative to
+// apps/worker), for other wrangler commands against that target: `--config "$(...)"`.
 //
 // A target is wrangler.jsonc plus a few overrides, so a binding added to wrangler.jsonc
 // reaches every target. Wrangler `env` blocks don't inherit bindings or vars, so each
@@ -34,7 +37,9 @@ const mode = args.includes("--dry-run")
   ? "dry-run"
   : args.includes("--rollback")
     ? "rollback"
-    : "deploy";
+    : args.includes("--print-config")
+      ? "print-config"
+      : "deploy";
 
 if (!(target in TARGETS)) {
   fail(`Unknown target "${target}". Targets: ${Object.keys(TARGETS).join(", ")}`);
@@ -46,6 +51,10 @@ const wrangler = (...a) =>
     stdio: "inherit",
   });
 
+if (mode === "print-config") {
+  console.log(config);
+  process.exit(0);
+}
 console.log(`▸ ${mode} pact-worker → ${target}`);
 if (mode === "dry-run") {
   wrangler("deploy", "--dry-run", "--outdir", mkdtempSync(join(tmpdir(), "pact-worker-")));

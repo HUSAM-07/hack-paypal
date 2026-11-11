@@ -1,5 +1,7 @@
 name: reseed-hosted
 # Manual, plus an hourly safety net (snapshot mode). Refreshes the CITED data on the hosted worker without ever showing it empty.
+# Runs once per deploy target (workers-dev, shipwith: see apps/worker/scripts/deploy.mjs), each in
+# its own GitHub environment and Cloudflare account. A manual run can pick one target.
 #
 # snapshot (default): replays the 14-beat demo against a local `wrangler dev` of pact-worker
 #   inside this job, checks it against the locked numbers, exports the CITED tables as one SQL
@@ -21,6 +23,11 @@ on:
     - cron: "23 * * * *"
   workflow_dispatch:
     inputs:
+      target:
+        description: Reseed target
+        type: choice
+        options: [all, workers-dev, shipwith]
+        default: all
       mode:
         description: snapshot (atomic swap) or replay (old, leaves the site empty for 10+ min)
         type: choice
@@ -34,12 +41,21 @@ jobs:
   reseed:
     # The hourly run honours the freeze quietly; a manual run says why it stopped (next step).
     if: github.event_name != 'schedule' || vars.DEPLOY_FREEZE != 'true'
+    strategy:
+      fail-fast: false
+      matrix:
+        target: ${{ fromJSON(inputs.target && inputs.target != 'all' && format('["{0}"]', inputs.target) || '["workers-dev","shipwith"]') }}
     runs-on: ubuntu-latest
-    environment: production
-    concurrency: { group: deploy-production, cancel-in-progress: false }
+    timeout-minutes: 30
+    # Same environment and lock as that target's deploy in ci.yml, so a reseed never races a deploy.
+    environment: ${{ matrix.target == 'workers-dev' && 'production' || matrix.target }}
+    concurrency:
+      group: ${{ matrix.target == 'workers-dev' && 'deploy-production' || format('deploy-{0}', matrix.target) }}
+      cancel-in-progress: false
     env:
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
       CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      DEPLOY_URL: ${{ vars.DEPLOY_URL }}
     steps:
       - name: Respect the deploy freeze
         if: vars.DEPLOY_FREEZE == 'true' && !inputs.force
@@ -50,6 +66,13 @@ jobs:
       - uses: actions/setup-node@v4
         with: { node-version: 22, cache: npm }
       - run: npm ci
+      # Every remote D1 command below goes to this target's database. deploy.mjs refuses if the
+      # environment's CLOUDFLARE_ACCOUNT_ID belongs to another target.
+      - name: Resolve the target's wrangler config
+        run: |
+          : "${DEPLOY_URL:?Set the DEPLOY_URL variable on this environment}"
+          cfg=$(node apps/worker/scripts/deploy.mjs ${{ matrix.target }} --print-config)
+          echo "WRANGLER_CONFIG=$cfg" >> "$GITHUB_ENV"
 
       - name: Build the snapshot on a local worker
         if: inputs.mode != 'replay'
@@ -60,23 +83,23 @@ jobs:
       - name: Keep the snapshot
         if: inputs.mode != 'replay'
         uses: actions/upload-artifact@v4
-        with: { name: cited-snapshot, path: cited-snapshot.sql, retention-days: 30 }
+        with: { name: 'cited-snapshot-${{ matrix.target }}', path: cited-snapshot.sql, retention-days: 30 }
       - name: Note the restore point
         # If anything looks wrong afterwards:
-        #   npx wrangler d1 time-travel restore pact --bookmark <this bookmark>
+        #   npx wrangler d1 time-travel restore pact --bookmark <this bookmark> --config <that config>
         working-directory: apps/worker
         continue-on-error: true
-        run: npx wrangler d1 time-travel info pact
+        run: npx wrangler d1 time-travel info pact --config "$WRANGLER_CONFIG"
       - name: Swap the CITED tables in one atomic import
         if: inputs.mode != 'replay'
         working-directory: apps/worker
-        run: npx wrangler d1 execute pact --remote --yes --file ../../cited-snapshot.sql
+        run: npx wrangler d1 execute pact --remote --yes --config "$WRANGLER_CONFIG" --file ../../cited-snapshot.sql
 
       - name: Wipe the CITED ledger (replay mode)
         if: inputs.mode == 'replay'
         working-directory: apps/worker
         run: |
-          npx wrangler d1 execute pact --remote --command "
+          npx wrangler d1 execute pact --remote --config "$WRANGLER_CONFIG" --command "
             DELETE FROM credits; DELETE FROM review_flags; DELETE FROM payout_batches;
             DELETE FROM deposit_refunds; DELETE FROM deposits; DELETE FROM brand_statements;
             DELETE FROM refunds; DELETE FROM sales; DELETE FROM orders; DELETE FROM agent_sessions;
@@ -90,15 +113,15 @@ jobs:
           CITED_API_TOKEN: ${{ secrets.CITED_API_TOKEN }}
         run: >-
           npm run demo:cited -- --use-running
-          --engine-url "${{ vars.DEPLOY_URL }}/api/cited"
-          --catalogue-url "${{ vars.DEPLOY_URL }}/catalogue"
+          --engine-url "$DEPLOY_URL/api/cited"
+          --catalogue-url "$DEPLOY_URL/catalogue"
           --out runs.jsonl
       - name: Load the console's run records (replay mode)
         if: inputs.mode == 'replay'
         working-directory: apps/worker
         run: |
           node scripts/runs-to-sql.mjs ../../runs.jsonl > ../../runs.sql
-          npx wrangler d1 execute pact --remote --yes --file ../../runs.sql
+          npx wrangler d1 execute pact --remote --yes --config "$WRANGLER_CONFIG" --file ../../runs.sql
 
       - name: Verify the hosted data
-        run: node apps/worker/scripts/verify-cited.mjs "${{ vars.DEPLOY_URL }}"
+        run: node apps/worker/scripts/verify-cited.mjs "$DEPLOY_URL"
