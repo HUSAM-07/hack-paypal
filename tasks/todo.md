@@ -1,3 +1,27 @@
+# CITED UI redesign (branch `feat/ui-redesign`, 2026-11-12)
+
+Goal: one light, airy design system across every CITED page, with agentsUI blocks
+(`npx shadcn add https://components.ihusam.tech/r/<name>.json`) for the agent surfaces.
+Deadline is 2026-11-12 12:00 PT; the demo video was cut against the current UI, so
+every beat in `cited/spec/CITED-packet.md` must still read the same numbers.
+
+Design language
+- White page, near-black text, Geist for text, Geist Mono for figures; large display headings at weight 400, slight negative tracking.
+- Framed column: 1px vertical guide lines down the page, full-width horizontal rules between sections, alternating white / soft-grey bands.
+- Hero: CSS-only sky gradient with soft cloud shapes (no copied imagery), centered headline, black pill CTA, an "app window" mockup of the agent shopping session.
+- Small blue eyebrow links with a chevron above each section heading.
+- Feature cards: pastel mesh-gradient panels with a real product snippet inside, caption below (bold lead-in + grey text).
+- Trust grid: four cards (signed passport, void before pay, randomised holdout, batch payouts).
+- Dark mode kept as a token swap.
+
+Steps
+- [ ] Tokens + shared header (`apps/web/src/styles/tokens.css`, `SITE_HEADER_CSS` in `@pact/protocol`) so server-rendered pages follow
+- [ ] Landing `/`: hero, problem, how it works (4 cards), proof strip, trust grid, CTA footer
+- [ ] Studio `/studio`: app-window shell; always-on agents panel (Agent Inbox / Running Now / Away Summary over real engine data), Approval Card for Maya, Cited Answer for the Analyst, Usage Meter for the deposit
+- [ ] `/proof` restyle to the new tokens
+- [ ] Server-rendered pages (console, creators, try, payout, mcp): tokens + header only
+- [ ] Verify: typecheck, lint, tests, e2e, `CITED_ENGINE=worker npm run demo:cited`, screenshots light/dark/mobile
+
 # Pact — Build Plan
 
 Spec: [docs/spec.md](../docs/spec.md). Deadline: **Nov 12, 12:00pm PT**. Early check: **Nov 5**.

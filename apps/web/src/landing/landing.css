@@ -1,20 +1,6 @@
 /* CITED landing (and the base of /proof). Plain CSS, inlined at prerender (scripts/prerender.ts).
-   Dark: near-black paper, a light serif for display, Geist for text, Geist Mono for labels. */
+   Light by default (dark follows the OS): large Geist for display and text, Geist Mono for figures. */
 
-@font-face {
-  font-family: "Newsreader";
-  src: url("/fonts/newsreader-latin-opsz-v1.woff2") format("woff2");
-  font-weight: 200 800;
-  font-style: normal;
-  font-display: swap;
-}
-@font-face {
-  font-family: "Newsreader";
-  src: url("/fonts/newsreader-latin-opsz-italic-v1.woff2") format("woff2");
-  font-weight: 200 800;
-  font-style: italic;
-  font-display: swap;
-}
 @font-face {
   font-family: "Geist";
   src: url("/fonts/geist-latin-v1.woff2") format("woff2");
@@ -31,26 +17,74 @@
 }
 
 :root {
-  --bg: #faf8f4;
-  --paper: #fffdf9;
-  --raise: #f1ede5;
-  --ink: #16181d;
+  --bg: #ffffff;
+  --paper: #ffffff;
+  --raise: #f6f6f7;
+  --ink: #0b0d10;
   --ink-2: #33363d;
-  --muted: #5b5f68;
-  --dim: #cfc9bd;
-  --rule: #e6e2da;
-  --rule-strong: #cfc9bd;
+  --muted: #5f636b;
+  --dim: #c9cbd0;
+  --rule: #ececee;
+  --rule-strong: #d9dadd;
   --proof: #1f7a55;
-  --proof-tint: #e7f1ec;
+  --proof-tint: #e8f3ee;
   --held: #b7791f;
-  --held-ink: #8a5a12; /* amber for text: --held is 3.4:1 on --bg, below AA */
+  --held-ink: #8a5a12; /* amber for text: --held is below AA on white */
   --void: #9b3b2a;
-  --none: #c9c4b9;
-  --cream: #16181d; /* primary button fill */
-  --serif: "Newsreader", "Iowan Old Style", Georgia, serif;
+  --none: #c9cbd0;
+  --cream: #0b0d10; /* primary button fill */
+  --cream-hover: #2b2e36;
+  --link: #2e6be6;
+  /* Display type: large Geist at a light weight. The name is historical; rules use it widely. */
+  --serif: "Geist", "Geist Fallback", ui-sans-serif, system-ui, sans-serif;
   --sans: "Geist", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
   --mono: "Geist Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  --frame: 1200px;
   color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0b0c0e;
+    --paper: #111215;
+    --raise: #16171a;
+    --ink: #f3f4f6;
+    --ink-2: #c9cbd0;
+    --muted: #9a9da5;
+    --dim: #3a3d44;
+    --rule: #222429;
+    --rule-strong: #33363d;
+    --proof: #4fbf8b;
+    --proof-tint: #12291f;
+    --held: #e0a34a;
+    --held-ink: #e8b46a;
+    --void: #e0735f;
+    --none: #3a3d44;
+    --cream: #f3f4f6;
+    --cream-hover: #d9dadd;
+    --link: #7aa7ff;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0b0c0e;
+  --paper: #111215;
+  --raise: #16171a;
+  --ink: #f3f4f6;
+  --ink-2: #c9cbd0;
+  --muted: #9a9da5;
+  --dim: #3a3d44;
+  --rule: #222429;
+  --rule-strong: #33363d;
+  --proof: #4fbf8b;
+  --proof-tint: #12291f;
+  --held: #e0a34a;
+  --held-ink: #e8b46a;
+  --void: #e0735f;
+  --none: #3a3d44;
+  --cream: #f3f4f6;
+  --cream-hover: #d9dadd;
+  --link: #7aa7ff;
+  color-scheme: dark;
 }
 
 *,
@@ -213,7 +247,7 @@ em {
   border-color: var(--cream);
 }
 .btn-primary:hover {
-  background: #2b2e36;
+  background: var(--cream-hover);
 }
 .btn-quiet:hover {
   border-color: var(--ink-2);
@@ -621,7 +655,7 @@ em {
 .vb-test {
   background: var(--proof-tint);
   color: var(--proof);
-  box-shadow: inset 0 0 0 1px rgba(31, 122, 85, 0.35);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--proof) 35%, transparent);
 }
 .vb-hold {
   background: var(--raise);
