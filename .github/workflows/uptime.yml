@@ -1,0 +1,66 @@
+# Checks the hosted demo every 30 minutes through judging (to Dec 21). On failure it opens one
+# issue titled "Hosted demo is down" (GitHub emails watchers); when the site recovers it comments
+# and closes it. Reads only public pages: no secrets.
+name: uptime
+
+on:
+  schedule:
+    - cron: "7,37 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: uptime
+  cancel-in-progress: false
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      BASE: https://pact-worker.vincent-wesley-liem.workers.dev
+      TITLE: Hosted demo is down
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - name: Probe pages and the engine
+        id: probe
+        run: |
+          paths="/ /console?clean=1 /console/payout?clean=1 /studio?view=first /proof /try /mcp /api/cited/health /api/cited/api/lift /api/cited/api/payouts /studio/api/data"
+          failed=""
+          for p in $paths; do
+            ok=""
+            for attempt in 1 2 3; do
+              code=$(curl -s -o /tmp/body -w "%{http_code}" --max-time 20 "$BASE$p" || echo 000)
+              if [ "$code" = "200" ]; then ok=1; break; fi
+              sleep 10
+            done
+            if [ -z "$ok" ]; then
+              failed="$failed\n- \`$p\` → $code: $(head -c 200 /tmp/body | tr -d '\n`%\\')"
+            fi
+            echo "$p ${code}"
+          done
+          # The demo's locked payout must still be there.
+          if ! curl -s --max-time 20 "$BASE/api/cited/api/payouts" | grep -q '"amountMinor":38396'; then
+            failed="$failed\n- \`/api/cited/api/payouts\` no longer shows HouseFresh's \$383.96"
+          fi
+          printf "failed<<EOF\n%b\nEOF\n" "$failed" >> "$GITHUB_OUTPUT"
+      - name: Open or update the issue
+        if: steps.probe.outputs.failed != ''
+        env:
+          FAILED: ${{ steps.probe.outputs.failed }}
+        run: |
+          body=$(printf "Uptime check failed at %s UTC ([run](%s/%s/actions/runs/%s)):\n%s" \
+            "$(date -u +%FT%TZ)" "$GITHUB_SERVER_URL" "$GITHUB_REPOSITORY" "$GITHUB_RUN_ID" \
+            "$FAILED")
+          n=$(gh issue list --state open --search "in:title \"$TITLE\"" --json number --jq '.[0].number')
+          if [ -n "$n" ]; then gh issue comment "$n" --body "$body"; else gh issue create --title "$TITLE" --body "$body"; fi
+          exit 1
+      - name: Close the issue on recovery
+        if: steps.probe.outputs.failed == ''
+        run: |
+          n=$(gh issue list --state open --search "in:title \"$TITLE\"" --json number --jq '.[0].number')
+          if [ -n "$n" ]; then gh issue close "$n" --comment "Recovered at $(date -u +%FT%TZ)."; fi

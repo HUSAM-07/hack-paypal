@@ -74,10 +74,11 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           CITED_API_TOKEN: ${{ secrets.CITED_API_TOKEN }}
           AG_STUDIO_LICENSE_KEY: ${{ secrets.AG_STUDIO_LICENSE_KEY }}
+          AG_GRID_LICENSE_KEY: ${{ secrets.AG_GRID_LICENSE_KEY }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         # Each only when set; values go through stdin and are never echoed.
         run: |
-          for name in CITED_API_TOKEN AG_STUDIO_LICENSE_KEY ANTHROPIC_API_KEY; do
+          for name in CITED_API_TOKEN AG_STUDIO_LICENSE_KEY AG_GRID_LICENSE_KEY ANTHROPIC_API_KEY; do
             if [ -n "${!name}" ]; then
               printf "%s" "${!name}" | npx wrangler secret put "$name" >/dev/null
               echo "pushed $name"

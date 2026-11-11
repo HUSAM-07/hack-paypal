@@ -63,6 +63,59 @@ function Src({ path, children }: { path: string; children?: ReactNode }) {
   );
 }
 
+/* ---------- The PayPal sandbox runs (ids only; see cited/SANDBOX-EVIDENCE.md) ---------- */
+
+const SANDBOX_RUNS: { step: string; api: string; id: string; status: string }[] = [
+  {
+    step: "Buyer links PayPal to the agent once",
+    api: "Vault v3: setup token → payment token",
+    id: "order 50542347YD822594J",
+    status: "COMPLETED",
+  },
+  {
+    step: "Agent pays the seller, passport in custom_id",
+    api: "Orders v2, payment_source.paypal.vault_id",
+    id: "8E6030344K4198450 · 8F195714E6441535R · 4XV50799SF6195530",
+    status: "COMPLETED",
+  },
+  {
+    step: "Brand funds the programme",
+    api: "Orders v2 capture",
+    id: "capture 1RW3974186481415R",
+    status: "COMPLETED",
+  },
+  {
+    step: "Seller refunds a sale; its credit is voided",
+    api: "Payments v2 refund, Agent Toolkit",
+    id: "refund 81C245246C527113H",
+    status: "COMPLETED",
+  },
+  {
+    step: "PayPal tells CITED, signature verified",
+    api: "Webhooks, SHA256withRSA",
+    id: "7 events on subscription 8042373202922840X",
+    status: "verified",
+  },
+  {
+    step: "HouseFresh paid $383.96",
+    api: "Payouts v1, batch",
+    id: "batch ME2KV57B7KYNS",
+    status: "SUCCESS",
+  },
+  {
+    step: "Engine's own payout run",
+    api: "Payouts v1, recipient PAYPAL_ID",
+    id: "batch GB9U5DYBGHLY4",
+    status: "SUCCESS",
+  },
+  {
+    step: "Winix's statement, settled against the deposit",
+    api: "Invoicing v2",
+    id: "INV2-TNXC-9GA6-W36V-WTF6",
+    status: "MARKED_AS_PAID",
+  },
+];
+
 /* ---------- Fig. 1: every session of the headline study ---------- */
 
 const ARMS = [
@@ -491,6 +544,8 @@ export function Proof() {
               <a href="#data">Download every session</a>
               <span aria-hidden="true"> · </span>
               <a href={blob(PATHS.priceReg)}>Read the pre-registration</a>
+              <span aria-hidden="true"> · </span>
+              <a href="#sandbox">See it run on PayPal's sandbox</a>
             </p>
           </div>
           <SessionsFigure />
@@ -770,6 +825,53 @@ export function Proof() {
                 brand's statement: <Src path="cited/SANDBOX-EVIDENCE.md">SANDBOX-EVIDENCE.md</Src>.
               </p>
             </div>
+          </Section>
+
+          <Section
+            id="sandbox"
+            kicker="On PayPal's sandbox"
+            title="Every money step, run against real PayPal."
+          >
+            <div className="prose">
+              <p>
+                The hosted demo uses a simulated PayPal so anyone can click through it without keys.
+                Each step it simulates was also run against the PayPal sandbox through the engine's
+                own code. These are the PayPal ids; credentials, emails and vault ids are left out.
+              </p>
+            </div>
+            <figure className="fig fig-sandbox">
+              <table className="ledger sandbox-runs">
+                <thead>
+                  <tr>
+                    <th scope="col">Step</th>
+                    <th scope="col">PayPal API</th>
+                    <th scope="col">Sandbox id</th>
+                    <th scope="col">Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {SANDBOX_RUNS.map((r) => (
+                    <tr key={r.step}>
+                      <th scope="row">{r.step}</th>
+                      <td>{r.api}</td>
+                      <td>
+                        <code>{r.id}</code>
+                      </td>
+                      <td>{r.status}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              <figcaption className="caption">
+                <span className="fig-no">Table 2</span> Run on 2026-11-10 and 11. The signed
+                webhooks are listed live at{" "}
+                <a className="src-link" href="/api/cited/api/webhook-proof">
+                  /api/cited/api/webhook-proof
+                </a>
+                ; the full record, and the scripts that reproduce it, are in{" "}
+                <Src path="cited/SANDBOX-EVIDENCE.md">SANDBOX-EVIDENCE.md</Src>.
+              </figcaption>
+            </figure>
           </Section>
 
           <Section id="limits" kicker="Limitations" title="What this does not show.">

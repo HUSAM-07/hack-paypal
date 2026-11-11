@@ -4,7 +4,24 @@
 
 AI shopping agents read product tests but never click an affiliate link, so creators go unpaid when an agent buys on their verdict. CITED fixes that. Brands fund a category programme (say, air purifiers), never a verdict. In PayPal's agent catalogue (our mock of Store Sync), each shopping session randomly sees a creator's test, a placebo (other content from the same creator), or nothing; ranking never changes. A signed **Agent Affiliate Passport** rides in the PayPal Orders v2 `purchase_units[].custom_id`, so the sale joins back to its arm even when the agent pays a different seller. There are no storefronts: the agent checks out through PayPal itself, paying the seller's PayPal account from the wallet the buyer linked to it ([AGENT-CHECKOUT.md](cited/spec/AGENT-CHECKOUT.md)). The engine credits only the sales the test caused (80% lower bound, Shapley split across co-exposed creators), holds credits 30 days, voids them on refunds, freezes them while a dispute is open (voided if the buyer wins), then pays creators by batch Payouts and refunds the unspent deposit. AG Studio shows it to the brand and the creator.
 
-Built for the [PayPal AI Hackathon](https://paypalaihackathon.devpost.com/). Licensed [MIT](LICENSE). Everything runs with no API keys: PayPal is simulated and the shopper agents are scripted by default.
+Built for the [PayPal AI Hackathon](https://paypalaihackathon.devpost.com/). Licensed [MIT](LICENSE).
+
+## Runs on PayPal
+
+Every money step ran against the PayPal sandbox through the engine's own code. The ids below are PayPal's; the full record and the scripts that reproduce it are in [SANDBOX-EVIDENCE.md](cited/SANDBOX-EVIDENCE.md), and the same table is on [/proof](https://pact-worker.vincent-wesley-liem.workers.dev/proof#sandbox).
+
+| Step | PayPal API | Sandbox id |
+|---|---|---|
+| Buyer links PayPal to their agent once | Vault v3 (setup token → payment token) | order `50542347YD822594J` |
+| Agent pays the seller, passport in `custom_id` | Orders v2 with `payment_source.paypal.vault_id` | `8E6030344K4198450`, `8F195714E6441535R`, `4XV50799SF6195530` |
+| Seller refunds a sale; its credit is voided | Refunds (PayPal Agent Toolkit `create_refund`) | `81C245246C527113H` |
+| PayPal notifies CITED; signature verified | Webhooks (SHA256withRSA, subscription `8042373202922840X`) | 7 events, [listed live](https://pact-worker.vincent-wesley-liem.workers.dev/api/cited/api/webhook-proof) |
+| HouseFresh paid $383.96 | Payouts v1 (batch) | `ME2KV57B7KYNS`, `SUCCESS` |
+| Brand's statement settled against its deposit | Invoicing v2 | `INV2-TNXC-9GA6-W36V-WTF6`, `MARKED_AS_PAID` |
+
+AI does three jobs: shopping agents (Claude, GPT and Gemini) read the catalogue and buy through PayPal; a pre-registered eval of 963 sessions across those models measures how much a creator's test moves their choice; and an AG Studio Analyst agent answers the brand's questions from the ledger.
+
+The hosted demo uses a simulated PayPal so anyone can click through it without keys, and its seeded shopper runs are scripted. [`/try`](https://pact-worker.vincent-wesley-liem.workers.dev/try) runs a live model. Locally, everything runs with no keys; set `PAYPAL_MODE=sandbox` to use the sandbox (below).
 
 ## Try it
 
