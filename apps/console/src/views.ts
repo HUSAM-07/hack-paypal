@@ -50,6 +50,7 @@ a{color:inherit}
 .lane-head{display:flex;justify-content:space-between;align-items:baseline;gap:1rem;margin-bottom:1.4rem}
 .lane-head h2{margin:0;font-family:var(--serif);font-size:1.7rem;font-weight:500;letter-spacing:-.005em}
 .lane-head h2::before{content:"";display:inline-block;width:.55rem;height:.55rem;border-radius:50%;background:var(--accent);margin-right:.55rem;vertical-align:.12em}
+.lede-note{font-size:.85rem;color:var(--muted);margin-top:.35rem}.lede-note a{color:inherit;text-decoration:underline;text-underline-offset:2px}
 .lane-head .model{font-family:var(--mono);font-size:.7rem;color:var(--muted)}
 
 .steps{list-style:none;margin:0;padding:0;position:relative}
@@ -309,7 +310,7 @@ function runColumn(v: RunView | null, kind: "exposed" | "held"): string {
 export function demoPage(d: DemoData, opts: Opts): string {
   const request = (d.exposed ?? d.heldOut)?.run.request;
   const body = `<main class="stage">
-<div class="lede"><h1>Same request, two agents</h1><p>Same offers, same prices, same ranking. Only the creator’s test differs.</p></div>
+<div class="lede"><h1>Same request, two agents</h1><p>Same offers, same prices, same ranking. Only the creator’s test differs.</p><p class="lede-note">These two are seeded replays. The effect was measured with live GPT, Gemini and Claude agents in a pre-registered eval: <a href="/proof">see the proof</a>.</p></div>
 ${request ? `<p class="request"><q>${esc(request)}</q></p>` : ""}
 ${
   d.exposed || d.heldOut
