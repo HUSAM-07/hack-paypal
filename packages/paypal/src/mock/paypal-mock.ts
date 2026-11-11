@@ -218,7 +218,9 @@ export function createMockPayPal(opts: MockPayPalOptions = {}) {
   let chain: Promise<unknown> = Promise.resolve();
   let seq = Math.max(0, Math.floor(opts.idOffset ?? 0));
 
-  const iso = () => new Date(now()).toISOString().replace(/\.\d{3}Z$/, "Z");
+  // Milliseconds kept: the demo clock jumps 30 days and the next sales can land in the same
+  // second, so whole seconds could not tell a first-cycle sale from a second-cycle one.
+  const iso = () => new Date(now()).toISOString();
   const id = (prefix: string, len = 17) =>
     `${prefix}${(++seq)
       .toString(36)
