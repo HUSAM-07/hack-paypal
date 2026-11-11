@@ -83,7 +83,10 @@ jobs:
       - name: Keep the snapshot
         if: inputs.mode != 'replay'
         uses: actions/upload-artifact@v4
-        with: { name: 'cited-snapshot-${{ matrix.target }}', path: cited-snapshot.sql, retention-days: 30 }
+        with:
+          name: cited-snapshot-${{ matrix.target }}
+          path: cited-snapshot.sql
+          retention-days: 30
       - name: Note the restore point
         # If anything looks wrong afterwards:
         #   npx wrangler d1 time-travel restore pact --bookmark <this bookmark> --config <that config>
