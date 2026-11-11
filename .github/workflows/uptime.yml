@@ -29,7 +29,7 @@ jobs:
       - name: Probe pages and the engine
         id: probe
         run: |
-          paths="/ /console?clean=1 /console/payout?clean=1 /studio?view=first /proof /try /mcp /api/cited/health /api/cited/api/lift /api/cited/api/payouts /studio/api/data"
+          paths="/ /console?clean=1 /console/payout?clean=1 /console/statement?brand=winix&clean=1 /studio?view=first /studio/creator?clean=1 /proof /try /mcp /creators /catalogue/offers /api/cited/health /api/cited/api/lift /api/cited/api/payouts /api/cited/api/webhook-proof /studio/api/data"
           failed=""
           for p in $paths; do
             ok=""

@@ -13,6 +13,7 @@ import {
 import { CREATORS_PREFIX, creators } from "./creators/routes";
 import { allowedOrigins, type Env } from "./env";
 import { newId } from "./ids";
+import { previewFor, withLinkPreview } from "./link-preview";
 import { live, TRY_PREFIX } from "./live/routes";
 import { PUBLIC_MCP_PATH, publicMcpHandler } from "./mcp";
 import { payments } from "./payments/routes";
@@ -26,6 +27,27 @@ export { ThreadDO } from "./do/thread";
 export { UserDO } from "./do/user";
 
 const app = new Hono<{ Bindings: Env }>();
+
+// Registered first so they wrap every route below, including the demo apps and /mcp.
+// Any write (an engine call, a PayPal webhook, a checkout, a Studio action) can change what the
+// shared read cache holds, so it starts this isolate's cache over, before the write and again
+// after it so a read that ran during the write is not kept. Reads stay cached for up to 10s.
+app.use("*", async (c, next) => {
+  const write = c.req.method !== "GET" && c.req.method !== "HEAD";
+  if (write) clearReadCache();
+  try {
+    await next();
+  } finally {
+    if (write) clearReadCache();
+  }
+});
+// Link-preview tags for the server-rendered pages that have none (see link-preview.ts).
+app.use("*", async (c, next) => {
+  await next();
+  if (c.req.method === "GET" && previewFor(c.req.path)) {
+    c.res = await withLinkPreview(c.req.path, c.res);
+  }
+});
 
 /**
  * Every /app route loads the app's HTML entry (client-side routing takes over).
@@ -67,18 +89,6 @@ app.route(TRY_PREFIX, live);
 app.route(CREATORS_PREFIX, creators);
 
 app.use("*", securityHeaders);
-// Any write (an engine call, a PayPal webhook, a Studio action) can change what the shared read
-// cache holds, so it starts this isolate's cache over, before the write and again after it so a
-// read that ran during the write is not kept. Reads stay cached for up to 10s.
-app.use("*", async (c, next) => {
-  const write = c.req.method !== "GET" && c.req.method !== "HEAD";
-  if (write) clearReadCache();
-  try {
-    await next();
-  } finally {
-    if (write) clearReadCache();
-  }
-});
 app.use("/api/auth/*", ipRateLimit);
 
 app.get("/api/health", (c) => c.json({ ok: true }));
