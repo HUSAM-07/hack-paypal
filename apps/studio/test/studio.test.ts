@@ -47,6 +47,22 @@ describe("buildTables", () => {
     });
   });
 
+  it("marks the journeys the first payout's cycle covers, like the arm strip", () => {
+    const j = raw.journeys[0];
+    if (!j) throw new Error("fixture has no journey");
+    const later = { ...j, orderId: "O-later", capturedAt: "2026-12-20T00:00:00Z" };
+    const s = buildTables({ ...raw, journeys: [...raw.journeys, later] });
+    expect(row(s, "journeys", j.orderId)).toMatchObject({ firstPayout: true });
+    expect(row(s, "journeys", "O-later")).toMatchObject({ firstPayout: false });
+    const firstJourneys = s.tables.journeys.filter((r) => r.firstPayout).length;
+    const firstSessions = s.tables.arms
+      .filter((r) => r.brandId === "winix" && r.scopeKey === "first")
+      .reduce((a, r) => a + Number(r.sessions), 0);
+    expect(firstJourneys).toBe(firstSessions);
+    const none = buildTables({ ...raw, payouts: [] });
+    expect(none.tables.journeys.every((r) => r.firstPayout === false)).toBe(true);
+  });
+
   it("writes text cells as – instead of blank, and a voided credit has no batch", () => {
     expect(row(t, "credits", "C1:housefresh")).toMatchObject({
       state: "voided",
