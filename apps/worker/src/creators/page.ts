@@ -4,7 +4,13 @@
  * schedule is drawn to scale. Every value a creator typed is escaped; the specimen script only
  * ever writes textContent.
  */
-import { DEFAULT_SCHEDULE, SITE_NAV_TOUCH_CSS, SITE_THEME_CSS, siteNavLinks } from "@pact/protocol";
+import {
+  DEFAULT_SCHEDULE,
+  SITE_HEADER_CSS,
+  SITE_NAV_TOUCH_CSS,
+  SITE_THEME_CSS,
+  siteHeader,
+} from "@pact/protocol";
 
 const esc = (s: string) => s.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
 
@@ -16,7 +22,7 @@ export interface Product {
 }
 
 /* After the shared dark theme: PayPal's button and the simulated PayPal consent stay PayPal-coloured. */
-const CREATORS_DARK = `.btn.pp{background:#FFC439;color:#111;font-family:var(--sans);text-transform:none;letter-spacing:0;font-size:.9rem;font-weight:600}.btn.pp:hover{background:#F2B52B}.btn.pp .ppword .p1,.btn.pp .ppword .p2{color:#003087}.consent .card{--ink:#16181D;--muted:#5B5F68;--line:#DADCE0;--paper:#FFFFFF;color:var(--ink)}.consent .card .ppword .p1{color:#003087}.consent .btn.blue{background:var(--pp-blue);color:#fff;font-family:var(--sans);text-transform:none;letter-spacing:0;font-size:.9rem}.sim-bar{border-bottom-color:var(--line)}.how{border-top-color:var(--line-strong)}.opt:has(input:checked){border-color:var(--ink-2)}input:focus,textarea:focus{border-color:var(--test);box-shadow:0 0 0 1px var(--test)}.opt input{accent-color:var(--test)}`;
+const CREATORS_DARK = `.btn.pp{background:#FFC439;color:#111;font-family:var(--sans);text-transform:none;letter-spacing:0;font-size:.9rem;font-weight:600}.btn.pp:hover{background:#F2B52B}.btn.pp .ppword .p1,.btn.pp .ppword .p2{color:#003087}.consent .card{--ink:#16181D;--muted:#5B5F68;--line:#DADCE0;--paper:#FFFFFF;color:var(--ink)}.consent .card .ppword .p1{color:#003087}.consent .btn.blue{background:var(--pp-blue);color:#fff;font-family:var(--sans);text-transform:none;letter-spacing:0;font-size:.9rem}main{max-width:1280px;padding-left:clamp(16px,4vw,56px);padding-right:clamp(16px,4vw,56px)}.sim-bar{border-bottom-color:var(--line)}.how{border-top-color:var(--line-strong)}.opt:has(input:checked){border-color:var(--ink-2)}input:focus,textarea:focus{border-color:var(--test);box-shadow:0 0 0 1px var(--test)}.opt input{accent-color:var(--test)}`;
 
 const CSS = `
 @font-face{font-family:"Newsreader";font-style:normal;font-weight:200 800;font-display:swap;src:url("/fonts/newsreader-latin-opsz-v1.woff2") format("woff2-variations")}
@@ -167,13 +173,13 @@ aside{position:sticky;top:24px}
 }
 `;
 
-const NAV = `<nav class="nav" aria-label="CITED"><a class="mark" href="/">CITED</a>${siteNavLinks("creators")}</nav>`;
+const NAV = siteHeader("creators");
 
 function shell(title: string, body: string, script = ""): string {
   return `<!doctype html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>${esc(title)}</title><link rel="icon" href="/favicon.svg">
-<style>${CSS}${SITE_NAV_TOUCH_CSS}${SITE_THEME_CSS}${CREATORS_DARK}</style></head><body>${body}${script ? `<script>${script}</script>` : ""}</body></html>`;
+<style>${CSS}${SITE_NAV_TOUCH_CSS}${SITE_THEME_CSS}${SITE_HEADER_CSS}${CREATORS_DARK}</style></head><body>${body}${script ? `<script>${script}</script>` : ""}</body></html>`;
 }
 
 const PAYPAL_WORD = `<span class="ppword"><span class="p1">Pay</span><span class="p2">Pal</span></span>`;

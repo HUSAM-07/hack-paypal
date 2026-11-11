@@ -1,4 +1,4 @@
-import { SITE_NAV_TOUCH_CSS, SITE_THEME_CSS, siteNavLinks } from "@pact/protocol";
+import { SITE_HEADER_CSS, SITE_NAV_TOUCH_CSS, SITE_THEME_CSS, siteHeader } from "@pact/protocol";
 import type { Context } from "hono";
 import type { Env } from "./env";
 import { clientIp } from "./security";
@@ -101,10 +101,10 @@ pre{background:var(--paper);border:1px solid var(--line);border-radius:6px;paddi
 .url{font-size:1.05rem;color:var(--ink)}
 a{color:inherit}
 :focus-visible{outline:2px solid var(--ink);outline-offset:3px;border-radius:2px}
-${SITE_NAV_TOUCH_CSS}${SITE_THEME_CSS}
+${SITE_NAV_TOUCH_CSS}${SITE_THEME_CSS}${SITE_HEADER_CSS}
 h1{font-family:var(--serif);font-size:2.4rem;line-height:1.1;letter-spacing:-.015em}h2{font-family:var(--mono);font-size:.72rem;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:var(--ink)}pre{color:var(--test)}
 </style></head><body>
-<nav class="nav" aria-label="CITED"><a class="mark" href="/">CITED</a>${siteNavLinks("mcp")}</nav>
+${siteHeader("mcp")}
 <main>
 <h1>Shop through CITED from your own agent</h1>
 <p>A remote MCP server (Streamable HTTP) with two tools: <code>search_product</code> and <code>checkout</code>. Your agent searches offers synced to PayPal and buys one; the order pays the seller through PayPal with a signed passport in <code>custom_id</code>, and the creator is credited only if the test your agent was shown caused the sale. Simulated PayPal: no real money moves. No sign-in.</p>

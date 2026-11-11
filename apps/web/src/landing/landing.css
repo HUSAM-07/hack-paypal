@@ -137,55 +137,6 @@ code {
   padding: 0 clamp(1rem, 4vw, 3.5rem);
 }
 
-/* Header */
-.top {
-  position: sticky;
-  top: 0;
-  z-index: 5;
-  background: rgba(250, 248, 244, 0.88);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  border-bottom: 1px solid var(--rule);
-}
-.top-inner {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1.5rem;
-  height: 64px;
-}
-.wordmark {
-  font: 500 1.45rem / 1 var(--serif);
-  letter-spacing: 0.01em;
-  text-decoration: none;
-  flex: none;
-}
-.top-nav {
-  display: flex;
-  gap: 1.6rem;
-  overflow-x: auto;
-  scrollbar-width: none;
-}
-.top-nav::-webkit-scrollbar {
-  display: none;
-}
-.top-nav a {
-  font: 500 0.74rem / 1 var(--mono);
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  text-decoration: none;
-  color: var(--ink-2);
-  white-space: nowrap;
-  padding: 0.5rem 0;
-}
-.top-nav a:hover,
-.top-nav a[aria-current="page"] {
-  color: var(--ink);
-}
-.top-nav a[aria-current="page"] {
-  box-shadow: inset 0 -1px 0 var(--proof);
-}
-
 /* Type */
 .kicker {
   display: inline-flex;
