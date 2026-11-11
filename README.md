@@ -22,6 +22,7 @@ Every money step ran against the PayPal sandbox through the engine's own code. T
 | Agent pays the seller, passport in `custom_id` | Orders v2 with `payment_source.paypal.vault_id` | `8E6030344K4198450`, `8F195714E6441535R`, `4XV50799SF6195530` |
 | Seller refunds a sale; its credit is voided | Refunds (PayPal Agent Toolkit `create_refund`) | `81C245246C527113H` |
 | PayPal notifies CITED; signature verified | Webhooks (SHA256withRSA, subscription `8042373202922840X`) | 7 events, [listed live](https://pact-worker.vincent-wesley-liem.workers.dev/api/cited/api/webhook-proof) |
+| A creator connects PayPal; its payer id is the Payouts receiver | Log in with PayPal (code → token → `userinfo`) | payer id returned (not shown) |
 | HouseFresh paid $383.96 | Payouts v1 (batch) | `ME2KV57B7KYNS`, `SUCCESS` |
 | Brand's statement settled against its deposit | Invoicing v2 | `INV2-TNXC-9GA6-W36V-WTF6`, `MARKED_AS_PAID` |
 

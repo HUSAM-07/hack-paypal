@@ -97,6 +97,12 @@ const SANDBOX_RUNS: { step: string; api: string; id: string; status: string }[] 
     status: "verified",
   },
   {
+    step: "A creator connects PayPal (the Payouts receiver)",
+    api: "Log in with PayPal: code → token → userinfo",
+    id: "payer id returned (not shown)",
+    status: "verified",
+  },
+  {
     step: "HouseFresh paid $383.96",
     api: "Payouts v1, batch",
     id: "batch ME2KV57B7KYNS",
