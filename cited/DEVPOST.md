@@ -7,13 +7,13 @@ Paste each section into the matching Devpost field. Numbers come from `npm run d
 | Requirement | Where it is met | Status |
 |---|---|---|
 | Meaningful use of PayPal (sandbox) and AI | Orders v2 and Vault (real sandbox agent checkout, captured and refunded), Webhooks (verified PayPal deliveries), Payouts (real sandbox batches `ME2KV57B7KYNS` and `GB9U5DYBGHLY4`), Invoicing (real sandbox invoice `INV2-TNXC-9GA6-W36V-WTF6`), captures refund, disputes, Log in with PayPal; shopper agents (GPT, Gemini, Sonnet); AG Studio Analyst agent | met |
-| Public repo with a visible OSS licence | <https://github.com/HUSAM-07/hack-paypal>, MIT | **repo is private today: make it public before submitting** |
+| Public repo with a visible OSS licence | <https://github.com/HUSAM-07/hack-paypal>, MIT | met (public) |
 | Working build: hosted URL or full run instructions | Hosted demo below; `npm ci && npm run demo:cited` runs with no keys; sandbox setup in `.env.example` and `cited/spec/AGENT-CHECKOUT.md` | met |
 | Text description, tools used | This file | met |
 | YouTube video under 3 minutes showing it working | Script: `cited/spec/CITED-packet.md` (b) | **record and paste the link** |
 | New or significantly updated since 1 Oct 2026 | All CITED code was written during the period (git history) | met |
 | Legible to an LLM grader | README, this file and the card state problem, user, numbers and sources in plain text | met |
-| AG Grid sponsor prize: polish beyond plain AG Grid/AG Charts, plus Studio Agent Framework | `/studio` and `/studio/creator`: AG Studio themed in CITED's palette and fonts, live tables updated by transactions, a master-detail AG Grid widget (cross-seller journey + Shapley split), a First payout / Programme to date toggle, Release / Void buttons on held credits; custom Agent Framework Analyst delegating to the built-in Data, Page and Widget agents, with Maya's Approve button on its tool card | met (needs `AG_STUDIO_LICENSE_KEY` on the worker, else a watermark shows) |
+| AG Grid sponsor prize: polish beyond plain AG Grid/AG Charts, plus Studio Agent Framework | `/studio` and `/studio/creator`: AG Studio themed in CITED's palette and fonts, live tables updated by transactions, a master-detail AG Grid widget (cross-seller journey + Shapley split), a First payout / Programme to date toggle, Release / Void buttons on held credits; custom Agent Framework Analyst delegating to the built-in Data, Page and Widget agents, with Maya's Approve button on its tool card | met (Studio and Grid licence keys set on the hosted worker: no watermark) |
 
 
 ## PayPal APIs: real sandbox vs simulated
@@ -29,7 +29,7 @@ Paste each section into the matching Devpost field. Numbers come from `npm run d
 | Payouts (agent checkout run) | The engine's `runPayouts` sent batch `GB9U5DYBGHLY4`: $0.16 for the one credit left after the refund, SUCCESS | simulated |
 | Disputes, Log in with PayPal | Code paths built against the sandbox APIs | simulated |
 
-The simulated PayPal mirrors the REST shapes and signs webhooks like PayPal, so the same client code runs in both modes (`CITED_PAYPAL_MODE=sandbox` switches it).
+The simulated PayPal mirrors the REST shapes and signs webhooks like PayPal, so the same client code runs in both modes (`PAYPAL_MODE=sandbox` switches it; on the worker, `CITED_PAYPAL_MODE`).
 
 ## Testing instructions
 
@@ -64,7 +64,7 @@ PayPal's affiliate network, rebuilt for AI agents: it pays creators on proven li
 
 ## Inspiration
 
-Affiliate marketing is a $13.81B-a-year business in the US (eMarketer), and it pays per click. AI shopping agents read product tests, then buy, and never click a link. In October 2026 Fast Company reported Meta's Muse selling on Vacuum Wars' tests, with no way for the creators to prove it or be paid. The people agents trust most are about to earn nothing from them.
+US advertisers will spend $13.81B on affiliate marketing in 2026 ([EMARKETER](https://www.emarketer.com/content/faq-on-affiliate-marketing--how-ai-creators-reshaping-channel-2026)), and it pays per click. AI shopping agents read product tests, then buy, and never click a link. In October 2026 [Fast Company](https://www.fastcompany.com/91621388/i-let-ai-assistant-shop-me-reviewers-got-nothing) let Meta's Muse shop for a robot vacuum: it leaned on Vacuum Wars' tests and sent the sale to other retailers, so the reviewers who did the testing got nothing. The people agents trust most are about to earn nothing from them.
 
 PayPal is the one company that holds all three pieces needed to fix this: an affiliate network (Honey), an agent catalogue (Store Sync) and Payouts to PayPal and Venmo. So we asked what PayPal's affiliate network should look like when the shopper is an agent.
 
