@@ -21,6 +21,12 @@ export function fakeProvider(opts: { delayMs?: number } = {}): ModelProvider {
           await sleep(plan.slow ? 40 : (opts.delayMs ?? 0), req.signal);
         yield { type: "text", delta: chunk };
       }
+      // A slow turn ends only when it is interrupted (or after a minute), so a test that
+      // interrupts it never races the end of the text on a busy machine.
+      if (plan.slow) {
+        await sleep(60_000, req.signal);
+        if (req.signal.aborted) return;
+      }
       for (const call of plan.calls ?? []) {
         yield { type: "toolCall", call: { id: `call_${++callSeq}`, ...call } };
       }
