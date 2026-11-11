@@ -208,18 +208,36 @@ export function buildTables(raw: RawEngine): StudioTables {
         available: usd(deposit.available),
       });
     }
-    for (const arm of ["test", "placebo", "none"] as const) {
-      const a = b.arms[arm] ?? { sessions: 0, purchases: 0 };
-      arms.push({
-        id: `${b.brandId}:${arm}`,
-        brandId: b.brandId,
-        brand: b.name,
-        armKey: arm,
-        arm: ARM_LABEL[arm],
-        sessions: a.sessions,
-        purchases: a.purchases,
-        share: a.sessions > 0 ? a.purchases / a.sessions : 0,
-      });
+    // The first payout's arms count only the sessions whose hold had ended when that batch ran,
+    // so the strip agrees with the "+51 of 57" tile beside it. Journeys are purchases, so this
+    // counts buying sessions; in the forced-buy demo every session buys.
+    const firstCycleEnd = first ? Date.parse(first.createdAt) - HOLD_DAYS * DAY : 0;
+    const firstJourneys = first
+      ? raw.journeys.filter((j) => Date.parse(j.capturedAt) <= firstCycleEnd)
+      : [];
+    for (const scope of SCOPES) {
+      for (const arm of ["test", "placebo", "none"] as const) {
+        const inArm = firstJourneys.filter((j) => j.arm === arm);
+        const a =
+          scope === "todate"
+            ? (b.arms[arm] ?? { sessions: 0, purchases: 0 })
+            : {
+                sessions: inArm.length,
+                purchases: inArm.filter((j) => j.items.some((i) => i.upc === b.upc)).length,
+              };
+        arms.push({
+          id: `${b.brandId}:${arm}:${scope}`,
+          brandId: b.brandId,
+          brand: b.name,
+          scope: SCOPE_LABEL[scope],
+          scopeKey: scope,
+          armKey: arm,
+          arm: ARM_LABEL[arm],
+          sessions: a.sessions,
+          purchases: a.purchases,
+          share: a.sessions > 0 ? a.purchases / a.sessions : 0,
+        });
+      }
     }
   }
 
@@ -492,11 +510,13 @@ export const TABLES: TableMeta[] = [
     id: "arms",
     name: "Arms",
     description:
-      "Agent sessions per brand per arm: shown the test, a same-creator placebo, or held out. Ranking was identical in every arm.",
+      "Agent sessions per brand per arm: shown the test, a same-creator placebo, or held out. Ranking was identical in every arm. One row per scope: the first payout's cycle, or the programme to date.",
     fields: [
       t("id", "Row id"),
       t("brandId", "Brand id"),
       t("brand", "Brand"),
+      t("scope", "Scope"),
+      t("scopeKey", "Scope key"),
       t("armKey", "Arm key"),
       t("arm", "Arm"),
       n("sessions", "Sessions"),
