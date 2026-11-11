@@ -8,6 +8,10 @@
  */
 import type { ArmName, RawCredit, RawEngine, RawPayoutBatch } from "./dashboard";
 
+/** Seeded demo runs use a stand-in model (`fake-<family>`); say so plainly rather than show the id. */
+export const agentLabel = (model: string): string =>
+  model.startsWith("fake-") ? "Seeded demo agent" : model;
+
 export type Scope = "first" | "todate";
 export const SCOPES: Scope[] = ["first", "todate"];
 export const SCOPE_LABEL: Record<Scope, string> = {
@@ -307,7 +311,7 @@ export function buildTables(raw: RawEngine): StudioTables {
     return {
       id: j.orderId,
       orderId: j.orderId,
-      model: j.model,
+      model: agentLabel(j.model),
       arm: ARM_LABEL[j.arm as ArmName] ?? j.arm,
       product: j.items.map((i) => productOf.get(i.upc) ?? i.upc).join(", "),
       firstStore,
