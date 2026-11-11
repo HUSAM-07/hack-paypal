@@ -57,6 +57,7 @@ a{color:inherit}
 .step::before{content:"";position:absolute;left:0;top:.42rem;width:12px;height:12px;border-radius:50%;background:var(--bg);border:2px solid var(--accent)}
 .step .k{font-size:.7rem;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);padding-top:.32rem}
 .step p{margin:0}
+.lane,.step > *{min-width:0}
 .dim{color:var(--muted)}
 .note{color:var(--muted);font-size:.8rem;margin-top:.35rem}
 .note.good{color:var(--test);font-weight:500}
@@ -78,7 +79,7 @@ a{color:inherit}
 .store{font-family:var(--serif);font-size:1.55rem;font-weight:500;line-height:1.1;padding:.15rem 0}
 .store small{display:block;font-family:var(--sans);font-size:.68rem;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-top:.25rem}
 .store.paid small{color:var(--accent-ink)}
-.track{position:relative;flex:0 0 13.5rem;height:3.2rem;margin:0 .9rem}
+.track{position:relative;flex:1 1 13.5rem;min-width:10.5rem;max-width:13.5rem;height:3.2rem;margin:0 .9rem}
 .track::before{content:"";position:absolute;left:0;right:8px;top:50%;border-top:2px dashed var(--accent)}
 .track::after{content:"";position:absolute;right:0;top:calc(50% - 6px);border-left:10px solid var(--accent);border-top:7px solid transparent;border-bottom:7px solid transparent}
 .track .ticket{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%)}
@@ -143,6 +144,10 @@ a{color:inherit}
 .rival .amt{color:var(--ink);font-weight:600}
 
 @media (min-width:1600px){html{font-size:21px}}
+/* Laptop widths: each lane is too narrow for a label column beside the offer → seller row. */
+@media (max-width:1500px){
+  .step{grid-template-columns:1fr;gap:.25rem}
+}
 @media (max-width:1100px){
   html{font-size:17px}
   .nav,.stage{padding-left:24px;padding-right:24px}
