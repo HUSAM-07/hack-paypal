@@ -71,6 +71,14 @@ async function paidOrder(s: ReturnType<typeof setup>) {
 }
 
 describe("orders", () => {
+  it("stamps captures to the millisecond, so sales in the same second stay ordered", async () => {
+    const s = setup();
+    s.tick(439);
+    const { cap } = await paidOrder(s);
+    const got = await s.raw("GET", `/v2/payments/captures/${cap.id}`);
+    expect(got.json.create_time).toBe("2026-11-05T10:00:00.439Z");
+  });
+
   it("a restarted mock with an id offset never repeats an earlier instance's ids", async () => {
     const first = await paidOrder(setup());
     const again = await paidOrder(setup());
