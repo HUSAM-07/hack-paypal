@@ -81,6 +81,8 @@ CITED pays creators for sales their tests cause, measured with a randomised hold
 7. **AG Studio shows it to the brand and the creator.** Maya, Winix's brand manager, sees "+51 extra Winix sales" at the 80% lower bound, Levoit's $0, the arm strip, the deposit meter and every cross-seller journey; a toggle switches between the first payout and programme to date. Her Analyst, a custom Agent Framework agent, reads the data through Studio's built-in Data agent, adds a chart with the Page and Widget agents, and drafts a $500 top-up that changes nothing until she presses Approve. The creator view shows pending, frozen, held, voided and paid credits and the Shapley split.
 8. **Creators onboard with PayPal.** At `/creators` a creator connects with Log in with PayPal (its payer id becomes the Payouts receiver) and publishes a test, which enters the holdout schedule. Hosted, the sign-in is a labelled simulated PayPal page.
 
+**Who pays and who earns.** Brands pay commission only on sales their creators' tests caused, out of a deposit they control, and get back whatever is unspent. CITED, run by PayPal, would take a platform fee on the commission it settles, as affiliate networks take an override today, so it earns only when a test provably caused a sale (the demo charges no fee). PayPal gains more than the fee: every caused sale is a PayPal checkout, every creator payment a Payouts transfer and every brand statement a PayPal invoice.
+
 Judges can check it four ways: read the pre-registration and per-model results at `/proof` (all 963 sessions downloadable), watch the recorded two-agent demo at `/console` and Studio, run a live agent at `/try`, or point their own agent at the public MCP server at `/mcp` and buy a purifier.
 
 ## How we built it
@@ -125,7 +127,7 @@ Judges can check it four ways: read the pre-registration and per-model results a
 
 ## What's next for CITED
 
-- Run the agent checkout end to end on the PayPal sandbox with three seller accounts and real webhook delivery (payouts and invoicing already run there).
+- Run the agent checkout on the PayPal sandbox with three separate seller accounts (it already ran end to end there with one, with PayPal-signed webhooks: [SANDBOX-EVIDENCE.md](SANDBOX-EVIDENCE.md)).
 - Feed tests published at `/creators` into the live catalogue's holdout.
 - More categories and creators, so tests compete and Shapley splits get richer.
 - Venmo payouts for creators and a brand self-serve programme flow in AG Studio.
