@@ -2,16 +2,32 @@ name: ci
 on:
   push: { branches: [main] }
   pull_request:
-  # Manual deploy of main, the only way to deploy while DEPLOY_FREEZE is true (with force).
+  # Manual deploy of main: to redeploy one target, retry a failed one, or deploy while
+  # DEPLOY_FREEZE is true (with force).
   workflow_dispatch:
     inputs:
+      target:
+        description: Deploy target
+        type: choice
+        options: [all, workers-dev, shipwith]
+        default: all
       force:
         description: Deploy even while DEPLOY_FREEZE is true
         type: boolean
         default: false
+
+permissions:
+  contents: read
+
+# A new push to a PR cancels its older run; runs on main always finish.
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.sha }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   check:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -21,25 +37,56 @@ jobs:
       - run: npm run typecheck
       - run: npm test
       - run: npm run evals -- --dry
+      # The build happens here, in CI, never on a laptop. Deploy ships this exact output,
+      # so a broken build or wrangler config fails the PR instead of the deploy.
+      - run: npm run build:web -w @pact/worker
+      - name: Refuse a config that opens CITED writes
+        run: |
+          if grep -q CITED_OPEN_API apps/worker/wrangler.jsonc; then
+            echo "CITED_OPEN_API is local-only; remove it from apps/worker/wrangler.jsonc" >&2
+            exit 1
+          fi
+      - name: Dry-run every deploy target
+        run: |
+          node apps/worker/scripts/deploy.mjs workers-dev --dry-run
+          node apps/worker/scripts/deploy.mjs shipwith --dry-run
+      - if: github.event_name != 'pull_request'
+        uses: actions/upload-artifact@v4
+        with: { name: web-dist, path: apps/web/dist, retention-days: 7, if-no-files-found: error }
 
-  # CD: every green push to main deploys pact-worker (web build + D1 migrations + worker),
-  # unless the repo variable DEPLOY_FREEZE is "true" (the judging window): then only a manual
-  # run of this workflow on main with force: true deploys.
+  # CD: every green push to main deploys pact-worker (D1 migrations, then the worker) to each
+  # target, unless the repo variable DEPLOY_FREEZE is "true" (the judging window): then only a
+  # manual run on main with force: true deploys. Each target is its own GitHub environment
+  # with its own Cloudflare account, token, D1 and passkey users.
   deploy:
     needs: check
     if: >-
       github.ref == 'refs/heads/main' &&
       (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+    strategy:
+      fail-fast: false
+      matrix:
+        target: ${{ fromJSON(inputs.target && inputs.target != 'all' && format('["{0}"]', inputs.target) || '["workers-dev","shipwith"]') }}
     runs-on: ubuntu-latest
-    environment: production
-    # Never run two deploys at once; a newer push waits for the current one.
-    concurrency: { group: deploy-production, cancel-in-progress: false }
+    timeout-minutes: 15
+    environment:
+      # workers-dev keeps the original environment name so its deploy history and secrets carry on.
+      name: ${{ matrix.target == 'workers-dev' && 'production' || matrix.target }}
+      url: ${{ vars.DEPLOY_URL }}
+    # One deploy per target at a time; a newer push waits. workers-dev shares its group with
+    # reseed-hosted so a reseed never races a deploy.
+    concurrency:
+      group: ${{ matrix.target == 'workers-dev' && 'deploy-production' || format('deploy-{0}', matrix.target) }}
+      cancel-in-progress: false
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      DEPLOY_URL: ${{ vars.DEPLOY_URL }}
     steps:
       - uses: actions/checkout@v4
       - name: Skip if frozen or no longer the newest main
         id: latest
         # Deploys queue; an older commit finishing last would roll production back.
-        # While DEPLOY_FREEZE is "true", only a forced manual run deploys; a push is skipped.
         env:
           FREEZE: ${{ vars.DEPLOY_FREEZE }}
           FORCED: ${{ github.event_name == 'workflow_dispatch' && inputs.force }}
@@ -54,43 +101,59 @@ jobs:
             echo "main moved on to $newest; leaving the deploy to that run"
             echo "stale=true" >> "$GITHUB_OUTPUT"
           fi
+      - name: Check this environment is configured
+        if: steps.latest.outputs.stale != 'true'
+        run: |
+          missing=""
+          [ -n "$CLOUDFLARE_API_TOKEN" ] || missing="$missing CLOUDFLARE_API_TOKEN(secret)"
+          [ -n "$CLOUDFLARE_ACCOUNT_ID" ] || missing="$missing CLOUDFLARE_ACCOUNT_ID(secret)"
+          [ -n "$DEPLOY_URL" ] || missing="$missing DEPLOY_URL(variable)"
+          if [ -n "$missing" ]; then
+            echo "::error::Set on the GitHub environment for ${{ matrix.target }}:$missing"
+            exit 1
+          fi
       - uses: actions/setup-node@v4
         if: steps.latest.outputs.stale != 'true'
         with: { node-version: 22, cache: npm }
       - run: npm ci
         if: steps.latest.outputs.stale != 'true'
-      - name: Refuse a config that opens CITED writes
+      # The web build that passed `check`, not a fresh one.
+      - uses: actions/download-artifact@v4
         if: steps.latest.outputs.stale != 'true'
-        run: |
-          if grep -q CITED_OPEN_API apps/worker/wrangler.jsonc; then
-            echo "CITED_OPEN_API is local-only; remove it from apps/worker/wrangler.jsonc" >&2
-            exit 1
-          fi
+        with: { name: web-dist, path: apps/web/dist }
       - name: Push worker secrets
         if: steps.latest.outputs.stale != 'true'
         working-directory: apps/worker
         env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           CITED_API_TOKEN: ${{ secrets.CITED_API_TOKEN }}
           AG_STUDIO_LICENSE_KEY: ${{ secrets.AG_STUDIO_LICENSE_KEY }}
           AG_GRID_LICENSE_KEY: ${{ secrets.AG_GRID_LICENSE_KEY }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-        # Each only when set; values go through stdin and are never echoed.
+        # Each only when set on this environment; values go through stdin and are never echoed.
+        # Secrets are per-worker in Cloudflare, so the worker name and account are enough.
         run: |
           for name in CITED_API_TOKEN AG_STUDIO_LICENSE_KEY AG_GRID_LICENSE_KEY ANTHROPIC_API_KEY; do
             if [ -n "${!name}" ]; then
-              printf "%s" "${!name}" | npx wrangler secret put "$name" >/dev/null
+              printf "%s" "${!name}" | npx --no wrangler secret put "$name" >/dev/null
               echo "pushed $name"
             else
               echo "skipped $name (not set)"
             fi
           done
-      - run: npm run deploy -w @pact/worker
+      - name: Deploy
+        id: deploy
         if: steps.latest.outputs.stale != 'true'
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: node apps/worker/scripts/deploy.mjs ${{ matrix.target }}
       - name: Smoke test
         if: steps.latest.outputs.stale != 'true'
-        run: curl -fsS "${{ vars.DEPLOY_URL }}/api/cited/health"
+        run: |
+          for path in / /app /api/cited/health; do
+            curl -fsS -o /dev/null --retry 5 --retry-delay 3 --retry-all-errors \
+              -w "%{http_code} $path\n" "$DEPLOY_URL$path"
+          done
+      # D1 migrations stay applied; they are additive, so the previous worker still runs.
+      - name: Roll back if the smoke test failed
+        if: failure() && steps.deploy.outcome == 'success'
+        run: node apps/worker/scripts/deploy.mjs ${{ matrix.target }} --rollback
+      - if: always()
+        run: echo "${{ matrix.target }} → $DEPLOY_URL (${{ job.status }}, ${GITHUB_SHA::7})" >> "$GITHUB_STEP_SUMMARY"

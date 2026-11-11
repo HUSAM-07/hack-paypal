@@ -30,3 +30,4 @@ apps/web/art/raw/
 # /proof downloads, generated at build from packages/evals/results
 apps/web/public/data/
 dist-ssr-proof/
+apps/worker/wrangler.*.generated.jsonc
