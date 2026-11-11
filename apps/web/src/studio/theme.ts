@@ -1,27 +1,27 @@
 import { studioTheme } from "ag-studio";
 
 /**
- * CITED's palette, shared with the landing page. Proof green is the one strong colour: it marks
+ * CITED's dark palette, shared with the landing page. Proof green is the one strong colour: it marks
  * what the test caused and what was paid. Amber marks money still held (30-day hold, disputes).
  */
 export const C = {
-  paper: "#FAF8F4",
-  surface: "#FFFDF9",
-  ink: "#16181D",
-  muted: "#5B5F68",
-  proof: "#1F7A55",
-  proofTint: "#E3EFE8",
-  amber: "#B7791F",
-  amberTint: "#F5EAD6",
-  hairline: "#E6E2DA",
-  quiet: "#C9C3B8",
+  paper: "#0B0B0A",
+  surface: "#131312",
+  ink: "#EDEBE5",
+  muted: "#8F8C84",
+  proof: "#5FD9A0",
+  proofTint: "rgba(95, 217, 160, 0.12)",
+  amber: "#F0B545",
+  amberTint: "rgba(240, 181, 69, 0.12)",
+  hairline: "#262522",
+  quiet: "#3B3A35",
 } as const;
 
 export const SERIF = `"Newsreader", Georgia, "Times New Roman", serif`;
 export const SANS = `"Geist", "Geist Fallback", system-ui, sans-serif`;
 
 export const citedTheme = studioTheme.withParams({
-  browserColorScheme: "light",
+  browserColorScheme: "dark",
   backgroundColor: C.paper,
   foregroundColor: C.ink,
   textColor: C.ink,
@@ -31,7 +31,7 @@ export const citedTheme = studioTheme.withParams({
   fontFamily: SANS,
   fontSize: 14,
   borderRadius: 6,
-  invalidColor: "#9B3B2A",
+  invalidColor: "#FF7B67",
   studioWrapperBackgroundColor: C.paper,
   studioCanvasBackgroundColor: C.paper,
   studioCanvasFontFamily: SANS,
@@ -41,7 +41,7 @@ export const citedTheme = studioTheme.withParams({
   studioWidgetShadow: "none",
   studioWidgetTitleFontFamily: SERIF,
   studioWidgetTitleFontSize: 19,
-  studioWidgetTitleFontWeight: 500,
+  studioWidgetTitleFontWeight: 400,
   studioWidgetTitleTextColor: C.ink,
   studioWidgetSubtitleTextColor: C.muted,
   studioPanelHeaderFontFamily: SERIF,
@@ -49,10 +49,10 @@ export const citedTheme = studioTheme.withParams({
   studioPanelHeaderFontWeight: 500,
   studioPanelContainerBackgroundColor: C.surface,
   gridHeaderBackgroundColor: C.paper,
-  gridHeaderFontWeight: 600,
+  gridHeaderFontWeight: 500,
   gridHeaderTextColor: C.muted,
   gridOddRowBackgroundColor: C.surface,
-  gridRowHoverColor: "#F1EEE7",
+  gridRowHoverColor: "#1A1A18",
   valueChangeUpColor: C.proof,
   valueChangeHighlightBackgroundColor: C.proofTint,
   chartAccentColor: C.proof,
@@ -65,6 +65,6 @@ export const citedTheme = studioTheme.withParams({
   chartPaletteFills1Color: C.proof,
   chartPaletteFills2Color: C.amber,
   chartPaletteFills3Color: C.muted,
-  chartPaletteFills4Color: "#8FB8A2",
-  chartPaletteFills5Color: "#D9B98A",
+  chartPaletteFills4Color: "#2F7A58",
+  chartPaletteFills5Color: "#8A6A2A",
 });
