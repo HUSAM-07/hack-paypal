@@ -4,7 +4,7 @@
  * passes through, so each row compares the two agents at the same moment of their run.
  * Everything a model or a third party wrote is rendered with textContent, never as HTML.
  */
-import { SITE_NAV_TOUCH_CSS, siteNavLinks, UPC_WINIX_A230 } from "@pact/protocol";
+import { SITE_NAV_TOUCH_CSS, SITE_THEME_CSS, siteNavLinks, UPC_WINIX_A230 } from "@pact/protocol";
 
 const esc = (s: string) => s.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
 
@@ -16,6 +16,9 @@ const STAGES: [id: string, label: string][] = [
   ["paypal", "PayPal"],
   ["engine", "Engine"],
 ];
+
+/* After the shared dark theme. */
+const TRY_DARK = `button{background:var(--cream);color:var(--bg);font-family:var(--mono);font-weight:500;letter-spacing:.07em;text-transform:uppercase;font-size:.72rem}button:hover{background:#fff}`;
 
 const CSS = `
 @font-face{font-family:"Newsreader";font-style:normal;font-weight:200 800;font-display:swap;src:url("/fonts/newsreader-latin-opsz-v1.woff2") format("woff2-variations")}
@@ -92,7 +95,7 @@ button:disabled{background:transparent;border-color:var(--line);color:var(--mute
 .cell.held.now{box-shadow:inset -3px 0 0 var(--accent)}
 .cell p{margin:0}
 .cell .sub{color:var(--muted);font-size:.78rem;margin-top:.3rem}
-.cell .thought{font-family:var(--serif);font-style:italic;font-size:1rem;line-height:1.35;color:#3A3D45;margin-top:.45rem}
+.cell .thought{font-family:var(--serif);font-style:italic;font-size:1rem;line-height:1.35;color:var(--ink-2);margin-top:.45rem}
 .offers{width:100%;border-collapse:collapse;font-size:.8rem;margin-top:.35rem}
 .offers td{padding:.26rem 0;border-top:1px solid var(--line)}
 .offers td:first-child{color:var(--muted);width:2ch}
@@ -104,7 +107,7 @@ blockquote cite{display:block;font-family:var(--sans);font-style:normal;font-siz
 .pick{font-family:var(--serif);font-size:1.35rem;font-weight:500;line-height:1.15}
 .price{font-family:var(--sans);font-size:.95rem;font-weight:500;color:var(--muted);margin-left:.35rem}
 code{font-family:var(--mono);font-size:.7rem;background:var(--paper);border:1px solid var(--line);border-radius:4px;padding:.06rem .3rem;overflow-wrap:anywhere}
-.pp{font-weight:700;font-style:italic;color:var(--pp-navy);letter-spacing:-.01em}
+.pp{font-weight:700;font-style:italic;color:var(--pp-text);letter-spacing:-.01em}
 .ids{display:flex;flex-wrap:wrap;gap:.3rem .5rem;align-items:center;margin-top:.35rem;font-size:.75rem;color:var(--muted)}
 
 /* The result row: what each agent bought, and whether HouseFresh earned anything. */
@@ -117,7 +120,7 @@ code{font-family:var(--mono);font-size:.7rem;background:var(--paper);border:1px 
 .out.wait strong{color:var(--muted);font-size:1.6rem}
 .out .credit{font-size:.9rem;margin:0}
 .out .credit b{font-weight:600;color:var(--accent-ink)}
-.out .why{font-family:var(--serif);font-style:italic;font-size:.95rem;margin:.6rem 0 0;color:#3A3D45}
+.out .why{font-family:var(--serif);font-style:italic;font-size:.95rem;margin:.6rem 0 0;color:var(--ink-2)}
 .spine.result{border-top:1px solid var(--ink)}
 .result-cell{border-top:1px solid var(--ink);padding-top:1.2rem}
 
@@ -377,7 +380,7 @@ export function tryPage(o: { request: string; agent: string; scripted: boolean }
 <meta name="twitter:description" content="Type what the buyer wants. An agent shops, pays a seller through PayPal, and CITED decides whether the creator earns." />
 <meta name="twitter:image" content="https://pact-worker.vincent-wesley-liem.workers.dev/og/cited-proof-v1.png" />
 <meta name="twitter:image:alt" content="Bar chart: 100% of AI agents shown a creator's test bought the Winix, against 6% shown a placebo and 8% shown nothing." />
-<style>${CSS}${SITE_NAV_TOUCH_CSS}</style></head><body>
+<style>${CSS}${SITE_NAV_TOUCH_CSS}${SITE_THEME_CSS}${TRY_DARK}</style></head><body>
 <nav class="nav" aria-label="CITED"><a class="mark" href="/">CITED</a>${siteNavLinks("try")}</nav>
 <main>
 <h1 class="eyebrow">One request, two live shopping agents</h1>

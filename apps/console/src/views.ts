@@ -1,4 +1,4 @@
-import { SITE_NAV_TOUCH_CSS, siteNavLinks } from "@pact/protocol";
+import { SITE_NAV_TOUCH_CSS, SITE_THEME_CSS, siteNavLinks } from "@pact/protocol";
 import type { DemoData, PayoutData, RunView, StatementData } from "./data";
 import { creatorName, esc, shopName, usd } from "./format";
 import { agentLabel } from "./runs";
@@ -7,6 +7,9 @@ import { agentLabel } from "./runs";
  * Fonts come from the worker's own static assets (/fonts/*), so the demo-page CSP
  * (font-src falls back to 'self') allows them. Missing files fall back to system faces.
  */
+/* After the shared dark theme: the PayPal notification keeps PayPal's own light card. */
+const CONSOLE_DARK = `.notice{--ink:#16181D;--muted:#5B5F68;--line:#E6E2DA;--paper:#FFFFFF;--test:#1F7A55;color:var(--ink);border-color:transparent;box-shadow:0 30px 80px -20px rgba(0,0,0,.7)}.lanes{border-top-color:var(--line-strong)}.step::before{background:var(--bg)}.verdict strong{font-weight:300}.request{font-weight:300}`;
+
 const CSS = `
 @font-face{font-family:"Newsreader";font-style:normal;font-weight:200 800;font-display:swap;src:url("/fonts/newsreader-latin-opsz-v1.woff2") format("woff2-variations")}
 @font-face{font-family:"Newsreader";font-style:italic;font-weight:200 800;font-display:swap;src:url("/fonts/newsreader-latin-opsz-italic-v1.woff2") format("woff2-variations")}
@@ -66,7 +69,7 @@ a{color:inherit}
 
 /* the passport ticket */
 .ticket{display:inline-flex;white-space:nowrap;align-items:stretch;margin-top:.55rem;background:var(--paper);border:1.5px solid var(--accent);border-radius:7px;position:relative;font-size:.7rem;line-height:1.25}
-.ticket .stub{background:var(--accent);color:#fff;padding:.42rem .6rem;font-weight:600;letter-spacing:.06em;text-transform:uppercase;display:flex;align-items:center;border-radius:4px 0 0 4px}
+.ticket .stub{background:var(--accent);color:var(--bg);padding:.42rem .6rem;font-weight:600;letter-spacing:.06em;text-transform:uppercase;display:flex;align-items:center;border-radius:4px 0 0 4px}
 .lane.held .ticket .stub{background:var(--held-ink)}
 .ticket .body{padding:.36rem .8rem .36rem .75rem;border-left:1.5px dashed var(--accent)}
 .ticket .body b{display:block;font-family:var(--mono);font-weight:500;font-size:.75rem;letter-spacing:.01em}
@@ -94,7 +97,7 @@ a{color:inherit}
 .product .price{font-family:var(--sans);font-size:1.05rem;font-weight:500;color:var(--muted);margin-left:.35rem}
 .capture{display:flex;align-items:center;gap:.6rem;flex-wrap:wrap;font-size:.85rem;margin-top:.3rem!important}
 .capture .via{flex-basis:100%;font-size:.8rem}
-.capture .pp{font-weight:700;font-style:italic;color:var(--pp-navy);letter-spacing:-.01em}
+.capture .pp{font-weight:700;font-style:italic;color:var(--pp-text);letter-spacing:-.01em}
 .capture code{font-family:var(--mono);font-size:.75rem;background:var(--paper);border:1px solid var(--line);border-radius:4px;padding:.08rem .35rem}
 
 /* verdict */
@@ -202,7 +205,7 @@ function page(title: string, here: Here, body: string, opts: Opts): string {
   return `<!doctype html><html lang="en"><head><meta charset="utf-8"><title>${esc(title)}</title>
 <meta name="viewport" content="width=device-width,initial-scale=1">
 ${opts.live ? '<meta http-equiv="refresh" content="2">' : ""}
-<style>${CSS}${SITE_NAV_TOUCH_CSS}</style></head><body class="${cls}">${nav(here)}${body}</body></html>`;
+<style>${CSS}${SITE_NAV_TOUCH_CSS}${SITE_THEME_CSS}${CONSOLE_DARK}</style></head><body class="${cls}">${nav(here)}${body}</body></html>`;
 }
 
 function waiting(msg: string): string {

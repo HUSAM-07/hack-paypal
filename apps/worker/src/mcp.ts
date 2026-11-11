@@ -1,4 +1,4 @@
-import { SITE_NAV_TOUCH_CSS, siteNavLinks } from "@pact/protocol";
+import { SITE_NAV_TOUCH_CSS, SITE_THEME_CSS, siteNavLinks } from "@pact/protocol";
 import type { Context } from "hono";
 import type { Env } from "./env";
 import { clientIp } from "./security";
@@ -84,7 +84,7 @@ export function howToPage(origin: string): Response {
 @font-face{font-family:"Newsreader";font-style:normal;font-weight:200 800;font-display:swap;src:url("/fonts/newsreader-latin-opsz-v1.woff2") format("woff2-variations")}
 @font-face{font-family:"Geist";font-style:normal;font-weight:100 900;font-display:swap;src:url("/fonts/geist-latin-v1.woff2") format("woff2-variations")}
 @font-face{font-family:"Geist Mono";font-style:normal;font-weight:100 900;font-display:swap;src:url("/fonts/geist-mono-latin-v1.woff2") format("woff2-variations")}
-:root{--bg:#FAF8F4;--ink:#16181D;--muted:#5B5F68;--line:#E6E2DA;--sans:"Geist",ui-sans-serif,-apple-system,"Segoe UI",Helvetica,Arial,sans-serif;--mono:"Geist Mono",ui-monospace,SFMono-Regular,Menlo,monospace}
+:root{--bg:#FAF8F4;--ink:#16181D;--muted:#5B5F68;--line:#E6E2DA;--sans:"Geist",ui-sans-serif,-apple-system,"Segoe UI",Helvetica,Arial,sans-serif;--mono:"Geist Mono",ui-monospace,SFMono-Regular,Menlo,monospace;--serif:"Newsreader",Georgia,serif}
 body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);line-height:1.5}
 main{max-width:720px;margin:0 auto;padding:40px 24px 64px}
 .nav{display:flex;align-items:baseline;gap:2rem;max-width:1180px;margin:0 auto;padding:22px 48px 0;font-size:.8rem}
@@ -97,11 +97,12 @@ h1{font-size:1.6rem;margin:0 0 .5rem}
 h2{font-size:1.05rem;margin:2rem 0 .4rem}
 p,li{color:var(--muted)}
 code,pre{font-family:var(--mono);font-size:.9rem}
-pre{background:#fff;border:1px solid var(--line);border-radius:6px;padding:12px 14px;overflow-x:auto;color:var(--ink)}
+pre{background:var(--paper);border:1px solid var(--line);border-radius:6px;padding:12px 14px;overflow-x:auto;color:var(--ink)}
 .url{font-size:1.05rem;color:var(--ink)}
 a{color:inherit}
 :focus-visible{outline:2px solid var(--ink);outline-offset:3px;border-radius:2px}
-${SITE_NAV_TOUCH_CSS}
+${SITE_NAV_TOUCH_CSS}${SITE_THEME_CSS}
+h1{font-family:var(--serif);font-size:2.4rem;line-height:1.1;letter-spacing:-.015em}h2{font-family:var(--mono);font-size:.72rem;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:var(--ink)}pre{color:var(--test)}
 </style></head><body>
 <nav class="nav" aria-label="CITED"><a class="mark" href="/">CITED</a>${siteNavLinks("mcp")}</nav>
 <main>
