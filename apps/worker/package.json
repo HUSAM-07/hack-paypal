@@ -8,7 +8,8 @@
   },
   "scripts": {
     "dev": "wrangler dev --port 8790",
-    "deploy": "VITE_PACT_WS_URL=/ws npm run build -w @pact/web && wrangler d1 migrations apply pact --remote && wrangler deploy",
+    "build:web": "VITE_PACT_WS_URL=/ws npm run build -w @pact/web",
+    "deploy": "npm run build:web && node scripts/deploy.mjs",
     "cf-typegen": "wrangler types --include-runtime false",
     "typecheck": "tsc -p tsconfig.json",
     "test": "vitest run",
