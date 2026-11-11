@@ -33,7 +33,14 @@ const creatorFilter = (table: string, creator: string) => ({
 });
 
 /** Two pages: Maya's brand view and the creator's view. Widget ids are stable for the agents. */
-export function initialState(view: "brand" | "creator", creatorName: string): AgReportState {
+/** Below this width the AI panel would cover the dashboard, so it starts collapsed (one click opens it). */
+export const AI_PANEL_MIN_WIDTH = 1200;
+
+export function initialState(
+  view: "brand" | "creator",
+  creatorName: string,
+  viewportWidth = AI_PANEL_MIN_WIDTH,
+): AgReportState {
   return {
     pages: [
       {
@@ -144,7 +151,7 @@ export function initialState(view: "brand" | "creator", creatorName: string): Ag
       filters: { collapsed: true },
       data: { collapsed: true },
       edit: { collapsed: true },
-      ai: { collapsed: view !== "brand" },
+      ai: { collapsed: view !== "brand" || viewportWidth < AI_PANEL_MIN_WIDTH },
     },
   } as unknown as AgReportState;
 }

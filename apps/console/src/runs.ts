@@ -84,7 +84,17 @@ export function runSourceFromEnv(env: Record<string, string | undefined>): RunSo
  * (the engine credits 51 of 57, so the newest exposed sale may not have) and paid at a shop it
  * did not browse; the held-out run bought a different product than the exposed one.
  * `credited` says which orders earned commission; omit it to ignore that signal.
+ * Among those, the scripted path wins: the agent read Northwind's offer and paid at Lumen,
+ * $4 cheaper. The hourly reseed reshuffles runs, so without this the video frame drifts.
  */
+const isScriptedPath = (r: AgentRun) =>
+  r.shop === "lumen" && r.storesViewed.length === 1 && r.storesViewed[0] === "northwind";
+
+/** What the lane header says about the agent. Seeded demo runs use a stand-in model. */
+export function agentLabel(model: string): string {
+  return model.startsWith("fake-") ? "Seeded demo agent" : model;
+}
+
 export function pickPair(
   runs: AgentRun[],
   credited?: ReadonlySet<string>,
@@ -106,8 +116,9 @@ export function pickPair(
   const exposed = best(
     "test",
     (r) =>
-      (credited && r.orderId && credited.has(r.orderId) ? 2 : 0) +
-      (r.shop && !r.storesViewed.includes(r.shop) ? 1 : 0),
+      (credited && r.orderId && credited.has(r.orderId) ? 4 : 0) +
+      (r.shop && !r.storesViewed.includes(r.shop) ? 2 : 0) +
+      (isScriptedPath(r) ? 1 : 0),
   );
   const differs = (r: AgentRun) => (r.product?.upc !== exposed?.product?.upc ? 1 : 0);
   const heldOut = best("none", differs, exposed?.request) ?? best("none", differs);

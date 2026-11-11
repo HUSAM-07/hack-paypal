@@ -17,6 +17,7 @@ import { live, TRY_PREFIX } from "./live/routes";
 import { PUBLIC_MCP_PATH, publicMcpHandler } from "./mcp";
 import { payments } from "./payments/routes";
 import { webhooks } from "./payments/webhooks";
+import { clearReadCache } from "./read-cache";
 import { ipRateLimit, originAllowed, securityHeaders } from "./security";
 
 export { CitedDemoDO } from "./do/cited-demo";
@@ -66,6 +67,12 @@ app.route(TRY_PREFIX, live);
 app.route(CREATORS_PREFIX, creators);
 
 app.use("*", securityHeaders);
+// Any write (an engine call, a PayPal webhook, a Studio action) can change what the shared read
+// cache holds, so it starts this isolate's cache over. Reads stay cached for up to 10s.
+app.use("*", async (c, next) => {
+  if (c.req.method !== "GET" && c.req.method !== "HEAD") clearReadCache();
+  await next();
+});
 app.use("/api/auth/*", ipRateLimit);
 
 app.get("/api/health", (c) => c.json({ ok: true }));

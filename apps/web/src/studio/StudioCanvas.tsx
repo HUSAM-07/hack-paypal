@@ -112,7 +112,10 @@ export interface StudioCanvasProps {
 export function StudioCanvas(p: StudioCanvasProps) {
   const { config, tables, analyst, initialView, creatorName } = p;
   const data = useMemo(() => sourcesFor(config, tables), [config, tables]);
-  const state = useMemo(() => initialState(initialView, creatorName), [initialView, creatorName]);
+  const state = useMemo(
+    () => initialState(initialView, creatorName, window.innerWidth),
+    [initialView, creatorName],
+  );
   const ai = useMemo(() => analyst.citedHarness(config), [analyst, config]);
   // Before the journeys grid first renders; setting the same key again is harmless.
   if (config.gridLicenseKey) LicenseManager.setLicenseKey(config.gridLicenseKey);
