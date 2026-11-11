@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { createEngineClient } from "../src/engine";
 import { createConsoleApp } from "../src/index";
-import { type AgentRun, parseRunRecords, pickPair, type RunSource } from "../src/runs";
+import { type AgentRun, agentLabel, parseRunRecords, pickPair, type RunSource } from "../src/runs";
 
 const record = (o: Record<string, unknown>) =>
   JSON.stringify({
@@ -155,6 +155,19 @@ describe("picking the video pair", () => {
     const { exposed, heldOut } = pickPair(runs, new Set(["ORD-A", "ORD-B"]));
     expect(exposed?.orderId).toBe("ORD-A");
     expect(heldOut?.orderId).toBe("ORD-D");
+  });
+
+  it("prefers the scripted Northwind → Lumen run over a newer MegaMart → Lumen one", () => {
+    const runs = [
+      run({ orderId: "ORD-A", storesViewed: ["northwind"], shop: "lumen" }),
+      run({ orderId: "ORD-B", storesViewed: ["megamart"], shop: "lumen" }),
+    ];
+    expect(pickPair(runs, new Set(["ORD-A", "ORD-B"])).exposed?.orderId).toBe("ORD-A");
+  });
+
+  it("labels seeded stand-in agents plainly and keeps real model ids", () => {
+    expect(agentLabel("fake-gemini")).toBe("Seeded demo agent");
+    expect(agentLabel("claude-sonnet-5-5")).toBe("claude-sonnet-5-5");
   });
 
   it("falls back to the latest runs when nothing tells the story", () => {

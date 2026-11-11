@@ -2,6 +2,7 @@ import { app as engine, writeDenied } from "@cited/engine";
 import type { Env as EngineEnv } from "@cited/engine/env";
 import type { Context } from "hono";
 import type { Env } from "./env";
+import { cachedRead } from "./read-cache";
 
 /** Where the CITED engine is mounted in this worker. */
 export const CITED_PREFIX = "/api/cited";
@@ -112,14 +113,23 @@ function isEngineApi(req: Request): boolean {
  * With real PayPal the state is PayPal's and D1's, and any isolate will do.
  */
 export function citedHandler(c: Ctx): Response | Promise<Response> {
-  if (isEngineApi(c.req.raw)) {
+  const engineApi = isEngineApi(c.req.raw);
+  if (engineApi) {
     const denied = citedWriteDenied(c.env, c.req.raw);
     if (denied) return denied;
   }
-  if ((c.env.CITED_PAYPAL_MODE ?? c.env.PAYPAL_MODE) === "simulated") {
-    return c.env.CITED_DEMO.get(c.env.CITED_DEMO.idFromName("demo")).fetch(c.req.raw);
+  const load = (req: Request): Promise<Response> =>
+    (c.env.CITED_PAYPAL_MODE ?? c.env.PAYPAL_MODE) === "simulated"
+      ? c.env.CITED_DEMO.get(c.env.CITED_DEMO.idFromName("demo")).fetch(req)
+      : Promise.resolve(serveEngine(req, c.env, c.executionCtx));
+  // Anonymous reads of the engine API (judges' tabs, /proof) share the same short cache as the
+  // console and Studio, so D1 pays one read per path per TTL, not one per request. Token holders
+  // (the demo runner, the reseed) always read fresh; any write anywhere in the worker drops the
+  // cache (see index.ts).
+  if (engineApi && c.req.method === "GET" && !c.req.header("authorization")) {
+    return cachedRead(c.req.raw, load);
   }
-  return serveEngine(c.req.raw, c.env, c.executionCtx);
+  return load(c.req.raw);
 }
 
 /**

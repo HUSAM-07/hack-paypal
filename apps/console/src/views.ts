@@ -1,6 +1,7 @@
 import { SITE_NAV_TOUCH_CSS, siteNavLinks } from "@pact/protocol";
 import type { DemoData, PayoutData, RunView, StatementData } from "./data";
 import { creatorName, esc, shopName, usd } from "./format";
+import { agentLabel } from "./runs";
 
 /*
  * Fonts come from the worker's own static assets (/fonts/*), so the demo-page CSP
@@ -286,7 +287,7 @@ function runColumn(v: RunView | null, kind: "exposed" | "held"): string {
     : `<p class="note">${esc(run.orderId ?? "")} — waiting for the engine to record it</p>`;
 
   return `<section class="${cls}">
-  <div class="lane-head"><h2>${laneTitle(kind, creator)}</h2><span class="model">${esc(run.model)}</span></div>
+  <div class="lane-head"><h2>${laneTitle(kind, creator)}</h2><span class="model">${esc(agentLabel(run.model))}</span></div>
   <ol class="steps">
     <li class="step"><span class="k">Catalogue</span><div>${catalogue}${passport}</div></li>
     <li class="step"><span class="k">${path.length > 1 ? "Offer → seller" : "Seller"}</span><div><div class="hop">${stores}</div>${
