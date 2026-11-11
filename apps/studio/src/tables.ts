@@ -124,6 +124,11 @@ const stateOf = (x: RawCredit) => (isHeld(x) ? "held" : isFrozen(x) ? "frozen" :
 export function buildTables(raw: RawEngine): StudioTables {
   const batches = orderedBatches(raw);
   const first = batches[0];
+  // The first payout's cycle: sales whose 30-day hold had ended when that batch ran. The arm
+  // strip and the journeys table both scope "First payout" by it, so they agree with the tile.
+  const firstCycleEnd = first ? Date.parse(first.createdAt) - HOLD_DAYS * DAY : null;
+  const inFirstCycle = (j: { capturedAt: string }) =>
+    firstCycleEnd !== null && Date.parse(j.capturedAt) <= firstCycleEnd;
   const labels = batchLabels(raw);
   const creatorName = new Map(raw.creators.map((c) => [c.creatorId, c.name]));
   const nameOf = (id: string) => creatorName.get(id) ?? id;
@@ -215,10 +220,7 @@ export function buildTables(raw: RawEngine): StudioTables {
     // The first payout's arms count only the sessions whose hold had ended when that batch ran,
     // so the strip agrees with the "+51 of 57" tile beside it. Journeys are purchases, so this
     // counts buying sessions; in the forced-buy demo every session buys.
-    const firstCycleEnd = first ? Date.parse(first.createdAt) - HOLD_DAYS * DAY : 0;
-    const firstJourneys = first
-      ? raw.journeys.filter((j) => Date.parse(j.capturedAt) <= firstCycleEnd)
-      : [];
+    const firstJourneys = raw.journeys.filter(inFirstCycle);
     for (const scope of SCOPES) {
       for (const arm of ["test", "placebo", "none"] as const) {
         const inArm = firstJourneys.filter((j) => j.arm === arm);
@@ -330,6 +332,7 @@ export function buildTables(raw: RawEngine): StudioTables {
       coExposed: creatorsSeen.length > 1,
       captures: caps.size,
       capturedAt: j.capturedAt,
+      firstPayout: inFirstCycle(j),
     };
   });
 
@@ -597,6 +600,7 @@ export const TABLES: TableMeta[] = [
       b("coExposed", "Co-exposed"),
       n("captures", "Captures"),
       t("capturedAt", "Captured at"),
+      b("firstPayout", "In the first payout's cycle"),
     ],
   },
   {

@@ -14,8 +14,8 @@ import { AllEnterpriseModule, ModuleRegistry } from "ag-grid-enterprise";
 import { AgGridReact } from "ag-grid-react";
 import type { AgWidgetParams } from "ag-studio";
 import { studioGridTheme } from "ag-studio";
-import { useMemo } from "react";
-import type { StudioContext } from "../context";
+import { useMemo, useSyncExternalStore } from "react";
+import { type StudioContext, scopeStore } from "../context";
 import type { Row } from "../data";
 import { money, num, useRows } from "./useRows";
 
@@ -38,6 +38,7 @@ const JOURNEY_FIELDS = [
   "voided",
   "holdStatus",
   "holdUntil",
+  "firstPayout",
   "creators",
   "capturedAt",
 ];
@@ -139,14 +140,17 @@ function Detail(p: IDetailCellRendererParams<Journey>) {
 export function JourneysGrid(p: P) {
   const journeys = useRows(p.widgetApi, "journeys", JOURNEY_FIELDS);
   const shares = useRows(p.widgetApi, "shares", SHARE_FIELDS);
+  // "First payout" shows only the orders its cycle covered, like the tiles and arm strip.
+  const scope = useSyncExternalStore(scopeStore.subscribe, scopeStore.get);
   const rows = useMemo<Journey[]>(() => {
     const by = new Map<string, Row[]>();
     for (const s of shares ?? [])
       by.set(String(s.orderId), [...(by.get(String(s.orderId)) ?? []), s]);
     return (journeys ?? [])
+      .filter((j) => scope !== "first" || j.firstPayout === true)
       .map((j): Journey => ({ ...j, shares: by.get(String(j.orderId)) ?? [] }))
       .sort((a, b) => (String(a.capturedAt) < String(b.capturedAt) ? 1 : -1));
-  }, [journeys, shares]);
+  }, [journeys, shares, scope]);
 
   const columns = useMemo<ColDef<Journey>[]>(
     () => [
