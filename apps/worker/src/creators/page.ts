@@ -203,7 +203,7 @@ export function welcomePage(o: { simulated: boolean; error?: string }): string {
     "CITED for creators",
     `${NAV}<main>${rail(1)}
 <h1>Get paid when your test <em>changes what an agent buys</em>.</h1>
-<p class="lede">AI shopping agents read your test before they buy. CITED shows some of them your test and some of them nothing, then pays you 8% of every sale your test caused. Not the sales that would have happened anyway.</p>
+<p class="lede">AI shopping agents read your test before they buy. CITED shows some of them your test and some of them nothing, then pays you 8% of every sale your test caused, and nothing for sales that would have happened anyway.</p>
 ${o.error ? `<p class="err" role="alert">${esc(o.error)}</p>` : ""}
 <a class="btn pp" href="/creators/connect">Connect ${PAYPAL_WORD}</a>
 <p class="small">${o.simulated ? "This deployment uses simulated PayPal: sign-in happens on a page we host, and no PayPal account is touched." : "You sign in on paypal.com. CITED receives your PayPal account ID, name and email, never your password."}</p>
@@ -266,7 +266,7 @@ function scheduleBlock(studioUrl: string): string {
 <div><span class="t" style="flex:${steadyTest}"></span><span class="h" style="flex:${s.steadyHoldoutShare}"></span></div>
 </div>
 <div class="strip-legend" style="--cal:${cal};--steady:${steady}">
-<p><b>Days 1–${s.calibrationDays}</b>Half the agents see your test, half don't. That measures your lift fast.</p>
+<p><b>Days 1 to ${s.calibrationDays}</b>Half the agents see your test, half don't. That measures your lift fast.</p>
 <p><b>From day ${s.calibrationDays + 1}, for good</b>${pct(steadyTest)} see it. ${pct(s.steadyHoldoutShare)} stay held out, half shown your placebo, so the lift stays measured.</p>
 </div>
 <div class="key"><span>Shown your test</span><span class="h">Held out</span></div>

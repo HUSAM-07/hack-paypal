@@ -341,7 +341,7 @@ function ticket(sessionId: string, arm: string, mini = false): string {
 
 function laneTitle(kind: "exposed" | "held", creator: string | null): string {
   if (kind === "held") return "Held out";
-  return creator ? `Shown ${esc(creator)}’s test` : "Shown the test";
+  return creator ? `Shown ${esc(creator)}'s test` : "Shown the test";
 }
 
 function verdict(v: RunView, kind: "exposed" | "held"): string {
@@ -397,7 +397,7 @@ function runColumn(v: RunView | null, kind: "exposed" | "held"): string {
   const other = path.find((s) => s !== paidAt);
   const catalogue =
     kind === "exposed"
-      ? `<p>Reads ${creator ? `${esc(creator)}’s` : "the creator’s"} test of both purifiers.</p>`
+      ? `<p>Reads ${creator ? `${esc(creator)}'s` : "the creator's"} test of both purifiers.</p>`
       : `<p>Sees everything except the test.</p>`;
   const passport = run.sessionId
     ? ticket(run.sessionId, armWord)
@@ -409,12 +409,12 @@ function runColumn(v: RunView | null, kind: "exposed" | "held"): string {
       }</p>`
     : `<p class="product dim">No purchase</p>`;
   const capture = journey
-    ? `<p class="capture"><span class="pp">PayPal</span> captured <code>Order ${esc(journey.orderId)}</code><span class="dim via">The agent paid with the buyer’s saved PayPal${paidAt ? `, straight to ${esc(shopName(paidAt))}’s PayPal account` : ""}. No website, no redirect.</span>${
+    ? `<p class="capture"><span class="pp">PayPal</span> captured <code>Order ${esc(journey.orderId)}</code><span class="dim via">The agent paid with the buyer's saved PayPal${paidAt ? `, straight to ${esc(shopName(paidAt))}'s PayPal account` : ""}. No website, no redirect.</span>${
         run.passportAttached
           ? `<span class="dim via">Passport read from <code>custom_id</code> · sale joined to the ${kind === "exposed" ? "test" : "held-out"} arm</span>`
           : ""
       }</p>`
-    : `<p class="note">${esc(run.orderId ?? "")} — waiting for the engine to record it</p>`;
+    : `<p class="note">Order ${esc(run.orderId ?? "")} is waiting for the engine to record it.</p>`;
 
   return `<section class="${cls}">
   <div class="lane-head"><h2>${laneTitle(kind, creator)}</h2><span class="model">${esc(agentLabel(run.model))}</span></div>
@@ -422,7 +422,7 @@ function runColumn(v: RunView | null, kind: "exposed" | "held"): string {
     <li class="step"><span class="k">Catalogue</span><div>${catalogue}${passport}</div></li>
     <li class="step"><span class="k">${path.length > 1 ? "Offer → seller" : "Seller"}</span><div><div class="hop">${stores}</div>${
       saved && saved > 0 && other
-        ? `<p class="note good num">${esc(shopName(paidAt ?? ""))}’s offer was ${usd(saved)} under ${esc(shopName(other))}’s</p>`
+        ? `<p class="note good num">${esc(shopName(paidAt ?? ""))}'s offer was ${usd(saved)} under ${esc(shopName(other))}'s</p>`
         : ""
     }</div></li>
     <li class="step"><span class="k">Checkout</span><div>${bought}${capture}</div></li>
@@ -447,32 +447,32 @@ function filmCells(v: RunView, kind: "exposed" | "held", creator: string): Cell[
   const price = run.totalMinor !== null ? usd(run.totalMinor) : "";
   const tick = `<svg class="tick" viewBox="0 0 44 44" aria-hidden="true"><circle cx="22" cy="22" r="18"/><path d="${earned > 0 ? "M14 22.5l5.5 5.5L30.5 17" : "M15 22h14"}"/></svg>`;
   return [
-    { k: "Request", v: `<span class="q">“${esc(run.request)}”</span>` },
+    { k: "Request", v: `<span class="q">"${esc(run.request)}"</span>` },
     {
       k: "Catalogue",
       v: `Same offers, same ranking<br>${
         kind === "exposed"
-          ? `<span class="chip yes">+ ${esc(creator)}’s review shown</span>`
-          : `<span class="chip no">${esc(creator)}’s review</span> <span class="dim">withheld</span>`
+          ? `<span class="chip yes">+ ${esc(creator)}'s review shown</span>`
+          : `<span class="chip no">${esc(creator)}'s review</span> <span class="dim">withheld</span>`
       }`,
     },
     {
       k: "Reads",
       v: read
-        ? `${esc(creator)}’s review, on ${esc(shopName(read))}’s offer<small>Winix A230 vs Levoit Core 300</small>`
+        ? `${esc(creator)}'s review, on ${esc(shopName(read))}'s offer<small>Winix A230 vs Levoit Core 300</small>`
         : `<span class="dim">No review to read</span>`,
     },
     {
       k: "Buys",
       v: `<b>${esc(product)}</b> at ${esc(paidAt ? shopName(paidAt) : "?")}${price ? ` · ${price}` : ""}${
         read && saved && saved > 0
-          ? `<small>${usd(saved)} under ${esc(shopName(read))}’s offer</small>`
+          ? `<small>${usd(saved)} under ${esc(shopName(read))}'s offer</small>`
           : ""
       }`,
     },
     {
       k: "PayPal",
-      v: `Paid ${esc(paidAt ? shopName(paidAt) : "the seller")} from the buyer’s saved PayPal<small>passport in <code>custom_id</code>: ${kind === "exposed" ? "shown the review" : "held out"}${journey ? ` · order ${esc(journey.orderId)}` : ""}</small>`,
+      v: `Paid ${esc(paidAt ? shopName(paidAt) : "the seller")} from the buyer's saved PayPal<small>passport in <code>custom_id</code>: ${kind === "exposed" ? "shown the review" : "held out"}${journey ? ` · order ${esc(journey.orderId)}` : ""}</small>`,
     },
     {
       k: "CITED engine",
@@ -502,11 +502,11 @@ function film(d: DemoData): string {
     `<div class="${side} fh" style="--o:${o}"><h3>${title}</h3><span class="model">${esc(model)}</span></div>`;
   const cell = (side: "fa" | "fb", c: Cell, i: number, o: number) =>
     `<div class="${side} row${i === n - 1 ? " fl verdict-row" : ""}${SAME[i] ? "" : " changed"}" data-row="${i}" style="--o:${o}"><span class="dots" aria-hidden="true"><i></i><i></i><i></i></span><span class="k">${c.k}</span><div class="v">${c.v}</div></div>`;
-  let rows = `${head("fa", "Without the review", agentLabel(d.heldOut.run.model), 0)}<div class="eq" aria-hidden="true"></div>${head("fb", `With ${esc(creator)}’s review`, agentLabel(d.exposed.run.model), 100)}`;
+  let rows = `${head("fa", "Without the review", agentLabel(d.heldOut.run.model), 0)}<div class="eq" aria-hidden="true"></div>${head("fb", `With ${esc(creator)}'s review`, agentLabel(d.exposed.run.model), 100)}`;
   for (let i = 0; i < n; i++) {
     rows += `${cell("fa", a[i] as Cell, i, i + 1)}<div class="eq${SAME[i] ? "" : " ne"}" data-row="${i}" aria-label="${SAME[i] ? "same" : "different"}"><span>${SAME[i] ? "=" : "≠"}</span></div>${cell("fb", b[i] as Cell, i, 101 + i)}`;
   }
-  const chapters = ["Without the review", `With ${esc(creator)}’s review`, "Spot the difference"];
+  const chapters = ["Without the review", `With ${esc(creator)}'s review`, "Spot the difference"];
   return `<section class="film" aria-label="Two agents, one request: without and with the creator's review">
 <div class="film-grid">${rows}</div>
 <p class="film-sum">Same request, same offers, same checkout. Only the review changed, and the purchase changed with it. <em>That difference is what ${esc(creator)} is paid for.</em></p>
@@ -524,7 +524,7 @@ function film(d: DemoData): string {
 
 export function demoPage(d: DemoData, opts: Opts): string {
   const body = `<main class="stage">
-<div class="lede"><h1>One A/B test, two agents</h1><p>Same request, same offers, same ranking. Watch an agent shop without the creator’s review, then the same request with it, then compare.</p><p class="lede-note">These two are seeded replays. The effect was measured with live GPT, Gemini and Claude agents in a pre-registered eval: <a href="/proof">see the proof</a>.</p></div>
+<div class="lede"><h1>One A/B test, two agents</h1><p>Same request, same offers, same ranking. Watch an agent shop without the creator's review, then the same request with it, then compare.</p><p class="lede-note">These two are seeded replays. The effect was measured with live GPT, Gemini and Claude agents in a pre-registered eval: <a href="/proof">see the proof</a>.</p></div>
 ${
   d.exposed && d.heldOut
     ? film(d)
