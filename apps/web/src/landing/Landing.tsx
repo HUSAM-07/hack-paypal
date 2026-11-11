@@ -1,5 +1,7 @@
 import type { ReactNode } from "react";
 import { FlowTall, FlowWide } from "./FlowDiagram";
+import { type HowStep, HowTabs } from "./HowTabs";
+import { SessionField } from "./SessionField";
 import { SiteHeader } from "./SiteHeader";
 
 /**
@@ -80,76 +82,96 @@ function Section({
   );
 }
 
-const ARMS = [
-  {
-    label: "Shown the test",
-    note: "HouseFresh: Winix A230 vs Levoit Core 300",
-    count: "57 / 57",
-    pct: 100,
-    cls: "bar-test",
-  },
-  {
-    label: "Placebo",
-    note: "another HouseFresh article",
-    count: "3 / 54",
-    pct: 6,
-    cls: "bar-placebo",
-  },
-  {
-    label: "Nothing",
-    note: "test withheld, nothing added",
-    count: "3 / 36",
-    pct: 8,
-    cls: "bar-none",
-  },
-];
-
-function ArmsFigure() {
+/* Tab visuals: each restates its step's numbers, which all trace to the sources below. */
+function VFund() {
   return (
-    <figure className="fig fig-arms">
-      <p className="fig-title">Agents that bought the Winix</p>
-      <div className="fig-rows">
-        {ARMS.map((a) => (
-          <div key={a.label} className="arm-row">
-            <div className="arm-label">
-              <span className="arm-name">{a.label}</span>
-              <span className="arm-note">{a.note}</span>
-            </div>
-            <div
-              className="arm-track"
-              role="img"
-              aria-label={`${a.pct}% bought the Winix (${a.count})`}
-            >
-              <span className={`arm-bar ${a.cls}`} style={{ width: `${a.pct}%` }} />
-            </div>
-            <div className="arm-value num">
-              <span className="arm-pct">{a.pct}%</span>
-              <span className="arm-count">{a.count}</span>
-            </div>
-          </div>
-        ))}
-      </div>
-      <div className="lift num">
-        <div>
-          <span className="lift-value">+94pp</span>
-          <span className="lift-label">lift, test vs placebo</span>
+    <div className="vis vis-fund">
+      {["Winix", "Levoit"].map((b) => (
+        <div key={b} className="vis-row">
+          <span className="vis-chip">{b} deposit</span>
+          <span className="vis-line" aria-hidden="true" />
+          <span className="vis-chip vis-chip-on">Purifier programme</span>
         </div>
-        <div>
-          <span className="lift-value">+90.3pp</span>
-          <span className="lift-label">80% lower bound: what pays</span>
-        </div>
-      </div>
-      <figcaption className="caption">
-        <span className="fig-no">Fig. 1</span> 147 forced-buy sessions across gpt-6-luna,
-        gemini-3.8-flash and claude-sonnet-5-5, Levoit priced the same as Winix.
-        <Ref n={2} />
-      </figcaption>
-    </figure>
+      ))}
+      <p className="vis-foot">Funds a category. Never a creator, never a verdict.</p>
+    </div>
   );
 }
 
-const STEPS: { title: string; body: ReactNode }[] = [
+function VRandomise() {
+  return (
+    <div className="vis vis-rand">
+      <div className="vis-split">
+        <span className="vis-k">Days 1–7</span>
+        <span className="vis-bar">
+          <span className="vb-test" style={{ width: "50%" }}>
+            test 50%
+          </span>
+          <span className="vb-hold" style={{ width: "50%" }}>
+            held out 50%
+          </span>
+        </span>
+      </div>
+      <div className="vis-split">
+        <span className="vis-k">Day 8 on</span>
+        <span className="vis-bar">
+          <span className="vb-test" style={{ width: "95%" }}>
+            test 95%
+          </span>
+          <span className="vb-hold" style={{ width: "5%" }} title="held out 5%" />
+        </span>
+      </div>
+      <p className="vis-foot">
+        <span className="vis-ok" aria-hidden="true">
+          ✓
+        </span>{" "}
+        Ranking identical in every arm
+      </p>
+    </div>
+  );
+}
+
+function VPassport() {
+  return (
+    <pre className="vis vis-code">
+      <span className="c-dim">POST /v2/checkout/orders</span>
+      {"\npurchase_units[0]\n  payee      "}
+      <span className="c-str">"lumen"</span>
+      {"\n  custom_id  "}
+      <span className="c-pass">"v1|s_8f2c|test|housefresh|northwind,lumen.sig"</span>
+      {"\n\n"}
+      <span className="c-dim">→ the capture joins the sale to its arm</span>
+    </pre>
+  );
+}
+
+function VPay() {
+  return (
+    <ol className="vis vis-pay num">
+      <li>
+        <span>57 exposed sales × 90.3%</span>
+        <b>51 units</b>
+      </li>
+      <li>
+        <span>× $95.99 × 8%, held 30 days</span>
+        <b>$391.64</b>
+      </li>
+      <li className="vp-void">
+        <span>A refund voids one credit</span>
+        <b>−$7.68</b>
+      </li>
+      <li className="vp-total">
+        <span>Batch Payout to HouseFresh</span>
+        <b>$383.96</b>
+      </li>
+    </ol>
+  );
+}
+
+const STEPS: HowStep[] = [
   {
+    tab: "Fund",
+    visual: <VFund />,
     title: "A brand funds a category, never a verdict.",
     body: (
       <>
@@ -160,6 +182,8 @@ const STEPS: { title: string; body: ReactNode }[] = [
     ),
   },
   {
+    tab: "Randomise",
+    visual: <VRandomise />,
     title: "The catalogue randomises what agents see.",
     body: (
       <>
@@ -170,6 +194,8 @@ const STEPS: { title: string; body: ReactNode }[] = [
     ),
   },
   {
+    tab: "Passport",
+    visual: <VPassport />,
     title: "The passport travels with the sale.",
     body: (
       <>
@@ -183,6 +209,8 @@ const STEPS: { title: string; body: ReactNode }[] = [
     ),
   },
   {
+    tab: "Pay",
+    visual: <VPay />,
     title: "The engine pays only what the test caused.",
     body: (
       <>
@@ -266,22 +294,66 @@ export function Landing() {
       <SiteHeader />
 
       <main id="main">
-        <div className="wrap hero">
-          <div className="hero-copy">
-            <p className="kicker">Built on PayPal Orders, webhooks and Payouts</p>
-            <h1 className="h1">PayPal's affiliate network, rebuilt for AI&nbsp;agents.</h1>
-            <p className="lede">It pays creators on proven lift, not last-click cookies.</p>
-            <div className="ctas">
-              <a className="btn btn-primary" href="/console?clean=1">
-                Watch two agents shop
-              </a>
-              <a className="btn btn-quiet" href="/console/payout?clean=1">
-                See the payout
+        <section className="hero" aria-labelledby="hero-h">
+          <div className="wrap hero-inner">
+            <h1 id="hero-h" className="h1">
+              PayPal's affiliate network, rebuilt for AI&nbsp;agents.
+            </h1>
+            <div className="hero-foot">
+              <div>
+                <p className="lede">
+                  It pays creators on proven lift, not last-click cookies.{" "}
+                  <span className="lede-dim">
+                    Agents read a creator's test and buy wherever the price is best. CITED measures
+                    which tests changed what they bought, and pays only for those sales.
+                  </span>
+                </p>
+                <div className="ctas">
+                  <a className="btn btn-primary" href="/console?clean=1">
+                    Watch two agents shop <span aria-hidden="true">→</span>
+                  </a>
+                  <a className="btn btn-quiet" href="/console/payout?clean=1">
+                    See the payout
+                  </a>
+                </div>
+              </div>
+              <a className="hero-proof" href="/proof">
+                <span className="dot" aria-hidden="true" /> Pre-registered, three models{" "}
+                <span aria-hidden="true">→</span>
               </a>
             </div>
           </div>
-          <ArmsFigure />
-        </div>
+          <div className="wrap">
+            <SessionField
+              caption={
+                <>
+                  <span className="fig-no">Fig. 1</span> Agents that bought the Winix: 147
+                  forced-buy sessions across gpt-6-luna, gemini-3.8-flash and claude-sonnet-5-5,
+                  Levoit priced the same as Winix.
+                  <Ref n={2} />
+                </>
+              }
+            />
+            <dl className="stats num">
+              <div>
+                <dt>Lift, test vs placebo</dt>
+                <dd>+94pp</dd>
+              </div>
+              <div>
+                <dt>80% lower bound: what pays</dt>
+                <dd className="pos">+90.3pp</dd>
+              </div>
+              <div>
+                <dt>Paid to HouseFresh, day 30</dt>
+                <dd>$383.96</dd>
+              </div>
+              <div>
+                <dt>Built on PayPal</dt>
+                <dd className="stats-small">Orders v2 · webhooks · Payouts</dd>
+              </div>
+            </dl>
+          </div>
+        </section>
 
         <div className="wrap">
           <Section id="problem" kicker="The problem" title="Agents read. They never click.">
@@ -318,19 +390,7 @@ export function Landing() {
               </figure>
             }
           >
-            <ol className="steps">
-              {STEPS.map((s, i) => (
-                <li key={s.title} className="step">
-                  <span className="step-no num" aria-hidden="true">
-                    {i + 1}
-                  </span>
-                  <div>
-                    <h3 className="h3">{s.title}</h3>
-                    <p className="step-body">{s.body}</p>
-                  </div>
-                </li>
-              ))}
-            </ol>
+            <HowTabs steps={STEPS} />
           </Section>
 
           <Section id="proof" kicker="The proof" title="Measured on three models, pre-registered.">
