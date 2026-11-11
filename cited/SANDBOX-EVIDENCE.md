@@ -1,6 +1,6 @@
 # Sandbox evidence
 
-The hosted demo runs on a simulated PayPal, so no money moves there. The money at the end of the demo was also run once against the real PayPal sandbox, with the demo's numbers, and the whole agent checkout (vault, order, capture, credit, refund void, payout) ran once end to end through the engine's code with small amounts. This page lists those runs by PayPal id only: no credentials, no account emails, no vault or payer ids.
+The hosted demo runs on a simulated PayPal, so no money moves there. The money at the end of the demo was also run once against the real PayPal sandbox, with the demo's numbers, and the whole agent checkout (vault, order, capture, credit, refund void, payout) ran once end to end through the engine's code with small amounts. A creator's Log in with PayPal also ran on the sandbox through the worker's own identity code. This page lists those runs by PayPal id only: no credentials, no account emails, no vault or payer ids.
 
 All runs are recorded in [HUSAM-07/hack-paypal#84](https://github.com/HUSAM-07/hack-paypal/issues/84).
 
@@ -70,6 +70,18 @@ node --env-file=<env file with PAYPAL_CLIENT_ID and PAYPAL_CLIENT_SECRET> script
 ```
 
 It asks the simulator to deliver both events to subscription `8042373202922840X` and polls `/api/cited/api/webhook-proof` until both show `verified=true`, printing the event id, `signedFor`, transmission id and cert URL. Proof rows are keyed by transmission id, because the simulator reuses the event ids above on every run. A `subscription` row appears whenever PayPal sends a real event to the subscription, for example `PAYMENT.PAYOUTSBATCH.SUCCESS` after a sandbox payout.
+
+## Log in with PayPal: a creator connects
+
+Run on 11 Nov 2026 (20:22 UTC) against the sandbox app, with the worker's own identity code (`apps/worker/src/creators/identity.ts`, the functions `/creators` calls), through [`apps/worker/scripts/sandbox-login.ts`](../apps/worker/scripts/sandbox-login.ts).
+
+| Step | Result |
+|---|---|
+| Authorize (`/signin/authorize`, scopes `openid profile email paypalattributes`) | A sandbox personal account signed in and consented; PayPal redirected to the registered Return URL `…/creators/callback` with a code |
+| Token (`/v1/oauth2/token`, `authorization_code`) | Exchanged |
+| `userinfo` (`/v1/identity/oauth2/userinfo`) | Payer id returned (13 characters), name returned, email returned |
+
+The payer id is what `/creators` stores as the creator's Payouts receiver. It, the token and the email are not recorded here. The hosted `/creators` runs a labelled simulated sign-in, so its callback refuses this code (`error=state`: it did not start the flow); the code is read from the browser's network log (DevTools, Preserve log) and exchanged by the script.
 
 ## Agent checkout, end to end: vault → order → capture → credit → refund void → payout
 

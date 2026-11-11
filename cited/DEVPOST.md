@@ -27,7 +27,8 @@ Paste each section into the matching Devpost field. Numbers come from `npm run d
 | Captures refund (Agent Toolkit `create_refund`) | Refund `81C245246C527113H`; its `PAYMENT.CAPTURE.REFUNDED` webhook voided that sale's credit in the engine | simulated |
 | Webhooks | PayPal-signed captures, refund and payout-batch events delivered to subscription `8042373202922840X` and verified on the hosted engine (`signedFor=subscription`); a local engine received the same events by replay, since PayPal cannot reach it | simulated |
 | Payouts (agent checkout run) | The engine's `runPayouts` sent batch `GB9U5DYBGHLY4`: $0.16 for the one credit left after the refund, SUCCESS | simulated |
-| Disputes, Log in with PayPal | Code paths built against the sandbox APIs | simulated |
+| Log in with PayPal | A sandbox personal account signed in; the worker's identity code exchanged the code and read a payer id, name and email from `userinfo` ([SANDBOX-EVIDENCE.md](SANDBOX-EVIDENCE.md)) | simulated |
+| Disputes | Code paths built against the sandbox APIs | simulated |
 
 The simulated PayPal mirrors the REST shapes and signs webhooks like PayPal, so the same client code runs in both modes (`PAYPAL_MODE=sandbox` switches it; on the worker, `CITED_PAYPAL_MODE`).
 
