@@ -8,7 +8,90 @@ import { agentLabel } from "./runs";
  * (font-src falls back to 'self') allows them. Missing files fall back to system faces.
  */
 /* After the shared dark theme: the PayPal notification keeps PayPal's own light card. */
-const CONSOLE_DARK = `.notice{--ink:#16181D;--muted:#5B5F68;--line:#E6E2DA;--paper:#FFFFFF;--test:#1F7A55;color:var(--ink);border-color:transparent;box-shadow:0 30px 80px -20px rgba(0,0,0,.7)}.lanes{border-top-color:var(--line-strong)}.step::before{background:var(--bg)}.verdict strong{font-weight:300}.request{font-weight:300}`;
+const CONSOLE_DARK = `/* the film: two agent transcripts, rows aligned like a diff */
+.film{margin:0 0 2.6rem}
+.film-grid{display:grid;grid-template-columns:minmax(0,1fr) 3.2rem minmax(0,1fr);row-gap:0}
+.fa,.fb{background:var(--paper);border-left:1px solid var(--line);border-right:1px solid var(--line);padding:.85rem 1.2rem;min-width:0;transition:background .4s,opacity .4s,box-shadow .4s}
+.fh{border-top:1px solid var(--line);border-radius:10px 10px 0 0;padding:1rem 1.2rem .9rem;display:flex;justify-content:space-between;align-items:baseline;gap:1rem}
+.fh h3{margin:0;font:400 1.05rem/1.2 var(--serif);display:flex;align-items:center;gap:.5rem}
+.fh h3::before{content:"";width:.5rem;height:.5rem;border-radius:50%;background:var(--held)}
+.fb.fh h3::before{background:var(--test)}
+.fh .model{font:400 .55rem/1 var(--mono);color:var(--muted)}
+.fl{border-bottom:1px solid var(--line);border-radius:0 0 10px 10px}
+.row{border-top:1px solid var(--line)}
+.k{display:block;font:500 .5rem/1 var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:.35rem}
+.v{font-size:.78rem;color:var(--ink)}
+.v small{display:block;color:var(--muted);font-size:.66rem;margin-top:.15rem}
+.v .dim{color:var(--muted)}
+.chip{display:inline-flex;align-items:center;gap:.35rem;margin-top:.4rem;padding:.2rem .5rem;border-radius:999px;font:500 .55rem/1.4 var(--mono);border:1px solid currentColor}
+.chip.no{color:var(--held);text-decoration:line-through;text-decoration-thickness:1px}
+.chip.yes{color:var(--test)}
+.q{font:400 .9rem/1.3 var(--serif);color:var(--ink)}
+.verdict-row .v{display:flex;align-items:center;gap:.8rem}
+.amount-big{font:300 1.7rem/1 var(--serif);letter-spacing:-.01em}
+.fb .amount-big{color:var(--test)}
+.fa .amount-big{color:var(--muted)}
+.tick{flex:none;width:2.2rem;height:2.2rem}
+.tick circle,.tick path{fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.tick circle{stroke:var(--test);stroke-dasharray:120;stroke-dashoffset:0}
+.tick path{stroke:var(--test);stroke-dasharray:30;stroke-dashoffset:0}
+.fa .tick circle,.fa .tick path{stroke:var(--muted)}
+.eq{display:grid;place-items:center;font:500 .8rem/1 var(--mono);color:var(--muted);position:relative}
+.eq.ne{color:var(--test)}
+.eq span{display:grid;place-items:center;width:1.8rem;height:1.8rem;border-radius:50%;border:1px solid var(--line);background:var(--bg)}
+.eq.ne span{border-color:var(--test);box-shadow:0 0 0 4px rgba(95,217,160,.08)}
+.film-sum{margin:1.1rem 0 0;text-align:center;font:300 1.25rem/1.35 var(--serif);color:var(--ink);text-wrap:balance}
+.film-sum em{color:var(--test);font-style:normal}
+.dots{display:none;gap:.25rem;align-items:center;height:1.2rem}
+.dots i{width:.32rem;height:.32rem;border-radius:50%;background:var(--muted);animation:blink 1s infinite}
+.dots i:nth-child(2){animation-delay:.15s}.dots i:nth-child(3){animation-delay:.3s}
+@keyframes blink{0%,80%,100%{opacity:.25}40%{opacity:1}}
+/* Player: rows wait, type, land. Without the script everything is simply shown. */
+.film-on .fa.row,.film-on .fb.row{opacity:.18}
+.film-on .fa.row > *,.film-on .fb.row > *{visibility:hidden}
+.film-on .row.typing{opacity:1}
+.film-on .row.typing .dots{display:flex;visibility:visible}
+.film-on .row.shown{opacity:1}
+.film-on .row.shown > *{visibility:visible;animation:land .35s ease-out}
+.film-on .row.shown .dots{display:none}
+@keyframes land{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+.film-on .verdict-row.shown .tick circle{animation:draw .7s ease-out both}
+.film-on .verdict-row.shown .tick path{animation:draw2 .4s .55s ease-out both}
+@keyframes draw{from{stroke-dashoffset:120}}
+@keyframes draw2{from{stroke-dashoffset:30}}
+.film-on .eq span{opacity:0;transform:scale(.6);transition:opacity .3s,transform .3s}
+.film-on .eq.shown span{opacity:1;transform:none}
+.film-on .film-sum{opacity:0;transition:opacity .5s}
+.film-on .film-sum.shown{opacity:1}
+.film-on .playing{box-shadow:inset 2px 0 0 var(--accent-on,transparent)}
+.fa.playing{--accent-on:var(--held)}.fb.playing{--accent-on:var(--test)}
+.diff .fa.row.changed,.diff .fb.row.changed{background:linear-gradient(90deg,rgba(95,217,160,.07),rgba(95,217,160,.02))}
+.diff .fa.row.changed{background:linear-gradient(90deg,rgba(240,181,69,.06),rgba(240,181,69,.015))}
+.film-bar{display:flex;align-items:stretch;margin-top:1.2rem;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.film-chs{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));flex:1}
+.film-chs li{border-right:1px solid var(--line)}
+.film-ch{all:unset;box-sizing:border-box;display:flex;align-items:baseline;gap:.6rem;width:100%;height:100%;padding:.8rem 1rem;cursor:pointer;position:relative;color:var(--muted);transition:color .2s,background .2s}
+.film-ch i{position:absolute;left:0;right:0;top:0;height:2px;background:var(--test);transform:scaleX(var(--p,0));transform-origin:left}
+.film-ch[aria-current="step"]{color:var(--ink);background:var(--raise)}
+.film-ch:focus-visible,.film-btn:focus-visible{outline:2px solid var(--test);outline-offset:-2px}
+.film-ch .n{font:500 .55rem/1 var(--mono);color:var(--test)}
+.film-ch b{font:500 .7rem/1.25 var(--sans)}
+.film-btn{all:unset;box-sizing:border-box;cursor:pointer;padding:0 1.1rem;font:500 .55rem/1 var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--ink);border-right:1px solid var(--line)}
+.film-btn:last-child{border-right:0}
+.film-btn:hover{color:var(--test)}
+.film-bar{display:none}.film-on .film-bar{display:flex}
+@media (max-width:1100px){.film-ch b{font-size:.8rem}.film-ch .n,.film-btn{font-size:.7rem}.v{font-size:.85rem}.k{font-size:.6rem}}
+@media (max-width:760px){
+  .film-grid{grid-template-columns:minmax(0,1fr)}
+  .film-grid > *{order:var(--o)}
+  .eq{display:none}
+  .fb.fh{margin-top:1.4rem}
+  .film-bar{flex-wrap:wrap}
+  .film-chs{grid-template-columns:1fr;flex-basis:100%}
+  .film-chs li{border-right:0;border-bottom:1px solid var(--line)}
+  .film-btn{flex:1;padding:.9rem 1rem;text-align:center}
+}
+.notice{--ink:#16181D;--muted:#5B5F68;--line:#E6E2DA;--paper:#FFFFFF;--test:#1F7A55;color:var(--ink);border-color:transparent;box-shadow:0 30px 80px -20px rgba(0,0,0,.7)}.lanes{border-top-color:var(--line-strong)}.step::before{background:var(--bg)}.verdict strong{font-weight:300}.request{font-weight:300}`;
 
 const CSS = `
 @font-face{font-family:"Newsreader";font-style:normal;font-weight:200 800;font-display:swap;src:url("/fonts/newsreader-latin-opsz-v1.woff2") format("woff2-variations")}
@@ -310,17 +393,108 @@ function runColumn(v: RunView | null, kind: "exposed" | "held"): string {
 </section>`;
 }
 
+// ───────────────────────── the film (apps/web/src/console-scene plays it) ─────────────────────────
+
+type Cell = { k: string; v: string };
+
+function filmCells(v: RunView, kind: "exposed" | "held", creator: string): Cell[] {
+  const { run, journey } = v;
+  const paidAt = journey?.storeChosen ?? run.shop;
+  const hops = run.storesViewed.length ? run.storesViewed : run.shop ? [run.shop] : [];
+  const read = kind === "exposed" ? hops.find((s) => s !== paidAt) : undefined;
+  const saved = journey?.priceSavedMinor;
+  const c = journey?.commission;
+  const earned = c ? c.pending + c.paid : 0;
+  const product = run.product?.name ?? "Nothing";
+  const price = run.totalMinor !== null ? usd(run.totalMinor) : "";
+  const tick = `<svg class="tick" viewBox="0 0 44 44" aria-hidden="true"><circle cx="22" cy="22" r="18"/><path d="${earned > 0 ? "M14 22.5l5.5 5.5L30.5 17" : "M15 22h14"}"/></svg>`;
+  return [
+    { k: "Request", v: `<span class="q">“${esc(run.request)}”</span>` },
+    {
+      k: "Catalogue",
+      v: `Same offers, same ranking<br>${
+        kind === "exposed"
+          ? `<span class="chip yes">+ ${esc(creator)}’s review shown</span>`
+          : `<span class="chip no">${esc(creator)}’s review</span> <span class="dim">withheld</span>`
+      }`,
+    },
+    {
+      k: "Reads",
+      v: read
+        ? `${esc(creator)}’s review, on ${esc(shopName(read))}’s offer<small>Winix A230 vs Levoit Core 300</small>`
+        : `<span class="dim">No review to read</span>`,
+    },
+    {
+      k: "Buys",
+      v: `<b>${esc(product)}</b> at ${esc(paidAt ? shopName(paidAt) : "?")}${price ? ` · ${price}` : ""}${
+        read && saved && saved > 0
+          ? `<small>${usd(saved)} under ${esc(shopName(read))}’s offer</small>`
+          : ""
+      }`,
+    },
+    {
+      k: "PayPal",
+      v: `Paid ${esc(paidAt ? shopName(paidAt) : "the seller")} from the buyer’s saved PayPal<small>passport in <code>custom_id</code>: ${kind === "exposed" ? "shown the review" : "held out"}${journey ? ` · order ${esc(journey.orderId)}` : ""}</small>`,
+    },
+    {
+      k: "CITED engine",
+      v: `${tick}<span><span class="amount-big num">${earned > 0 ? `+${usd(earned)}` : "$0.00"}</span><small>${
+        earned > 0
+          ? `to ${esc(creator)} · caused by the review · held 30 days`
+          : journey
+            ? "to creators · nothing the review caused"
+            : "not captured yet"
+      }</small></span>`,
+    },
+  ];
+}
+
+/* Which rows differ between the two agents; the catalogue row is the one thing we changed. */
+const SAME = [true, false, false, false, true, false];
+
+function film(d: DemoData): string {
+  if (!d.exposed || !d.heldOut) return "";
+  const creator = d.exposed.run.creatorsSeen[0]
+    ? creatorName(d.exposed.run.creatorsSeen[0])
+    : "the creator";
+  const a = filmCells(d.heldOut, "held", creator);
+  const b = filmCells(d.exposed, "exposed", creator);
+  const n = a.length;
+  const head = (side: "fa" | "fb", title: string, model: string, o: number) =>
+    `<div class="${side} fh" style="--o:${o}"><h3>${title}</h3><span class="model">${esc(model)}</span></div>`;
+  const cell = (side: "fa" | "fb", c: Cell, i: number, o: number) =>
+    `<div class="${side} row${i === n - 1 ? " fl verdict-row" : ""}${SAME[i] ? "" : " changed"}" data-row="${i}" style="--o:${o}"><span class="dots" aria-hidden="true"><i></i><i></i><i></i></span><span class="k">${c.k}</span><div class="v">${c.v}</div></div>`;
+  let rows = `${head("fa", "Without the review", agentLabel(d.heldOut.run.model), 0)}<div class="eq" aria-hidden="true"></div>${head("fb", `With ${esc(creator)}’s review`, agentLabel(d.exposed.run.model), 100)}`;
+  for (let i = 0; i < n; i++) {
+    rows += `${cell("fa", a[i] as Cell, i, i + 1)}<div class="eq${SAME[i] ? "" : " ne"}" data-row="${i}" aria-label="${SAME[i] ? "same" : "different"}"><span>${SAME[i] ? "=" : "≠"}</span></div>${cell("fb", b[i] as Cell, i, 101 + i)}`;
+  }
+  const chapters = ["Without the review", `With ${esc(creator)}’s review`, "Spot the difference"];
+  return `<section class="film" aria-label="Two agents, one request: without and with the creator's review">
+<div class="film-grid">${rows}</div>
+<p class="film-sum">Same request, same offers, same checkout. Only the review changed, and the purchase changed with it. <em>That difference is what ${esc(creator)} is paid for.</em></p>
+<div class="film-bar"><ol class="film-chs">${chapters
+    .map(
+      (h, i) =>
+        `<li><button type="button" class="film-ch"><span class="n num">${String(i + 1).padStart(2, "0")}</span><b>${h}</b><i aria-hidden="true"></i></button></li>`,
+    )
+    .join(
+      "",
+    )}</ol><button type="button" class="film-btn film-play">Pause</button><button type="button" class="film-btn film-replay">Replay</button></div>
+</section>
+<script type="module" src="/fx/console-scene.js"></script>`;
+}
+
 export function demoPage(d: DemoData, opts: Opts): string {
-  const request = (d.exposed ?? d.heldOut)?.run.request;
   const body = `<main class="stage">
-<div class="lede"><h1>Same request, two agents</h1><p>Same offers, same prices, same ranking. Only the creator’s test differs.</p><p class="lede-note">These two are seeded replays. The effect was measured with live GPT, Gemini and Claude agents in a pre-registered eval: <a href="/proof">see the proof</a>.</p></div>
-${request ? `<p class="request"><q>${esc(request)}</q></p>` : ""}
+<div class="lede"><h1>One A/B test, two agents</h1><p>Same request, same offers, same ranking. Watch an agent shop without the creator’s review, then the same request with it, then compare.</p><p class="lede-note">These two are seeded replays. The effect was measured with live GPT, Gemini and Claude agents in a pre-registered eval: <a href="/proof">see the proof</a>.</p></div>
 ${
-  d.exposed || d.heldOut
-    ? `<div class="lanes">${runColumn(d.exposed, "exposed")}${runColumn(d.heldOut, "held")}</div>`
-    : waiting(
-        'No agent runs to show yet. <a href="../try">Run an agent yourself</a> and watch it shop.',
-      )
+  d.exposed && d.heldOut
+    ? film(d)
+    : d.exposed || d.heldOut
+      ? `<div class="lanes">${runColumn(d.exposed, "exposed")}${runColumn(d.heldOut, "held")}</div>`
+      : waiting(
+          'No agent runs to show yet. <a href="../try">Run an agent yourself</a> and watch it shop.',
+        )
 }
 ${d.engineError ? `<p class="warn">${esc(d.engineError)}</p>` : ""}
 </main>`;

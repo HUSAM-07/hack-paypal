@@ -64,6 +64,8 @@ export default defineConfig(({ isSsrBuild }) => ({
             app: new URL("./app.html", import.meta.url).pathname,
             studio: new URL("./studio.html", import.meta.url).pathname,
             proof: new URL("./proof.html", import.meta.url).pathname,
+            // The console is server-rendered by the worker, so its scene script needs a fixed URL.
+            "console-scene": new URL("./src/console-scene/main.ts", import.meta.url).pathname,
           },
           // /studio loads AG Studio lazily (src/studio/App.tsx). Its vendors get chunks of their
           // own: they download in parallel, and each keeps its hashed URL (cached for a year by
@@ -71,6 +73,8 @@ export default defineConfig(({ isSsrBuild }) => ({
           // Not their dependencies: React and the rest stay shared with the other pages.
           output: {
             codeSplitting: { includeDependenciesRecursively: false, groups: VENDOR_CHUNKS },
+            entryFileNames: (chunk) =>
+              chunk.name === "console-scene" ? "fx/console-scene.js" : "assets/[name]-[hash].js",
           },
         },
   },
