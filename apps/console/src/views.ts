@@ -24,7 +24,7 @@ const CONSOLE_DARK = `/* the film: two agent transcripts, rows aligned like a di
 .v small{display:block;color:var(--muted);font-size:.66rem;margin-top:.15rem}
 .v .dim{color:var(--muted)}
 .chip{display:inline-flex;align-items:center;gap:.35rem;margin-top:.4rem;padding:.2rem .5rem;border-radius:999px;font:500 .55rem/1.4 var(--mono);border:1px solid currentColor}
-.chip.no{color:var(--held);text-decoration:line-through;text-decoration-thickness:1px}
+.chip.no{color:var(--held-ink);text-decoration:line-through;text-decoration-thickness:1px}
 .chip.yes{color:var(--test)}
 .q{font:400 .9rem/1.3 var(--serif);color:var(--ink)}
 .verdict-row .v{display:flex;align-items:center;gap:.8rem}
@@ -39,7 +39,7 @@ const CONSOLE_DARK = `/* the film: two agent transcripts, rows aligned like a di
 .eq{display:grid;place-items:center;font:500 .8rem/1 var(--mono);color:var(--muted);position:relative}
 .eq.ne{color:var(--test)}
 .eq span{display:grid;place-items:center;width:1.8rem;height:1.8rem;border-radius:50%;border:1px solid var(--line);background:var(--bg)}
-.eq.ne span{border-color:var(--test);box-shadow:0 0 0 4px rgba(95,217,160,.08)}
+.eq.ne span{border-color:var(--test);box-shadow:0 0 0 4px var(--test-tint)}
 .film-sum{margin:1.1rem 0 0;text-align:center;font:300 1.25rem/1.35 var(--serif);color:var(--ink);text-wrap:balance}
 .film-sum em{color:var(--test);font-style:normal}
 .dots{display:none;gap:.25rem;align-items:center;height:1.2rem}
@@ -65,8 +65,8 @@ const CONSOLE_DARK = `/* the film: two agent transcripts, rows aligned like a di
 .film-on .film-sum.shown{opacity:1}
 .film-on .playing{box-shadow:inset 2px 0 0 var(--accent-on,transparent)}
 .fa.playing{--accent-on:var(--held)}.fb.playing{--accent-on:var(--test)}
-.diff .fa.row.changed,.diff .fb.row.changed{background:linear-gradient(90deg,rgba(95,217,160,.07),rgba(95,217,160,.02))}
-.diff .fa.row.changed{background:linear-gradient(90deg,rgba(240,181,69,.06),rgba(240,181,69,.015))}
+.diff .fa.row.changed,.diff .fb.row.changed{background:linear-gradient(90deg,rgba(31,122,85,.07),rgba(31,122,85,.02))}
+.diff .fa.row.changed{background:linear-gradient(90deg,rgba(183,121,31,.08),rgba(183,121,31,.02))}
 .film-bar{display:flex;align-items:stretch;margin-top:1.2rem;border:1px solid var(--line);border-radius:10px;overflow:hidden}
 .film-chs{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));flex:1}
 .film-chs li{border-right:1px solid var(--line)}
@@ -91,7 +91,7 @@ const CONSOLE_DARK = `/* the film: two agent transcripts, rows aligned like a di
   .film-chs li{border-right:0;border-bottom:1px solid var(--line)}
   .film-btn{flex:1;padding:.9rem 1rem;text-align:center}
 }
-.notice{--ink:#16181D;--muted:#5B5F68;--line:#E6E2DA;--paper:#FFFFFF;--test:#1F7A55;color:var(--ink);border-color:transparent;box-shadow:0 30px 80px -20px rgba(0,0,0,.7)}.lanes{border-top-color:var(--line-strong)}.step::before{background:var(--bg)}.verdict strong{font-weight:300}.request{font-weight:300}`;
+.notice{--ink:#16181D;--muted:#5B5F68;--line:#E6E2DA;--paper:#FFFFFF;--test:#1F7A55;color:var(--ink)}.lanes{border-top-color:var(--line-strong)}.step::before{background:var(--bg)}.verdict strong{font-weight:300}.request{font-weight:300}`;
 
 const CSS = `
 @font-face{font-family:"Newsreader";font-style:normal;font-weight:200 800;font-display:swap;src:url("/fonts/newsreader-latin-opsz-v1.woff2") format("woff2-variations")}
