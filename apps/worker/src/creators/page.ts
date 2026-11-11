@@ -4,7 +4,7 @@
  * schedule is drawn to scale. Every value a creator typed is escaped; the specimen script only
  * ever writes textContent.
  */
-import { DEFAULT_SCHEDULE, SITE_NAV_TOUCH_CSS, siteNavLinks } from "@pact/protocol";
+import { DEFAULT_SCHEDULE, SITE_NAV_TOUCH_CSS, SITE_THEME_CSS, siteNavLinks } from "@pact/protocol";
 
 const esc = (s: string) => s.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
 
@@ -14,6 +14,9 @@ export interface Product {
   name: string;
   specs: string;
 }
+
+/* After the shared dark theme: PayPal's button and the simulated PayPal consent stay PayPal-coloured. */
+const CREATORS_DARK = `.btn.pp{background:#FFC439;color:#111;font-family:var(--sans);text-transform:none;letter-spacing:0;font-size:.9rem;font-weight:600}.btn.pp:hover{background:#F2B52B}.btn.pp .ppword .p1,.btn.pp .ppword .p2{color:#003087}.consent .card{--ink:#16181D;--muted:#5B5F68;--line:#DADCE0;--paper:#FFFFFF;color:var(--ink)}.consent .card .ppword .p1{color:#003087}.consent .btn.blue{background:var(--pp-blue);color:#fff;font-family:var(--sans);text-transform:none;letter-spacing:0;font-size:.9rem}.sim-bar{border-bottom-color:var(--line)}.how{border-top-color:var(--line-strong)}.opt:has(input:checked){border-color:var(--ink-2)}input:focus,textarea:focus{border-color:var(--test);box-shadow:0 0 0 1px var(--test)}.opt input{accent-color:var(--test)}`;
 
 const CSS = `
 @font-face{font-family:"Newsreader";font-style:normal;font-weight:200 800;font-display:swap;src:url("/fonts/newsreader-latin-opsz-v1.woff2") format("woff2-variations")}
@@ -31,7 +34,6 @@ const CSS = `
 *{box-sizing:border-box}
 html{font-size:20px;-webkit-text-size-adjust:100%}
 body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);line-height:1.45;-webkit-font-smoothing:antialiased}
-:root{color-scheme:light}
 a{color:inherit}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
 :focus-visible{outline:2px solid var(--ink);outline-offset:3px;border-radius:2px}
@@ -56,7 +58,7 @@ h1{font-family:var(--serif);font-weight:400;font-size:3rem;line-height:1.04;lett
 h1 em{font-style:italic;color:var(--test)}
 .h-form{font-size:2.2rem;max-width:none}
 h2{font-family:var(--serif);font-weight:500;font-size:1.6rem;line-height:1.1;letter-spacing:-.01em;margin:0 0 .4rem}
-.lede{font-size:1rem;max-width:36rem;margin:0 0 1.6rem;color:#33363D}
+.lede{font-size:1rem;max-width:36rem;margin:0 0 1.6rem;color:var(--ink-2)}
 .small{font-size:.8rem;color:var(--muted)}
 
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:.5rem;font:inherit;font-size:.9rem;font-weight:600;background:var(--ink);color:var(--bg);border:0;border-radius:999px;padding:.7rem 1.5rem;min-height:44px;cursor:pointer;text-decoration:none}
@@ -67,7 +69,7 @@ h2{font-family:var(--serif);font-weight:500;font-size:1.6rem;line-height:1.1;let
 .btn.ghost{background:transparent;color:var(--ink);box-shadow:inset 0 0 0 1.5px var(--line)}
 .btn.ghost:hover{box-shadow:inset 0 0 0 1.5px var(--ink)}
 .ppword{font-weight:800;font-style:italic;letter-spacing:-.02em}
-.ppword .p1{color:var(--pp-navy)}.ppword .p2{color:var(--pp-blue)}
+.ppword .p1{color:var(--pp-text)}.ppword .p2{color:var(--pp-blue)}
 /* light blue on the yellow button is 3:1; the wordmark goes all navy there */
 .btn.pp .ppword .p2{color:var(--pp-navy)}
 
@@ -171,7 +173,7 @@ function shell(title: string, body: string, script = ""): string {
   return `<!doctype html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>${esc(title)}</title><link rel="icon" href="/favicon.svg">
-<style>${CSS}${SITE_NAV_TOUCH_CSS}</style></head><body>${body}${script ? `<script>${script}</script>` : ""}</body></html>`;
+<style>${CSS}${SITE_NAV_TOUCH_CSS}${SITE_THEME_CSS}${CREATORS_DARK}</style></head><body>${body}${script ? `<script>${script}</script>` : ""}</body></html>`;
 }
 
 const PAYPAL_WORD = `<span class="ppword"><span class="p1">Pay</span><span class="p2">Pal</span></span>`;
