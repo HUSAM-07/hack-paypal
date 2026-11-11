@@ -15,12 +15,17 @@ Design language
 - Dark mode kept as a token swap.
 
 Steps
-- [ ] Tokens + shared header (`apps/web/src/styles/tokens.css`, `SITE_HEADER_CSS` in `@pact/protocol`) so server-rendered pages follow
-- [ ] Landing `/`: hero, problem, how it works (4 cards), proof strip, trust grid, CTA footer
-- [ ] Studio `/studio`: app-window shell; always-on agents panel (Agent Inbox / Running Now / Away Summary over real engine data), Approval Card for Maya, Cited Answer for the Analyst, Usage Meter for the deposit
-- [ ] `/proof` restyle to the new tokens
-- [ ] Server-rendered pages (console, creators, try, payout, mcp): tokens + header only
+- [x] Tokens + shared header (`apps/web/src/styles/tokens.css`, `SITE_HEADER_CSS` in `@pact/protocol`) so server-rendered pages follow
+- [x] Landing `/`: hero, problem, how it works (4 cards), proof strip, trust grid, CTA footer
+- [ ] (session `studio-redesign`) Studio `/studio`: app-window shell; always-on agents panel (Agent Inbox / Running Now / Away Summary over real engine data), Approval Card for Maya, Cited Answer for the Analyst, Usage Meter for the deposit
+- [x] `/proof` restyle to the new tokens
+- [x] Server-rendered pages (console, creators, try, payout, mcp): tokens + header only
 - [ ] Verify: typecheck, lint, tests, e2e, `CITED_ENGINE=worker npm run demo:cited`, screenshots light/dark/mobile
+
+Review (landing pass, 2026-11-12)
+- Done: `17d9f61` tokens + shared bar, `de2607a` landing. typecheck, lint, all unit tests and the web prerender build pass; landing checked in light, dark and 375px (no horizontal scroll); /proof, /try, /creators, /console checked on the local worker.
+- Not run: Playwright e2e (Chromium not installed locally; those specs cover `/app`, untouched) and `CITED_ENGINE=worker npm run demo:cited`.
+- Local worker needed `wrangler d1 migrations apply pact --local` before /console would load.
 
 # Pact — Build Plan
 
