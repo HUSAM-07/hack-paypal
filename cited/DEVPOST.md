@@ -39,7 +39,7 @@ No login, no keys. Open in this order:
 2. <https://pact-worker.vincent-wesley-liem.workers.dev/console?clean=1>: two agents, same request; one shown the test buys the Winix, one held out buys the Levoit.
 3. <https://pact-worker.vincent-wesley-liem.workers.dev/console/payout?clean=1>: the $383.96 payout; "Statement" opens Winix's PayPal invoice.
 4. <https://pact-worker.vincent-wesley-liem.workers.dev/proof>: the pre-registered eval (147 headline sessions, +94pp, 80% bound +90.3pp); all 963 sessions download as CSV.
-5. <https://pact-worker.vincent-wesley-liem.workers.dev/studio?view=first>: the brand's AG Studio dashboard; ask the Analyst "Should we raise the purifier cap?". `/studio/creator?clean=1` is the creator's view.
+5. <https://pact-worker.vincent-wesley-liem.workers.dev/studio?view=first>: the brand's AG Studio dashboard. Ask the Analyst "Should we raise the purifier cap?": it hands the work to Studio's Data, Page and Widget agents, adds a chart, and answers from the ledger (on the hosted data, which already includes a top-up, it says keep the cap; the video shows the Approve flow). "Why did Levoit pay nothing?" answers in about 10 seconds. `/studio/creator?clean=1` is the creator's view.
 6. <https://pact-worker.vincent-wesley-liem.workers.dev/try>: run a shopping agent yourself.
 7. Your own agent: `claude mcp add --transport http cited https://pact-worker.vincent-wesley-liem.workers.dev/mcp`, then ask it to buy an air purifier.
 8. <https://pact-worker.vincent-wesley-liem.workers.dev/creators>: onboard as a creator (simulated Log in with PayPal) and publish a test.

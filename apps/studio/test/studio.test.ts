@@ -167,7 +167,7 @@ describe("Analyst recommendation", () => {
     };
     const rec = recommend(short, "winix");
     expect(rec?.summary).toBe(
-      "Shown the test, agents bought Winix 4 of 4 times against 1 of 4 on the same creator's placebo: +75 points, +50 at the 80% lower bound. " +
+      "Programme to date, agents shown the test bought Winix 4 of 4 times against 1 of 4 on the same creator's placebo: +75 points, +50 at the 80% lower bound. " +
         "Raise the purifier cap by $500: $0 is left and a payout cycle credits $15.36.",
     );
     expect(rec?.citations[0]).toEqual({
@@ -177,7 +177,7 @@ describe("Analyst recommendation", () => {
     });
     // Every number in the summary is in a citation or the amount: nothing for the model to invent.
     expect(recommend(raw, "levoit")?.summary).toBe(
-      "Shown the test, agents bought Levoit 0 of 4 times against 3 of 4 on the same creator's placebo: −75 points, so the test caused no Levoit sales and Levoit pays nothing.",
+      "Programme to date, agents shown the test bought Levoit 0 of 4 times against 3 of 4 on the same creator's placebo: −75 points, so the test caused no Levoit sales and Levoit pays nothing.",
     );
     expect(recommend(raw, "winix")?.summary).toMatch(/: \+75 points\. Keep the purifier cap/);
   });

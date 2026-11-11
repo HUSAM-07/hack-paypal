@@ -173,7 +173,7 @@ export function recommend(raw: RawEngine, brandId = "winix"): Recommendation | n
     guard: GUARD,
   };
   const proven = f.lowerBound !== null && f.lowerBound > 0 && f.causedUnits > 0;
-  const shown = `Shown the test, agents bought ${f.brandName} ${bought(f.test)} times against ${bought(f.placebo)} on the same creator's placebo`;
+  const shown = `Programme to date, agents shown the test bought ${f.brandName} ${bought(f.test)} times against ${bought(f.placebo)} on the same creator's placebo`;
   if (amount === null) {
     return {
       ...base,
