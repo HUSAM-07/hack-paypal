@@ -1,4 +1,4 @@
-import { SITE_NAV_TOUCH_CSS, SITE_THEME_CSS, siteNavLinks } from "@pact/protocol";
+import { SITE_HEADER_CSS, SITE_NAV_TOUCH_CSS, SITE_THEME_CSS, siteHeader } from "@pact/protocol";
 import type { DemoData, PayoutData, RunView, StatementData } from "./data";
 import { creatorName, esc, shopName, usd } from "./format";
 import { agentLabel } from "./runs";
@@ -9,6 +9,44 @@ import { agentLabel } from "./runs";
  */
 /* After the shared dark theme: the PayPal notification keeps PayPal's own light card. */
 const CONSOLE_DARK = `/* the film: two agent transcripts, rows aligned like a diff */
+/* payout: the CITED frame on the left, PayPal's notice on the right */
+.pay{min-height:calc(100vh - 65px);display:flex;align-items:center;justify-content:center;padding:48px 56px 64px}
+.clean .pay{min-height:100vh}
+.pay-grid{width:100%;max-width:1168px;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:4rem;align-items:center}
+.pay-k{display:flex;align-items:center;gap:.5rem;margin:0 0 1rem;font:500 .55rem/1 var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--test)}
+.pay-k::before{content:"";width:.4rem;height:.4rem;border-radius:50%;background:var(--test)}
+.pay-h{margin:0;font:300 2.5rem/1.08 var(--serif);letter-spacing:-.02em;text-wrap:balance}
+.pay-h .num{color:var(--test);font-weight:400}
+.pay-sub{margin:1.1rem 0 1.6rem;max-width:26rem;color:var(--muted);font-size:.82rem;line-height:1.5}
+.pay-cards{display:grid;gap:.55rem;max-width:28rem}
+.pay-card{display:flex;justify-content:space-between;align-items:baseline;gap:1rem;padding:.7rem .95rem;border:1px solid var(--line);border-radius:10px;background:var(--paper);font-size:.68rem;color:var(--ink-2)}
+.pay-card b{color:var(--ink);font-weight:600}
+.pay-card .zero{font-family:var(--mono);color:var(--muted);white-space:nowrap}
+.pay-card a{color:var(--ink);font-weight:500;text-underline-offset:2px}
+.pay-stmt{display:grid;gap:.3rem}
+.mail{margin:0;max-width:none}
+.notice{background:#fff;border:1px solid var(--line);border-radius:16px;box-shadow:0 1px 2px rgba(22,24,29,.05),0 28px 56px -28px rgba(22,24,29,.28)}
+.notice header{background:#fff;color:var(--ink);padding:1.1rem 1.6rem;border-bottom:1px solid var(--line)}
+.notice header .pp{font-size:1.15rem;color:#003087}
+.notice header .pp span{color:#0070E0}
+.notice header small{opacity:1;color:var(--muted);font-size:.6rem;letter-spacing:.02em}
+.notice .top{padding:1.5rem 1.6rem 1.25rem;border-bottom:1px solid var(--line)}
+.notice .hello{font-size:.85rem}
+.notice .amount{font-size:3.1rem;margin:.55rem 0 .45rem}
+.notice .amount small{font-size:.9rem}
+.notice .top p{font-size:.72rem}
+.notice dl{padding:.25rem 1.6rem .9rem}
+.notice dl div{grid-template-columns:8rem 1fr;padding:.6rem 0}
+.notice dt{font-size:.66rem}
+.notice dd{font-size:.72rem}
+.notice dd.mono{font-size:.64rem}
+.notice .status{padding:.18rem .6rem;border-radius:999px;background:#E7F1EC;font-size:.66rem}
+.notice footer{background:#F7F8FA;padding:.8rem 1.6rem;font-size:.58rem;border-radius:0 0 16px 16px}
+.pay-cap{margin:.8rem 0 0;text-align:center;font-size:.58rem;color:var(--muted)}
+@media (max-width:1100px){.pay{padding:32px 24px 48px}.pay-grid{grid-template-columns:1fr;gap:2.4rem}.pay-h{font-size:2rem}}
+@media (max-width:640px){.pay-h{font-size:1.6rem}.notice .amount{font-size:2.4rem}.notice dl div{grid-template-columns:1fr;gap:.1rem}.pay-sub,.pay-card{font-size:.85rem}.notice dt,.notice dd,.notice .top p{font-size:.8rem}}
+/* Content sits in the same 1280px frame as the site header. */
+.stage{max-width:1280px;padding-left:clamp(16px,4vw,56px);padding-right:clamp(16px,4vw,56px)}
 .film{margin:0 0 2.6rem}
 .film-grid{display:grid;grid-template-columns:minmax(0,1fr) 3.2rem minmax(0,1fr);row-gap:0}
 .fa,.fb{background:var(--paper);border-left:1px solid var(--line);border-right:1px solid var(--line);padding:.85rem 1.2rem;min-width:0;transition:background .4s,opacity .4s,box-shadow .4s}
@@ -280,7 +318,7 @@ function consoleHref(path: string): string {
 }
 
 function nav(here: Here): string {
-  return `<nav class="nav" aria-label="CITED"><a class="mark" href="../">CITED</a>${siteNavLinks(here, consoleHref)}</nav>`;
+  return siteHeader(here, consoleHref);
 }
 
 function page(title: string, here: Here, body: string, opts: Opts): string {
@@ -288,7 +326,7 @@ function page(title: string, here: Here, body: string, opts: Opts): string {
   return `<!doctype html><html lang="en"><head><meta charset="utf-8"><title>${esc(title)}</title>
 <meta name="viewport" content="width=device-width,initial-scale=1">
 ${opts.live ? '<meta http-equiv="refresh" content="2">' : ""}
-<style>${CSS}${SITE_NAV_TOUCH_CSS}${SITE_THEME_CSS}${CONSOLE_DARK}</style></head><body class="${cls}">${nav(here)}${body}</body></html>`;
+<style>${CSS}${SITE_NAV_TOUCH_CSS}${SITE_THEME_CSS}${SITE_HEADER_CSS}${CONSOLE_DARK}</style></head><body class="${cls}">${nav(here)}${body}</body></html>`;
 }
 
 function waiting(msg: string): string {
@@ -521,11 +559,30 @@ export function payoutPage(p: PayoutData | null, opts: Opts): string {
   // The demo clock jumps past the hold, so a calendar date would sit in the future: say when
   // the payout happened relative to the demo instead.
   const date = "After the 30-day hold";
-  const body = `<main class="pay"><div class="mail">
-<article class="notice">
+  const body = `<main class="pay"><div class="pay-grid">
+<div class="pay-copy">
+  <p class="pay-k">Day 30 · creator payout</p>
+  <h1 class="pay-h">${esc(name)} got paid <span class="num">${usd(p.amountMinor)}</span> through PayPal Payouts.</h1>
+  <p class="pay-sub">Commission on the sales its test caused, paid once the 30-day hold ended. AI shopping agents read the test and bought; nobody clicked a link.</p>
+  <div class="pay-cards">
+${
+  p.rival
+    ? `  <div class="pay-card"><span><b>${esc(p.rival.name)}</b> · <span class="num">${p.rival.causedUnits}</span> extra units caused</span><span class="num zero">${usd(p.rival.paidMinor)} paid · no lift</span></div>`
+    : ""
+}
+${
+  p.statement && !opts.clean
+    ? `  <div class="pay-card pay-stmt"><span>${esc(p.statement.brandName)} paid for it from its deposit: ${esc(invoiceStatusWord(p.statement.status))}${p.statement.dueMinor === 0 ? ", $0 due" : ""}</span><a href="/statement?brand=${encodeURIComponent(p.statement.brandId)}">Statement ${esc(p.statement.invoiceNumber)} →</a></div>`
+    : ""
+}
+  </div>
+${mismatch ? `<p class="warn">Ledger shows ${usd(p.ledgerPaidMinor ?? 0)} paid, which differs from this payout.</p>` : ""}
+</div>
+<figure class="mail">
+<article class="notice" aria-label="PayPal payment notice">
 <header><span class="pp">Pay<span>Pal</span></span><small>Payment received</small></header>
 <div class="top">
-  <h1 class="hello">${esc(name)}, you received a payment</h1>
+  <p class="hello">${esc(name)}, you received a payment</p>
   <div class="amount num">${usd(p.amountMinor)}<small>${esc(p.currency)}</small></div>
   <p>From CITED · commission on sales your test caused</p>
 </div>
@@ -538,17 +595,8 @@ export function payoutPage(p: PayoutData | null, opts: Opts): string {
 </dl>
 <footer>Sent with PayPal Payouts. A refund during the hold voids the credit; a dispute holds it until PayPal decides.</footer>
 </article>
-${
-  p.rival
-    ? `<div class="rival"><span><b>${esc(p.rival.name)}</b> · <span class="num">${p.rival.causedUnits}</span> extra units caused</span><span class="num amt">${usd(p.rival.paidMinor)} paid · no lift</span></div>`
-    : ""
-}
-${
-  p.statement && !opts.clean
-    ? `<p class="stmt-link">${esc(p.statement.brandName)} paid for this from its deposit: <a href="/statement?brand=${encodeURIComponent(p.statement.brandId)}">Statement ${esc(p.statement.invoiceNumber)}</a> · PayPal Invoicing, ${esc(invoiceStatusWord(p.statement.status))}${p.statement.dueMinor === 0 ? ", $0 due" : ""}</p>`
-    : ""
-}
-${mismatch ? `<p class="warn">Ledger shows ${usd(p.ledgerPaidMinor ?? 0)} paid, which differs from this payout.</p>` : ""}
+<figcaption class="pay-cap">The notice ${esc(name)} receives from PayPal. Simulated PayPal on this demo.</figcaption>
+</figure>
 </div></main>`;
   return page("CITED · payout", "payout", body, opts);
 }

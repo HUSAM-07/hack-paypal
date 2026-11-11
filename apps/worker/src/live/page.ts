@@ -4,7 +4,13 @@
  * passes through, so each row compares the two agents at the same moment of their run.
  * Everything a model or a third party wrote is rendered with textContent, never as HTML.
  */
-import { SITE_NAV_TOUCH_CSS, SITE_THEME_CSS, siteNavLinks, UPC_WINIX_A230 } from "@pact/protocol";
+import {
+  SITE_HEADER_CSS,
+  SITE_NAV_TOUCH_CSS,
+  SITE_THEME_CSS,
+  siteHeader,
+  UPC_WINIX_A230,
+} from "@pact/protocol";
 
 const esc = (s: string) => s.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
 
@@ -18,7 +24,7 @@ const STAGES: [id: string, label: string][] = [
 ];
 
 /* After the shared dark theme. */
-const TRY_DARK = `button{background:var(--cream);color:var(--bg);font-family:var(--mono);font-weight:500;letter-spacing:.07em;text-transform:uppercase;font-size:.72rem}button:hover{background:#2B2E36}`;
+const TRY_DARK = `main{max-width:1280px;padding-left:clamp(16px,4vw,56px);padding-right:clamp(16px,4vw,56px)}button{background:var(--cream);color:var(--bg);font-family:var(--mono);font-weight:500;letter-spacing:.07em;text-transform:uppercase;font-size:.72rem}button:hover{background:#2B2E36}`;
 
 const CSS = `
 @font-face{font-family:"Newsreader";font-style:normal;font-weight:200 800;font-display:swap;src:url("/fonts/newsreader-latin-opsz-v1.woff2") format("woff2-variations")}
@@ -380,8 +386,8 @@ export function tryPage(o: { request: string; agent: string; scripted: boolean }
 <meta name="twitter:description" content="Type what the buyer wants. An agent shops, pays a seller through PayPal, and CITED decides whether the creator earns." />
 <meta name="twitter:image" content="https://pact-worker.vincent-wesley-liem.workers.dev/og/cited-proof-v1.png" />
 <meta name="twitter:image:alt" content="Bar chart: 100% of AI agents shown a creator's test bought the Winix, against 6% shown a placebo and 8% shown nothing." />
-<style>${CSS}${SITE_NAV_TOUCH_CSS}${SITE_THEME_CSS}${TRY_DARK}</style></head><body>
-<nav class="nav" aria-label="CITED"><a class="mark" href="/">CITED</a>${siteNavLinks("try")}</nav>
+<style>${CSS}${SITE_NAV_TOUCH_CSS}${SITE_THEME_CSS}${SITE_HEADER_CSS}${TRY_DARK}</style></head><body>
+${siteHeader("try")}
 <main>
 <h1 class="eyebrow">One request, two live shopping agents</h1>
 <form id="ask">

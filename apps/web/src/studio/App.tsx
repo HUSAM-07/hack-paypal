@@ -1,6 +1,7 @@
 import type { Scope } from "@cited/studio/tables";
 import type { AgStudioApi, AgStudioApiReadyEvent } from "ag-studio";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { SiteHeader } from "../landing/SiteHeader";
 import { type StudioContext, scopeStore } from "./context";
 import { diffTables, getJson, POLL_MS, type StudioConfig, type StudioTables } from "./data";
 import { startPolling } from "./poll";
@@ -137,85 +138,88 @@ export function App() {
   }, []);
 
   return (
-    <div className="st-page">
-      <header className="st-head">
-        <div className="st-title">
-          <span className="st-mark">CITED</span>
-          <h1>{view === "brand" ? "Purifier programme · Winix" : `${creatorName} · creator`}</h1>
-          <p>
-            {view === "brand"
-              ? "Maya, brand manager. Winix pays only for the sales its creators' tests caused."
-              : "Every credit from the purifier test: pending, held for review, frozen, voided or paid."}
-          </p>
-        </div>
-        <div className="st-controls">
-          <nav className="st-seg" aria-label="View">
-            <button type="button" aria-pressed={view === "brand"} onClick={() => go("brand")}>
-              Brand
-            </button>
-            <button type="button" aria-pressed={view === "creator"} onClick={() => go("creator")}>
-              Creator
-            </button>
-          </nav>
-          {view === "brand" ? (
-            <nav className="st-seg" aria-label="Money shown">
-              <button
-                type="button"
-                aria-pressed={scope === "first"}
-                onClick={() => pickScope("first")}
-                disabled={!firstBatch}
-              >
-                First payout
+    <>
+      <SiteHeader current="studio" />
+      <div className="st-page">
+        <header className="st-head">
+          <div className="st-title">
+            <span className="st-mark">AG Studio</span>
+            <h1>{view === "brand" ? "Purifier programme · Winix" : `${creatorName} · creator`}</h1>
+            <p>
+              {view === "brand"
+                ? "Maya, brand manager. Winix pays only for the sales its creators' tests caused."
+                : "Every credit from the purifier test: pending, held for review, frozen, voided or paid."}
+            </p>
+          </div>
+          <div className="st-controls">
+            <nav className="st-seg" aria-label="View">
+              <button type="button" aria-pressed={view === "brand"} onClick={() => go("brand")}>
+                Brand
               </button>
-              <button
-                type="button"
-                aria-pressed={scope === "todate"}
-                onClick={() => pickScope("todate")}
-              >
-                Programme to date
+              <button type="button" aria-pressed={view === "creator"} onClick={() => go("creator")}>
+                Creator
               </button>
             </nav>
+            {view === "brand" ? (
+              <nav className="st-seg" aria-label="Money shown">
+                <button
+                  type="button"
+                  aria-pressed={scope === "first"}
+                  onClick={() => pickScope("first")}
+                  disabled={!firstBatch}
+                >
+                  First payout
+                </button>
+                <button
+                  type="button"
+                  aria-pressed={scope === "todate"}
+                  onClick={() => pickScope("todate")}
+                >
+                  Programme to date
+                </button>
+              </nav>
+            ) : null}
+            <span
+              className={`st-live${live ? "" : " is-stale"}`}
+              role="status"
+              title={asOf ? `Engine clock ${asOf}` : undefined}
+            >
+              <i aria-hidden="true" />
+              {live ? "Live" : "Reconnecting"}
+              {asOf ? <small>engine day {asOf.slice(0, 10)}</small> : null}
+            </span>
+          </div>
+        </header>
+        <main className="st-main">
+          {error ? (
+            <p className="st-error" role="alert">
+              The programme figures could not load ({error}). Reload the page in a moment.
+            </p>
           ) : null}
-          <span
-            className={`st-live${live ? "" : " is-stale"}`}
-            role="status"
-            title={asOf ? `Engine clock ${asOf}` : undefined}
-          >
-            <i aria-hidden="true" />
-            {live ? "Live" : "Reconnecting"}
-            {asOf ? <small>engine day {asOf.slice(0, 10)}</small> : null}
+          {config && first && Canvas && analyst ? (
+            <Canvas
+              config={config}
+              tables={first.tables}
+              analyst={analyst}
+              initialView={initialView}
+              creatorName={creatorName}
+              mode={view === "brand" && !narrow ? "edit" : "view"}
+              context={context}
+              onApiReady={onApiReady}
+            />
+          ) : !error ? (
+            <p className="st-loading">Loading the programme…</p>
+          ) : null}
+        </main>
+        <footer className="st-foot">
+          <span>
+            Live from the CITED engine read API ·{" "}
+            {scope === "first" && firstBatch ? `${firstBatch} (first payout)` : "programme to date"}{" "}
+            · Analyst: {config?.llm.label ?? "…"}
           </span>
-        </div>
-      </header>
-      <main className="st-main">
-        {error ? (
-          <p className="st-error" role="alert">
-            The programme figures could not load ({error}). Reload the page in a moment.
-          </p>
-        ) : null}
-        {config && first && Canvas && analyst ? (
-          <Canvas
-            config={config}
-            tables={first.tables}
-            analyst={analyst}
-            initialView={initialView}
-            creatorName={creatorName}
-            mode={view === "brand" && !narrow ? "edit" : "view"}
-            context={context}
-            onApiReady={onApiReady}
-          />
-        ) : !error ? (
-          <p className="st-loading">Loading the programme…</p>
-        ) : null}
-      </main>
-      <footer className="st-foot">
-        <span>
-          Live from the CITED engine read API ·{" "}
-          {scope === "first" && firstBatch ? `${firstBatch} (first payout)` : "programme to date"} ·
-          Analyst: {config?.llm.label ?? "…"}
-        </span>
-        <span>Credits count at the 80% lower bound. Money is kept in integer cents.</span>
-      </footer>
-    </div>
+          <span>Credits count at the 80% lower bound. Money is kept in integer cents.</span>
+        </footer>
+      </div>
+    </>
   );
 }
