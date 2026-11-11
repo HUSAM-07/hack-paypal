@@ -1,11 +1,14 @@
 import * as THREE from "three";
 
 /**
- * The console's replay: two passport tokens run the same route at the same time, one per
- * agent, and only the one whose agent was shown the creator's test ends in a payout. The
- * console server renders the facts (stores, prices, verdicts) into #scene-data; this file
- * only draws them. Without WebGL, or with reduced motion, the page shows the final frame or
- * just the receipts below it.
+ * The console's replay, told like a short film in three chapters:
+ *   1. Without the review: the held-out agent shops, step by step, and nobody is paid.
+ *   2. With the review: a second agent gets the same request, is shown the creator's review,
+ *      buys something else at another seller, and the creator is paid.
+ *   3. The difference: both routes side by side, and what changed.
+ * The console server renders the facts and the narration into #scene-data; this file only
+ * stages them. Without WebGL the receipts below stand alone; with reduced motion or the live
+ * refresh the scene opens on the last chapter, fully drawn.
  */
 
 type SceneLane = {
@@ -17,8 +20,10 @@ type SceneLane = {
   outcome: string;
   outcomeSub: string;
   credited: boolean;
+  /** One line per stop: agent, catalogue, each store, PayPal, the engine's verdict. */
+  captions: string[];
 };
-type SceneData = { lanes: SceneLane[]; live: boolean };
+type SceneData = { lanes: SceneLane[]; live: boolean; chapters: string[] };
 
 const COL = {
   agent: -11,
@@ -38,11 +43,25 @@ const C = {
   dim: new THREE.Color("#55534d"),
   slab: new THREE.Color("#141413"),
 };
-const STEPS = [0, 1.2, 3.2, 6.0, 7.8];
-const END = 11.2;
+
+/* The film's clock, in seconds. Each lane runs the same local beats from its own start. */
+const START = { held: 2.0, test: 14.6 };
+const BEAT = {
+  agent: 0.6,
+  catalogue: 2.6,
+  stores: [5.0, 6.6],
+  oneStore: 5.4,
+  paypal: 8.4,
+  engine: 9.8,
+  outcome: 11.0,
+};
+const CHAPTERS = [0, 13.2, 26.8];
+const TITLE_FOR = 1.9;
+const END = 28;
 
 const ease = (x: number) => (x < 0.5 ? 4 * x * x * x : 1 - (-2 * x + 2) ** 3 / 2);
 const clamp01 = (x: number) => Math.min(1, Math.max(0, x));
+const lerp = (a: number, b: number, k: number) => a + (b - a) * k;
 
 function glowTexture(): THREE.Texture {
   const c = document.createElement("canvas");
@@ -69,10 +88,27 @@ function glyphTexture(ch: string, color: string): THREE.Texture {
   return new THREE.CanvasTexture(c);
 }
 
-type Node = { edges: THREE.LineBasicMaterial; lit: number; color: THREE.Color; at: THREE.Vector3 };
-
-/** A waypoint the token reaches at time `t`. */
+type Node = {
+  edges: THREE.LineBasicMaterial;
+  lit: number;
+  color: THREE.Color;
+  at: THREE.Vector3;
+  lane: SceneLane["kind"] | null;
+};
 type Way = { p: THREE.Vector3; t: number };
+type Tracked = {
+  el: HTMLElement;
+  at: THREE.Vector3;
+  show: number | undefined;
+  lane: SceneLane["kind"] | null;
+};
+
+/** How much a lane is in the frame at time t: the other lane fades while one is playing. */
+function focusOf(kind: SceneLane["kind"], t: number): number {
+  if (t >= (CHAPTERS[2] as number)) return 1;
+  if (t >= (CHAPTERS[1] as number)) return kind === "test" ? 1 : 0.28;
+  return kind === "held" ? 1 : 0.1;
+}
 
 function main() {
   const host = document.getElementById("scene");
@@ -90,12 +126,14 @@ function main() {
   const labels = document.createElement("div");
   labels.className = "sl-layer";
   host.append(labels);
+  const titleEl = host.querySelector<HTMLElement>(".sc-title");
+  const captionEl = host.querySelector<HTMLElement>(".sc-caption");
+  const compareEl = host.querySelector<HTMLElement>(".sc-compare");
 
   const scene = new THREE.Scene();
   const camera = new THREE.PerspectiveCamera(22, 2, 0.1, 400);
   const glow = glowTexture();
 
-  // Dot floor.
   const dots: number[] = [];
   for (let x = -20; x <= 24; x += 1) for (let z = -10; z <= 10; z += 1) dots.push(x, -0.12, z);
   const floor = new THREE.BufferGeometry();
@@ -108,18 +146,35 @@ function main() {
   );
 
   const nodes: Node[] = [];
-  const tracked: { el: HTMLElement; at: THREE.Vector3; show: number | undefined }[] = [];
+  const tracked: Tracked[] = [];
+  const esc = (s: string) =>
+    s.replace(
+      /[&<>"]/g,
+      (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[ch] as string,
+    );
 
-  function label(html: string, at: THREE.Vector3, cls = "", show?: number) {
+  function label(
+    html: string,
+    at: THREE.Vector3,
+    cls: string,
+    lane: SceneLane["kind"] | null,
+    show?: number,
+  ) {
     const el = document.createElement("div");
     el.className = `sl ${cls}`;
     el.innerHTML = `<div class="sl-in">${html}</div>`;
     labels.append(el);
-    tracked.push({ el, at, show });
-    return el;
+    tracked.push({ el, at, show, lane });
   }
 
-  function slab(x: number, z: number, w: number, d: number, color: THREE.Color): Node {
+  function slab(
+    x: number,
+    z: number,
+    w: number,
+    d: number,
+    color: THREE.Color,
+    lane: SceneLane["kind"] | null,
+  ): Node {
     const geo = new THREE.BoxGeometry(w, 0.2, d);
     const mesh = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ color: C.slab }));
     mesh.position.set(x, 0, z);
@@ -127,18 +182,11 @@ function main() {
     const line = new THREE.LineSegments(new THREE.EdgesGeometry(geo), edges);
     line.position.copy(mesh.position);
     scene.add(mesh, line);
-    const n = { edges, lit: 0, color, at: new THREE.Vector3(x, 0, z) };
+    const n = { edges, lit: 0, color, at: new THREE.Vector3(x, 0, z), lane };
     nodes.push(n);
     return n;
   }
 
-  const esc = (s: string) =>
-    s.replace(
-      /[&<>"]/g,
-      (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[ch] as string,
-    );
-
-  // Column heads.
   const heads: [number, string][] = [
     [COL.agent, "Agent"],
     [COL.catalogue, "Catalogue"],
@@ -148,11 +196,10 @@ function main() {
     [COL.engine, "CITED engine"],
     [COL.outcome, "Creator"],
   ];
-  for (const [x, t] of heads) label(t, new THREE.Vector3(x, 0, -6.3), "sl-head");
+  for (const [x, t] of heads) label(t, new THREE.Vector3(x, 0, -6.3), "sl-head", null);
 
-  // The engine is shared: both sales go through the same rules.
-  const engine = slab(COL.engine, 0, 2.6, 2.6, C.test);
-  label("join · hold · void", new THREE.Vector3(COL.engine, 0, 1.7), "sl-node");
+  const engine = slab(COL.engine, 0, 2.6, 2.6, C.test, null);
+  label("join · hold · void", new THREE.Vector3(COL.engine, 0, 1.7), "sl-node", null);
   const ring = new THREE.Mesh(
     new THREE.TorusGeometry(1.9, 0.025, 8, 96),
     new THREE.MeshBasicMaterial({ color: C.idle.clone(), transparent: true }),
@@ -164,6 +211,7 @@ function main() {
   type Run = {
     lane: SceneLane;
     color: THREE.Color;
+    start: number;
     way: Way[];
     token: THREE.Mesh;
     halo: THREE.Sprite;
@@ -172,80 +220,97 @@ function main() {
     trailT: number[];
     lights: { node: Node; t: number }[];
     outcome: Node;
+    beats: { t: number; text: string }[];
   };
   const runs: Run[] = [];
 
   for (const lane of data.lanes) {
     const z = LANE_Z[lane.kind];
-    const color = lane.kind === "test" ? C.test : C.held;
-    const agent = slab(COL.agent, z, 2.6, 1.5, color);
-    label(`<b>${esc(lane.title)}</b>`, new THREE.Vector3(COL.agent, 0, z + 0.95), "sl-node");
-    const cat = slab(COL.catalogue, z, 2.6, 1.5, color);
-    label(esc(lane.catalogue), new THREE.Vector3(COL.catalogue, 0, z + 0.95), "sl-node");
-    // The catalogue's call: the review shown, or withheld.
+    const k = lane.kind;
+    const s0 = START[k];
+    const color = k === "test" ? C.test : C.held;
+    const agent = slab(COL.agent, z, 2.6, 1.5, color, k);
+    label(`<b>${esc(lane.title)}</b>`, new THREE.Vector3(COL.agent, 0, z + 0.95), "sl-node", k);
+    const cat = slab(COL.catalogue, z, 2.6, 1.5, color, k);
+    label(esc(lane.catalogue), new THREE.Vector3(COL.catalogue, 0, z + 0.95), "sl-node", k);
     label(
-      lane.kind === "test"
+      k === "test"
         ? "<span class='sl-k'>Review shown</span>Winix wins"
         : "<span class='sl-k'>Review withheld</span>offers only",
       new THREE.Vector3(COL.catalogue, 0.4, z - 0.85),
-      `sl-call sl-${lane.kind}`,
-      2.2,
+      `sl-call sl-${k}`,
+      k,
+      s0 + BEAT.catalogue,
     );
 
     const way: Way[] = [
-      { p: new THREE.Vector3(COL.agent, 0.35, z), t: 0.6 },
-      { p: new THREE.Vector3(COL.catalogue, 0.35, z), t: 2.2 },
+      { p: new THREE.Vector3(COL.agent, 0.35, z), t: s0 + BEAT.agent },
+      { p: new THREE.Vector3(COL.catalogue, 0.35, z), t: s0 + BEAT.catalogue },
     ];
     const lights = [
-      { node: agent, t: 0.6 },
-      { node: cat, t: 2.2 },
+      { node: agent, t: s0 + BEAT.agent },
+      { node: cat, t: s0 + BEAT.catalogue },
     ];
-    const storeT = lane.stores.length > 1 ? [4.2, 5.4] : [4.6];
+    const storeT = lane.stores.length > 1 ? BEAT.stores : [BEAT.oneStore];
     lane.stores.forEach((s, i) => {
-      const x = lane.stores.length > 1 ? (i === 0 ? COL.read : COL.paid) : COL.read;
-      const n = slab(x, z, 2.6, 1.5, color);
+      const x = lane.stores.length > 1 ? (i === 0 ? COL.read : COL.paid) : COL.paid;
+      const at = s0 + (storeT[i] as number);
+      const n = slab(x, z, 2.6, 1.5, color, k);
       label(
         `<b>${esc(s.name)}</b><span>${esc(s.note)}</span>`,
         new THREE.Vector3(x, 0, z + 0.95),
         "sl-node",
+        k,
       );
-      way.push({ p: new THREE.Vector3(x, 0.35, z), t: storeT[i] as number });
-      lights.push({ node: n, t: storeT[i] as number });
+      way.push({ p: new THREE.Vector3(x, 0.35, z), t: at });
+      lights.push({ node: n, t: at });
     });
     if (lane.stores.length > 1) {
       label(
         "<span class='sl-k'>Cheaper here</span>pays this seller",
         new THREE.Vector3(COL.paid, 0.4, z - 0.85),
-        `sl-call sl-${lane.kind}`,
-        5.4,
+        `sl-call sl-${k}`,
+        k,
+        s0 + (BEAT.stores[1] as number),
       );
     }
-    const pp = slab(COL.paypal, z, 2.6, 1.5, color);
+    const pp = slab(COL.paypal, z, 2.6, 1.5, color, k);
     label(
       `<b>Checkout</b><span>${esc(lane.paypal)}</span>`,
       new THREE.Vector3(COL.paypal, 0, z + 0.95),
       "sl-node",
+      k,
     );
     label(
-      "<span class='sl-k'>custom_id</span>signed passport",
+      `<span class='sl-k'>custom_id</span>passport · ${k === "test" ? "shown" : "held out"}`,
       new THREE.Vector3(COL.paypal, 0.4, z - 0.85),
-      `sl-call sl-${lane.kind}`,
-      7.2,
+      `sl-call sl-${k}`,
+      k,
+      s0 + BEAT.paypal,
     );
-    way.push({ p: new THREE.Vector3(COL.paypal, 0.35, z), t: 7.2 });
-    lights.push({ node: pp, t: 7.2 });
-    way.push({ p: new THREE.Vector3(COL.engine - 0.6, 0.35, z * 0.25), t: 8.6 });
-    lights.push({ node: engine, t: 8.6 });
+    way.push({ p: new THREE.Vector3(COL.paypal, 0.35, z), t: s0 + BEAT.paypal });
+    lights.push({ node: pp, t: s0 + BEAT.paypal });
+    way.push({ p: new THREE.Vector3(COL.engine - 0.6, 0.35, z * 0.25), t: s0 + BEAT.engine });
+    lights.push({ node: engine, t: s0 + BEAT.engine });
 
-    const outcome = slab(COL.outcome, z, 2.8, 1.5, lane.credited ? color : C.dim);
+    const outcome = slab(COL.outcome, z, 2.8, 1.5, lane.credited ? color : C.dim, k);
     label(
       `<b>${esc(lane.outcome)}</b><span>${esc(lane.outcomeSub)}</span>`,
       new THREE.Vector3(COL.outcome, 0, z + 0.95),
       `sl-node sl-out ${lane.credited ? "sl-paid" : "sl-zero"}`,
-      9.6,
+      k,
+      s0 + BEAT.outcome,
     );
-    way.push({ p: new THREE.Vector3(COL.outcome, 0.35, z), t: 9.6 });
-    lights.push({ node: outcome, t: 9.6 });
+    way.push({ p: new THREE.Vector3(COL.outcome, 0.35, z), t: s0 + BEAT.outcome });
+    lights.push({ node: outcome, t: s0 + BEAT.outcome });
+
+    // Narration: one line per stop; the last one (the verdict) lands with the engine.
+    const stops = [s0 + BEAT.agent, s0 + BEAT.catalogue, ...storeT.map((x) => s0 + x)];
+    stops.push(s0 + BEAT.paypal, s0 + BEAT.engine);
+    const beats = lane.captions.slice(0, stops.length).map((text, i) => ({
+      t: (stops[i] as number) - 0.5,
+      text,
+    }));
 
     const token = new THREE.Mesh(
       new THREE.BoxGeometry(0.7, 0.08, 0.45),
@@ -263,7 +328,6 @@ function main() {
     halo.scale.set(2.2, 2.2, 1);
     scene.add(token, halo);
 
-    // Trail: the whole route sampled once, revealed as the token moves.
     const pts: THREE.Vector3[] = [];
     const ts: number[] = [];
     for (let i = 0; i < way.length - 1; i++) {
@@ -272,10 +336,11 @@ function main() {
       const mid = a.p.clone().lerp(b.p, 0.5);
       mid.y += Math.min(1.6, a.p.distanceTo(b.p) * 0.18);
       const curve = new THREE.QuadraticBezierCurve3(a.p, mid, b.p);
+      const start = Math.max(a.t + 0.25, b.t - 1.2);
       const n = 40;
-      for (let k = i === 0 ? 0 : 1; k <= n; k++) {
-        pts.push(curve.getPoint(k / n));
-        ts.push(a.t + (b.t - a.t) * (k / n));
+      for (let j = i === 0 ? 0 : 1; j <= n; j++) {
+        pts.push(curve.getPoint(ease(j / n)));
+        ts.push(start + (b.t - start) * (j / n));
       }
     }
     const tg = new THREE.BufferGeometry().setFromPoints(pts);
@@ -288,6 +353,7 @@ function main() {
     runs.push({
       lane,
       color,
+      start: s0,
       way,
       token,
       halo,
@@ -296,12 +362,12 @@ function main() {
       trailT: ts,
       lights,
       outcome,
+      beats,
     });
   }
 
-  // $ burst for the credited sale.
   const coinTex = glyphTexture("$", "#5fd9a0");
-  const coins = Array.from({ length: 36 }, () => {
+  const coins = Array.from({ length: 40 }, () => {
     const s = new THREE.Sprite(
       new THREE.SpriteMaterial({ map: coinTex, transparent: true, depthWrite: false, opacity: 0 }),
     );
@@ -317,6 +383,7 @@ function main() {
     };
   });
   const paidRun = runs.find((r) => r.lane.credited);
+  const narration = runs.flatMap((r) => r.beats).sort((a, b) => a.t - b.t);
 
   function tokenAt(r: Run, t: number): THREE.Vector3 {
     const w = r.way;
@@ -324,8 +391,7 @@ function main() {
     for (let i = 0; i < w.length - 1; i++) {
       const a = w[i] as Way;
       const b = w[i + 1] as Way;
-      // Each hop starts once the previous one has landed, after a short dwell.
-      const start = Math.max(a.t + 0.25, b.t - 1.0);
+      const start = Math.max(a.t + 0.25, b.t - 1.2);
       if (t < b.t) {
         const k = ease(clamp01((t - start) / (b.t - start)));
         const mid = a.p.clone().lerp(b.p, 0.5);
@@ -336,127 +402,184 @@ function main() {
     return (w[w.length - 1] as Way).p.clone();
   }
 
-  // Step captions, outside the canvas: they drive and follow the clock.
-  const stepEls = [...document.querySelectorAll<HTMLButtonElement>(".scene-step")];
-  const replay = document.querySelector<HTMLButtonElement>(".scene-replay");
-  let t0 = performance.now();
+  // Controls under the scene: the three chapters, play/pause, replay.
+  const chapterEls = [...document.querySelectorAll<HTMLButtonElement>(".scene-ch")];
+  const playEl = document.querySelector<HTMLButtonElement>(".scene-play");
+  const replayEl = document.querySelector<HTMLButtonElement>(".scene-replay");
   let t = still ? END : 0;
-  const jump = (to: number) => {
-    t0 = performance.now() - to * 1000;
+  let playing = !still;
+  let last = performance.now();
+  const setPlaying = (p: boolean) => {
+    playing = p;
+    if (playEl) {
+      playEl.textContent = p ? "Pause" : "Play";
+      playEl.setAttribute("aria-pressed", String(!p));
+    }
   };
-  stepEls.forEach((b, i) => {
-    b.addEventListener("click", () => jump(STEPS[i] as number));
+  setPlaying(playing);
+  chapterEls.forEach((b, i) => {
+    b.addEventListener("click", () => {
+      t = CHAPTERS[i] as number;
+      setPlaying(true);
+    });
   });
-  replay?.addEventListener("click", () => jump(0));
+  playEl?.addEventListener("click", () => {
+    if (t >= END) t = 0;
+    setPlaying(!playing);
+  });
+  replayEl?.addEventListener("click", () => {
+    t = 0;
+    setPlaying(true);
+  });
 
   const v = new THREE.Vector3();
-  // Narrow screens can't fit the route: the camera follows the tokens instead.
   let follow = false;
-  let camX = CENTER_X;
   let dist = 39;
-  function place(x: number) {
-    camera.position.set(x, dist * 0.76, dist * 0.65);
-    camera.lookAt(x, 0, 0.4);
+  let camX = CENTER_X;
+  let camZ = 0.4;
+  let zoom = 1;
+  function place(x: number, z: number, zm: number) {
+    const d = dist * zm;
+    camera.position.set(x, d * 0.76, z + d * 0.65);
+    camera.lookAt(x, 0, z);
   }
   function size() {
     const w = host?.clientWidth ?? 800;
     const h = host?.clientHeight ?? 480;
     renderer.setSize(w, h, false);
     camera.aspect = w / h;
-    // Fit the 28-unit route to the width: pull back on narrow screens.
     follow = camera.aspect < 1.4;
     dist = follow ? 14 / (0.389 * camera.aspect) : 39 * Math.max(1, 2.5 / camera.aspect) ** 0.95;
-    if (follow && still) camX = COL.outcome - 3;
-    place(follow ? camX : CENTER_X);
     camera.updateProjectionMatrix();
   }
   new ResizeObserver(size).observe(host);
   size();
 
+  let shownCaption = "";
   function frame(now: number) {
-    if (!still) t = Math.min(END + 30, (now - t0) / 1000);
+    const dt = Math.min(0.1, (now - last) / 1000);
+    last = now;
+    if (playing) {
+      t += dt;
+      if (t >= END) {
+        t = END;
+        setPlaying(false);
+      }
+    }
     const w = renderer.domElement.clientWidth;
     const h = renderer.domElement.clientHeight;
 
-    if (follow && !still) {
-      const xs = runs.map((r) => tokenAt(r, t).x);
-      const target = Math.min(COL.outcome - 3, Math.max(COL.agent + 3, Math.max(...xs)));
-      camX += (target - camX) * 0.06;
-      place(camX);
-    } else if (!still) {
-      place(CENTER_X + Math.sin(now / 6000) * 0.8);
+    // Camera: frame the lane that is playing, then pull back for the comparison.
+    const chapter = t >= (CHAPTERS[2] as number) ? 2 : t >= (CHAPTERS[1] as number) ? 1 : 0;
+    const active = chapter === 0 ? "held" : "test";
+    // Chapter 3 lifts both lanes into the top of the frame, clear of the comparison card.
+    const wantZ = chapter === 2 ? 4.2 : LANE_Z[active] * 0.55;
+    const wantZoom = chapter === 2 ? 1.12 : 0.84;
+    let wantX = CENTER_X + (chapter === 2 && !still ? Math.sin(now / 6000) * 0.8 : 0);
+    if (follow) {
+      const r = runs.find((x) => x.lane.kind === active);
+      const tx = chapter === 2 || !r ? COL.outcome - 3 : tokenAt(r, t).x;
+      wantX = Math.min(COL.outcome - 3, Math.max(COL.agent + 3, tx));
     }
+    const k = still ? 1 : 0.05;
+    camX = lerp(camX, wantX, k);
+    camZ = lerp(camZ, follow ? (chapter === 2 ? 3.6 : LANE_Z[active] * 0.8) : wantZ, k);
+    zoom = lerp(zoom, follow ? 1 : wantZoom, k);
+    place(camX, camZ, zoom);
 
     for (const r of runs) {
+      const f = focusOf(r.lane.kind, t);
       const p = tokenAt(r, t);
       r.token.position.copy(p);
       r.halo.position.copy(p);
+      const started = t >= r.start;
       const done = t >= (r.way[r.way.length - 1] as Way).t;
-      const fade = done && !r.lane.credited ? 0.35 : 1;
-      (r.token.material as THREE.MeshBasicMaterial).color.copy(
-        done && !r.lane.credited ? C.dim : r.color,
-      );
-      (r.halo.material as THREE.SpriteMaterial).opacity =
-        (0.55 + Math.sin(now / 260) * 0.15) * fade;
+      const grey = done && !r.lane.credited;
+      const tm = r.token.material as THREE.MeshBasicMaterial;
+      tm.color.copy(grey ? C.dim : r.color);
+      tm.opacity = started ? f : 0;
+      (r.halo.material as THREE.SpriteMaterial).opacity = started
+        ? (0.55 + Math.sin(now / 260) * 0.15) * (grey ? 0.3 : 1) * f
+        : 0;
+      (r.trail.material as THREE.LineBasicMaterial).opacity = 0.75 * f;
       let n = 0;
       while (n < r.trailPts && (r.trailT[n] as number) <= t) n++;
       r.trail.geometry.setDrawRange(0, n);
-      for (const l of r.lights) l.node.lit = Math.max(l.node.lit, t >= l.t ? 1 : 0);
+      for (const l of r.lights) if (l.node.lane) l.node.lit = t >= l.t ? 1 : 0;
     }
+    engine.lit = runs.some((r) => t >= r.start + BEAT.engine) ? 1 : 0;
     for (const n of nodes) {
+      const f = n.lane ? focusOf(n.lane, t) : 1;
       n.edges.color.copy(C.idle).lerp(n.color, n.lit);
+      n.edges.opacity = 0.25 + 0.75 * f;
     }
-    // Engine ring spins once both sales are in.
     const ringMat = ring.material as THREE.MeshBasicMaterial;
-    ringMat.color.copy(C.idle).lerp(C.test, t >= 8.6 ? 1 : 0);
+    ringMat.color.copy(C.idle).lerp(C.test, engine.lit);
     ring.rotation.z = now / 1800;
-    ring.scale.setScalar(
-      1 + (t >= 8.6 && t < 9.4 ? Math.sin(((t - 8.6) / 0.8) * Math.PI) * 0.12 : 0),
-    );
+    const pulse = runs.map((r) => t - (r.start + BEAT.engine)).find((x) => x >= 0 && x < 0.8);
+    ring.scale.setScalar(1 + (pulse !== undefined ? Math.sin((pulse / 0.8) * Math.PI) * 0.12 : 0));
 
-    // Coins rise from the creator's slab when the credited token lands.
     if (paidRun) {
-      const tb = 9.6;
-      const dt = t - tb;
+      const dtb = t - (paidRun.start + BEAT.outcome);
       for (const c of coins) {
         const m = c.s.material as THREE.SpriteMaterial;
-        if (dt < 0 || dt > 2.2 || still) {
+        if (dtb < 0 || dtb > 2.2 || still) {
           m.opacity = 0;
           continue;
         }
         c.s.position.set(
-          paidRun.outcome.at.x + c.v.x * dt * 0.6,
-          0.4 + c.v.y * dt - 2.6 * dt * dt,
-          paidRun.outcome.at.z + c.v.z * dt * 0.6,
+          paidRun.outcome.at.x + c.v.x * dtb * 0.6,
+          0.4 + c.v.y * dtb - 2.6 * dtb * dtb,
+          paidRun.outcome.at.z + c.v.z * dtb * 0.6,
         );
-        m.opacity = clamp01(1 - dt / 2.2);
+        m.opacity = clamp01(1 - dtb / 2.2);
       }
     }
 
-    // Labels follow the camera.
     for (const l of tracked) {
       v.copy(l.at).project(camera);
       l.el.style.transform = `translate(${((v.x + 1) / 2) * w}px, ${((1 - v.y) / 2) * h}px)`;
-      if (l.show !== undefined) l.el.classList.toggle("on", t >= l.show);
+      // Callouts belong to their chapter; the comparison shows routes and results only.
+      const call = l.el.classList.contains("sl-call");
+      const visible = (l.show === undefined || t >= l.show) && !(call && chapter === 2);
+      l.el.classList.toggle("on", visible);
+      l.el.style.opacity = String((l.lane ? focusOf(l.lane, t) : 1) * (visible ? 1 : 0));
     }
-    let step = 0;
-    STEPS.forEach((s, i) => {
-      if (t >= s) step = i;
-    });
-    stepEls.forEach((b, i) => {
-      b.setAttribute("aria-current", i === step ? "step" : "false");
-      b.classList.toggle("done", i < step || t >= END);
+
+    // Title cards open chapters 1 and 2; narration runs underneath; the comparison closes.
+    if (titleEl) {
+      const at = [0, 1].find((i) => {
+        const s = CHAPTERS[i] as number;
+        return t >= s && t < s + TITLE_FOR;
+      });
+      titleEl.classList.toggle("on", at !== undefined && !still);
+      if (at !== undefined) {
+        titleEl.innerHTML = `<span>${at + 1} / 3</span>${esc(data.chapters[at] ?? "")}`;
+      }
+    }
+    if (captionEl) {
+      const beat = chapter === 2 ? undefined : [...narration].reverse().find((b) => t >= b.t);
+      const text = beat && t < (CHAPTERS[chapter + 1] as number) - 0.3 ? beat.text : "";
+      if (text !== shownCaption) {
+        shownCaption = text;
+        captionEl.classList.remove("on");
+        captionEl.textContent = text;
+        void captionEl.offsetWidth;
+        if (text) captionEl.classList.add("on");
+      }
+    }
+    compareEl?.classList.toggle("on", t >= (CHAPTERS[2] as number) + 0.6);
+    chapterEls.forEach((b, i) => {
+      b.setAttribute("aria-current", i === chapter ? "step" : "false");
+      const s = CHAPTERS[i] as number;
+      const e = (CHAPTERS[i + 1] as number | undefined) ?? END;
+      b.style.setProperty("--p", String(clamp01((t - s) / (e - s))));
     });
 
     renderer.render(scene, camera);
-    if (!still) requestAnimationFrame(frame);
-  }
-  if (still) {
-    for (const r of runs) for (const l of r.lights) l.node.lit = 1;
+    requestAnimationFrame(frame);
   }
   requestAnimationFrame(frame);
-  // A still page still needs a frame after the labels have measured their layout.
-  if (still) new ResizeObserver(() => requestAnimationFrame(frame)).observe(host);
 }
 
 main();

@@ -28,25 +28,36 @@ const CONSOLE_DARK = `/* the replay */
 .sl-paid b{color:var(--test);font-size:15px}
 .sl-paid span{color:var(--test)}
 .sl-zero b{color:var(--muted)}
-.scene-bar{display:flex;align-items:stretch;border-top:1px solid var(--line)}
-.scene-steps{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));flex:1}
-.scene-steps li{border-right:1px solid var(--line)}
-.scene-step{all:unset;box-sizing:border-box;display:block;width:100%;height:100%;padding:.75rem .9rem .85rem;cursor:pointer;position:relative;color:var(--muted);transition:color .2s,background .2s}
-.scene-step::before{content:"";position:absolute;left:0;right:0;top:-1px;height:2px;background:var(--test);transform:scaleX(0);transform-origin:left;transition:transform .4s}
-.scene-step[aria-current="step"]{color:var(--ink);background:var(--raise)}
-.scene-step[aria-current="step"]::before,.scene-step.done::before{transform:scaleX(1)}
-.scene-step.done::before{opacity:.35}
-.scene-step:focus-visible{outline:2px solid var(--test);outline-offset:-2px}
-.scene-step .n{font:500 .55rem/1 var(--mono);color:var(--test)}
-.scene-step b{display:block;font:500 .66rem/1.25 var(--sans);margin:.3rem 0 .2rem}
-.scene-step .p{display:block;font-size:.56rem;line-height:1.4}
-.scene-step code{font-size:.52rem;padding:0 .2rem}
-.scene-replay{all:unset;box-sizing:border-box;cursor:pointer;padding:0 1.1rem;font:500 .55rem/1 var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--ink)}
-.scene-replay:hover{color:var(--test)}
-.scene-replay:focus-visible{outline:2px solid var(--test);outline-offset:-2px}
 .receipts{margin:0 0 .9rem;font:500 .62rem/1 var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
-@media (max-width:760px){#scene{height:440px}.sl{font-size:11px}.sl b{font-size:12px}}
-@media (max-width:1100px){.scene-steps{grid-template-columns:1fr}.scene-steps li{border-right:0;border-bottom:1px solid var(--line)}.scene-step .p{font-size:.7rem}.scene-step b{font-size:.8rem}.scene-bar{flex-direction:column}.scene-replay{padding:.9rem 1.1rem}}
+.scene-bar{display:flex;align-items:stretch;border-top:1px solid var(--line)}
+.scene-chs{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));flex:1}
+.scene-chs li{border-right:1px solid var(--line)}
+.scene-ch{all:unset;box-sizing:border-box;display:flex;align-items:baseline;gap:.6rem;width:100%;height:100%;padding:.85rem 1rem;cursor:pointer;position:relative;color:var(--muted);transition:color .2s,background .2s}
+.scene-ch i{position:absolute;left:0;right:0;top:-1px;height:2px;background:var(--test);transform:scaleX(var(--p,0));transform-origin:left}
+.scene-ch[aria-current="step"]{color:var(--ink);background:var(--raise)}
+.scene-ch:focus-visible{outline:2px solid var(--test);outline-offset:-2px}
+.scene-ch .n{font:500 .55rem/1 var(--mono);color:var(--test)}
+.scene-ch b{font:500 .7rem/1.25 var(--sans)}
+.scene-play,.scene-replay{all:unset;box-sizing:border-box;cursor:pointer;padding:0 1.1rem;font:500 .55rem/1 var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--ink);border-right:1px solid var(--line)}
+.scene-replay{border-right:0}
+.scene-play:hover,.scene-replay:hover{color:var(--test)}
+.scene-play:focus-visible,.scene-replay:focus-visible{outline:2px solid var(--test);outline-offset:-2px}
+.sc-title{position:absolute;inset:0;z-index:3;display:grid;place-content:center;text-align:center;gap:.5rem;background:rgba(11,11,10,.72);font:300 clamp(1.6rem,3.4vw,2.8rem)/1.1 var(--serif);letter-spacing:-.015em;color:var(--ink);opacity:0;pointer-events:none;transition:opacity .45s}
+.sc-title span{font:500 .55rem/1 var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--test)}
+.sc-title.on{opacity:1}
+.sc-caption{position:absolute;left:50%;bottom:1.1rem;z-index:2;transform:translate(-50%,6px);max-width:min(92%,46rem);margin:0;padding:.55rem 1rem;border-radius:8px;background:rgba(11,11,10,.86);border:1px solid var(--line);font:400 .8rem/1.4 var(--sans);color:var(--ink);text-align:center;opacity:0;transition:opacity .3s,transform .3s}
+.sc-caption.on{opacity:1;transform:translate(-50%,0)}
+.sc-compare{position:absolute;left:50%;bottom:.9rem;z-index:2;transform:translate(-50%,8px);width:min(94%,42rem);display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--line);border:1px solid var(--line);border-radius:10px;overflow:hidden;opacity:0;pointer-events:none;transition:opacity .5s,transform .5s}
+.sc-compare.on{opacity:1;transform:translate(-50%,0);pointer-events:auto}
+.sc-compare .cmp{background:rgba(19,19,18,.96);padding:.8rem 1rem}
+.sc-compare .k{display:block;font:500 .5rem/1.2 var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--held)}
+.sc-compare .cmp-test .k{color:var(--test)}
+.sc-compare b{display:block;font:400 1.15rem/1.2 var(--serif);margin:.3rem 0 .15rem}
+.sc-compare .amt{font:500 .7rem/1.3 var(--mono);color:var(--muted)}
+.sc-compare .cmp-test .amt{color:var(--test)}
+.sc-compare p{grid-column:1/-1;margin:0;background:rgba(19,19,18,.96);padding:.6rem 1rem;font-size:.66rem;color:var(--ink-2)}
+@media (max-width:1100px){.scene-ch b{font-size:.8rem}.scene-ch .n{font-size:.7rem}.scene-play,.scene-replay{font-size:.7rem}}
+@media (max-width:760px){#scene{height:500px}.sl{font-size:11px}.sl b{font-size:12px}.scene-bar{flex-wrap:wrap}.scene-chs{grid-template-columns:1fr;flex-basis:100%}.scene-chs li{border-right:0;border-bottom:1px solid var(--line)}.scene-play,.scene-replay{flex:1;padding:.9rem 1rem;text-align:center}.sc-caption{font-size:.85rem;bottom:.6rem}.sc-compare{bottom:.6rem}.sc-compare .cmp{padding:.6rem .7rem}.sc-compare b{font-size:1rem}.sc-compare p{display:none}.sc-compare .k{font-size:.62rem}.sc-compare .amt{font-size:.78rem}}
 .notice{--ink:#16181D;--muted:#5B5F68;--line:#E6E2DA;--paper:#FFFFFF;--test:#1F7A55;color:var(--ink);border-color:transparent;box-shadow:0 30px 80px -20px rgba(0,0,0,.7)}.lanes{border-top-color:var(--line-strong)}.step::before{background:var(--bg)}.verdict strong{font-weight:300}.request{font-weight:300}`;
 
 const CSS = `
@@ -360,6 +371,8 @@ type SceneLane = {
   outcome: string;
   outcomeSub: string;
   credited: boolean;
+  /** Narration, one line per stop: agent, catalogue, each store, PayPal, the verdict. */
+  captions: string[];
 };
 
 function sceneLane(v: RunView, kind: "exposed" | "held"): SceneLane {
@@ -369,22 +382,54 @@ function sceneLane(v: RunView, kind: "exposed" | "held"): SceneLane {
   const sawTest = run.creatorsSeen.length > 0;
   // The test lane's story is the hop: the offer that carried the review, then the seller paid.
   const read = sawTest ? hops.find((s) => s !== paidAt) : undefined;
-  const bought = run.product
-    ? `${run.product.name}${run.totalMinor !== null ? ` · ${usd(run.totalMinor)}` : ""}`
-    : "No purchase";
+  const price = run.totalMinor !== null ? usd(run.totalMinor) : null;
+  const product = run.product?.name ?? null;
+  const bought = product ? `${product}${price ? ` · ${price}` : ""}` : "No purchase";
   const stores = [
     ...(read ? [{ name: shopName(read), note: "reads the review", paid: false }] : []),
     ...(paidAt ? [{ name: shopName(paidAt), note: bought, paid: true }] : []),
   ];
   const c = journey?.commission;
   const earned = c ? c.pending + c.paid : 0;
-  const creator = run.creatorsSeen[0] ? creatorName(run.creatorsSeen[0]) : "The creator";
+  const creator = run.creatorsSeen[0] ? creatorName(run.creatorsSeen[0]) : "the creator";
+  const saved = journey?.priceSavedMinor;
+  const paidName = paidAt ? shopName(paidAt) : "the seller";
+  const buys = product ? `buys the ${product} at ${paidName}` : "buys nothing";
+
+  const captions =
+    kind === "held"
+      ? [
+          "An agent gets the request. This one is held out.",
+          "The catalogue holds the creator’s review back. The agent sees only the offers.",
+          `It ${buys}${price ? `, ${price}` : ""}.`,
+          "It pays through PayPal. The passport in custom_id says: held out.",
+          earned > 0
+            ? `The engine credits it anyway: ${usd(earned)}.`
+            : "The engine reads the passport. No review, nothing caused: $0.00.",
+        ]
+      : [
+          "Same request, a second agent.",
+          `This time the catalogue shows ${creator}’s review${product ? `, which picks the ${product}` : ""}.`,
+          ...(read
+            ? [
+                `The agent reads the review on ${shopName(read)}’s offer…`,
+                `…then ${buys}${saved && saved > 0 ? `, ${usd(saved)} cheaper` : ""}.`,
+              ]
+            : [`It ${buys}${price ? `, ${price}` : ""}.`]),
+          "It pays through PayPal. The passport says: shown the review, even at another seller.",
+          earned > 0
+            ? `The review caused this sale, so ${creator} earns ${usd(earned)}, held 30 days.`
+            : journey
+              ? "The engine found no lift from the review: $0.00."
+              : "PayPal hasn’t captured this order yet.",
+        ];
+
   return {
     kind: kind === "exposed" ? "test" : "held",
     title: kind === "exposed" ? "Shown the review" : "Held out",
     stores,
     catalogue: "same offers, same ranking",
-    paypal: "buyer’s saved PayPal",
+    paypal: "saved PayPal",
     outcome: earned > 0 ? creator : "No one paid",
     outcomeSub: !journey
       ? "not captured yet"
@@ -394,6 +439,7 @@ function sceneLane(v: RunView, kind: "exposed" | "held"): SceneLane {
           ? "$0.00 · never saw the review"
           : "$0.00 · the test did not cause it",
     credited: earned > 0,
+    captions,
   };
 }
 
@@ -404,42 +450,28 @@ function scene(d: DemoData, live: boolean): string {
   const creator = d.exposed.run.creatorsSeen[0]
     ? creatorName(d.exposed.run.creatorsSeen[0])
     : "the creator";
-  const read = a.stores.find((s) => !s.paid)?.name;
-  const paid = a.stores.find((s) => s.paid);
-  const product = (r: RunView) => r.run.product?.name ?? "nothing";
-  const saved = d.exposed.journey?.priceSavedMinor;
-  const steps: [string, string][] = [
-    ["Same request", "Both agents get the same request, the same offers and the same ranking."],
-    [
-      "The catalogue flips a coin",
-      `The top agent is shown ${esc(creator)}’s review. The bottom one is held out: it sees everything else.`,
-    ],
-    [
-      "Each agent buys",
-      read && paid
-        ? `Top: reads the review on ${esc(read)}’s offer, then buys the ${esc(product(d.exposed))} at ${esc(paid.name)}${saved && saved > 0 ? `, ${usd(saved)} cheaper` : ""}. Bottom: buys the ${esc(product(d.heldOut))}.`
-        : `Top: buys the ${esc(product(d.exposed))}. Bottom: buys the ${esc(product(d.heldOut))}.`,
-    ],
-    [
-      "PayPal carries the passport",
-      "Each order carries a signed passport in <code>custom_id</code>, so the sale stays tied to its arm at any seller.",
-    ],
-    [
-      "Only caused sales earn",
-      a.credited
-        ? `${esc(creator)} earns ${esc(a.outcomeSub.split(" · ")[0] ?? "")}, held 30 days. The held-out sale earns $0.00.`
-        : "Neither sale is credited yet.",
-    ],
-  ];
-  const json = JSON.stringify({ lanes: [a, b], live }).replace(/</g, "\\u003c");
-  return `<section class="scene" aria-label="Replay: where each agent's sale goes, and who gets paid">
-<div id="scene" aria-hidden="true"></div>
-<div class="scene-bar"><ol class="scene-steps">${steps
+  const product = (r: RunView) => r.run.product?.name ?? "Nothing";
+  const earned = (r: RunView) => {
+    const c = r.journey?.commission;
+    return c ? c.pending + c.paid : 0;
+  };
+  const chapters = ["Without the review", `Now, with ${creator}’s review`, "The difference"];
+  const json = JSON.stringify({ lanes: [a, b], live, chapters }).replace(/</g, "\\u003c");
+  const compare = `<div class="sc-compare" role="note">
+<div class="cmp"><span class="k">Without the review</span><b>${esc(product(d.heldOut))}</b><span class="amt">${usd(earned(d.heldOut))} to creators</span></div>
+<div class="cmp cmp-test"><span class="k">With ${esc(creator)}’s review</span><b>${esc(product(d.exposed))}</b><span class="amt">${earned(d.exposed) > 0 ? `+${usd(earned(d.exposed))} to ${esc(creator)}` : "$0.00"}</span></div>
+<p>Same request, same offers, same ranking. The review is the only difference, so the review is what gets paid.</p>
+</div>`;
+  return `<section class="scene" aria-label="Replay of the A/B test in three chapters">
+<div id="scene"><div class="sc-title" aria-hidden="true"></div><p class="sc-caption" aria-live="polite"></p>${compare}</div>
+<div class="scene-bar"><ol class="scene-chs">${chapters
     .map(
-      ([h, p], i) =>
-        `<li><button type="button" class="scene-step"><span class="n num">${String(i + 1).padStart(2, "0")}</span><b>${h}</b><span class="p">${p}</span></button></li>`,
+      (h, i) =>
+        `<li><button type="button" class="scene-ch"><span class="n num">${String(i + 1).padStart(2, "0")}</span><b>${esc(h)}</b><i aria-hidden="true"></i></button></li>`,
     )
-    .join("")}</ol><button type="button" class="scene-replay">Replay</button></div>
+    .join(
+      "",
+    )}</ol><button type="button" class="scene-play">Pause</button><button type="button" class="scene-replay">Replay</button></div>
 </section>
 <script type="application/json" id="scene-data">${json}</script>
 <script type="module" src="/fx/console-scene.js"></script>`;
@@ -448,7 +480,7 @@ function scene(d: DemoData, live: boolean): string {
 export function demoPage(d: DemoData, opts: Opts): string {
   const request = (d.exposed ?? d.heldOut)?.run.request;
   const body = `<main class="stage">
-<div class="lede"><h1>One A/B test, two agents</h1><p>Same request, same offers, same ranking. Only one agent is shown the creator’s review. Watch where each sale goes, and who gets paid.</p><p class="lede-note">These two are seeded replays. The effect was measured with live GPT, Gemini and Claude agents in a pre-registered eval: <a href="/proof">see the proof</a>.</p></div>
+<div class="lede"><h1>One A/B test, two agents</h1><p>Same request, same offers, same ranking. First watch an agent shop without the creator’s review, then the same request with it.</p><p class="lede-note">These two are seeded replays. The effect was measured with live GPT, Gemini and Claude agents in a pre-registered eval: <a href="/proof">see the proof</a>.</p></div>
 ${request ? `<p class="request"><q>${esc(request)}</q></p>` : ""}
 ${scene(d, opts.live)}
 ${
