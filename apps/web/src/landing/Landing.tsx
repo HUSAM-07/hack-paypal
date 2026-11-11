@@ -1,6 +1,5 @@
 import type { ReactNode } from "react";
 import { FlowTall, FlowWide } from "./FlowDiagram";
-import { type HowStep, HowTabs } from "./HowTabs";
 import { SessionField } from "./SessionField";
 import { SiteHeader } from "./SiteHeader";
 
@@ -61,15 +60,23 @@ function Section({
   title,
   children,
   wide,
+  tone,
+  center,
 }: {
   id: string;
   kicker: string;
   title: ReactNode;
   children: ReactNode;
   wide?: ReactNode;
+  tone?: "grey";
+  center?: boolean;
 }) {
   return (
-    <section id={id} className="section" aria-labelledby={`${id}-h`}>
+    <section
+      id={id}
+      className={`section${tone ? ` section-${tone}` : ""}${center ? " section-center" : ""}`}
+      aria-labelledby={`${id}-h`}
+    >
       <div className="section-head">
         <p className="kicker">{kicker}</p>
         <h2 id={`${id}-h`} className="h2">
@@ -168,7 +175,9 @@ function VPay() {
   );
 }
 
-const STEPS: HowStep[] = [
+type Step = { tab: string; title: string; body: ReactNode; visual: ReactNode };
+
+const STEPS: Step[] = [
   {
     tab: "Fund",
     visual: <VFund />,
@@ -285,6 +294,158 @@ const TRY = [
   },
 ];
 
+/**
+ * The background agents behind one programme, as the hero's app window lists them. Each status
+ * restates a number from the sources below (147 sessions, one voided credit) or a fixed rule.
+ */
+const AGENTS = [
+  { name: "Shopper agents", status: "147 sessions, three models", tone: "live" },
+  { name: "Catalogue", status: "Assigning arms, ranking unchanged", tone: "live" },
+  { name: "Refund watch", status: "1 credit voided", tone: "warn" },
+  { name: "Settlement", status: "30-day hold, then batch Payout", tone: "wait" },
+  { name: "Analyst", status: "Ready for Maya", tone: "idle" },
+] as const;
+
+/** The panels' mesh-gradient tints, one per step card. */
+const TINTS = ["rose", "sky", "mint", "peach"] as const;
+
+/** What keeps the money honest: each card restates a rule from CLAUDE.md's non-negotiables. */
+const TRUST: { title: string; body: string; visual: ReactNode }[] = [
+  {
+    title: "Ranking never changes.",
+    body: "The catalogue only adds or withholds the creator's test. Every arm sees the same offers in the same order.",
+    visual: (
+      <div className="tv tv-arms" aria-hidden="true">
+        {["Test", "Placebo", "Nothing"].map((a, i) => (
+          <div key={a} className="tv-arm">
+            <span className="tv-arm-name">{a}</span>
+            <span className="tv-row" />
+            <span className="tv-row" />
+            <span className="tv-row" />
+            {i === 0 ? <span className="tv-chip">+ test</span> : null}
+          </div>
+        ))}
+      </div>
+    ),
+  },
+  {
+    title: "A signed passport, verified.",
+    body: "The passport rides in the order's custom_id and is signed. A sale whose passport doesn't verify stays unattributed, never guessed.",
+    visual: (
+      <pre className="tv tv-code" aria-hidden="true">
+        <span className="c-dim">custom_id</span>
+        {"\n"}
+        <span className="c-pass">v1|s_8f2c|test|….sig</span>
+        {"\n\n"}
+        <span className="tv-ok">✓ signature verified</span>
+      </pre>
+    ),
+  },
+  {
+    title: "Void before pay.",
+    body: "Credits wait 30 days. A refund voids them; an open dispute freezes them, and they're voided if the buyer wins.",
+    visual: (
+      <ol className="tv tv-hold" aria-hidden="true">
+        <li>
+          <span className="tv-dot" /> Credit pending
+        </li>
+        <li className="tv-void">
+          <span className="tv-dot" /> Refund: voided
+        </li>
+        <li className="tv-freeze">
+          <span className="tv-dot" /> Dispute: frozen
+        </li>
+        <li className="tv-paid">
+          <span className="tv-dot" /> Day 30: paid
+        </li>
+      </ol>
+    ),
+  },
+  {
+    title: "Every PayPal call, once.",
+    body: "Each mutating call carries a deterministic PayPal-Request-Id, and payout batches a deterministic sender_batch_id, so a retry never pays twice.",
+    visual: (
+      <pre className="tv tv-code" aria-hidden="true">
+        <span className="c-dim">PayPal-Request-Id</span>
+        {"\n"}
+        <span className="c-str">deterministic</span>
+        {"\n"}
+        <span className="c-dim">sender_batch_id</span>
+        {"\n"}
+        <span className="c-str">deterministic</span>
+      </pre>
+    ),
+  },
+];
+
+/** The hero's product shot: the purifier programme as an app window, with live demo figures. */
+function AppWindow() {
+  return (
+    <figure className="window" aria-label="The purifier programme in CITED">
+      <div className="win-bar">
+        <span className="win-lights" aria-hidden="true">
+          <i />
+          <i />
+          <i />
+        </span>
+        <span className="win-url">cited / purifier programme</span>
+        <a className="win-open" href="/studio">
+          Open Studio
+        </a>
+      </div>
+      <div className="win-body">
+        <aside className="win-side" aria-label="Always-on agents">
+          <p className="win-h">Programme</p>
+          <p className="win-prog">
+            <span className="win-prog-dot" aria-hidden="true" />
+            Purifiers · Winix, Levoit
+          </p>
+          <p className="win-h">Always-on agents</p>
+          <ul className="win-agents">
+            {AGENTS.map((a) => (
+              <li key={a.name} className={`ag ag-${a.tone}`}>
+                <span className="ag-dot" aria-hidden="true" />
+                <span className="ag-name">{a.name}</span>
+                <span className="ag-status">{a.status}</span>
+              </li>
+            ))}
+          </ul>
+        </aside>
+        <div className="win-main">
+          <SessionField
+            caption={
+              <>
+                <span className="fig-no">Fig. 1</span> Agents that bought the Winix: 147 forced-buy
+                sessions across gpt-6-luna, gemini-3.8-flash and claude-sonnet-5-5, Levoit priced
+                the same as Winix.
+                <Ref n={2} />
+              </>
+            }
+          />
+          <dl className="stats num">
+            <div>
+              <dt>Lift, test vs placebo</dt>
+              <dd>+94pp</dd>
+            </div>
+            <div>
+              <dt>80% lower bound: what pays</dt>
+              <dd className="pos">+90.3pp</dd>
+            </div>
+            <div>
+              <dt>Paid to HouseFresh, day 30</dt>
+              <dd>$383.96</dd>
+            </div>
+            <div>
+              <dt>Built on PayPal</dt>
+              <dd className="stats-small">Orders v2 · webhooks · Payouts</dd>
+            </div>
+          </dl>
+        </div>
+      </div>
+    </figure>
+  );
+}
+
 export function Landing() {
   return (
     <>
@@ -295,91 +456,64 @@ export function Landing() {
 
       <main id="main">
         <section className="hero" aria-labelledby="hero-h">
+          <div className="sky" aria-hidden="true" />
           <div className="wrap hero-inner">
+            <a className="badge" href="/proof">
+              <span className="dot" aria-hidden="true" /> Pre-registered on three models
+              <span aria-hidden="true">›</span>
+            </a>
             <h1 id="hero-h" className="h1">
               PayPal's affiliate network, rebuilt for AI&nbsp;agents.
             </h1>
-            <div className="hero-foot">
-              <div>
-                <p className="lede">
-                  It pays creators on proven lift, not last-click cookies.{" "}
-                  <span className="lede-dim">
-                    Agents read a creator's test and buy wherever the price is best. CITED measures
-                    which tests changed what they bought, and pays only for those sales.
-                  </span>
-                </p>
-                <div className="ctas">
-                  <a className="btn btn-primary" href="/console?clean=1">
-                    Watch two agents shop <span aria-hidden="true">→</span>
-                  </a>
-                  <a className="btn btn-quiet" href="/console/payout?clean=1">
-                    See the payout
-                  </a>
-                </div>
-              </div>
-              <a className="hero-proof" href="/proof">
-                <span className="dot" aria-hidden="true" /> Pre-registered, three models{" "}
-                <span aria-hidden="true">→</span>
+            <p className="lede">
+              It pays creators on proven lift, not last-click cookies.{" "}
+              <span className="lede-dim">
+                Agents read a creator's test and buy wherever the price is best. CITED measures
+                which tests changed what they bought, and pays only for those sales.
+              </span>
+            </p>
+            <div className="ctas">
+              <a className="btn btn-primary" href="/console?clean=1">
+                Watch two agents shop <span aria-hidden="true">→</span>
+              </a>
+              <a className="btn btn-quiet" href="/console/payout?clean=1">
+                See the payout
               </a>
             </div>
           </div>
-          <div className="wrap">
-            <SessionField
-              caption={
-                <>
-                  <span className="fig-no">Fig. 1</span> Agents that bought the Winix: 147
-                  forced-buy sessions across gpt-6-luna, gemini-3.8-flash and claude-sonnet-5-5,
-                  Levoit priced the same as Winix.
-                  <Ref n={2} />
-                </>
-              }
-            />
-            <dl className="stats num">
-              <div>
-                <dt>Lift, test vs placebo</dt>
-                <dd>+94pp</dd>
-              </div>
-              <div>
-                <dt>80% lower bound: what pays</dt>
-                <dd className="pos">+90.3pp</dd>
-              </div>
-              <div>
-                <dt>Paid to HouseFresh, day 30</dt>
-                <dd>$383.96</dd>
-              </div>
-              <div>
-                <dt>Built on PayPal</dt>
-                <dd className="stats-small">Orders v2 · webhooks · Payouts</dd>
-              </div>
-            </dl>
+          <div className="wrap hero-shot">
+            <AppWindow />
           </div>
         </section>
 
-        <div className="wrap">
-          <Section
-            id="problem"
-            kicker="The problem"
-            title="Agents read reviews. They don't click links."
-          >
-            <div className="prose two-col">
+        <div className="frame">
+          <section id="problem" className="intro" aria-labelledby="problem-h">
+            <p className="kicker" id="problem-h">
+              The problem
+            </p>
+            <div className="intro-body">
               <p>
-                Affiliate marketing is a $13.81B a year business in the US
+                <strong>Agents read reviews. They don't click links.</strong> Affiliate marketing is
+                a $13.81B a year business in the US
                 <Ref n={1} />, and it pays per click. An AI shopping agent reads a creator's product
                 test, decides, and buys wherever the price is best. No link is clicked, no cookie is
                 set, and the creator who did the testing is paid nothing.
               </p>
               <p>
-                Last-click credit was always easy to overwrite; with agents it disappears. What a
-                creator can still prove is that their test <em>changed what agents bought</em>.
-                Proving it takes a holdout: some agents never see the test.
+                <strong>CITED pays for what a test changed.</strong> Last-click credit was always
+                easy to overwrite; with agents it disappears. What a creator can still prove is that
+                their test <em>changed what agents bought</em>. Proving it takes a holdout: some
+                agents never see the test.
               </p>
             </div>
-          </Section>
+          </section>
 
           <Section
             id="how"
             kicker="How it works"
             title="Four steps from a review to a payout."
+            tone="grey"
+            center
             wide={
               <figure className="fig fig-flow">
                 <div className="flow-frame">
@@ -394,7 +528,19 @@ export function Landing() {
               </figure>
             }
           >
-            <HowTabs steps={STEPS} />
+            <ol className="cards cards-2">
+              {STEPS.map((s, i) => (
+                <li key={s.tab} className="card">
+                  <div className={`panel panel-${TINTS[i]}`}>
+                    <span className="panel-no num">0{i + 1}</span>
+                    <div className="panel-card">{s.visual}</div>
+                  </div>
+                  <p className="card-copy">
+                    <strong>{s.title}</strong> {s.body}
+                  </p>
+                </li>
+              ))}
+            </ol>
           </Section>
 
           <Section id="proof" kicker="The proof" title="Measured on three models, pre-registered.">
@@ -462,6 +608,7 @@ export function Landing() {
             id="money"
             kicker="The payout"
             title="Only caused sales are paid. The rest goes back."
+            tone="grey"
           >
             <figure className="fig fig-ledger">
               <table className="ledger num">
@@ -487,7 +634,25 @@ export function Landing() {
             </p>
           </Section>
 
-          <Section id="try" kicker="Try it" title="Open it, or point your own agent at it.">
+          <Section id="trust" kicker="Guardrails" title="Built so money can't buy a verdict.">
+            <ul className="cards cards-4 trust">
+              {TRUST.map((t) => (
+                <li key={t.title} className="card">
+                  <div className="panel panel-plain">{t.visual}</div>
+                  <p className="card-copy">
+                    <strong>{t.title}</strong> {t.body}
+                  </p>
+                </li>
+              ))}
+            </ul>
+          </Section>
+
+          <Section
+            id="try"
+            kicker="Try it"
+            title="Open it, or point your own agent at it."
+            tone="grey"
+          >
             <div className="own-agent">
               <div>
                 <h3 className="h3">Run it with your own agent</h3>
@@ -551,6 +716,21 @@ export function Landing() {
               </ul>
             </div>
           </Section>
+
+          <section className="closer" aria-labelledby="closer-h">
+            <div className="sky sky-closer" aria-hidden="true" />
+            <h2 id="closer-h" className="h2">
+              Pay the tests that move agents.
+            </h2>
+            <div className="ctas">
+              <a className="btn btn-primary" href="/try">
+                Run an agent <span aria-hidden="true">→</span>
+              </a>
+              <a className="btn btn-quiet" href="/studio">
+                Open Studio
+              </a>
+            </div>
+          </section>
         </div>
       </main>
 

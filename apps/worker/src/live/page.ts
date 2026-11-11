@@ -24,7 +24,7 @@ const STAGES: [id: string, label: string][] = [
 ];
 
 /* After the shared dark theme. */
-const TRY_DARK = `main{max-width:1280px;padding-left:clamp(16px,4vw,56px);padding-right:clamp(16px,4vw,56px)}button{background:var(--cream);color:var(--bg);font-family:var(--mono);font-weight:500;letter-spacing:.07em;text-transform:uppercase;font-size:.72rem}button:hover{background:#2B2E36}`;
+const TRY_DARK = `main{max-width:1280px;padding-left:clamp(16px,4vw,56px);padding-right:clamp(16px,4vw,56px)}button{background:var(--cream);color:var(--bg);font-family:var(--sans);font-weight:500;letter-spacing:0;text-transform:none;font-size:.9rem;border-radius:999px}button:hover{background:#2B2E36}`;
 
 const CSS = `
 @font-face{font-family:"Newsreader";font-style:normal;font-weight:200 800;font-display:swap;src:url("/fonts/newsreader-latin-opsz-v1.woff2") format("woff2-variations")}
