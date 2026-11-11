@@ -156,7 +156,7 @@ export function JourneysGrid(p: P) {
         cellRenderer: "agGroupCellRenderer",
         minWidth: 210,
       },
-      { field: "model", headerName: "Agent", width: 120 },
+      { field: "model", headerName: "Agent", width: 160 },
       { field: "arm", headerName: "Arm", width: 150 },
       { field: "product", headerName: "Product", width: 150 },
       {
