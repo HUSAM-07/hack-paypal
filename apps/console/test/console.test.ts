@@ -183,25 +183,31 @@ describe("picking the video pair", () => {
 });
 
 describe("side-by-side runs (#28)", () => {
-  it("shows both runs, the Northwind → Lumen hop and the engine's order", async () => {
+  it("plays both runs as aligned transcripts: the review, the Northwind → Lumen hop, the verdicts", async () => {
     const html = await (await appWith(RUNS).request("/")).text();
-    expect(html).toContain("Winix A230");
-    expect(html).toContain("Levoit Core 300");
+    expect(html).toContain("Without the review");
+    expect(html).toContain("With HouseFresh’s review");
+    expect(html).toContain("Levoit Core 300</b> at Northwind");
+    expect(html).toContain("HouseFresh’s review, on Northwind’s offer");
     expect(html).toMatch(
-      /Northwind<small>Read the test on this offer[\s\S]*Passport[\s\S]*→[\s\S]*Lumen<small>Paid through PayPal/,
+      /Winix A230<\/b> at Lumen · \$95\.99<small>\$4\.00 under Northwind’s offer/,
     );
-    expect(html).toContain("offer was $4.00 under");
     expect(html).toContain("the buyer’s saved PayPal");
-    expect(html).toContain("Order ORD-W");
-    expect(html).toContain("Caused by the test");
-    expect(html).toContain("$7.68 commission</span> · held 30 days");
-    expect(html).toContain("No commission");
+    expect(html).toContain("order ORD-W");
+    expect(html).toContain(
+      "+$7.68</span><small>to HouseFresh · caused by the review · held 30 days",
+    );
+    expect(html).toContain("$0.00</span><small>to creators · nothing the review caused");
+    // The rows the review changed are marked; the request and the checkout rail are not.
+    expect(html.match(/class="eq ne"/g)?.length).toBe(4);
+    expect(html.match(/class="eq"[^>]*aria-label="same"/g)?.length).toBe(2);
   });
 
   it("says so when the engine is unreachable instead of inventing an order", async () => {
     const html = await (await appWith(RUNS, "down").request("/")).text();
     expect(html).toContain("Engine not reachable");
-    expect(html).toContain("waiting for the engine");
+    expect(html).toContain("not captured yet");
+    expect(html).not.toContain("order ORD-");
   });
 
   it("shows a waiting state with no runs", async () => {
