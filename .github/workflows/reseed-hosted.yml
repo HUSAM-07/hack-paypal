@@ -1,7 +1,7 @@
 name: reseed-hosted
 # Manual, plus an hourly safety net (snapshot mode). Refreshes the CITED data on the hosted worker without ever showing it empty.
-# Runs once per deploy target (workers-dev, shipwith: see apps/worker/scripts/deploy.mjs), each in
-# its own GitHub environment and Cloudflare account. A manual run can pick one target.
+# Runs against the one deploy target, shipwith (https://caaash.shipwith.si; see
+# apps/worker/scripts/deploy.mjs), in its GitHub environment and Cloudflare account.
 #
 # snapshot (default): replays the 14-beat demo against a local `wrangler dev` of pact-worker
 #   inside this job, checks it against the locked numbers, exports the CITED tables as one SQL
@@ -26,8 +26,8 @@ on:
       target:
         description: Reseed target
         type: choice
-        options: [all, workers-dev, shipwith]
-        default: all
+        options: [shipwith]
+        default: shipwith
       mode:
         description: snapshot (atomic swap) or replay (old, leaves the site empty for 10+ min)
         type: choice
@@ -44,13 +44,13 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        target: ${{ fromJSON(inputs.target && inputs.target != 'all' && format('["{0}"]', inputs.target) || '["workers-dev","shipwith"]') }}
+        target: ["shipwith"]
     runs-on: ubuntu-latest
     timeout-minutes: 30
     # Same environment and lock as that target's deploy in ci.yml, so a reseed never races a deploy.
-    environment: ${{ matrix.target == 'workers-dev' && 'production' || matrix.target }}
+    environment: ${{ matrix.target }}
     concurrency:
-      group: ${{ matrix.target == 'workers-dev' && 'deploy-production' || format('deploy-{0}', matrix.target) }}
+      group: deploy-${{ matrix.target }}
       cancel-in-progress: false
     env:
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}

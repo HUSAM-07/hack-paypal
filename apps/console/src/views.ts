@@ -50,7 +50,7 @@ a{color:inherit}
 .fb.fh h3::before{background:var(--primary)}
 .model{font:400 11px/1.3 var(--font-mono);color:var(--muted-foreground)}
 .fl{border-bottom:1px dashed var(--border);border-radius:0 0 6px 6px}
-.row{border-top:1px dashed var(--border)}
+.row{position:relative;border-top:1px dashed var(--border)}
 .k{display:block;margin-bottom:6px;font:500 11px/1 var(--font-mono);letter-spacing:.06em;text-transform:uppercase;color:var(--muted-foreground)}
 .v{font-size:15px;line-height:1.5;color:var(--foreground)}
 .v b{font-weight:600}
@@ -74,7 +74,7 @@ a{color:inherit}
 .eq.ne span{border:1px solid var(--primary);box-shadow:0 0 0 4px var(--primary-soft)}
 .film-sum{margin:28px auto 0;max-width:760px;text-align:center;font:400 24px/1.3 var(--font-serif);letter-spacing:-.01em;text-wrap:balance}
 .film-sum em{color:var(--primary)}
-.dots{display:none;gap:4px;align-items:center;height:20px}
+.dots{display:none;position:absolute;left:18px;top:14px;gap:4px;align-items:center;height:20px}
 .dots i{width:6px;height:6px;border-radius:50%;background:var(--muted-foreground);animation:blink 1s infinite}
 .dots i:nth-child(2){animation-delay:.15s}.dots i:nth-child(3){animation-delay:.3s}
 @keyframes blink{0%,80%,100%{opacity:.25}40%{opacity:1}}

@@ -80,9 +80,8 @@ export const SITE_CTA_KEY: SiteNavKey = "try";
 export const SITE_HEADER_CSS = [
   ".site-top{position:sticky;top:0;z-index:50;background:color-mix(in oklab,var(--background) 80%,transparent);-webkit-backdrop-filter:saturate(1.6) blur(12px);backdrop-filter:saturate(1.6) blur(12px);border-bottom:1px dashed var(--border)}",
   ".site-bar{box-sizing:border-box;max-width:var(--site-col,var(--frame-wide));margin:0 auto;padding:0 clamp(14px,3vw,24px);height:60px;display:flex;align-items:center;gap:6px;border-inline:1px solid var(--border)}",
-  ".site-col .site-bar{--site-col:var(--frame)}",
   ".site-mark{display:inline-flex;align-items:center;gap:8px;margin-right:8px;font:650 16px/1 var(--font-sans);letter-spacing:-.01em;color:var(--foreground);text-decoration:none;flex:none}",
-  ".site-mark svg{width:24px;height:24px;flex:none;color:var(--primary);transition:transform .3s cubic-bezier(.34,1.56,.64,1)}",
+  ".site-mark svg{width:24px;height:24px;flex:none;color:var(--primary);transition:transform .3s cubic-bezier(.2,.7,.2,1)}",
   ".site-mark:hover svg{transform:rotate(-14deg) scale(1.06)}",
   ".site-nav{display:flex;gap:6px;min-width:0;overflow-x:auto;scrollbar-width:none}",
   ".site-nav::-webkit-scrollbar{display:none}",

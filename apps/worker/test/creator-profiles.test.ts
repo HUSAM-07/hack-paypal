@@ -26,7 +26,7 @@ describe("shapeProfile", () => {
     const [winix, close, notStudied] = v.tests;
     expect(winix?.measured?.proofHref).toBe("/proof#result");
     expect(winix?.measured?.credited).toBe(true);
-    expect(close?.measured?.proofHref).toBe("/proof#secondary");
+    expect(close?.measured?.proofHref).toBe("/proof#result");
     expect(close?.measured?.credited).toBe(false);
     expect(notStudied?.measured).toBeNull();
   });

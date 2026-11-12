@@ -5,8 +5,9 @@
   "compatibility_date": "2026-10-28",
   "compatibility_flags": ["nodejs_compat"],
   "observability": { "enabled": true },
-  // Deployed to the team's own Cloudflare account on workers.dev.
-  "workers_dev": true,
+  // Deployed to Husam's Cloudflare account at https://caaash.shipwith.si by
+  // scripts/deploy.mjs (target "shipwith"), which adds the account id and the custom-domain route.
+  "workers_dev": false,
   // The web app ships with the worker so cookies and sockets stay same-origin. The
   // landing is the prerendered index.html; /app routes get app.html from the worker.
   // No SPA fallback, so a stale chunk 404s instead of returning HTML.
@@ -50,7 +51,7 @@
     {
       "binding": "DB",
       "database_name": "pact",
-      "database_id": "21de0d7d-9197-4260-a7e2-8453b7736e24",
+      "database_id": "e1003458-8946-4f7b-ba51-775092dd7243",
       "migrations_dir": "migrations"
     }
   ],
@@ -66,17 +67,18 @@
     "RP_NAME": "Pact",
     // Production origin; .dev.vars overrides both for local dev. Passkeys are bound
     // to RP_ID, so only this host can sign people in.
-    "RP_ID": "pact-worker.vincent-wesley-liem.workers.dev",
-    "ORIGINS": "https://pact-worker.vincent-wesley-liem.workers.dev",
+    "RP_ID": "caaash.shipwith.si",
+    "ORIGINS": "https://caaash.shipwith.si",
     "STEP_UP_ABOVE_MINOR": "20000",
     // Simulated until the in-app sandbox checkout is verified with a real buyer login.
     "PAYPAL_MODE": "simulated",
     // CITED engine at /api/cited. The passport key here is the published dev key the catalogue
     // uses in simulated mode (not a secret); a sandbox deployment overrides it with a secret.
     "CITED_PAYPAL_MODE": "simulated",
-    // Sandbox subscription for <workers.dev>/api/cited/webhooks/paypal (capture, refund,
-    // reversal, dispute and payout-batch events). Not a secret; signatures are bound to it.
-    "CITED_PAYPAL_WEBHOOK_ID": "8042373202922840X",
+    // Sandbox webhook subscription id for https://caaash.shipwith.si/api/cited/webhooks/paypal
+    // (all events). Not a secret; signatures are bound to it. (8042373202922840X was the retired
+    // workers.dev subscription; SANDBOX-EVIDENCE.md records the events delivered to it.)
+    "CITED_PAYPAL_WEBHOOK_ID": "422572436A741503U",
     "CITED_PASSPORT_KEY": "cited-dev-passport-key"
   }
 }

@@ -38,15 +38,15 @@ The simulated PayPal mirrors the REST shapes and signs webhooks like PayPal, so 
 
 No login, no keys. Short on time? The landing page has a **Take the 2-minute tour** button: eight stops with a one-line caption each, Next / Back / Exit (Esc), and nothing is clicked for you. Otherwise open in this order:
 
-1. <https://pact-worker.vincent-wesley-liem.workers.dev/>: the problem and how it works.
-2. <https://pact-worker.vincent-wesley-liem.workers.dev/console?clean=1>: two agents, same request; one shown the test buys the Winix, one held out buys the Levoit.
-3. <https://pact-worker.vincent-wesley-liem.workers.dev/console/payout?clean=1>: the $383.96 payout; "Statement" opens Winix's PayPal invoice.
-4. <https://pact-worker.vincent-wesley-liem.workers.dev/proof>: the pre-registered eval (147 headline sessions, +94pp, 80% bound +90.3pp); all 2,139 sessions download as CSV; `#vacuums` and `#headphones` repeat the study on robot vacuums and headphones.
-5. <https://pact-worker.vincent-wesley-liem.workers.dev/studio?view=first>: the brand's AG Studio dashboard. Ask the Analyst "Should we raise the purifier cap?": it hands the work to Studio's Data, Page and Widget agents, adds a chart, and answers from the ledger (on the hosted data, which already includes a top-up, it says keep the cap; the video shows the Approve flow). "Why did Levoit pay nothing?" answers in about 10 seconds. `/studio/creator?clean=1` is the creator's view: ask its Creator Analyst "Why did I earn $383.96?" or "Why was $7.68 voided?" (read only; it cites the tables and will not suggest gaming the holdout).
-6. <https://pact-worker.vincent-wesley-liem.workers.dev/try>: run two shopping agents yourself, one shown the creator's test and one held out. Pick air purifiers, robot vacuums or headphones (each with its own creator: HouseFresh, CrumbLab, QuietBench), then use an example request or write your own.
-7. Your own agent: `claude mcp add --transport http cited https://pact-worker.vincent-wesley-liem.workers.dev/mcp`, then ask it to buy an air purifier. Open the same URL in a browser: the page has copy buttons for Claude Code, Claude Desktop and Cursor, and a live list of your agent's sale (which creator test it was shown, the disclosure, and the credit CITED would give), kept out of the study numbers.
-8. <https://pact-worker.vincent-wesley-liem.workers.dev/creators>: onboard as a creator (simulated Log in with PayPal) and publish a test.
-9. <https://pact-worker.vincent-wesley-liem.workers.dev/console/ledger>: does the ledger match PayPal? Live checks on the engine's public data, each with a pass/fail mark and the two numbers compared (every paid credit has a payout batch, paid equals the PayPal batches, each brand's deposit adds up, Levoit pays $0). PayPal is simulated on the hosted demo; the page only reads.
+1. <https://caaash.shipwith.si/>: the problem and how it works.
+2. <https://caaash.shipwith.si/console?clean=1>: two agents, same request; one shown the test buys the Winix, one held out buys the Levoit.
+3. <https://caaash.shipwith.si/console/payout?clean=1>: the $383.96 payout; "Statement" opens Winix's PayPal invoice.
+4. <https://caaash.shipwith.si/proof>: the pre-registered eval (147 headline sessions, +94pp, 80% bound +90.3pp); all 2,139 sessions download as CSV; `#vacuums` and `#headphones` repeat the study on robot vacuums and headphones.
+5. <https://caaash.shipwith.si/studio?view=first>: the brand's AG Studio dashboard. Ask the Analyst "Should we raise the purifier cap?": it hands the work to Studio's Data, Page and Widget agents, adds a chart, and answers from the ledger (on the hosted data, which already includes a top-up, it says keep the cap; the video shows the Approve flow). "Why did Levoit pay nothing?" answers in about 10 seconds. `/studio/creator?clean=1` is the creator's view: ask its Creator Analyst "Why did I earn $383.96?" or "Why was $7.68 voided?" (read only; it cites the tables and will not suggest gaming the holdout).
+6. <https://caaash.shipwith.si/try>: run two shopping agents yourself, one shown the creator's test and one held out. Pick air purifiers, robot vacuums or headphones (each with its own creator: HouseFresh, CrumbLab, QuietBench), then use an example request or write your own.
+7. Your own agent: `claude mcp add --transport http cited https://caaash.shipwith.si/mcp`, then ask it to buy an air purifier. Open the same URL in a browser: the page has copy buttons for Claude Code, Claude Desktop and Cursor, and a live list of your agent's sale (which creator test it was shown, the disclosure, and the credit CITED would give), kept out of the study numbers.
+8. <https://caaash.shipwith.si/creators>: onboard as a creator (simulated Log in with PayPal) and publish a test.
+9. <https://caaash.shipwith.si/console/ledger>: does the ledger match PayPal? Live checks on the engine's public data, each with a pass/fail mark and the two numbers compared (every paid credit has a payout batch, paid equals the PayPal batches, each brand's deposit adds up, Levoit pays $0). PayPal is simulated on the hosted demo; the page only reads.
 
 Fallback, locally with Node 22+ (no keys; simulated PayPal, scripted agents):
 
@@ -148,15 +148,15 @@ Judges can check it four ways: read the pre-registration and per-model results a
 
 ## Try it out (links)
 
-- Hosted demo: <https://pact-worker.vincent-wesley-liem.workers.dev/>
-- Two agents, side by side: <https://pact-worker.vincent-wesley-liem.workers.dev/console?clean=1>
-- The payout: <https://pact-worker.vincent-wesley-liem.workers.dev/console/payout?clean=1>
-- Run a live agent: <https://pact-worker.vincent-wesley-liem.workers.dev/try>
-- Public MCP server: <https://pact-worker.vincent-wesley-liem.workers.dev/mcp> (`claude mcp add --transport http cited https://pact-worker.vincent-wesley-liem.workers.dev/mcp`)
-- The proof (pre-registration, per-model results, all 2,139 sessions): <https://pact-worker.vincent-wesley-liem.workers.dev/proof>
-- AG Studio, brand view: <https://pact-worker.vincent-wesley-liem.workers.dev/studio?view=first>
-- AG Studio, creator view: <https://pact-worker.vincent-wesley-liem.workers.dev/studio/creator?clean=1>
-- Winix's statement (PayPal Invoicing): <https://pact-worker.vincent-wesley-liem.workers.dev/console/statement?brand=winix&clean=1>
-- Creator onboarding: <https://pact-worker.vincent-wesley-liem.workers.dev/creators>
+- Hosted demo: <https://caaash.shipwith.si/>
+- Two agents, side by side: <https://caaash.shipwith.si/console?clean=1>
+- The payout: <https://caaash.shipwith.si/console/payout?clean=1>
+- Run a live agent: <https://caaash.shipwith.si/try>
+- Public MCP server: <https://caaash.shipwith.si/mcp> (`claude mcp add --transport http cited https://caaash.shipwith.si/mcp`)
+- The proof (pre-registration, per-model results, all 2,139 sessions): <https://caaash.shipwith.si/proof>
+- AG Studio, brand view: <https://caaash.shipwith.si/studio?view=first>
+- AG Studio, creator view: <https://caaash.shipwith.si/studio/creator?clean=1>
+- Winix's statement (PayPal Invoicing): <https://caaash.shipwith.si/console/statement?brand=winix&clean=1>
+- Creator onboarding: <https://caaash.shipwith.si/creators>
 - Repository: <https://github.com/HUSAM-07/hack-paypal>
 - Video: VIDEO_LINK_TODO

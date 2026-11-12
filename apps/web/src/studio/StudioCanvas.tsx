@@ -13,7 +13,7 @@ import type {
 } from "ag-studio";
 import { AgStudioAiModule } from "ag-studio";
 import { AgStudio, AgStudioProvider, createWidgets } from "ag-studio-react";
-import { useMemo } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import type * as Analyst from "./agents/analyst";
 import type { StudioContext } from "./context";
 import type { StudioConfig, StudioTables } from "./data";
@@ -151,9 +151,9 @@ const widgets = (defaults: AgWidgetsConfig<AgCoreDefaultRegistry>) =>
     ],
   });
 
-/** The Analyst's chat on the right of the brand view; filters beside it. No builder chrome by default. */
-const PANELS: AgPanelConfig = { edit: { right: ["ai", "filters"] }, view: { right: ["filters"] } };
-/** The Programmes page has no filters, and on a phone their tab would sit over the form. */
+/** The Analyst's chat folds into a rail on the right; the page chips already scope the data, so no filters panel. */
+const PANELS: AgPanelConfig = { edit: { right: ["ai"] }, view: { right: [] } };
+/** On a phone the side panels would take the canvas width, so no view opens them there. */
 const PHONE_PANELS: AgPanelConfig = { edit: { right: [] }, view: { right: [] } };
 const PHONE_MAX_WIDTH = 760;
 /** Widgets are dashed cards, as on the landing; Studio draws no widget border unless asked. */
@@ -172,8 +172,40 @@ export interface StudioCanvasProps {
   onApiReady: (e: AgStudioApiReadyEvent) => void;
 }
 
+/**
+ * AG Studio sizes its canvas to its container and scrolls inside it, which squeezed the dashboard
+ * into a short window. This grows the container to the canvas's own height, so the page scrolls.
+ */
+function useFitCanvas() {
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const host = ref.current;
+    if (!host) return;
+    let observed: Element | null = null;
+    const fit = () => {
+      const canvas = host.querySelector(".ag-studio-layout-canvas");
+      if (canvas && canvas !== observed) {
+        if (observed) ro.unobserve(observed);
+        ro.observe(canvas);
+        observed = canvas;
+      }
+      if (canvas) host.style.minHeight = `${Math.ceil(canvas.getBoundingClientRect().height) + 24}px`;
+    };
+    const ro = new ResizeObserver(fit);
+    const mo = new MutationObserver(fit);
+    mo.observe(host, { childList: true, subtree: true });
+    fit();
+    return () => {
+      ro.disconnect();
+      mo.disconnect();
+    };
+  }, []);
+  return ref;
+}
+
 export function StudioCanvas(p: StudioCanvasProps) {
   const { config, tables, analyst, initialView, creatorName } = p;
+  const fitRef = useFitCanvas();
   const data = useMemo(
     () => sourcesFor(config, tables, creatorName),
     [config, tables, creatorName],
@@ -197,16 +229,12 @@ export function StudioCanvas(p: StudioCanvasProps) {
       {...(config.licenseKey ? { licenseKey: config.licenseKey } : {})}
       modules={[AgStudioAiModule]}
     >
-      <div className={`st-studio${phoneProgrammes ? " is-phone-programmes" : ""}`}>
+      <div ref={fitRef} className={`st-studio${phoneProgrammes ? " is-phone-programmes" : ""}`}>
         <AgStudio
           data={data}
           initialState={state}
           mode={p.mode}
-          panels={
-            initialView === "programmes" && window.innerWidth < PHONE_MAX_WIDTH
-              ? PHONE_PANELS
-              : PANELS
-          }
+          panels={window.innerWidth < PHONE_MAX_WIDTH ? PHONE_PANELS : PANELS}
           theme={citedTheme}
           layout={LAYOUT}
           context={p.context}

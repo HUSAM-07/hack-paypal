@@ -261,8 +261,8 @@ export function ToolSteps({ tools }: { tools: Tool[] }) {
                   <OctagonAlert className="size-3.5 text-danger" />
                 ) : (
                   <motion.span
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
+                    initial={{ scale: 0.6, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
                     transition={{ type: "spring", stiffness: 500, damping: 22 }}
                   >
                     <Check className="size-3.5 text-subtle-foreground" strokeWidth={2.4} />

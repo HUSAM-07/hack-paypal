@@ -64,7 +64,7 @@ export const TOUR_STOPS: readonly TourStop[] = [
   },
   {
     path: "/proof",
-    hash: "vacuums",
+    hash: "result",
     label: "Second category",
     caption:
       "The same study on robot vacuums: 57/57 against 45/54, +16.7 points (80% lower bound +11.7 points). Smaller, and Sonnet showed no lift; the page says so.",
