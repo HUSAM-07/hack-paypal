@@ -104,6 +104,9 @@ input:focus,textarea:focus{outline:none;border-color:var(--ink);box-shadow:0 0 0
 .opt b{font-weight:600}
 .opt small{display:block;color:var(--muted);font-size:.75rem}
 .opt code{font-size:.68rem}
+.payout{margin:0 0 2.2rem;max-width:40rem}
+.payout .opts{margin:0 0 .4rem}
+.payout .saved{margin:0 0 .9rem;padding:.6rem .9rem;border-left:3px solid var(--test);background:var(--test-tint);font-size:.85rem}
 .verdicts .opt.close:has(input:checked){border-color:var(--held)}
 .verdicts .opt:not(.close):has(input:checked){border-color:var(--test)}
 .err{margin:0 0 1.4rem;padding:.8rem 1rem;border-left:3px solid var(--held);background:var(--held-tint);font-size:.85rem}
@@ -251,6 +254,39 @@ export interface PublishView {
   /** The creator's AG Studio view. */
   dashboardUrl: string;
   tests: { id: string; kind: string; verdict: string; publishedAt: string }[];
+  /** Where CITED pays this creator. `label` is masked (`Venmo ···0123`); never the full receiver. */
+  payout: {
+    method: "PAYPAL" | "VENMO";
+    label: string | null;
+    /** What was typed in the Venmo box, put back after a failed save. */
+    typed?: string;
+    error?: string;
+    saved?: boolean;
+  };
+}
+
+function payoutSection(v: PublishView): string {
+  const p = v.payout;
+  const venmo = p.method === "VENMO";
+  return `<section class="payout" aria-labelledby="payout-h">
+<form method="post" action="/creators/payout" novalidate>
+<input type="hidden" name="csrf" value="${esc(v.csrf)}">
+<fieldset><legend id="payout-h">How you get paid</legend>
+<p class="hint">Credits are paid after the 30-day hold, in one PayPal Payouts batch. Pick where yours land.</p>
+${p.saved ? `<p class="saved" role="status">Saved. You will be paid ${p.method === "VENMO" ? `to ${esc(p.label ?? "Venmo")}` : "to your PayPal account"}.</p>` : ""}
+${p.error ? `<div class="err" role="alert">${esc(p.error)}</div>` : ""}
+<div class="opts">
+<label class="opt"><input type="radio" name="method" value="PAYPAL"${venmo ? "" : " checked"}>
+<span><b>PayPal</b><small>Your PayPal account ID, from the sign-in above.</small></span></label>
+<label class="opt"><input type="radio" name="method" value="VENMO"${venmo ? " checked" : ""}>
+<span><b>Venmo</b><small>US only, in US dollars. Needs your US mobile number or Venmo username.${venmo && p.label ? ` Now: ${esc(p.label)}.` : ""}</small></span></label>
+</div>
+<label class="f" for="venmo">Venmo mobile number or @username <span class="small">(only for Venmo)</span></label>
+<input type="text" id="venmo" name="venmo" maxlength="40" autocomplete="off" placeholder="415 555 0123 or @yourname" value="${esc(p.typed ?? "")}">
+</fieldset>
+<div class="actions"><button class="btn" type="submit">Save payout choice</button></div>
+</form>
+</section>`;
 }
 
 function scheduleBlock(studioUrl: string): string {
@@ -328,9 +364,10 @@ export function publishPage(v: PublishView): string {
     "Publish a test · CITED",
     `${NAV}<main>${rail(step)}
 <div class="who"><span>Connected as <b>${esc(v.name)}</b></span>
-<span>Payouts to PayPal account ID <code>${esc(v.payerId)}</code> (<code>PAYPAL_ID</code>)</span>
+<span>PayPal account ID <code>${esc(v.payerId)}</code> (<code>PAYPAL_ID</code>)</span>
 ${v.simulated ? `<span class="sim">Simulated PayPal</span>` : ""}
 <form method="post" action="/creators/disconnect"><input type="hidden" name="csrf" value="${esc(v.csrf)}"><button class="linkish" type="submit">Disconnect</button></form></div>
+${payoutSection(v)}
 ${v.published ? scheduleBlock(v.published.studioUrl) : ""}
 ${list}
 <div class="work">

@@ -563,7 +563,7 @@ export function payoutPage(p: PayoutData | null, opts: Opts): string {
   const body = `<main class="pay"><div class="pay-grid">
 <div class="pay-copy">
   <p class="pay-k">Day 30 · creator payout</p>
-  <h1 class="pay-h">${esc(name)} got paid <span class="num">${usd(p.amountMinor)}</span> through PayPal Payouts.</h1>
+  <h1 class="pay-h">${esc(name)} got paid <span class="num">${usd(p.amountMinor)}</span> through PayPal Payouts${p.wallet === "VENMO" ? ", to Venmo" : ""}.</h1>
   <p class="pay-sub">Commission on the sales its test caused, paid once the 30-day hold ended. AI shopping agents read the test and bought; nobody clicked a link.</p>
   <div class="pay-cards">
 ${
@@ -581,7 +581,7 @@ ${mismatch ? `<p class="warn">Ledger shows ${usd(p.ledgerPaidMinor ?? 0)} paid, 
 </div>
 <figure class="mail">
 <article class="notice" aria-label="PayPal payment notice">
-<header><span class="pp">Pay<span>Pal</span></span><small>Payment received</small></header>
+<header><span class="pp">Pay<span>Pal</span></span><small>Payment received${p.wallet === "VENMO" ? " · paid to Venmo" : ""}</small></header>
 <div class="top">
   <p class="hello">${esc(name)}, you received a payment</p>
   <div class="amount num">${usd(p.amountMinor)}<small>${esc(p.currency)}</small></div>
@@ -594,7 +594,7 @@ ${mismatch ? `<p class="warn">Ledger shows ${usd(p.ledgerPaidMinor ?? 0)} paid, 
   <div><dt>Payout batch ID</dt><dd class="mono">${esc(p.paypalBatchId ?? p.senderBatchId)}</dd></div>
   <div><dt>${p.itemIdKind === "payout_item_id" ? "Payout item ID" : "Item reference"}</dt><dd class="mono">${esc(p.itemId)}</dd></div>
 </dl>
-<footer>Sent with PayPal Payouts. A refund during the hold voids the credit; a dispute holds it until PayPal decides.</footer>
+<footer>Sent with PayPal Payouts${p.wallet === "VENMO" ? " to Venmo" : ""}. A refund during the hold voids the credit; a dispute holds it until PayPal decides.</footer>
 </article>
 <figcaption class="pay-cap">The notice ${esc(name)} receives from PayPal. Simulated PayPal on this demo.${p.amountMinor === 38396 ? ` The same $383.96 payout also ran on the real PayPal sandbox: <a href="https://github.com/HUSAM-07/hack-paypal/blob/main/cited/SANDBOX-EVIDENCE.md">batch <span class="mono">ME2KV57B7KYNS</span>, SUCCESS</a>.` : ""}</figcaption>
 </figure>

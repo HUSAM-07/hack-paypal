@@ -50,6 +50,8 @@ export interface PayoutData {
   creatorId: string;
   creatorName: string;
   receiver: string;
+  /** "VENMO" when the payout went to Venmo; absent means PayPal. */
+  wallet?: "VENMO";
   amountMinor: number;
   currency: string;
   status: string;
@@ -160,6 +162,7 @@ export async function loadPayout(
     creatorId: item.creatorId,
     creatorName: mine?.name ?? item.creatorId,
     receiver: item.receiver,
+    ...(item.wallet === "VENMO" ? { wallet: "VENMO" as const } : {}),
     amountMinor: item.amountMinor,
     currency: item.currency,
     status: batch.status,

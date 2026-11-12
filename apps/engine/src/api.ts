@@ -20,6 +20,8 @@ import { closeCycle } from "./cycle";
 import type { Env } from "./env";
 import { heldCredits, listFlags, resolveHold } from "./guard";
 import { brandLiftData, evaluateBrand } from "./lift";
+import { PayoutMethodInput } from "./payout-method";
+import { getPayoutMethod, setPayoutMethod } from "./payout-wallet";
 import { payoutItemIds, refreshPayouts, runPayouts, senderItemId } from "./payouts";
 import { getPayPal } from "./paypal";
 import { captureDeposit, getBrand, listBrands, requestDeposit, upsertBrand } from "./programme";
@@ -127,6 +129,21 @@ api.post("/tests", async (c) => {
   if ("error" in r) return c.json(r, 400);
   const out = await publishTest(c.env, r.data);
   return out.ok ? c.json(out, 201) : c.json({ error: out.error }, out.status);
+});
+
+/** An onboarded creator chooses PayPal or Venmo for payouts (from /creators). Never a demo creator. */
+api.post("/payout-method", async (c) => {
+  const r = await body(c, PayoutMethodInput);
+  if ("error" in r) return c.json(r, 400);
+  const out = await setPayoutMethod(c.env, r.data);
+  return out.ok ? c.json(out, 200) : c.json({ error: out.error }, out.status);
+});
+
+/** Which wallet a creator is paid to, with a masked label: the full Venmo receiver is never returned. */
+api.get("/payout-method", async (c) => {
+  const creatorId = c.req.query("creatorId") ?? "";
+  if (!/^[A-Za-z0-9_-]{1,24}$/.test(creatorId)) return c.json({ error: "invalid_creator" }, 400);
+  return c.json(await getPayoutMethod(c.env, creatorId));
 });
 
 api.post("/listings", async (c) => {

@@ -26,6 +26,7 @@ Paste each section into the matching Devpost field. Numbers come from `npm run d
 | Orders v2 agent checkout, Agent Toolkit `get_order` | 3 agent orders ($2.00 each) with the seller as payee, the signed passport in `custom_id` and `items[].upc`, created and captured in one call from the vault (`8E6030344K4198450`, `8F195714E6441535R`, `4XV50799SF6195530`), read back with `get_order`; the engine joined each capture to its arm and credited 2 caused units | simulated |
 | Captures refund (Agent Toolkit `create_refund`) | Refund `81C245246C527113H`; its `PAYMENT.CAPTURE.REFUNDED` webhook voided that sale's credit in the engine | simulated |
 | Webhooks | PayPal-signed captures, refund and payout-batch events delivered to subscription `8042373202922840X` and verified on the hosted engine (`signedFor=subscription`); a local engine received the same events by replay, since PayPal cannot reach it | simulated |
+| Payouts to Venmo | A creator can choose Venmo at `/creators`; the engine's payout run sends that creator's item with `recipient_wallet: "VENMO"` and a phone or username in the same batch as PayPal items (PayPal's "Payouts to Venmo" guide). Tested against the simulated PayPal only | simulated |
 | Payouts (agent checkout run) | The engine's `runPayouts` sent batch `GB9U5DYBGHLY4`: $0.16 for the one credit left after the refund, SUCCESS | simulated |
 | Log in with PayPal | A sandbox personal account signed in; the worker's identity code exchanged the code and read a payer id, name and email from `userinfo` ([SANDBOX-EVIDENCE.md](https://github.com/HUSAM-07/hack-paypal/blob/main/cited/SANDBOX-EVIDENCE.md)) | simulated |
 | Disputes | Code paths built against the sandbox APIs | simulated |
@@ -95,6 +96,7 @@ Judges can check it four ways: read the pre-registration and per-model results a
 - **Disputes:** an open dispute freezes the sale's credits; a seller-favour resolution releases them, a buyer win voids them.
 - **PayPal Payouts:** batch payouts to creators' `PAYPAL_ID`, with a deterministic `sender_batch_id`, after the 30-day hold. Proven on the real sandbox: $383.96, batch `ME2KV57B7KYNS`, SUCCESS.
 - **PayPal Invoicing v2:** one statement per brand at cycle close, recorded as paid against the prepaid deposit; a brand with nothing to pay gets no invoice.
+- **Payouts to Venmo (simulated):** a creator can choose Venmo at `/creators`. Their payout item carries `recipient_wallet: "VENMO"`, a US mobile number or Venmo username and a note, in the same batch as the PayPal items. This is tested against our simulated PayPal; it has not run on the real sandbox, which does not support phone receivers.
 - **Log in with PayPal:** creator onboarding; the payer id from `userinfo` is the Payouts receiver.
 - **AI agents:** shopper agents on GPT, Gemini and Claude Sonnet through an OpenAI-compatible gateway, shopping through an MCP catalogue (`search_product`, `checkout`). Checkout uses the PayPal Agent Toolkit (`@paypal/agent-toolkit`) for every call it can express: `pay_order` (capture), `get_order` (read-back, also exposed as an MCP tool) and `create_refund` (seller refunds). Order creation stays on our Orders v2 client, because the toolkit's `create_order` cannot set the payee, `custom_id`, `items[].upc` or a vaulted `payment_source`. The catalogue is also a public remote MCP server (Streamable HTTP) that Claude, Cursor or any MCP client can use.
 - **Attribution:** pure TypeScript functions for the model-stratified attributable fraction, its one-sided 80% lower bound, the Shapley split and the ledger rules, with property tests. Money is integer minor units throughout.
@@ -131,7 +133,7 @@ Judges can check it four ways: read the pre-registration and per-model results a
 
 - Run the agent checkout on the PayPal sandbox with three separate seller accounts (it already ran end to end there with one, with PayPal-signed webhooks: [SANDBOX-EVIDENCE.md](https://github.com/HUSAM-07/hack-paypal/blob/main/cited/SANDBOX-EVIDENCE.md)).
 - More categories and creators beyond purifiers and robot vacuums, so tests compete and Shapley splits get richer.
-- Venmo payouts for creators and a brand self-serve programme flow in AG Studio.
+- Run a Venmo payout on a real PayPal account (creators can already choose Venmo, built and tested against the simulated PayPal) and a brand self-serve programme flow in AG Studio.
 - Integrate with PayPal's real agent catalogue and Honey's affiliate contracts.
 
 ## Built with
