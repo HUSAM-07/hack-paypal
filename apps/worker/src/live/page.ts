@@ -407,7 +407,7 @@ ${rows}
 <div class="spine result" style="--r:${last}"><span>Bought</span></div><div class="result-cell test" style="--r:${last}"><div id="test-out" class="out test wait" aria-live="polite"></div></div><div class="result-cell held" style="--r:${last}"><div id="held-out" class="out held wait" aria-live="polite"></div></div>
 </section>
 <section class="after">
-<div class="note"><p>One pair shows one outcome, not a lift. Across 147 forced-buy sessions on GPT, Gemini and Sonnet, agents shown the test bought the Winix every time, held-out agents 8% of the time: a lift of +94 percentage points. <a href="/proof">See the proof</a>.</p>
+<div class="note"><p>One pair shows one outcome, not a lift. Across 147 forced-buy sessions on GPT, Gemini and Sonnet, agents shown the test bought the Winix every time, against 6% of agents shown other content from the same creator: a lift of +94 percentage points. <a href="/proof">See the proof</a>.</p>
 <p>Live runs keep their own record. They never change the recorded demo's numbers on the console, and a side by side counts as two runs against the hourly limit.</p></div>
 <div id="tally" class="tally" hidden aria-live="polite"><h3>Winix picks over five pairs</h3>
 <div class="trow test"><b>Test arm</b><span class="dots" id="test-dots"></span><span id="test-count" class="num"></span></div>

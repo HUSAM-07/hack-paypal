@@ -187,9 +187,10 @@ const STEPS: HowStep[] = [
     title: "The catalogue randomises what agents see.",
     body: (
       <>
-        PayPal's agent catalogue shows each shopping session the creator's test, a placebo from the
-        same creator, or nothing: 50/50 for a test's first 7 days, then a permanent 5% holdout. Only
-        the test is added or withheld. <strong>Ranking never changes.</strong>
+        The agent catalogue (a mock of PayPal's Store Sync in this demo) shows each shopping session
+        the creator's test, a placebo from the same creator, or nothing. For a test's first 7 days
+        half the sessions see it; after that, 5% are held out for good. Only the test is added or
+        withheld. <strong>Ranking never changes.</strong>
       </>
     ),
   },
@@ -530,7 +531,7 @@ export function Landing() {
               <ul>
                 <li>
                   <strong>The eval used real models:</strong> gpt-6-luna, gemini-3.8-flash and
-                  claude-sonnet-5-5, 147 sessions per study condition.
+                  claude-sonnet-5-5, 147 sessions per price condition.
                   <Ref n={2} />
                 </li>
                 <li>

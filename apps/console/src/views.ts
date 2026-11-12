@@ -524,7 +524,7 @@ function film(d: DemoData): string {
 
 export function demoPage(d: DemoData, opts: Opts): string {
   const body = `<main class="stage">
-<div class="lede"><h1>One A/B test, two agents</h1><p>Same request, same offers, same ranking. Watch an agent shop without the creator's review, then the same request with it, then compare.</p><p class="lede-note">These two are seeded replays. The effect was measured with live GPT, Gemini and Claude agents in a pre-registered eval: <a href="/proof">see the proof</a>.</p></div>
+<div class="lede"><h1>One A/B test, two agents</h1><p>Same request, same offers, same ranking. Watch an agent shop without the creator's review, then the same request with it, then compare.</p><p class="lede-note">These two are seeded replays. The effect was measured with live GPT, Gemini and Claude agents in a pre-registered eval: <a href="../proof">see the proof</a>.</p></div>
 ${
   d.exposed && d.heldOut
     ? film(d)

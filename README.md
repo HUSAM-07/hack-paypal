@@ -68,7 +68,7 @@ npm run dev:cited      # every app locally: console, catalogue, agents, studio, 
 
 ## What the demo shows
 
-Purifier programme, price-matched, 147 scripted sessions (the same numbers as the [product card](cited/spec/CITED-card.md)):
+Purifier programme, price-matched: the pre-registered eval's 147 sessions across GPT, Gemini and Claude (the same numbers as the [product card](cited/spec/CITED-card.md)). The hosted demo's shopper runs replay them, scripted:
 
 | Beat | Result |
 |---|---|
