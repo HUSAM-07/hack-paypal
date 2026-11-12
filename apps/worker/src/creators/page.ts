@@ -11,7 +11,6 @@ import {
   SITE_NAV_TOUCH_CSS,
   SITE_THEME_CSS,
   siteHeader,
-  siteMeta,
 } from "@pact/protocol";
 import { CREATOR_CATEGORIES, type CreatorCategory, creatorCategory } from "./categories";
 
@@ -175,7 +174,7 @@ const NAV = siteHeader("creators");
 function shell(title: string, body: string, script = "", wide = false): string {
   return `<!doctype html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>${esc(title)}</title>${siteMeta({ title, description: "Creators: connect PayPal, publish a product test, and get paid only for the agent sales it caused.", path: "/creators" })}${SITE_HEAD_HTML}
+<title>${esc(title)}</title>${SITE_HEAD_HTML}
 <style>${SITE_THEME_CSS}${CSS}${SITE_NAV_TOUCH_CSS}${SITE_HEADER_CSS}</style></head><body${wide ? "" : ' class="site-col"'}>${body}${script ? `<script>${script}</script>` : ""}</body></html>`;
 }
 

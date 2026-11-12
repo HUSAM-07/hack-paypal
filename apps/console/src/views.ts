@@ -4,7 +4,6 @@ import {
   SITE_HEADER_CSS,
   SITE_THEME_CSS,
   siteHeader,
-  siteMeta,
   TOUR_SCRIPT,
 } from "@pact/protocol";
 import type { DemoData, PayoutData, RunView, StatementData } from "./data";
@@ -280,7 +279,6 @@ function page(title: string, here: Here, body: string, opts: Opts): string {
   return `<!doctype html><html lang="en"><head><meta charset="utf-8"><title>${esc(title)}</title>
 <meta name="viewport" content="width=device-width,initial-scale=1">
 ${opts.live ? '<meta http-equiv="refresh" content="2">' : ""}
-${siteMeta({ title, description: here === "console" ? "Two AI shopping agents, one request: one sees the creator's test and buys the Winix, the held-out one buys the Levoit." : "Day 30: a refund voids one credit, a batch PayPal Payout pays the creator, and the unspent deposit goes back to the brand.", path: here === "console" ? "/console" : "/console/payout" })}
 ${SITE_HEAD_HTML}
 <style>${SITE_THEME_CSS}${CSS}${SITE_HEADER_CSS}</style></head><body class="${cls}">${nav(here)}${body}${TOUR_SCRIPT}</body></html>`;
 }

@@ -8,7 +8,6 @@ import {
   SITE_NAV_TOUCH_CSS,
   SITE_THEME_CSS,
   siteHeader,
-  siteMeta,
   TOUR_SCRIPT,
 } from "@pact/protocol";
 
@@ -142,7 +141,6 @@ export function ledgerPage(): string {
   return `<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Does the ledger match PayPal? · CITED</title>
-${siteMeta({ title: "Does the ledger match PayPal? · CITED", description: "Every credited sale in the CITED ledger, checked against the PayPal capture it came from.", path: "/console/ledger" })}
 ${SITE_HEAD_HTML}
 <style>${SITE_THEME_CSS}${CSS}${SITE_NAV_TOUCH_CSS}${SITE_HEADER_CSS}</style></head><body>
 ${siteHeader("ledger")}

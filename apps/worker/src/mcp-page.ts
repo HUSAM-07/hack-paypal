@@ -14,7 +14,6 @@ import {
   SITE_NAV_TOUCH_CSS,
   SITE_THEME_CSS,
   siteHeader,
-  siteMeta,
   TOUR_SCRIPT,
   type VerifiedTest,
 } from "@pact/protocol";
@@ -338,7 +337,6 @@ export function mcpPage(origin: string): string {
   return `<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Run your own agent · CITED</title>
-${siteMeta({ title: "Run your own agent · CITED", description: "Point any MCP client at the CITED catalogue: search offers, check out through PayPal, and see whether the creator earns.", path: "/mcp" })}
 ${SITE_HEAD_HTML}
 <style>${SITE_THEME_CSS}${CSS}${SITE_NAV_TOUCH_CSS}${SITE_HEADER_CSS}</style></head><body class="site-col">
 ${siteHeader("mcp")}
