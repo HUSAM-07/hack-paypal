@@ -16,7 +16,7 @@ describe("icons and manifest (run scripts/gen-icons.ts after changing the mark o
     for (const i of SITE_ICONS) expect(existsSync(pub(`icons/${i.file}`)), i.file).toBe(true);
   });
   it("every HTML entry gets the shared head", () => {
-    for (const html of ["index.html", "proof.html", "studio.html", "app.html"]) {
+    for (const html of ["index.html", "proof.html", "studio.html", "app.html", "shop.html"]) {
       expect(readFileSync(new URL(`../../${html}`, import.meta.url), "utf8"), html).toContain(
         "<!--site-head-->",
       );

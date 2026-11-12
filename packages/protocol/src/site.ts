@@ -1,4 +1,4 @@
-import { SITE_ICONS_HTML } from "./meta";
+import { markCutouts, SITE_ICONS_HTML, SITE_MARK } from "./meta";
 import { SITE_STYLE_CSS } from "./theme";
 
 /**
@@ -86,11 +86,13 @@ export const SITE_CTA_KEY: SiteNavKey = "try";
  * Colours read the page's tokens, so a dark page gets a dark bar.
  */
 export const SITE_HEADER_CSS = [
+  // Anchor jumps land below the sticky bar on every page (the bar is taller once the nav wraps).
+  ":root{--site-top-h:61px}html{scroll-padding-top:calc(var(--site-top-h) + 12px)}",
   ".site-top{position:sticky;top:0;z-index:50;background:color-mix(in oklab,var(--background) 80%,transparent);-webkit-backdrop-filter:saturate(1.6) blur(12px);backdrop-filter:saturate(1.6) blur(12px);border-bottom:1px dashed var(--border)}",
   ".site-bar{box-sizing:border-box;max-width:var(--site-col,var(--frame-wide));margin:0 auto;padding:0 clamp(14px,3vw,24px);height:60px;display:flex;align-items:center;gap:6px;border-inline:1px solid var(--border)}",
   ".site-mark{display:inline-flex;align-items:center;gap:8px;margin-right:8px;font:650 16px/1 var(--font-sans);letter-spacing:-.01em;color:var(--foreground);text-decoration:none;flex:none}",
   ".site-mark svg{width:24px;height:24px;flex:none;color:var(--primary);transition:transform .3s cubic-bezier(.2,.7,.2,1)}",
-  ".site-mark:hover svg{transform:rotate(-14deg) scale(1.06)}",
+  "@media (hover:hover) and (pointer:fine) and (prefers-reduced-motion:no-preference){.site-mark:hover svg{transform:rotate(-14deg) scale(1.06)}}",
   ".site-nav{display:flex;gap:2px;min-width:0;overflow-x:auto;scrollbar-width:none;padding:3px;border-radius:13px;background:var(--fill);box-shadow:inset 0 0 0 1px var(--border)}",
   ".site-nav::-webkit-scrollbar{display:none}",
   ".site-nav a,.site-cta,.site-icon,.site-account{box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;gap:6px;height:30px;border-radius:10px;font:500 13px/1 var(--font-sans);text-decoration:none;white-space:nowrap;transition:background-color .15s,color .15s,transform .15s}",
@@ -111,7 +113,12 @@ export const SITE_HEADER_CSS = [
   ".site-cta .site-cta-dot{width:7px;height:7px;border-radius:50%;background:currentColor;box-shadow:0 0 0 3px color-mix(in oklab,var(--primary-foreground) 25%,transparent)}",
   ".site-cta:hover{transform:translateY(-1px)}.site-cta:active,.site-icon:active,.site-nav a:active{transform:scale(.96)}",
   ".site-mark:focus-visible,.site-nav a:focus-visible,.site-cta:focus-visible,.site-icon:focus-visible,.site-account:focus-visible{outline:2px solid var(--primary);outline-offset:2px}",
-  "@media (max-width:760px){.site-bar{height:auto;flex-wrap:wrap;padding-top:10px;padding-bottom:10px;row-gap:8px}.site-nav{order:3;flex-basis:100%}}",
+  // The nav scrolls, so its focus ring sits inside the pill instead of being clipped.
+  ".site-nav a:focus-visible{outline-offset:-2px}",
+  "@media (max-width:900px){.site-nav a{padding:0 9px}.site-nav a[aria-current]{padding-left:19px}.site-nav a[aria-current]::before{left:8px}}",
+  "@media (max-width:760px){:root{--site-top-h:101px}.site-bar{height:auto;flex-wrap:wrap;padding-top:10px;padding-bottom:10px;row-gap:8px}.site-nav{order:3;flex-basis:100%}}",
+  // Narrow phones: drop the GitHub icon so the mark, theme toggle and CTA stay on one row.
+  "@media (max-width:400px){.site-tools>a.site-icon{display:none}.site-mark{margin-right:0}.site-cta{padding:0 10px}}",
   "@media (pointer:coarse){.site-nav a,.site-cta,.site-icon,.site-account{min-height:40px}.site-icon{min-width:40px}}",
   ".site-sr{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}",
   ".clean .site-top{display:none}",
@@ -120,9 +127,8 @@ export const SITE_HEADER_CSS = [
   ".clean .site-skip{display:none}",
 ].join("");
 
-/** CITED's mark: a ring with an arc cut out (a holdout) and a dot (the credited sale). */
-export const SITE_MARK_SVG =
-  '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="11" fill="currentColor"/><path d="M16.6 8.2A6 6 0 1 0 17.6 14" fill="none" stroke="var(--background)" stroke-width="2.2" stroke-linecap="round"/><circle cx="17.4" cy="10.9" r="1.5" fill="var(--background)"/></svg>';
+/** CITED's mark (geometry in ./meta SITE_MARK): a disc in currentColor, the cut-outs in the page background. */
+export const SITE_MARK_SVG = `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="${SITE_MARK.disc.cx}" cy="${SITE_MARK.disc.cy}" r="${SITE_MARK.disc.r}" fill="currentColor"/>${markCutouts("var(--background)")}</svg>`;
 
 /** The skip link, first in the tab order; the page's `<main>` carries `id="main"`. */
 export const SITE_SKIP_HTML = `<a class="site-skip" href="#main">Skip to content</a>`;

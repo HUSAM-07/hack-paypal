@@ -114,6 +114,11 @@ const DERIVED = [
   "--frame:1080px",
   "--frame-wide:1080px",
   "--pad:24px",
+  // Motion: one ease and three durations for every hover, press and reveal.
+  "--ease-out:cubic-bezier(.22,1,.36,1)",
+  "--dur-fast:150ms",
+  "--dur:220ms",
+  "--dur-slow:300ms",
 ].join(";");
 
 const decl = (t: Record<string, string>) =>
@@ -163,12 +168,18 @@ export const SITE_BASE_CSS = [
   ".ui-label{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted-foreground)}",
   ".ui-muted{color:var(--muted-foreground)}",
   ".ui-chip{display:inline-block;padding:2px 9px 1px;font:italic 400 18px/1.25 var(--font-serif);background:var(--band);box-shadow:inset 0 0 0 1px var(--border);border-radius:3px}",
-  ".ui-row{display:flex;align-items:center;gap:12px;min-height:44px;padding:8px 12px;border-radius:4px;color:inherit;text-decoration:none;transition:background-color .15s}",
-  ".ui-row:hover{background:var(--hover)}",
+  ".ui-row{display:flex;align-items:center;gap:12px;min-height:44px;padding:8px 12px;border-radius:4px;color:inherit;text-decoration:none;transition:background-color var(--dur-fast) var(--ease-out)}",
+  // Children may shrink so a long title wraps instead of pushing the arrow out of the row.
+  ".ui-row>*{min-width:0;overflow-wrap:anywhere}.ui-row>svg{flex:none}",
+  ".ui-row:hover,.ui-row:focus-visible{background:var(--hover)}.ui-row:active{background:var(--fill-strong)}",
   ".ui-grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));border-top:1px dashed var(--border)}",
   ".ui-grid2>*{border-bottom:1px dashed var(--border)}.ui-grid2>:nth-child(odd){border-right:1px dashed var(--border)}",
+  ".ui-grid2>:nth-child(odd):last-child{grid-column:1/-1;border-right:0}.ui-grid2 a:focus-visible{outline-offset:-2px}",
   "@media (max-width:640px){.ui-grid2{grid-template-columns:minmax(0,1fr)}.ui-grid2>:nth-child(odd){border-right:0}}",
-  ".ui-btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:36px;padding:0 14px;border:0;border-radius:10px;font:500 14px/1 var(--font-sans);text-decoration:none;white-space:nowrap;cursor:pointer;transition:background-color .15s,opacity .15s,transform .15s}",
+  "h1,h2,h3,.ui-band-h{text-wrap:balance}p,li,figcaption{text-wrap:pretty}",
+  // Where the column is the viewport, nothing may push the page sideways (clip keeps sticky working).
+  "@media (max-width:800px){.ui-frame,.ui-frame-wide{overflow-x:clip}}",
+  ".ui-btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:36px;padding:0 14px;border:0;border-radius:10px;font:500 14px/1 var(--font-sans);text-decoration:none;white-space:nowrap;cursor:pointer;transition:background-color var(--dur-fast) var(--ease-out),opacity var(--dur-fast) var(--ease-out),transform var(--dur-fast) var(--ease-out)}",
   ".ui-btn:active{transform:scale(.97)}",
   ".ui-btn-solid{background:var(--foreground);color:var(--background)}.ui-btn-solid:hover{opacity:.86}",
   ".ui-btn-quiet{background:var(--fill);color:var(--foreground)}.ui-btn-quiet:hover{background:var(--fill-strong)}",

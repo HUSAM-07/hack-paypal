@@ -31,3 +31,9 @@ apps/web/art/raw/
 apps/web/public/data/
 dist-ssr-proof/
 apps/worker/wrangler.*.generated.jsonc
+
+# motion video renders (large; sources live in video/)
+video/out/
+video/renders/
+
+video/.hyperframes/
