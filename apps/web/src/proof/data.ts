@@ -11,6 +11,7 @@ import {
 import { COMMISSION_BPS } from "@pact/protocol";
 import catalogueSummary from "../../../../packages/evals/results/cited/summary.json";
 import priceSummary from "../../../../packages/evals/results/cited-price-matched/summary.json";
+import vacuumSummary from "../../../../packages/evals/results/cited-robot-vacuum/summary.json";
 
 export interface Cell {
   sessions: number;
@@ -33,6 +34,7 @@ interface BuyersOnly {
 
 const P = priceSummary as unknown as Record<string, StudyResult & BuyersOnly>;
 const C = catalogueSummary as unknown as Record<string, StudyResult & BuyersOnly>;
+const V = vacuumSummary as unknown as Record<string, StudyResult & BuyersOnly>;
 
 function need<T>(v: T | undefined, key: string): T {
   if (!v) throw new Error(`summary.json has no ${key}`);
@@ -52,6 +54,12 @@ export const PATHS = {
   catalogueSummaryJson: "packages/evals/results/cited/summary.json",
   catalogueResults: "packages/evals/results/cited/results.jsonl",
   catalogueReg: "packages/evals/scenarios/cited/PREREGISTRATION.md",
+  vacuumSummary: "packages/evals/results/cited-robot-vacuum/summary.md",
+  vacuumSummaryJson: "packages/evals/results/cited-robot-vacuum/summary.json",
+  vacuumResults: "packages/evals/results/cited-robot-vacuum/results.jsonl",
+  vacuumReg: "packages/evals/scenarios/cited/PREREGISTRATION-ROBOT-VACUUM.md",
+  vacuumFixtureTest: "packages/protocol/fixtures/crumblab-roborock-vs-roomba.json",
+  vacuumFixturePlacebo: "packages/protocol/fixtures/crumblab-placebo-steam-mop.json",
   card: "cited/spec/CITED-card.md",
   lift: "packages/attribution/src/lift.ts",
   ledger: "packages/attribution/src/ledger.ts",
@@ -77,7 +85,33 @@ export const studies = {
   catalogueAbstain: need(C["purifier-abstain"], "purifier-abstain"),
   catalogueAbstainBuyers: need(C["purifier-abstain-buyers-only"], "purifier-abstain-buyers-only"),
   narrowForced: need(C["narrow-forced"], "narrow-forced"),
+  vacuumParityForced: need(V["vacuum-parity-forced"], "vacuum-parity-forced"),
+  vacuumParityAbstain: need(V["vacuum-parity-abstain"], "vacuum-parity-abstain"),
+  vacuumParityAbstainBuyers: need(
+    V["vacuum-parity-abstain-buyers-only"],
+    "vacuum-parity-abstain-buyers-only",
+  ),
+  vacuumCheaperForced: need(V["vacuum-rival-cheaper-forced"], "vacuum-rival-cheaper-forced"),
+  vacuumCheaperAbstain: need(V["vacuum-rival-cheaper-abstain"], "vacuum-rival-cheaper-abstain"),
+  vacuumCheaperAbstainBuyers: need(
+    V["vacuum-rival-cheaper-abstain-buyers-only"],
+    "vacuum-rival-cheaper-abstain-buyers-only",
+  ),
 };
+
+/** The robot-vacuum study's derived chain, as `summarize.ts` computed it (50 sales, $3,000 deposit). */
+export const vacuumChain = need(
+  V["vacuum-parity-forced-derived"] as unknown as
+    | {
+        exposedSales: number;
+        fraction: number;
+        units: number;
+        commission: { amountMinor: number };
+        refund: { amountMinor: number };
+      }
+    | undefined,
+  "vacuum-parity-forced-derived",
+);
 
 /** Shown exactly as the results files record them, so every label greps back to the data. */
 export const MODEL_NAMES: Record<string, string> = {
@@ -197,6 +231,43 @@ export function hypotheses() {
       },
     ],
   };
+}
+
+/** The robot-vacuum study's hypotheses, with the same thresholds as the price-matched purifier study. */
+export function vacuumHypotheses() {
+  const s = studies;
+  const allModelsPositive = (r: StudyResult) => r.lift.perModel.every((m) => m.lift > 0);
+  const pVsN = (r: StudyResult) => Math.abs(r.placeboVsNone ?? Number.POSITIVE_INFINITY);
+  const v = (ok: boolean): Verdict => (ok ? "met" : "not met");
+  return [
+    {
+      id: "V1",
+      text: "Parity, forced: pooled lift ≥ +15pp, 80% lower bound > 0, test beats placebo in each model.",
+      verdict: v(
+        s.vacuumParityForced.lift.lift >= 0.15 &&
+          s.vacuumParityForced.lift.lowerBound > 0 &&
+          allModelsPositive(s.vacuumParityForced),
+      ),
+    },
+    {
+      id: "V2",
+      text: "Roomba $4 cheaper, forced: 80% lower bound > 0.",
+      verdict: v(s.vacuumCheaperForced.lift.lowerBound > 0),
+    },
+    {
+      id: "V3",
+      text: "Placebo is neutral: |placebo − nothing| ≤ 20pp in each price condition.",
+      verdict: v(pVsN(s.vacuumParityForced) <= 0.2 && pVsN(s.vacuumCheaperForced) <= 0.2),
+    },
+    {
+      id: "V4",
+      text: "Abstain allowed: a lift is claimed only if the buyers-only 80% lower bound > 0.",
+      verdict: v(
+        s.vacuumParityAbstainBuyers.lift.lowerBound > 0 &&
+          s.vacuumCheaperAbstainBuyers.lift.lowerBound > 0,
+      ),
+    },
+  ];
 }
 
 export function pp(x: number, d = 1): string {

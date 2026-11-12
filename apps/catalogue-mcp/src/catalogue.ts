@@ -10,8 +10,8 @@ import {
 } from "@pact/protocol";
 import { assignArm } from "./arms";
 import { DemoClock, testDay } from "./clock";
-import { buildOffers, creatorContent, type Offer, searchOffers } from "./offers";
-import { isSellerId, type Seller, type SellerId, sellersFromEnv } from "./sellers";
+import { buildOffers, categoryOfQuery, creatorContent, type Offer, searchOffers } from "./offers";
+import { type Category, isSellerId, type Seller, type SellerId, sellersFromEnv } from "./sellers";
 
 export interface CatalogueOptions {
   seed: string;
@@ -54,6 +54,7 @@ export function createCatalogue(opts: CatalogueOptions) {
   const offers = buildOffers(sellers);
 
   async function search(input: SearchInput): Promise<SearchResult> {
+    const category = categoryOfQuery(input.query);
     const verified = input.passport ? await verifyPassport(input.passport, opts.passportKey) : null;
     let body: PassportBody =
       verified?.ok === true
@@ -62,18 +63,29 @@ export function createCatalogue(opts: CatalogueOptions) {
             (opts.allowSessionId && input.sessionId) ||
               crypto.randomUUID().replaceAll("-", "").slice(0, 20),
             input.coExposed ?? false,
+            category,
           );
     if (input.sellerId && isSellerId(input.sellerId)) body = addStoreViewed(body, input.sellerId);
+    const shown = creatorContent(body.arm, body.creatorsSeen.includes("airlab"), category);
+    // A session keeps its arm across categories; the passport must also name the creator it was
+    // shown in this one, or that creator's test could not be credited. Nothing changes when the
+    // creators are already recorded (every purifier search).
+    const creatorsSeen = [...new Set([...body.creatorsSeen, ...shown.map((t) => t.creatorId)])];
+    if (creatorsSeen.length !== body.creatorsSeen.length) body = { ...body, creatorsSeen };
     return {
       offers: searchOffers(input.query, offers),
-      creatorContent: creatorContent(body.arm, body.creatorsSeen.includes("airlab")),
+      creatorContent: shown,
       passport: await signPassport(body, opts.passportKey),
     };
   }
 
-  function newSession(sessionId: string, coExposed: boolean): PassportBody {
+  function newSession(
+    sessionId: string,
+    coExposed: boolean,
+    category: Category = "air-purifier",
+  ): PassportBody {
     const arm: Arm = assignArm(opts.seed, sessionId, testDay(publishedAt, clock.now()), schedule);
-    const shown = creatorContent(arm, coExposed);
+    const shown = creatorContent(arm, coExposed, category);
     return {
       v: 1,
       sessionId,

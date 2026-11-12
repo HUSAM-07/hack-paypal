@@ -1,13 +1,17 @@
 import {
   airlabWinixTest,
+  crumblabPlacebo,
+  crumblabRoborockTest,
   housefreshPlacebo,
   housefreshWinixTest,
   type Money,
   type VerifiedTest,
 } from "@pact/protocol";
 import {
+  type Category,
   type Payee,
   PRODUCTS,
+  productByUpc,
   SELLER_IDS,
   type Seller,
   type SellerId,
@@ -48,16 +52,28 @@ export function buildOffers(sellers: Record<SellerId, Seller>): Offer[] {
   );
 }
 
+/** Which category a query is about. Anything that does not ask for a robot vacuum is the purifier search it always was. */
+const VACUUM_QUERY = /\b(vacuums?|robots?|robotic|roomba|roborock|irobot|mops?|sweepers?)\b/;
+export const categoryOfQuery = (query: string): Category =>
+  VACUUM_QUERY.test(query.toLowerCase()) ? "robot-vacuum" : "air-purifier";
+
 /**
  * Ranking depends only on the query and the offers (price, then seller, then UPC).
- * It never sees the arm, so it cannot differ between arms.
+ * It never sees the arm, so it cannot differ between arms. A query is answered from one
+ * category, so adding a category cannot change what an existing search returns.
  */
 export function searchOffers(query: string, offers: Offer[]): Offer[] {
   const q = query.toLowerCase();
+  const category = categoryOfQuery(q);
   const words = q.split(/[^a-z0-9]+/).filter(Boolean);
-  const generic = /purifier|air|clean|filter|hepa/.test(q);
+  const generic =
+    category === "air-purifier"
+      ? /purifier|air|clean|filter|hepa/.test(q)
+      : /\b(vacuums?|robots?|robotic|mops?|sweepers?)\b/.test(q);
   const matches = offers.filter(
-    (o) => generic || words.some((w) => `${o.brand} ${o.name}`.toLowerCase().includes(w)),
+    (o) =>
+      productByUpc(o.upc)?.category === category &&
+      (generic || words.some((w) => `${o.brand} ${o.name}`.toLowerCase().includes(w))),
   );
   return [...matches].sort(
     (a, b) =>
@@ -95,8 +111,11 @@ export function searchListings(query: string): Listing[] {
 export function creatorContent(
   arm: "test" | "placebo" | "none",
   coExposed: boolean,
+  category: Category = "air-purifier",
 ): VerifiedTest[] {
   if (arm === "none") return [];
+  if (category === "robot-vacuum")
+    return [arm === "placebo" ? crumblabPlacebo : crumblabRoborockTest];
   if (arm === "placebo") return [housefreshPlacebo];
   return coExposed ? [housefreshWinixTest, airlabWinixTest] : [housefreshWinixTest];
 }

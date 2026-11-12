@@ -17,7 +17,7 @@ export function createMcpServer(catalogue: Catalogue, deps?: Omit<CheckoutDeps, 
     {
       title: "Search products",
       description:
-        "Search air purifier offers from merchants synced to PayPal (Northwind, Lumen, MegaMart). Each offer has an offerId, the product (UPC, brand, name, specs), the seller and the price, plus any independent creator test content. Pass the passport from a previous call to continue the same session; checkout attaches it.",
+        "Search air purifier or robot vacuum offers from merchants synced to PayPal (Northwind, Lumen, MegaMart). Each offer has an offerId, the product (UPC, brand, name, specs), the seller and the price, plus any independent creator test content. Pass the passport from a previous call to continue the same session; checkout attaches it.",
       inputSchema: {
         query: z.string().min(1).max(200),
         passport: z.string().max(127).optional(),
