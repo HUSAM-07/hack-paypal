@@ -1,3 +1,4 @@
+import type { ShopperAgent } from "@shop/server";
 import type { CitedDemoDO } from "./do/cited-demo";
 import type { PactDO } from "./do/pact";
 import type { ThreadDO } from "./do/thread";
@@ -78,6 +79,34 @@ export interface Env {
   LLM_API_KEY?: string;
   /** Model id for live runs; default claude-sonnet-5-5. */
   CITED_LIVE_MODEL?: string;
+
+  // Shop vertical (shop/spec/SHOP-SPEC.md), mounted at /api/shop and /shop.
+  /** "true" turns the shop on (routes, Google sign-in, the sweep). Anything else: they 404. */
+  SHOP_ENABLED?: string;
+  /** One ShopperAgent per user (Agents SDK), named by the session user id. */
+  SHOPPER_AGENT: DurableObjectNamespace<ShopperAgent>;
+  /** Browser Run REST token (price extraction fallback); optional secret. */
+  CF_BROWSER_RUN_TOKEN?: string;
+  /** Public origin for PayPal wallet return links (defaults to the request origin). */
+  SHOP_PUBLIC_ORIGIN?: string;
+  /** Price-check cache. Opt-in (SHOP_EXTRAS=1 at deploy); optional. */
+  SHOP_CACHE?: KVNamespace;
+  /** AI Gateway that model calls go through (with CF_ACCOUNT_ID). */
+  AI_GATEWAY_ID?: string;
+  /** This target's Cloudflare account id, for AI Gateway URLs built by hand. */
+  CF_ACCOUNT_ID?: string;
+  /** OpenRouter model id for the shopper agent. */
+  SHOP_MODEL?: string;
+  /** "fake" runs the shop's scripted model; otherwise OpenRouter when a key is set. */
+  SHOP_MODEL_PROVIDER?: string;
+  /** Minutes between authorizing a purchase and capturing it (the undo window). */
+  SHOP_COOLING_OFF_MINUTES?: string;
+  /** Secrets (.dev.vars / `wrangler secret put`). */
+  OPENROUTER_API_KEY?: string;
+  EXA_API_KEY?: string;
+  /** Google OAuth client for /api/auth/google; both unset ⇒ the routes 404. */
+  GOOGLE_CLIENT_ID?: string;
+  GOOGLE_CLIENT_SECRET?: string;
 }
 
 export function allowedOrigins(env: Env): string[] {

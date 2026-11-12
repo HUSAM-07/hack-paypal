@@ -1,0 +1,12 @@
+{
+  "title": "browser/takeControl result",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "liveViewUrl": {
+      "type": "string"
+    }
+  },
+  "required": ["liveViewUrl"],
+  "additionalProperties": false
+}

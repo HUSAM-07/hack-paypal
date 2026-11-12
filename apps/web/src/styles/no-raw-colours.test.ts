@@ -22,15 +22,20 @@ const ROOTS = [
   "apps/worker/src",
   "apps/console/src",
   "packages/protocol/src",
-  // The shop (genui widget kit and shop web app); skipped until those packages land on this branch.
+  // The shop (genui widget kit and shop web app).
   "packages/genui/src",
   "apps/shop-web/src",
 ];
 
-/** The palette itself, and generated copies of it. */
+/**
+ * The palette itself, and generated copies of it; plus the shop's stand-ins for third-party
+ * merchant pages and product photos (fake art, not our UI).
+ */
 const ALLOWED_FILES = new Set([
   "packages/protocol/src/theme.ts",
   "apps/web/src/styles/site-theme.css",
+  "packages/genui/src/fixtures.ts",
+  "apps/shop-web/src/mock/pages.ts",
 ]);
 
 /**

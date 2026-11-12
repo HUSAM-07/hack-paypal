@@ -1,0 +1,40 @@
+{
+  "title": "initialize params",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "clientInfo": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "maxLength": 64
+        },
+        "title": {
+          "type": "string",
+          "maxLength": 120
+        },
+        "version": {
+          "type": "string",
+          "maxLength": 32
+        }
+      },
+      "required": ["name", "version"]
+    },
+    "protocolVersion": {
+      "type": "integer",
+      "minimum": -9007199254740991,
+      "maximum": 9007199254740991
+    },
+    "capabilities": {
+      "default": [],
+      "maxItems": 32,
+      "type": "array",
+      "items": {
+        "type": "string",
+        "maxLength": 64
+      }
+    }
+  },
+  "required": ["clientInfo", "protocolVersion"]
+}

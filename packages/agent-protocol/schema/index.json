@@ -1,0 +1,45 @@
+{
+  "protocolVersion": 1,
+  "clientRequests": [
+    "initialize",
+    "thread/start",
+    "thread/resume",
+    "thread/fork",
+    "thread/list",
+    "thread/read",
+    "thread/archive",
+    "turn/start",
+    "turn/steer",
+    "turn/interrupt",
+    "approval/respond",
+    "action/invoke",
+    "browser/takeControl",
+    "browser/handBack"
+  ],
+  "serverRequests": ["approval/request"],
+  "notifications": [
+    "thread/started",
+    "thread/updated",
+    "turn/started",
+    "turn/completed",
+    "turn/updated",
+    "item/started",
+    "item/agentMessage/delta",
+    "item/reasoning/delta",
+    "item/toolCall/progress",
+    "item/completed",
+    "state/snapshot",
+    "state/patch",
+    "browser/updated",
+    "inbox/added"
+  ],
+  "items": [
+    "Item",
+    "UserMessageItem",
+    "AgentMessageItem",
+    "ReasoningItem",
+    "ToolCallItem",
+    "ApprovalRequestItem",
+    "SystemNoticeItem"
+  ]
+}
