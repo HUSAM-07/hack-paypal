@@ -150,6 +150,7 @@ aside{position:sticky;top:24px}
 .published li{display:flex;flex-wrap:wrap;gap:.3rem .9rem;padding:.55rem 0;border-top:1px solid var(--line)}
 
 /* Simulated PayPal consent: PayPal's own colours, labelled as ours in two places. */
+main.bare{max-width:none;padding:0}
 .sim-bar{background:var(--held-tint);color:var(--held-ink);font-size:.8rem;font-weight:600;text-align:center;padding:.6rem 1rem;border-bottom:1px solid #EAD9B8}
 .consent{max-width:26rem;margin:48px auto;padding:0 20px}
 .consent .card{background:#fff;border:1px solid #DADCE0;border-radius:14px;padding:1.8rem 1.6rem}
@@ -207,7 +208,7 @@ function rail(step: 1 | 2 | 3): string {
 export function welcomePage(o: { simulated: boolean; error?: string }): string {
   return shell(
     "CITED for creators",
-    `${NAV}<main>${rail(1)}
+    `${NAV}<main id="main">${rail(1)}
 <h1>Get paid when your test <em>changes what an agent buys</em>.</h1>
 <p class="lede">AI shopping agents read your test before they buy. CITED shows some of them your test and some of them nothing, then pays you 8% of every sale your test caused, and nothing for sales that would have happened anyway.</p>
 ${o.error ? `<p class="err" role="alert">${esc(o.error)}</p>` : ""}
@@ -226,7 +227,7 @@ export function consentPage(o: { state: string; redirectUri: string; code: strin
     esc(`${o.redirectUri}?${new URLSearchParams({ ...q, state: o.state })}`);
   return shell(
     "Simulated PayPal sign-in",
-    `<div class="sim-bar" role="note">Simulated PayPal sign-in. This page is hosted by CITED, not PayPal. Nothing you do here reaches a PayPal account.</div>
+    `<main id="main" class="bare"><div class="sim-bar" role="note">Simulated PayPal sign-in. This page is hosted by CITED, not PayPal. Nothing you do here reaches a PayPal account.</div>
 <div class="consent"><div class="card">${PAYPAL_WORD}
 <h1>Connect to CITED</h1>
 <p class="small" style="text-align:center;margin:0">Simulated PayPal sign-in</p>
@@ -234,7 +235,7 @@ export function consentPage(o: { state: string; redirectUri: string; code: strin
 <a class="btn blue" href="${cb({ code: o.code })}">Agree and connect</a>
 <a class="btn ghost" href="${cb({ error: "access_denied" })}">Cancel</a>
 <p class="small" style="margin:1rem 0 0">With real PayPal this is PayPal's own consent screen. Here, the account ID is made up from this one sign-in.</p>
-</div></div>`,
+</div></div></main>`,
   );
 }
 
@@ -274,7 +275,7 @@ function payoutSection(v: PublishView): string {
 <fieldset><legend id="payout-h">How you get paid</legend>
 <p class="hint">Credits are paid after the 30-day hold, in one PayPal Payouts batch. Pick where yours land.</p>
 ${p.saved ? `<p class="saved" role="status">Saved. You will be paid ${p.method === "VENMO" ? `to ${esc(p.label ?? "Venmo")}` : "to your PayPal account"}.</p>` : ""}
-${p.error ? `<div class="err" role="alert">${esc(p.error)}</div>` : ""}
+${p.error ? `<div class="err" role="alert" id="venmo-err">${esc(p.error)}</div>` : ""}
 <div class="opts">
 <label class="opt"><input type="radio" name="method" value="PAYPAL"${venmo ? "" : " checked"}>
 <span><b>PayPal</b><small>Your PayPal account ID, from the sign-in above.</small></span></label>
@@ -282,7 +283,7 @@ ${p.error ? `<div class="err" role="alert">${esc(p.error)}</div>` : ""}
 <span><b>Venmo</b><small>US only, in US dollars. Needs your US mobile number or Venmo username.${venmo && p.label ? ` Now: ${esc(p.label)}.` : ""}</small></span></label>
 </div>
 <label class="f" for="venmo">Venmo mobile number or @username <span class="small">(only for Venmo)</span></label>
-<input type="text" id="venmo" name="venmo" maxlength="40" autocomplete="off" placeholder="415 555 0123 or @yourname" value="${esc(p.typed ?? "")}">
+<input type="text" id="venmo" name="venmo" maxlength="40" autocomplete="off" placeholder="415 555 0123 or @yourname" value="${esc(p.typed ?? "")}"${p.error ? ' aria-invalid="true" aria-describedby="venmo-err"' : ""}>
 </fieldset>
 <div class="actions"><button class="btn" type="submit">Save payout choice</button></div>
 </form>
@@ -347,7 +348,7 @@ export function publishPage(v: PublishView): string {
     `<label class="opt close"><input type="radio" name="verdict" value="close"${verdict === "close" ? " checked" : ""}>
 <span><b>Close call</b><small>No single winner. Agents get your summary with no verdict.</small></span></label>`;
   const errs = v.errors?.length
-    ? `<div class="err" role="alert"><b>Fix these before publishing:</b><ul>${v.errors.map((e) => `<li>${esc(e)}</li>`).join("")}</ul></div>`
+    ? `<div class="err" role="alert" id="pub-errors" tabindex="-1"><b>Fix these before publishing:</b><ul>${v.errors.map((e) => `<li>${esc(e)}</li>`).join("")}</ul></div>`
     : "";
   const list = v.tests.length
     ? `<h2 class="h-list">Your published tests</h2><ul class="published">${v.tests
@@ -362,7 +363,7 @@ export function publishPage(v: PublishView): string {
   const step = v.published ? 3 : 2;
   return shell(
     "Publish a test · CITED",
-    `${NAV}<main>${rail(step)}
+    `${NAV}<main id="main">${rail(step)}
 <div class="who"><span>Connected as <b>${esc(v.name)}</b></span>
 <span>PayPal account ID <code>${esc(v.payerId)}</code> (<code>PAYPAL_ID</code>)</span>
 ${v.simulated ? `<span class="sim">Simulated PayPal</span>` : ""}
@@ -414,9 +415,14 @@ ${errs}
 <p class="spec-note">Ranking never changes: the catalogue lists the same offers in the same order whether or not an agent sees your test.</p>
 </aside>
 </div></main>`,
-    SPEC_JS,
+    SPEC_JS + (v.errors?.length ? FOCUS_ERRORS_JS : ""),
   );
 }
+
+/* After a failed publish the page reloads at the top; move focus to the error summary. */
+const FOCUS_ERRORS_JS = `
+document.getElementById("pub-errors")?.focus();
+`;
 
 /* The specimen beside the form, kept in step with it. textContent only. */
 const SPEC_JS = `
@@ -439,6 +445,6 @@ f.addEventListener("input", sync); f.addEventListener("change", sync); sync();
 export function messagePage(title: string, message: string): string {
   return shell(
     `${title} · CITED`,
-    `${NAV}<main><h1 style="font-size:2.2rem">${esc(title)}</h1><p class="lede">${esc(message)}</p><a class="btn" href="/creators">Back to creators</a></main>`,
+    `${NAV}<main id="main"><h1 style="font-size:2.2rem">${esc(title)}</h1><p class="lede">${esc(message)}</p><a class="btn" href="/creators">Back to creators</a></main>`,
   );
 }

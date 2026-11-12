@@ -530,7 +530,7 @@ function film(d: DemoData): string {
 }
 
 export function demoPage(d: DemoData, opts: Opts): string {
-  const body = `<main class="stage">
+  const body = `<main id="main" class="stage">
 <div class="lede"><h1>One A/B test, two agents</h1><p>Same request, same offers, same ranking. Watch an agent shop without the creator's review, then the same request with it, then compare.</p><p class="lede-note">These two are seeded replays. The effect was measured with live GPT, Gemini and Claude agents in a pre-registered eval: <a href="../proof">see the proof</a>.</p></div>
 ${
   d.exposed && d.heldOut
@@ -557,7 +557,7 @@ export function payoutPage(p: PayoutData | null, opts: Opts): string {
     return page(
       "CITED · payout",
       "payout",
-      `<main class="pay"><h1 class="sr">Creator payout</h1>${waiting("No payout yet. Payouts are sent when a 30-day hold ends.")}</main>`,
+      `<main id="main" class="pay"><h1 class="sr">Creator payout</h1>${waiting("No payout yet. Payouts are sent when a 30-day hold ends.")}</main>`,
       opts,
     );
   }
@@ -566,7 +566,7 @@ export function payoutPage(p: PayoutData | null, opts: Opts): string {
   // The demo clock jumps past the hold, so a calendar date would sit in the future: say when
   // the payout happened relative to the demo instead.
   const date = "After the 30-day hold";
-  const body = `<main class="pay"><div class="pay-grid">
+  const body = `<main id="main" class="pay"><div class="pay-grid">
 <div class="pay-copy">
   <p class="pay-k">Day 30 · creator payout</p>
   <h1 class="pay-h">${esc(name)} got paid <span class="num">${usd(p.amountMinor)}</span> through PayPal Payouts${p.wallet === "VENMO" ? ", to Venmo" : ""}.</h1>
@@ -625,7 +625,7 @@ export function statementPage(d: StatementData | null, opts: Opts): string {
     return page(
       "CITED · statement",
       "payout",
-      `<main class="pay"><h1 class="sr">Brand statement</h1>${waiting("No statement yet. Brands get one when a programme cycle closes.")}</main>`,
+      `<main id="main" class="pay"><h1 class="sr">Brand statement</h1>${waiting("No statement yet. Brands get one when a programme cycle closes.")}</main>`,
       opts,
     );
   }
@@ -647,7 +647,7 @@ export function statementPage(d: StatementData | null, opts: Opts): string {
       : []),
     row("Paid to creators through PayPal Payouts", usd(s.paidMinor), "total"),
   ].join("");
-  const body = `<main class="pay"><div class="mail">
+  const body = `<main id="main" class="pay"><div class="mail">
 <article class="notice">
 <header><span class="pp">Pay<span>Pal</span></span><small>${s.invoiceId ? "Invoice · statement" : "Statement"}</small></header>
 <div class="top">
