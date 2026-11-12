@@ -1,4 +1,5 @@
 import {
+  SITE_ACCOUNT_HREF,
   SITE_CTA_KEY,
   SITE_HEADER_CSS,
   SITE_MARK_SVG,
@@ -77,6 +78,9 @@ export function SiteHeader({
               </svg>
             </a>
             {theme ? <ThemeToggle /> : null}
+            <a className="site-account" href={SITE_ACCOUNT_HREF} data-account="">
+              Sign in
+            </a>
             {cta && (
               <a
                 className="site-cta"

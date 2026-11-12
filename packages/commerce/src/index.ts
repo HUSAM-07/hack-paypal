@@ -11,5 +11,6 @@ export * from "./money";
 export * from "./paypal-sim";
 export * from "./price";
 export * from "./sellers";
+export * from "./summary";
 export * from "./url";
 export * from "./watch";

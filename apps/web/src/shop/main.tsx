@@ -9,6 +9,6 @@ if (el) {
   const wsUrl = `${window.location.protocol === "https:" ? "wss" : "ws"}://${window.location.host}/api/shop/ws`;
   mountShop(el, {
     ...(mock ? {} : { wsUrl }),
-    signInUrl: "/api/auth/google/start?returnTo=/shop",
+    signInUrl: "/signin?returnTo=/shop",
   });
 }

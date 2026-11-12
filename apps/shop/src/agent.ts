@@ -425,6 +425,9 @@ export class ShopperAgent extends Agent<ShopEnv> {
     const url = new URL(request.url);
     if (request.method === "POST" && url.pathname.endsWith("/agui"))
       return this.handleAgui(request);
+    // Read-only product state for the apps home (/home); never mutates or runs a turn.
+    if (request.method === "GET" && url.pathname.endsWith("/state"))
+      return Response.json(this.readState(this.app.state, this.app.domain).state ?? null);
     return new Response("not found", { status: 404 });
   }
 

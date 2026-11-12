@@ -13,7 +13,8 @@ export type SiteNavKey =
   | "mcp"
   | "proof"
   | "studio"
-  | "creators";
+  | "creators"
+  | "shop";
 
 export const SITE_NAV: readonly { key: SiteNavKey; href: string; label: string }[] = [
   { key: "console", href: "/console", label: "Console" },
@@ -23,6 +24,7 @@ export const SITE_NAV: readonly { key: SiteNavKey; href: string; label: string }
   { key: "proof", href: "/proof", label: "Proof" },
   { key: "studio", href: "/studio", label: "Studio" },
   { key: "creators", href: "/creators", label: "Creators" },
+  { key: "shop", href: "/shop", label: "Shop" },
 ];
 
 /**
@@ -68,6 +70,13 @@ export const SITE_THEME_TOGGLE_HTML =
 export const SITE_REPO_URL = "https://github.com/HUSAM-07/hack-paypal";
 export const SITE_GITHUB_HTML = `<a class="site-icon" href="${SITE_REPO_URL}"><span class="site-sr">Source on GitHub</span><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M6 13.2c-2.6.8-2.6-1.3-3.6-1.6m7.2 3v-2.2c0-.7.1-1-.3-1.4 1.9-.2 3.6-.9 3.6-4a3.1 3.1 0 0 0-.8-2.1 2.9 2.9 0 0 0-.1-2.1s-.7-.2-2.2.8a7.6 7.6 0 0 0-4 0C4.3 2.6 3.6 2.8 3.6 2.8a2.9 2.9 0 0 0-.1 2.1 3.1 3.1 0 0 0-.8 2.1c0 3.1 1.7 3.8 3.6 4-.4.4-.4.8-.3 1.4v2.2"/></svg></a>`;
 
+/**
+ * The account link at the right of the top bar: "Sign in" for everyone, and public/theme.js swaps
+ * it for "Home" once `/api/session` says a session exists. Static, so pages stay cacheable.
+ */
+export const SITE_ACCOUNT_HREF = "/home";
+export const SITE_ACCOUNT_HTML = `<a class="site-account" href="${SITE_ACCOUNT_HREF}" data-account>Sign in</a>`;
+
 /** The nav entry the top bar shows as its call-to-action pill instead of a plain link. */
 export const SITE_CTA_KEY: SiteNavKey = "try";
 
@@ -84,7 +93,7 @@ export const SITE_HEADER_CSS = [
   ".site-mark:hover svg{transform:rotate(-14deg) scale(1.06)}",
   ".site-nav{display:flex;gap:2px;min-width:0;overflow-x:auto;scrollbar-width:none;padding:3px;border-radius:13px;background:var(--fill);box-shadow:inset 0 0 0 1px var(--border)}",
   ".site-nav::-webkit-scrollbar{display:none}",
-  ".site-nav a,.site-cta,.site-icon{box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;gap:6px;height:30px;border-radius:10px;font:500 13px/1 var(--font-sans);text-decoration:none;white-space:nowrap;transition:background-color .15s,color .15s,transform .15s}",
+  ".site-nav a,.site-cta,.site-icon,.site-account{box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;gap:6px;height:30px;border-radius:10px;font:500 13px/1 var(--font-sans);text-decoration:none;white-space:nowrap;transition:background-color .15s,color .15s,transform .15s}",
   ".site-nav a{position:relative;height:28px;padding:0 12px;border-radius:10px;background:transparent;color:var(--muted-foreground)}",
   ".site-nav a:hover{background:var(--fill-strong);color:var(--foreground)}",
   ".site-nav a[aria-current]{padding-left:22px;background:var(--background);color:var(--foreground);box-shadow:0 0 0 1px var(--border),0 1px 3px var(--shadow-color)}",
@@ -93,14 +102,17 @@ export const SITE_HEADER_CSS = [
   ".site-icon{width:30px;padding:0;border:0;cursor:pointer;background:transparent;color:var(--muted-foreground)}",
   ".site-icon:hover{color:var(--foreground);background:var(--fill-strong)}",
   ".site-icon svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}",
+  ".site-account{padding:0 12px;color:var(--foreground);box-shadow:inset 0 0 0 1px var(--border)}",
+  ".site-account:hover{background:var(--fill)}",
+  ".site-account[data-signed-in]{background:var(--primary-soft);color:var(--primary);box-shadow:none}",
   ".site-cta{position:relative;overflow:hidden;height:32px;padding:0 14px;background:var(--primary);color:var(--primary-foreground);box-shadow:inset 0 1px 0 color-mix(in oklab,var(--primary-foreground) 22%,transparent),0 1px 2px var(--shadow-color),0 4px 14px -6px var(--primary)}",
   '.site-cta::after{content:"";position:absolute;inset:0;background:linear-gradient(105deg,transparent 35%,color-mix(in oklab,var(--primary-foreground) 28%,transparent) 50%,transparent 65%);transform:translateX(-120%);transition:transform .5s cubic-bezier(.2,.7,.2,1)}',
   ".site-cta:hover::after{transform:translateX(120%)}",
   ".site-cta .site-cta-dot{width:7px;height:7px;border-radius:50%;background:currentColor;box-shadow:0 0 0 3px color-mix(in oklab,var(--primary-foreground) 25%,transparent)}",
   ".site-cta:hover{transform:translateY(-1px)}.site-cta:active,.site-icon:active,.site-nav a:active{transform:scale(.96)}",
-  ".site-mark:focus-visible,.site-nav a:focus-visible,.site-cta:focus-visible,.site-icon:focus-visible{outline:2px solid var(--primary);outline-offset:2px}",
+  ".site-mark:focus-visible,.site-nav a:focus-visible,.site-cta:focus-visible,.site-icon:focus-visible,.site-account:focus-visible{outline:2px solid var(--primary);outline-offset:2px}",
   "@media (max-width:760px){.site-bar{height:auto;flex-wrap:wrap;padding-top:10px;padding-bottom:10px;row-gap:8px}.site-nav{order:3;flex-basis:100%}}",
-  "@media (pointer:coarse){.site-nav a,.site-cta,.site-icon{min-height:40px}.site-icon{min-width:40px}}",
+  "@media (pointer:coarse){.site-nav a,.site-cta,.site-icon,.site-account{min-height:40px}.site-icon{min-width:40px}}",
   ".site-sr{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}",
   ".clean .site-top{display:none}",
   ".site-skip{position:absolute;left:12px;top:-64px;z-index:60;background:var(--foreground);color:var(--background);font:500 13px/1 var(--font-sans);padding:12px 16px;border-radius:8px;text-decoration:none}",
@@ -130,7 +142,7 @@ export function siteHeader(
   const ctaHtml = cta
     ? `<a class="site-cta" href="${href(cta.href)}"${current === SITE_CTA_KEY ? ' aria-current="page"' : ""}><span class="site-cta-dot" aria-hidden="true"></span>${cta.label}</a>`
     : "";
-  const tools = `<div class="site-tools">${SITE_GITHUB_HTML}${SITE_THEME_TOGGLE_HTML}${ctaHtml}</div>`;
+  const tools = `<div class="site-tools">${SITE_GITHUB_HTML}${SITE_THEME_TOGGLE_HTML}${SITE_ACCOUNT_HTML}${ctaHtml}</div>`;
   return `${SITE_SKIP_HTML}<header class="site-top"><div class="site-bar"><a class="site-mark" href="${href("/")}">${SITE_MARK_SVG}CITED</a><nav class="site-nav" aria-label="CITED">${links}</nav>${tools}</div></header>`;
 }
 
