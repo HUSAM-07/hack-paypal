@@ -24,7 +24,7 @@ describe("fake shopper agent, end to end", () => {
     expect(["test", "placebo", "none"]).toContain(r.arm);
     expect(r.product?.upc).toMatch(/^\d{12}$/);
     expect(r.reason).toBeTruthy();
-    expect(r.model).toBe("fake-gpt");
+    expect(r.model).toBe("scripted-gpt");
     expect(r.total?.currency).toBe("USD");
     expect(r.paidWith).toBe("vaulted_paypal");
     expect(r.seller).toBeTruthy();

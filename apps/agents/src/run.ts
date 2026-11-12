@@ -38,7 +38,7 @@ function buildAgent(o: RunOptions): {
 } {
   const provider = o.provider ?? providerFromEnv(process.env);
   if (provider === "fake") {
-    return { agent: new FakeAgent(o.fake), model: `fake-${o.family}`, provider };
+    return { agent: new FakeAgent(o.fake), model: `scripted-${o.family}`, provider };
   }
   const cfg = o.llm ?? llmConfigFromEnv(process.env);
   const model = cfg.models[o.family];
