@@ -57,6 +57,10 @@ Base URL: `https://pact-worker.vincent-wesley-liem.workers.dev` (abbreviated `$B
 
 | Beat | On screen | Voice-over | Number shown |
 |---|---|---|---|
+| Creator Analyst | `$B/studio/creator?clean=1`: click the chip "Why did I earn $383.96?", cut while it works, show the answer and its chart; then type "Can I buy my own purifier to earn more?" | "HouseFresh has its own Analyst, read-only. It explains every credit from the ledger, and it won't help a creator game the holdout." | $383.96, $7.68 voided |
+| Start a programme | `$B/studio?page=programmes`: Robot vacuums, Roborock Q7 Max, Continue, set $1,000 at 8%, review, confirm (the hosted page runs in demo mode: no PayPal order, the shared ledger is unchanged) | "A new brand starts a programme in three steps: pick a category, fund it, and pay only for the sales a test causes." | $1,000 at 8% |
+| Publish, then get read | `$B/creators`: connect (simulated Log in with PayPal), publish a purifier test; then an agent on `$B/mcp` searches and buys; the `$B/mcp` feed names the new creator | "A creator publishes a test, and within seconds any agent on our public catalogue can be shown it, inside the same holdout." | the order in the feed |
+| Venmo payouts | `$B/creators`: after connecting, choose **Venmo** and save | "Creators can be paid to PayPal or Venmo, in the same Payouts batch." | — |
 | Self-dealing guard (demo beat 13) | `$B/studio?page=trust`: the held self-purchase row with **Release** / **Void** (do not press them on the hosted site) | "A creator tries to buy through their own PayPal. The sale stays out of the study, and its credit is held for review: never paid automatically." | $7.68 held, 62 units unchanged |
 | Statement (beat 9) | `$B/console/payout?clean=1`, click "Statement", `$B/console/statement?brand=winix&clean=1` | "At cycle close Winix gets a PayPal invoice for exactly what it paid, marked paid from its deposit." Sandbox: `INV2-TNXC-9GA6-W36V-WTF6` | $383.96 invoiced, $0 due |
 | Shapley split (beat 11) | `$B/studio?view=total` (opens on **Programme to date**), expand a journey row; then `$B/studio/creator?clean=1&creator=airlab` | "A second creator, AirLab, tests purifiers too. Twelve agents see both tests; all twelve buy the Winix. The bound tightens to 62 caused units, and one sale's $7.68 splits by Shapley value, $3.84 each." | 62 units, $3.84 + $3.84 |
@@ -84,3 +88,5 @@ Base URL: `https://pact-worker.vincent-wesley-liem.workers.dev` (abbreviated `$B
 6. `$B/studio?page=trust`: the Trust tab, held and voided credits with their reasons.
 7. `$B/studio?view=first`: the Commission what-if panel at 12%.
 8. `$B/proof#vacuums`: the robot-vacuum study, per-model lift.
+9. `$B/studio/creator?clean=1`: the Creator Analyst's answer to "Why did I earn $383.96?" with its chart.
+10. `$B/studio?page=programmes`: the Start a programme steps beside the programme meters.
