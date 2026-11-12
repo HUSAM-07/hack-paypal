@@ -11,6 +11,7 @@ const SOURCES = [
   "packages/evals/results/cited-price-matched/results.jsonl",
   "packages/evals/results/cited/results.jsonl",
   "packages/evals/results/cited-robot-vacuum/results.jsonl",
+  "packages/evals/results/cited-headphones/results.jsonl",
 ];
 
 const rows = SOURCES.flatMap((path) =>

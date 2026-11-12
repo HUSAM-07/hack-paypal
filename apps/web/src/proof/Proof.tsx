@@ -4,6 +4,8 @@ import {
   blob,
   type Cell,
   commit,
+  headphoneChain,
+  headphoneHypotheses,
   hypotheses,
   MODEL_NAMES,
   modelLift,
@@ -40,7 +42,11 @@ const ALL_SESSIONS =
   S.vacuumParityForced.sessions +
   S.vacuumParityAbstain.sessions +
   S.vacuumCheaperForced.sessions +
-  S.vacuumCheaperAbstain.sessions;
+  S.vacuumCheaperAbstain.sessions +
+  S.headphoneParityForced.sessions +
+  S.headphoneParityAbstain.sessions +
+  S.headphoneCheaperForced.sessions +
+  S.headphoneCheaperAbstain.sessions;
 const money = moneyChain();
 
 function Section({
@@ -286,6 +292,28 @@ const GROUPS: { title: string; note: string; rows: Row[] }[] = [
     ],
   },
   {
+    title: "Third category, headphones: Sony priced like Bose, listed first",
+    note: "The tested pick is listed second.",
+    rows: rowsFor(
+      S.headphoneParityForced,
+      "Pooled",
+      `${S.headphoneParityForced.sessions} sessions, forced`,
+    ),
+  },
+  {
+    title: "Headphones: Sony $4 cheaper",
+    note: "The test has to beat a price disadvantage.",
+    rows: [
+      {
+        label: "Pooled",
+        sub: `${S.headphoneCheaperForced.sessions} sessions, forced`,
+        lift: S.headphoneCheaperForced.lift.lift,
+        bound: S.headphoneCheaperForced.lift.lowerBound,
+        se: S.headphoneCheaperForced.lift.stdError,
+      },
+    ],
+  },
+  {
     title: "Close verdict: two near-identical purifiers",
     note: "The test names no clear winner.",
     rows: [
@@ -390,6 +418,7 @@ function IntervalFigure() {
         only the pooled bound is used for pay. <Src path={PATHS.priceSummaryJson}>summary.json</Src>{" "}
         · <Src path={PATHS.catalogueSummaryJson}>first study</Src> ·{" "}
         <Src path={PATHS.vacuumSummaryJson}>robot vacuums</Src> ·{" "}
+        <Src path={PATHS.headphoneSummaryJson}>headphones</Src> ·{" "}
         <Src path={PATHS.lift}>lift.ts</Src>
       </figcaption>
     </figure>
@@ -439,6 +468,20 @@ const TIMELINE = [
     utc: "05:18 UTC",
     what: "Its 588 sessions committed, unedited",
     path: PATHS.vacuumResults,
+    kind: "result",
+  },
+  {
+    sha: "b80d272e36ba727a0de7688762b74f0c354e6d34",
+    utc: "12 Nov 2026, 07:46 UTC",
+    what: "Headphone study pre-registered, with its code and fixtures",
+    path: PATHS.headphoneReg,
+    kind: "reg",
+  },
+  {
+    sha: "7c77d47ac59b758f1e6f2e7a0b7cb28c5d88f447",
+    utc: "07:54 UTC",
+    what: "Its 588 sessions committed, unedited",
+    path: PATHS.headphoneResults,
     kind: "result",
   },
 ] as const;
@@ -671,6 +714,190 @@ function SecondCategory() {
   );
 }
 
+/* ---------- A third category: noise-cancelling headphones ---------- */
+
+const N1 = S.headphoneParityForced;
+const N2 = S.headphoneCheaperForced;
+
+function ThirdCategory() {
+  const nh = headphoneHypotheses();
+  const n1Met = nh[0]?.verdict === "met";
+  const pays = N1.lift.lowerBound > 0;
+  const never = N1.byModel
+    .filter((m) => m.placebo.target + m.none.target === 0)
+    .map((m) => MODEL_NAMES[m.model] ?? m.model);
+  const declinedAll = S.headphoneParityAbstain.byModel
+    .filter(
+      (m) =>
+        m.placebo.declines + m.none.declines === m.placebo.sessions + m.none.sessions &&
+        m.placebo.sessions + m.none.sessions > 0,
+    )
+    .map((m) => MODEL_NAMES[m.model] ?? m.model);
+  return (
+    <Section
+      id="headphones"
+      kicker="A third category"
+      title="Again on headphones, with the tested pick listed second."
+    >
+      <div className="prose">
+        <p>
+          In the robot-vacuum study the tested product was also listed first at equal price, by the
+          UPC tie-break. So we pre-registered the same study a third time, for noise-cancelling
+          headphones, and turned the tie-break around: the Bose QuietComfort Headphones, the
+          creator's pick, has the higher UPC, so at equal price the Sony WH-1000XM5 is listed first
+          and the Bose second. The creator, QuietBench, is fictional, and its test and placebo are
+          illustrative text we wrote, not real measurements; what is measured is how agents respond.
+          New products, new creator, new buyer requests, the same three sellers at $349.99, $345.99
+          and $352.99 for both pairs. Same three models, tools, statistic and thresholds.{" "}
+          {N1.sessions * 4} sessions, in the order the <a href="#prereg">pre-registration</a>{" "}
+          describes. Which product to test was our judgement before any session ran, written into
+          the pre-registration.
+        </p>
+        <p>
+          With the two headphones priced the same, the Bose share was {N1.pooled.test.target}/
+          {N1.pooled.test.sessions} with the test, {N1.pooled.placebo.target}/
+          {N1.pooled.placebo.sessions} with the placebo and {N1.pooled.none.target}/
+          {N1.pooled.none.sessions} with nothing: a lift of{" "}
+          <strong className="num">{pp(N1.lift.lift)}</strong>, with an 80% lower bound of{" "}
+          <strong className="num">{pp(N1.lift.lowerBound)}</strong>.{" "}
+          {pays
+            ? "The bound is above zero, so the engine credits QuietBench for the sales the test caused, and only those."
+            : "The bound is not above zero, so the engine would credit QuietBench nothing."}
+        </p>
+        <p>
+          Without a test, agents leaned the other way from the robot vacuums: the Bose was bought in{" "}
+          {pct(N1.pooled.placebo.target, N1.pooled.placebo.sessions)} of placebo sessions and{" "}
+          {pct(N1.pooled.none.target, N1.pooled.none.sessions)} of sessions with nothing shown (the
+          Roborock: {pct(V1.pooled.placebo.target, V1.pooled.placebo.sessions)} and{" "}
+          {pct(V1.pooled.none.target, V1.pooled.none.sessions)})
+          {never.length > 0 ? `, and ${never.join(" and ")} never bought it without the test` : ""}.
+          Listed second, it had more to gain, and the test moved every model: the pre-registered N1
+          is {n1Met ? "met" : "not met"}, and {headphoneChain.units} of 50 sales are credited,
+          against {vacuumChain.units} for the vacuums. As with the purifiers, much of this is
+          deference to an explicit verdict, in text we wrote; it does not show that the Bose is the
+          better headphone.
+        </p>
+      </div>
+      <table className="table num result-table">
+        <thead>
+          <tr>
+            <th scope="col">Model</th>
+            <th scope="col">Test</th>
+            <th scope="col">Placebo</th>
+            <th scope="col">Nothing</th>
+            <th scope="col">Lift</th>
+          </tr>
+        </thead>
+        <tbody>
+          {N1.byModel.map((m) => {
+            const l = N1.lift.perModel.find((x) => x.model === m.model);
+            return (
+              <tr key={m.model}>
+                <th scope="row">{MODEL_NAMES[m.model] ?? m.model}</th>
+                <td>
+                  {m.test.target}/{m.test.sessions}
+                </td>
+                <td>
+                  {m.placebo.target}/{m.placebo.sessions}
+                </td>
+                <td>
+                  {m.none.target}/{m.none.sessions}
+                </td>
+                <td className={l ? liftClass(l.lift) : undefined}>{l ? pp(l.lift) : "n/a"}</td>
+              </tr>
+            );
+          })}
+          <tr className="row-total">
+            <th scope="row">Pooled, model-stratified</th>
+            <td>
+              {N1.pooled.test.target}/{N1.pooled.test.sessions}
+            </td>
+            <td>
+              {N1.pooled.placebo.target}/{N1.pooled.placebo.sessions}
+            </td>
+            <td>
+              {N1.pooled.none.target}/{N1.pooled.none.sessions}
+            </td>
+            <td className={liftClass(N1.lift.lift)}>{pp(N1.lift.lift)}</td>
+          </tr>
+          <tr>
+            <th scope="row">Standard error · 80% lower bound</th>
+            <td colSpan={3} />
+            <td className={liftClass(N1.lift.lowerBound)}>
+              ±{(N1.lift.stdError * 100).toFixed(1)} · {pp(N1.lift.lowerBound)}
+            </td>
+          </tr>
+        </tbody>
+      </table>
+      <div className="secondary">
+        <div>
+          <h3 className="h3">Sony $4 cheaper: {pp(N2.lift.lift)}</h3>
+          <p>
+            Bose share {pct(N2.pooled.test.target, N2.pooled.test.sessions)} /{" "}
+            {pct(N2.pooled.placebo.target, N2.pooled.placebo.sessions)} /{" "}
+            {pct(N2.pooled.none.target, N2.pooled.none.sessions)} across the three groups. Lift{" "}
+            {pp(N2.lift.lift)}, bound {pp(N2.lift.lowerBound)}.
+          </p>
+        </div>
+        <div>
+          <h3 className="h3">When agents may decline</h3>
+          <p>
+            Priced the same, lift was {pp(S.headphoneParityAbstain.lift.lift)} (bound{" "}
+            {pp(S.headphoneParityAbstain.lift.lowerBound)}); among buyers only,{" "}
+            {pp(S.headphoneParityAbstainBuyers.lift.lift)} (bound{" "}
+            {pp(S.headphoneParityAbstainBuyers.lift.lowerBound)}). With the Sony $4 cheaper:{" "}
+            {pp(S.headphoneCheaperAbstain.lift.lift)} overall,{" "}
+            {pp(S.headphoneCheaperAbstainBuyers.lift.lift)} among buyers (bound{" "}
+            {pp(S.headphoneCheaperAbstainBuyers.lift.lowerBound)}).
+            {declinedAll.length > 0
+              ? ` ${declinedAll.join(" and ")} declined every placebo and nothing session when it could, so its comparison groups among buyers are empty and the buyers-only figure rests on the other models.`
+              : ""}
+          </p>
+        </div>
+        <div>
+          <h3 className="h3">What it would pay</h3>
+          <p>
+            Applied to 50 exposed Bose sales at Lumen's $345.99 and a $3,000 deposit (scripted, like
+            the other deposits), the same maths gives {headphoneChain.units} caused units and{" "}
+            {usd(headphoneChain.commission.amountMinor)} of commission, with{" "}
+            {usd(headphoneChain.refund.amountMinor)} of the deposit returned.{" "}
+            {headphoneChain.units === 0
+              ? "Nothing is credited without a lower bound above zero."
+              : "That is computed from the lower bound, not the estimate."}
+          </p>
+        </div>
+      </div>
+      <div className="hyps">
+        <table className="hyp-table">
+          <caption className="fig-title">
+            Headphone hypotheses, same thresholds as the other studies
+          </caption>
+          <tbody>
+            {nh.map((x) => (
+              <tr key={x.id}>
+                <th scope="row" className="num">
+                  {x.id}
+                </th>
+                <td>{x.text}</td>
+                <td>
+                  <VerdictTag v={x.verdict} />
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        <p className="caption">
+          <Src path={PATHS.headphoneReg}>PREREGISTRATION-HEADPHONES.md</Src> ·{" "}
+          <Src path={PATHS.headphoneSummary}>summary.md</Src> ·{" "}
+          <Src path={PATHS.headphoneFixtureTest}>the test</Src> and{" "}
+          <Src path={PATHS.headphoneFixturePlacebo}>the placebo</Src>. Verdicts are computed on this
+          page from the summaries.
+        </p>
+      </div>
+    </Section>
+  );
+}
+
 /* ---------- Money ---------- */
 
 const CHAIN: { label: ReactNode; value: string; kind?: "sub" | "total" | "void" | "muted" }[] = [
@@ -811,8 +1038,9 @@ export function Proof() {
                 <p className="caption">
                   Each pre-registration was committed before its study's results. The price-matched
                   study was added after the first one showed price deciding most picks; the first
-                  study's results stay as they were and are reported below. The robot-vacuum study
-                  repeats the price-matched design in a second category.
+                  study's results stay as they were and are reported below. The robot-vacuum and
+                  headphone studies repeat the price-matched design in a second and a third
+                  category.
                 </p>
               </div>
             </div>
@@ -1018,6 +1246,8 @@ export function Proof() {
 
           <SecondCategory />
 
+          <ThirdCategory />
+
           <Section
             id="money"
             kicker="From bound to payout"
@@ -1114,7 +1344,7 @@ export function Proof() {
                 agents defer to an explicit verdict.
               </li>
               <li>
-                <strong>A small lab setup.</strong> Three sellers, two products in each of two
+                <strong>A small lab setup.</strong> Three sellers, two products in each of three
                 categories, four buyer requests each, our own fixtures. Lift in a real catalogue
                 with many rivals is unmeasured.
               </li>
@@ -1146,9 +1376,9 @@ export function Proof() {
                     All eval sessions <span className="dl-fmt">CSV</span>
                   </span>
                   <span className="dl-body">
-                    {ALL_SESSIONS.toLocaleString("en-US")} sessions from the three studies (two
-                    purifier, one robot vacuum): arm, model, product bought, seller, price, and the
-                    reason the agent gave the buyer.
+                    {ALL_SESSIONS.toLocaleString("en-US")} sessions from the four studies (two
+                    purifier, one robot vacuum, one headphones): arm, model, product bought, seller,
+                    price, and the reason the agent gave the buyer.
                   </span>
                 </a>
               </li>
@@ -1177,9 +1407,10 @@ export function Proof() {
             </ul>
             <p className="note-data">
               The CSV and JSON are generated at build time from the committed{" "}
-              <Src path={PATHS.priceResults}>price-matched results</Src> and{" "}
-              <Src path={PATHS.catalogueResults}>first-study results</Src> and{" "}
-              <Src path={PATHS.vacuumResults}>robot-vacuum results</Src>, which are the raw,
+              <Src path={PATHS.priceResults}>price-matched results</Src>,{" "}
+              <Src path={PATHS.catalogueResults}>first-study results</Src>,{" "}
+              <Src path={PATHS.vacuumResults}>robot-vacuum results</Src> and{" "}
+              <Src path={PATHS.headphoneResults}>headphone results</Src>, which are the raw,
               unedited session records. <code>price_usd</code> is the listed price the session saw
               at that seller. Re-run the summaries with{" "}
               <code>npm run cited:summarize:price -w @pact/evals</code>.
@@ -1199,6 +1430,8 @@ export function Proof() {
               PATHS.catalogueSummary,
               PATHS.vacuumReg,
               PATHS.vacuumSummary,
+              PATHS.headphoneReg,
+              PATHS.headphoneSummary,
               PATHS.lift,
               PATHS.card,
             ].map((p) => (
