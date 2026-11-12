@@ -339,7 +339,7 @@ export function Landing() {
             />
             <dl className="stats num">
               <div>
-                <dt>Lift, test vs placebo (pp = percentage points)</dt>
+                <dt>Lift vs placebo (points)</dt>
                 <dd>+94pp</dd>
               </div>
               <div>
