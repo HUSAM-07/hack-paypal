@@ -16,7 +16,8 @@
       "!docs",
       "!cited/paypal-openapi",
       "!tasks",
-      "!**/*.md"
+      "!**/*.md",
+      "!apps/web/src/styles/site-theme.css"
     ]
   },
   "formatter": {

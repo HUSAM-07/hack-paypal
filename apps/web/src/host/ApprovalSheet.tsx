@@ -112,8 +112,8 @@ export function ApprovalSheet({
       aria-label={KIND_LABEL[item.kind]}
       data-testid="approval-sheet"
       className={cn(
-        "relative w-full overflow-hidden rounded-[24px] bg-surface p-4 shadow-card sm:p-5",
-        !decision && "ring-1 ring-warning/30",
+        "relative w-full overflow-hidden rounded-lg border border-dashed bg-card p-4 sm:p-5",
+        decision ? "border-border" : "border-warning/40",
       )}
     >
       {!decision && (
@@ -125,11 +125,11 @@ export function ApprovalSheet({
       <header className="relative flex items-center gap-2.5">
         <span
           className={cn(
-            "flex size-7 items-center justify-center rounded-[9px]",
+            "flex size-7 items-center justify-center rounded-md",
             decision === "approved"
               ? "bg-success-soft text-success"
               : decision
-                ? "bg-surface-2 text-muted-foreground"
+                ? "bg-fill text-muted-foreground"
                 : "bg-warning-soft text-warning",
           )}
         >
@@ -151,10 +151,10 @@ export function ApprovalSheet({
             animate={{ scale: 1, opacity: 1 }}
             transition={SPRING_POP}
             className={cn(
-              "rounded-full px-2.5 py-1 text-xs font-medium capitalize",
+              "rounded-md px-2 py-1 font-mono text-[11px] uppercase tracking-[0.04em]",
               decision === "approved"
                 ? "bg-success-soft text-success"
-                : "bg-surface-2 text-muted-foreground",
+                : "bg-fill text-muted-foreground",
             )}
           >
             {decision}
@@ -270,7 +270,7 @@ function PasskeyPrompt({
       <div className="flex flex-col items-center py-4">
         <div className="relative flex size-24 items-center justify-center">
           <motion.span
-            className="absolute inset-0 rounded-full bg-info-soft"
+            className="absolute inset-0 rounded-full bg-primary-soft"
             animate={
               scanning && !reduce ? { scale: [1, 1.12, 1], opacity: [0.7, 1, 0.7] } : { scale: 1 }
             }
@@ -280,11 +280,11 @@ function PasskeyPrompt({
               ease: "easeInOut",
             }}
           />
-          <Fingerprint className="relative size-11 text-accent" strokeWidth={1.6} />
+          <Fingerprint className="relative size-11 text-primary" strokeWidth={1.6} />
           {scanning && !reduce && (
             <motion.span
               aria-hidden
-              className="absolute inset-x-6 h-0.5 rounded-full bg-accent/70"
+              className="absolute inset-x-6 h-0.5 rounded-full bg-primary/70"
               initial={{ top: "25%" }}
               animate={{ top: ["25%", "75%", "25%"] }}
               transition={{ duration: 1.6, repeat: Number.POSITIVE_INFINITY, ease: "easeInOut" }}

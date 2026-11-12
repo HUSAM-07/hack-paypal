@@ -64,15 +64,15 @@ export function SignIn({ onSignedIn }: { onSignedIn: (m: Me) => void }) {
   };
 
   return (
-    <div className="flex min-h-dvh items-center justify-center bg-gradient-to-b from-background via-lav-50 to-lav-100 px-4">
+    <div className="ui-dots flex min-h-dvh items-center justify-center bg-background px-4">
       <motion.div
         initial={reduce ? false : { opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.25, ease: [0.23, 1, 0.32, 1] }}
-        className="w-full max-w-[400px] rounded-[32px] bg-surface p-8 shadow-pop sm:p-10"
+        className="w-full max-w-[400px] rounded-lg border border-dashed border-border bg-card p-8 sm:p-10"
       >
         <BrandMark className="mb-8" />
-        <h1 className="display text-[30px]">
+        <h1 className="display text-[40px]">
           {mode === "signin" ? "Sign in" : "Create your account"}
         </h1>
         <p className="mt-1.5 text-sm text-muted-foreground">
@@ -191,7 +191,7 @@ export function SignIn({ onSignedIn }: { onSignedIn: (m: Me) => void }) {
 }
 
 const INPUT =
-  "h-12 w-full rounded-2xl bg-surface-2 px-3.5 text-[15px] outline-none ring-1 ring-border transition-shadow focus:ring-2 focus:ring-ring";
+  "h-12 w-full rounded-lg bg-background px-3.5 text-[15px] outline-none ring-1 ring-input transition-shadow focus:ring-2 focus:ring-primary";
 
 function Field({ label, hint, children }: { label: string; hint: string; children: ReactNode }) {
   return (
@@ -209,18 +209,18 @@ function DevSignIn({ busy, onRun }: { busy: boolean; onRun: (fn: () => Promise<M
   const [name, setName] = useState("alex");
   return (
     <form
-      className="mt-8 flex items-center gap-2 border-t border-border pt-4"
+      className="mt-8 flex items-center gap-2 border-t border-dashed border-border pt-4"
       onSubmit={(e) => {
         e.preventDefault();
         if (USERNAME.test(name)) onRun(() => devSignIn(name));
       }}
     >
-      <span className="text-xs text-subtle-foreground">Dev</span>
+      <span className="label">Dev</span>
       <input
         aria-label="Dev username"
         value={name}
         onChange={(e) => setName(e.target.value.toLowerCase())}
-        className="h-8 min-w-0 flex-1 rounded-lg bg-surface-2 px-2.5 text-[13px] outline-none ring-1 ring-border focus:ring-ring"
+        className="h-8 min-w-0 flex-1 rounded-md bg-background px-2.5 text-[13px] outline-none ring-1 ring-input focus:ring-primary"
       />
       <Button type="submit" size="sm" variant="secondary" disabled={busy}>
         Dev sign-in

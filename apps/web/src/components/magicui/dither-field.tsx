@@ -701,7 +701,7 @@ export function DitherField({
       attributeFilter: ["class", "data-theme"],
     });
     // The root's own class or style can change `currentColor` or a CSS
-    // variable in the ramp, for example text-red-500 to text-blue-500.
+    // variable in the ramp, for example a class that swaps the text colour.
     themeObserver.observe(root, {
       attributes: true,
       attributeFilter: ["class", "style"],

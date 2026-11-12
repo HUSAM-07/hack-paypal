@@ -47,7 +47,7 @@ function CopyRef({ value }: { value: string }) {
           setTimeout(() => setDone(false), 1400);
         });
       }}
-      className="inline-flex items-center gap-1 rounded-md px-1 font-mono text-[11px] text-muted-foreground transition-colors hover:bg-surface-2 hover:text-foreground"
+      className="inline-flex items-center gap-1 rounded-md px-1 font-mono text-[11px] text-muted-foreground transition-colors hover:bg-hover hover:text-foreground"
       aria-label={`Copy PayPal reference ${value}`}
     >
       {value}
@@ -85,11 +85,11 @@ export function Receipt({
       {...(reduce ? {} : blockEnter)}
       aria-label="Receipt"
       data-testid="receipt"
-      className="relative w-full max-w-[420px] overflow-hidden rounded-[24px] bg-surface shadow-card"
+      className="relative w-full max-w-[420px] overflow-hidden rounded-lg border border-dashed border-border bg-card"
     >
       <div className="p-4 sm:p-5">
         <header className="flex items-center gap-2.5">
-          <span className="flex size-7 items-center justify-center rounded-[9px] bg-success-soft text-success">
+          <span className="flex size-7 items-center justify-center rounded-md bg-success-soft text-success">
             <ReceiptIcon className="size-[15px]" strokeWidth={2.2} />
           </span>
           <h3 className="flex-1 text-[15px] font-medium">Receipt</h3>
@@ -105,7 +105,7 @@ export function Receipt({
       </div>
       {/* perforation */}
       <div aria-hidden className="relative h-4">
-        <div className="absolute inset-x-5 top-1/2 border-t border-dashed border-border-strong" />
+        <div className="absolute inset-x-5 top-1/2 border-t border-dashed border-input" />
         <div className="absolute -left-2 top-0 size-4 rounded-full bg-background" />
         <div className="absolute -right-2 top-0 size-4 rounded-full bg-background" />
       </div>
@@ -127,7 +127,7 @@ export function Receipt({
           ))}
         </ul>
         {purchase.paypalRef && (
-          <div className="mt-3 flex items-center justify-between border-t border-border pt-3 text-xs text-muted-foreground">
+          <div className="mt-3 flex items-center justify-between border-t border-dashed border-border pt-3 text-xs text-muted-foreground">
             <span>PayPal ref</span>
             <CopyRef value={purchase.paypalRef} />
           </div>
@@ -152,7 +152,7 @@ export function LedgerRow({
       initial={{ opacity: 0, y: 4 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3, ease: EASE_OUT }}
-      className="flex items-center gap-2.5 rounded-2xl bg-surface-2/60 px-3 py-2 text-sm"
+      className="flex items-center gap-2.5 rounded-md bg-band px-3 py-2 text-sm"
     >
       <span
         className={cn(
@@ -186,9 +186,9 @@ export function PactTimeline({ updates }: { updates: PactUpdate[] }) {
       transition={{ duration: 0.35, ease: EASE_OUT }}
       aria-label={`${last.pact.title} timeline`}
       data-testid="pact-timeline"
-      className="w-full rounded-2xl px-1 py-1"
+      className="w-full rounded-md px-1 py-1"
     >
-      <ol className="relative ml-2.5 border-l border-border-strong pl-4">
+      <ol className="relative ml-2.5 border-l border-dashed border-input pl-4">
         {updates.map((u, i) => (
           <motion.li
             key={u.id}
@@ -204,7 +204,7 @@ export function PactTimeline({ updates }: { updates: PactUpdate[] }) {
               aria-hidden
               className={cn(
                 "absolute -left-[21px] top-1/2 size-2.5 -translate-y-1/2 rounded-full ring-4 ring-background",
-                i === updates.length - 1 ? "bg-accent" : "bg-border-strong",
+                i === updates.length - 1 ? "bg-primary" : "bg-border-strong",
               )}
             />
             <span className="text-[13px] text-muted-foreground">{u.note ?? `${u.pact.title}`}</span>
@@ -230,7 +230,7 @@ export function SystemNotice({ item }: { item: Notice }) {
       animate={{ opacity: 1, scale: 1 }}
       transition={{ duration: 0.3, ease: EASE_OUT }}
       role={item.level === "info" ? "status" : "alert"}
-      className="mx-auto flex max-w-[92%] items-start justify-center gap-2 rounded-2xl bg-surface-2/60 px-3.5 py-2 text-center text-[13px] leading-5"
+      className="mx-auto flex max-w-[92%] items-start justify-center gap-2 rounded-md bg-band px-3.5 py-2 text-center text-[13px] leading-5"
     >
       <n.icon className={cn("mt-0.5 size-3.5 shrink-0", n.cls)} />
       <span className="text-muted-foreground">{item.text}</span>

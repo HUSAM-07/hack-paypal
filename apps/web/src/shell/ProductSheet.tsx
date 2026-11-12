@@ -44,7 +44,7 @@ export function ProductSheet({
             {product.features.map((f) => (
               <li
                 key={f}
-                className="flex items-center gap-1.5 rounded-xl bg-surface-2 px-3 py-2 text-[13px]"
+                className="flex items-center gap-1.5 rounded-md border border-dashed border-border bg-band px-3 py-2 text-[13px]"
               >
                 <Check className="size-3.5 text-success" /> {f}
               </li>

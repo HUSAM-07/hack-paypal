@@ -209,11 +209,11 @@ export function App() {
 
   return (
     <>
-      <SiteHeader current="studio" skip theme={false} />
-      <div className="st-page">
+      <SiteHeader current="studio" skip />
+      <div className="st-page ui-frame-wide">
         <section className="st-head" aria-labelledby="st-h1">
           <div className="st-title">
-            <span className="st-mark">AG Studio</span>
+            <span className="st-mark ui-label">AG Studio</span>
             <h1 id="st-h1">
               {view === "brand"
                 ? `${programme} programme · ${brandName}`

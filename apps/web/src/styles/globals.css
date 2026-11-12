@@ -1,3 +1,6 @@
 @import "tailwindcss";
 @import "tw-animate-css";
+/* Fonts, semantic colour tokens and base rules shared with every CITED page. Layered as base so
+   Tailwind utilities still win over its element rules (code, :focus-visible). */
+@import "./site-theme.css" layer(base);
 @import "./tokens.css";

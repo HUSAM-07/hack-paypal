@@ -156,6 +156,8 @@ const PANELS: AgPanelConfig = { edit: { right: ["ai", "filters"] }, view: { righ
 /** The Programmes page has no filters, and on a phone their tab would sit over the form. */
 const PHONE_PANELS: AgPanelConfig = { edit: { right: [] }, view: { right: [] } };
 const PHONE_MAX_WIDTH = 760;
+/** Widgets are dashed cards, as on the landing; Studio draws no widget border unless asked. */
+const LAYOUT = { widgetBorderEnabled: true };
 
 export interface StudioCanvasProps {
   config: StudioConfig;
@@ -206,6 +208,7 @@ export function StudioCanvas(p: StudioCanvasProps) {
               : PANELS
           }
           theme={citedTheme}
+          layout={LAYOUT}
           context={p.context}
           widgets={widgets}
           ai={ai}

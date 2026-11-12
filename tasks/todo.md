@@ -1,3 +1,21 @@
+# CITED UI revamp v3: every page on one semantic theme (2026-11-13)
+
+Goal: every page (landing, /proof, /try, /creators + profiles, /mcp, console + payout + ledger,
+Studio, legacy /app, 404, tour bar) in the reference's fonts, layout, styles and colours, with
+colour values in ONE file (packages/protocol/src/theme.ts) and every other file reading
+semantic tokens (shadcn names + warning/subtle/paypal).
+
+- [x] theme.ts: SITE_TOKENS (light/dark, the reference's neutral palette and blue primary), derived
+      tints, fonts, ui-* layout primitives; SITE_STYLE_CSS; header + theme toggle on every page
+- [x] site-theme.css generated for React entries (+ drift test); theme.js wires every toggle
+- [x] Guard test: no colour literal outside theme.ts (no-raw-colours.test.ts)
+- [x] Landing, /proof (pruned base.css, framed column + bands), tour bar
+- [ ] Server pages (/try, /creators, profile, /mcp, ledger, 404) - subagent
+- [ ] Console + payout - subagent
+- [ ] Studio - subagent
+- [ ] Legacy /app - subagent
+- [ ] Verify all pages light/dark/375px; full test/lint/typecheck/build; push to PR #170
+
 # CITED UI revamp v2: sticker column (branch `feat/ui-redesign`, 2026-11-12)
 
 Goal: every CITED page in the reference's style: a narrow bordered column, dashed section bands,

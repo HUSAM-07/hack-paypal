@@ -7,7 +7,6 @@ import {
   type SiteNavKey,
 } from "@pact/protocol";
 
-
 /** The light/dark toggle; public/theme.js handles the click on every page. */
 function ThemeToggle() {
   return (

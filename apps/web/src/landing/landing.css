@@ -1,123 +1,6 @@
-/* CITED landing. Plain CSS, inlined at prerender (scripts/prerender.ts).
-   One bordered column of dashed section bands with die-cut sticker art. DM Sans for text,
-   Instrument Serif for accents, Geist Mono for labels and figures, Caveat for margin notes.
-   Light by default; dark follows the OS unless the toggle saved a choice (.light / .dark). */
-
-@font-face {
-  font-family: "DM Sans";
-  src: url("/fonts/dm-sans-latin-v1.woff2") format("woff2-variations");
-  font-weight: 100 1000;
-  font-style: normal;
-  font-display: swap;
-}
-@font-face {
-  font-family: "Instrument Serif";
-  src: url("/fonts/instrument-serif-latin-v1.woff2") format("woff2");
-  font-weight: 400;
-  font-style: normal;
-  font-display: swap;
-}
-@font-face {
-  font-family: "Instrument Serif";
-  src: url("/fonts/instrument-serif-latin-italic-v1.woff2") format("woff2");
-  font-weight: 400;
-  font-style: italic;
-  font-display: swap;
-}
-@font-face {
-  font-family: "Geist Mono";
-  src: url("/fonts/geist-mono-latin-v1.woff2") format("woff2-variations");
-  font-weight: 100 900;
-  font-style: normal;
-  font-display: swap;
-}
-@font-face {
-  font-family: "Caveat";
-  src: url("/fonts/caveat-latin-v1.woff2") format("woff2-variations");
-  font-weight: 400 700;
-  font-style: normal;
-  font-display: swap;
-}
-
-:root {
-  --bg: #ffffff;
-  --ink: #0a0a0a;
-  --ink-2: #3f3f46;
-  --muted: #737373;
-  --dim: #a3a3a3;
-  --line: #e5e5e5;
-  --band: rgb(245 245 245 / 0.55);
-  --hover: rgb(245 245 245 / 0.8);
-  --accent: #2547d0;
-  --accent-soft: rgb(37 71 208 / 0.1);
-  --void: #b42318;
-  --amber: #b45309;
-  --sticker-shadow: drop-shadow(0 6px 10px rgb(0 0 0 / 0.12))
-    drop-shadow(0 1px 1px rgb(0 0 0 / 0.08));
-  --col: 768px;
-  --pad: 24px;
-  --sans: "DM Sans", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
-  --serif: "Instrument Serif", ui-serif, Georgia, serif;
-  --mono: "Geist Mono", ui-monospace, "SF Mono", Menlo, monospace;
-  --hand: "Caveat", "Bradley Hand", cursive;
-  --site-col: var(--col);
-  color-scheme: light;
-}
-
-/* Dark: the same tokens swapped. Applied by the OS unless the toggle chose light, or by .dark. */
-@media (prefers-color-scheme: dark) {
-  :root:not(.light) {
-    --bg: #0a0a0a;
-    --ink: #fafafa;
-    --ink-2: #d4d4d4;
-    --muted: #a3a3a3;
-    --dim: #525252;
-    --line: #262626;
-    --band: rgb(23 23 23 / 0.7);
-    --hover: rgb(38 38 38 / 0.6);
-    --accent: #7d98ff;
-    --accent-soft: rgb(125 152 255 / 0.14);
-    --void: #f97066;
-    --amber: #fbbf24;
-    --sticker-shadow: drop-shadow(0 8px 14px rgb(0 0 0 / 0.55));
-    color-scheme: dark;
-  }
-}
-:root.dark {
-  --bg: #0a0a0a;
-  --ink: #fafafa;
-  --ink-2: #d4d4d4;
-  --muted: #a3a3a3;
-  --dim: #525252;
-  --line: #262626;
-  --band: rgb(23 23 23 / 0.7);
-  --hover: rgb(38 38 38 / 0.6);
-  --accent: #7d98ff;
-  --accent-soft: rgb(125 152 255 / 0.14);
-  --void: #f97066;
-  --amber: #fbbf24;
-  --sticker-shadow: drop-shadow(0 8px 14px rgb(0 0 0 / 0.55));
-  color-scheme: dark;
-}
-
-/* Theme toggle icon: CSS picks it, so the prerendered markup is the same either way. */
-.theme-sun {
-  display: none;
-}
-:root.dark .theme-sun {
-  display: block;
-}
-:root.dark .theme-moon {
-  display: none;
-}
-@media (prefers-color-scheme: dark) {
-  :root:not(.light) .theme-sun {
-    display: block;
-  }
-  :root:not(.light) .theme-moon {
-    display: none;
-  }
-}
+/* CITED landing. Plain CSS, inlined at prerender (scripts/prerender.ts), loaded after
+   styles/site-theme.css, which holds the fonts, the semantic colour tokens (light and dark) and the
+   shared primitives. This file only reads tokens; it defines no colours. */
 
 *,
 *::before,
@@ -136,16 +19,12 @@ html {
 }
 body {
   margin: 0;
-  background: var(--bg);
-  color: var(--ink);
-  font: 400 16px / 1.6 var(--sans);
+  background: var(--background);
+  color: var(--foreground);
+  font: 400 16px / 1.6 var(--font-sans);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
-}
-::selection {
-  background: var(--accent-soft);
-  color: var(--ink);
 }
 h1,
 h2,
@@ -164,18 +43,11 @@ ul {
 a {
   color: inherit;
 }
-code {
-  font: 500 0.86em / 1 var(--mono);
-  padding: 0.12em 0.36em;
-  border-radius: 5px;
-  background: var(--band);
-  box-shadow: inset 0 0 0 1px var(--line);
-}
 .mono {
-  font-family: var(--mono);
+  font-family: var(--font-mono);
 }
 :focus-visible {
-  outline: 2px solid var(--accent);
+  outline: 2px solid var(--primary);
   outline-offset: 2px;
   border-radius: 4px;
 }
@@ -183,20 +55,20 @@ code {
 /* The column: everything sits between two hairlines, like a sheet of paper. */
 .col {
   position: relative;
-  max-width: var(--col);
+  max-width: var(--frame);
   min-height: 100dvh;
   margin: 0 auto;
-  border-inline: 1px solid var(--line);
-  background: var(--bg);
+  border-inline: 1px solid var(--border);
+  background: var(--background);
 }
 
 /* Footnote markers */
 .ref {
-  font: 500 0.66em / 0 var(--mono);
+  font: 500 0.66em / 0 var(--font-mono);
   margin-left: 0.1em;
 }
 .ref a {
-  color: var(--accent);
+  color: var(--primary);
   text-decoration: none;
   padding: 0 0.12em;
 }
@@ -219,7 +91,7 @@ code {
   max-width: none;
   user-select: none;
   -webkit-user-drag: none;
-  filter: var(--sticker-shadow);
+  filter: var(--shadow-sticker);
 }
 .stk-hero {
   position: absolute;
@@ -259,27 +131,27 @@ code {
   gap: 8px 10px;
 }
 .id-name {
-  font: 400 26px / 1 var(--serif);
+  font: 400 26px / 1 var(--font-serif);
   letter-spacing: -0.01em;
 }
 .stk-inline {
   display: inline-block;
   vertical-align: -0.28em;
-  filter: drop-shadow(0 1px 2px rgb(0 0 0 / 0.18));
+  filter: drop-shadow(0 1px 2px var(--shadow-color));
 }
 .id-sep {
   width: 6px;
   height: 6px;
   margin: 0 4px;
   border-radius: 50%;
-  background: var(--dim);
+  background: var(--subtle);
 }
 .id-where {
   display: inline-flex;
   align-items: center;
   gap: 6px;
   font-size: 13px;
-  color: var(--muted);
+  color: var(--muted-foreground);
 }
 .id-where svg {
   width: 14px;
@@ -290,7 +162,7 @@ code {
 }
 .h1 {
   margin-top: 14px;
-  font: 600 clamp(19px, 2.6vw, 22px) / 1.35 var(--sans);
+  font: 600 clamp(19px, 2.6vw, 22px) / 1.35 var(--font-sans);
   letter-spacing: -0.012em;
   text-wrap: balance;
 }
@@ -298,14 +170,14 @@ code {
   text-decoration-line: underline;
   text-decoration-thickness: 2px;
   text-underline-offset: 4px;
-  text-decoration-color: var(--accent);
+  text-decoration-color: var(--primary);
 }
 .lede {
   margin-top: 8px;
   max-width: 62ch;
   font-size: 15px;
   line-height: 1.65;
-  color: var(--muted);
+  color: var(--muted-foreground);
 }
 .ctas {
   display: flex;
@@ -323,7 +195,7 @@ code {
   height: 36px;
   padding: 0 14px;
   border-radius: 10px;
-  font: 500 14px / 1 var(--sans);
+  font: 500 14px / 1 var(--font-sans);
   text-decoration: none;
   white-space: nowrap;
   transition:
@@ -335,25 +207,25 @@ code {
   transform: scale(0.97);
 }
 .btn-primary {
-  background: var(--ink);
-  color: var(--bg);
+  background: var(--foreground);
+  color: var(--background);
 }
 .btn-primary:hover {
   opacity: 0.86;
 }
 .btn-quiet {
-  background: color-mix(in srgb, var(--ink) 5%, transparent);
-  color: var(--ink);
+  background: var(--fill);
+  color: var(--foreground);
 }
 .btn-quiet:hover {
-  background: color-mix(in srgb, var(--ink) 9%, transparent);
+  background: var(--fill-strong);
 }
 .btn-tour {
-  color: var(--accent);
-  background: var(--accent-soft);
+  color: var(--primary);
+  background: var(--primary-soft);
 }
 .btn-tour:hover {
-  background: color-mix(in srgb, var(--accent) 18%, transparent);
+  background: color-mix(in srgb, var(--primary) 18%, transparent);
 }
 .dot {
   width: 7px;
@@ -376,15 +248,15 @@ code {
 /* ───────── Bands ───────── */
 .band {
   position: relative;
-  border-top: 1px dashed var(--line);
+  border-top: 1px dashed var(--border);
   padding: 24px 0 28px;
 }
 .band-h {
   padding: 8px var(--pad);
   margin-bottom: 14px;
   background: var(--band);
-  border-block: 1px dashed var(--line);
-  font: 600 20px / 1.4 var(--sans);
+  border-block: 1px dashed var(--border);
+  font: 600 20px / 1.4 var(--font-sans);
   letter-spacing: -0.01em;
 }
 .band-body {
@@ -397,8 +269,8 @@ code {
   top: 70px;
   left: calc(100% + 28px);
   width: 170px;
-  font: 500 22px / 1.1 var(--hand);
-  color: var(--muted);
+  font: 500 22px / 1.1 var(--font-hand);
+  color: var(--muted-foreground);
   transform: rotate(-4deg);
   pointer-events: none;
 }
@@ -425,19 +297,19 @@ code {
   gap: 12px;
   font-size: 15px;
   line-height: 1.7;
-  color: var(--muted);
+  color: var(--muted-foreground);
 }
 .prose strong {
-  color: var(--ink);
+  color: var(--foreground);
   font-weight: 600;
 }
 .prose em {
-  font-family: var(--serif);
+  font-family: var(--font-serif);
   font-size: 1.12em;
-  color: var(--ink);
+  color: var(--foreground);
 }
 .prose .accent {
-  color: var(--accent);
+  color: var(--primary);
 }
 .prose-after {
   margin-top: 18px;
@@ -446,14 +318,14 @@ code {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  color: var(--ink);
+  color: var(--foreground);
   font-weight: 500;
   text-decoration: underline;
-  text-decoration-color: var(--line);
+  text-decoration-color: var(--border);
   text-underline-offset: 4px;
 }
 .more:hover {
-  text-decoration-color: var(--ink);
+  text-decoration-color: var(--foreground);
 }
 .more .row-arrow {
   opacity: 0.7;
@@ -480,9 +352,9 @@ code {
 .chip-serif {
   display: inline-block;
   padding: 2px 9px 1px;
-  font: italic 400 18px / 1.25 var(--serif);
+  font: italic 400 18px / 1.25 var(--font-serif);
   background: var(--band);
-  box-shadow: inset 0 0 0 1px var(--line);
+  box-shadow: inset 0 0 0 1px var(--border);
   border-radius: 3px;
 }
 .row {
@@ -508,21 +380,21 @@ code {
 }
 .row-title {
   display: block;
-  font: 500 15px / 1.45 var(--sans);
+  font: 500 15px / 1.45 var(--font-sans);
   transition: color 0.15s;
 }
 .row:hover .row-title {
-  color: var(--accent);
+  color: var(--primary);
 }
 .row-body {
   display: block;
   margin-top: 4px;
   font-size: 14px;
   line-height: 1.65;
-  color: var(--muted);
+  color: var(--muted-foreground);
 }
 .row-body strong {
-  color: var(--ink);
+  color: var(--foreground);
   font-weight: 600;
 }
 .row-arrow {
@@ -535,14 +407,14 @@ code {
   stroke-width: 1.4;
   stroke-linecap: round;
   stroke-linejoin: round;
-  color: color-mix(in srgb, var(--muted) 55%, transparent);
+  color: color-mix(in srgb, var(--muted-foreground) 55%, transparent);
   transition:
     transform 0.2s,
     color 0.2s;
 }
 a:hover > .row-arrow,
 a:hover .row-arrow {
-  color: var(--accent);
+  color: var(--primary);
   transform: translate(2px, -2px);
 }
 
@@ -551,13 +423,13 @@ a:hover .row-arrow {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   margin: 20px calc(12px - var(--pad)) 0;
-  border-top: 1px dashed var(--line);
+  border-top: 1px dashed var(--border);
 }
 .grid2 > li {
-  border-bottom: 1px dashed var(--line);
+  border-bottom: 1px dashed var(--border);
 }
 .grid2 > li:nth-child(odd) {
-  border-right: 1px dashed var(--line);
+  border-right: 1px dashed var(--border);
 }
 .cell {
   display: flex;
@@ -580,8 +452,8 @@ a:hover .row-arrow {
   border-radius: 7px;
   font-size: 13px;
   font-weight: 600;
-  color: var(--accent);
-  background: var(--accent-soft);
+  color: var(--primary);
+  background: var(--primary-soft);
 }
 .cell-stk {
   flex: none;
@@ -599,13 +471,13 @@ a:hover .row-arrow {
   display: flex;
   align-items: center;
   gap: 8px;
-  font: 500 14px / 1.4 var(--sans);
+  font: 500 14px / 1.4 var(--font-sans);
 }
 .cell-sub {
   display: block;
   margin-top: 2px;
   font-size: 12px;
-  color: var(--muted);
+  color: var(--muted-foreground);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -613,21 +485,21 @@ a:hover .row-arrow {
 .pill-new {
   padding: 2px 7px;
   border-radius: 999px;
-  font: 500 10.5px / 1.3 var(--mono);
+  font: 500 10.5px / 1.3 var(--font-mono);
   letter-spacing: 0.04em;
-  color: var(--amber);
-  background: color-mix(in srgb, var(--amber) 14%, transparent);
+  color: var(--warning);
+  background: var(--warning-soft);
 }
 
 /* Fig. 1 (SessionField), restyled for the column. */
 .field {
   margin: 22px 12px 0;
   padding: 18px;
-  border: 1px dashed var(--line);
+  border: 1px dashed var(--border);
   border-radius: 6px;
   background:
-    radial-gradient(circle at 1px 1px, var(--line) 1px, transparent 0) 0 0 / 16px 16px,
-    var(--bg);
+    radial-gradient(circle at 1px 1px, var(--border) 1px, transparent 0) 0 0 / 16px 16px,
+    var(--background);
 }
 .field-blocks {
   display: flex;
@@ -640,13 +512,13 @@ a:hover .row-arrow {
 .field-grid {
   display: grid;
   gap: 1px;
-  font: 500 clamp(0.72rem, 1.2vw, 0.92rem) / 1 var(--mono);
+  font: 500 clamp(0.72rem, 1.2vw, 0.92rem) / 1 var(--font-mono);
 }
 .g {
   display: grid;
   place-items: center;
   aspect-ratio: 1;
-  font-family: var(--mono);
+  font-family: var(--font-mono);
 }
 .field-grid .g {
   animation: resolve 0.6s ease-out both;
@@ -666,13 +538,13 @@ a:hover .row-arrow {
   }
 }
 .g-l {
-  color: var(--dim);
+  color: var(--subtle);
 }
 .g-w {
-  color: var(--ink-2);
+  color: var(--foreground);
 }
 .fb-test .g-w {
-  color: var(--accent);
+  color: var(--primary);
 }
 .field-label {
   display: grid;
@@ -680,25 +552,25 @@ a:hover .row-arrow {
   gap: 2px 10px;
   margin-top: 10px;
   padding-top: 8px;
-  border-top: 1px dashed var(--line);
+  border-top: 1px dashed var(--border);
 }
 .field-name {
-  font: 500 11px / 1.3 var(--mono);
+  font: 500 11px / 1.3 var(--font-mono);
   letter-spacing: 0.06em;
   text-transform: uppercase;
 }
 .fb-test .field-name,
 .fb-test .field-count {
-  color: var(--accent);
+  color: var(--primary);
 }
 .field-count {
-  font: 500 12px / 1.3 var(--mono);
+  font: 500 12px / 1.3 var(--font-mono);
 }
 .field-note {
   grid-column: 1 / -1;
   font-size: 12px;
   line-height: 1.4;
-  color: var(--muted);
+  color: var(--muted-foreground);
 }
 .field-cap {
   margin-top: 14px;
@@ -708,14 +580,14 @@ a:hover .row-arrow {
   align-items: center;
   gap: 6px;
   margin-right: 12px;
-  font: 500 11px / 1 var(--mono);
+  font: 500 11px / 1 var(--font-mono);
   letter-spacing: 0.05em;
   text-transform: uppercase;
-  color: var(--ink-2);
+  color: var(--foreground);
 }
 .field-legend .g {
   width: 1.5em;
-  border: 1px solid var(--line);
+  border: 1px solid var(--border);
   border-radius: 3px;
 }
 .field-legend .g-l {
@@ -724,13 +596,13 @@ a:hover .row-arrow {
 .caption {
   font-size: 12.5px;
   line-height: 1.55;
-  color: var(--muted);
+  color: var(--muted-foreground);
 }
 .fig-no {
-  font: 500 11px / 1 var(--mono);
+  font: 500 11px / 1 var(--font-mono);
   letter-spacing: 0.05em;
   text-transform: uppercase;
-  color: var(--ink);
+  color: var(--foreground);
   margin-right: 4px;
 }
 
@@ -744,19 +616,19 @@ a:hover .row-arrow {
   align-items: baseline;
   gap: 12px;
   padding: 10px 0;
-  border-bottom: 1px dashed var(--line);
+  border-bottom: 1px dashed var(--border);
   font-size: 14px;
 }
 .ledger > li:first-child {
-  border-top: 1px dashed var(--line);
+  border-top: 1px dashed var(--border);
 }
 .l-no {
   font-size: 11.5px;
   letter-spacing: 0.06em;
-  color: var(--dim);
+  color: var(--subtle);
 }
 .l-label {
-  color: var(--ink-2);
+  color: var(--foreground);
 }
 .l-value {
   font-size: 13.5px;
@@ -765,24 +637,24 @@ a:hover .row-arrow {
 }
 .l-sub .l-label,
 .l-sub .l-value {
-  color: var(--ink);
+  color: var(--foreground);
   font-weight: 600;
 }
 .l-void .l-value {
-  color: var(--void);
+  color: var(--destructive);
 }
 .l-void .l-label {
-  color: var(--muted);
+  color: var(--muted-foreground);
 }
 .l-total {
-  background: var(--accent-soft);
+  background: var(--primary-soft);
 }
 .l-total > .l-no {
   padding-left: 6px;
 }
 .l-total .l-label,
 .l-total .l-value {
-  color: var(--accent);
+  color: var(--primary);
   font-weight: 600;
 }
 .l-total .l-value {
@@ -791,7 +663,7 @@ a:hover .row-arrow {
 }
 .l-return .l-label,
 .l-return .l-value {
-  color: var(--muted);
+  color: var(--muted-foreground);
 }
 .ledger-fig .caption {
   margin-top: 10px;
@@ -802,15 +674,15 @@ a:hover .row-arrow {
   align-items: flex-start;
   margin: 18px 12px 0;
   padding: 14px 16px;
-  border: 1px dashed var(--line);
+  border: 1px dashed var(--border);
   border-radius: 6px;
   font-size: 14px;
   line-height: 1.6;
-  color: var(--muted);
+  color: var(--muted-foreground);
 }
 .callout strong {
   display: block;
-  color: var(--ink);
+  color: var(--foreground);
   font-weight: 600;
 }
 .callout .stk {
@@ -845,7 +717,7 @@ a:hover .row-arrow {
   margin-top: 4px;
   font-size: 13.5px;
   line-height: 1.6;
-  color: var(--muted);
+  color: var(--muted-foreground);
 }
 
 /* MCP block */
@@ -857,11 +729,11 @@ a:hover .row-arrow {
 .mcp-lede {
   font-size: 15px;
   line-height: 1.7;
-  color: var(--muted);
+  color: var(--muted-foreground);
   margin-bottom: 4px;
 }
 .mcp-lede strong {
-  color: var(--ink);
+  color: var(--foreground);
   font-weight: 600;
 }
 .cmd {
@@ -870,7 +742,7 @@ a:hover .row-arrow {
   align-items: center;
   gap: 10px;
   padding: 6px 6px 6px 12px;
-  border: 1px dashed var(--line);
+  border: 1px dashed var(--border);
   border-radius: 8px;
   background: var(--band);
 }
@@ -878,7 +750,7 @@ a:hover .row-arrow {
   font-size: 11px;
   letter-spacing: 0.05em;
   text-transform: uppercase;
-  color: var(--muted);
+  color: var(--muted-foreground);
 }
 .cmd-v {
   padding: 0;
@@ -896,12 +768,12 @@ a:hover .row-arrow {
   border: 0;
   border-radius: 7px;
   cursor: pointer;
-  font: 500 12px / 1 var(--sans);
-  color: var(--ink);
-  background: color-mix(in srgb, var(--ink) 6%, transparent);
+  font: 500 12px / 1 var(--font-sans);
+  color: var(--foreground);
+  background: var(--fill);
 }
 .copy:hover {
-  background: color-mix(in srgb, var(--ink) 11%, transparent);
+  background: var(--fill-strong);
 }
 
 /* "What is real here": serif heading flanked by stickers, bullet rows. */
@@ -917,7 +789,7 @@ a:hover .row-arrow {
 }
 .serif-h {
   flex: 1;
-  font: italic 400 30px / 1.1 var(--serif);
+  font: italic 400 30px / 1.1 var(--font-serif);
   letter-spacing: -0.01em;
 }
 .serif-stk-l {
@@ -936,7 +808,7 @@ a:hover .row-arrow {
   padding-left: 18px;
   font-size: 14.5px;
   line-height: 1.7;
-  color: var(--muted);
+  color: var(--muted-foreground);
 }
 .real > li::before {
   content: "";
@@ -946,35 +818,35 @@ a:hover .row-arrow {
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: var(--ink);
+  background: var(--foreground);
 }
 .real strong {
-  color: var(--ink);
+  color: var(--foreground);
   font-weight: 600;
 }
 .real a {
-  color: var(--ink);
+  color: var(--foreground);
   text-underline-offset: 3px;
 }
 
 /* Closer */
 .closer {
   position: relative;
-  border-top: 1px dashed var(--line);
+  border-top: 1px dashed var(--border);
   padding: 56px var(--pad) 60px;
   text-align: center;
   overflow: hidden;
   background:
-    radial-gradient(circle at 1px 1px, var(--line) 1px, transparent 0) 0 0 / 18px 18px,
-    var(--bg);
+    radial-gradient(circle at 1px 1px, var(--border) 1px, transparent 0) 0 0 / 18px 18px,
+    var(--background);
 }
 .closer-h {
-  font: 400 clamp(32px, 6vw, 46px) / 1.05 var(--serif);
+  font: 400 clamp(32px, 6vw, 46px) / 1.05 var(--font-serif);
   letter-spacing: -0.015em;
   text-wrap: balance;
 }
 .closer-h em {
-  color: var(--accent);
+  color: var(--primary);
 }
 .closer-stk {
   position: absolute;
@@ -1007,24 +879,24 @@ a:hover .row-arrow {
   padding-left: 26px;
   font-size: 13px;
   line-height: 1.6;
-  color: var(--muted);
+  color: var(--muted-foreground);
 }
 .sources > li::before {
   content: counter(src, decimal-leading-zero);
   position: absolute;
   left: 0;
-  font: 500 11px / 1.9 var(--mono);
-  color: var(--dim);
+  font: 500 11px / 1.9 var(--font-mono);
+  color: var(--subtle);
 }
 .sources > li:target {
-  color: var(--ink);
+  color: var(--foreground);
 }
 .sources > li:target::before {
-  color: var(--accent);
+  color: var(--primary);
 }
 .src-link {
   font-size: 11.5px;
-  color: var(--ink-2);
+  color: var(--foreground);
   text-underline-offset: 3px;
   word-break: break-all;
 }
@@ -1035,12 +907,12 @@ a:hover .row-arrow {
   gap: 12px;
   margin-top: 28px;
   padding: 16px var(--pad) 0;
-  border-top: 1px dashed var(--line);
+  border-top: 1px dashed var(--border);
   font-size: 12px;
-  color: var(--muted);
+  color: var(--muted-foreground);
 }
 .hand {
-  font: 500 20px / 1 var(--hand);
+  font: 500 20px / 1 var(--font-hand);
 }
 
 /* Left-margin section rail. */
@@ -1065,23 +937,23 @@ a:hover .row-arrow {
   display: block;
   width: 14px;
   height: 1.5px;
-  background: var(--dim);
+  background: var(--subtle);
   transition:
     width 0.25s cubic-bezier(0.34, 1.56, 0.64, 1),
     background-color 0.2s;
 }
 .rail a:hover .rail-tick {
   width: 24px;
-  background: var(--ink-2);
+  background: var(--foreground);
 }
 .rail a[aria-current] .rail-tick {
   width: 32px;
-  background: var(--ink);
+  background: var(--foreground);
 }
 .rail-label {
-  font: 500 11px / 1 var(--mono);
+  font: 500 11px / 1 var(--font-mono);
   letter-spacing: 0.04em;
-  color: var(--muted);
+  color: var(--muted-foreground);
   opacity: 0;
   transform: translateX(-4px);
   transition:
@@ -1106,21 +978,21 @@ a:hover .row-arrow {
   height: 64px;
   z-index: 30;
   pointer-events: none;
-  -webkit-mask-image: linear-gradient(to top, #000 10%, transparent);
-  mask-image: linear-gradient(to top, #000 10%, transparent);
+  -webkit-mask-image: linear-gradient(to top, var(--foreground) 10%, transparent);
+  mask-image: linear-gradient(to top, var(--foreground) 10%, transparent);
   opacity: 0.5;
 }
 .foot-dither {
   height: 220px;
   margin-top: 24px;
-  border-top: 1px dashed var(--line);
+  border-top: 1px dashed var(--border);
   display: grid;
   place-items: center;
 }
 .foot-mark {
-  font: italic 400 clamp(64px, 14vw, 112px) / 1 var(--serif);
+  font: italic 400 clamp(64px, 14vw, 112px) / 1 var(--font-serif);
   letter-spacing: -0.03em;
-  color: var(--ink);
+  color: var(--foreground);
   opacity: 0.9;
   user-select: none;
 }

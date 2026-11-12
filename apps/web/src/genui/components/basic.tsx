@@ -40,7 +40,7 @@ export function TextView({ props }: R<PropsOf<"Text">>) {
 }
 
 const CALLOUT = {
-  info: { icon: Info, cls: "bg-info-soft text-accent" },
+  info: { icon: Info, cls: "bg-primary-soft text-primary" },
   success: { icon: CheckCircle2, cls: "bg-success-soft text-success" },
   warning: { icon: TriangleAlert, cls: "bg-warning-soft text-warning" },
 } as const;
@@ -52,7 +52,7 @@ export function CalloutView({ props }: R<PropsOf<"Callout">>) {
     <motion.div
       {...(reduce ? {} : blockEnter)}
       role={props.tone === "warning" ? "alert" : "status"}
-      className={cn("flex items-start gap-2.5 rounded-2xl px-3.5 py-3 text-sm leading-5", c.cls)}
+      className={cn("flex items-start gap-2.5 rounded-md px-3.5 py-3 text-sm leading-5", c.cls)}
     >
       <c.icon className="mt-px size-4 shrink-0" strokeWidth={2.2} />
       <span className="text-foreground/90">{props.text}</span>
@@ -232,7 +232,7 @@ export function QuestionCardView({ props }: R<PropsOf<"QuestionCard">>) {
             className="gap-2 pr-1.5"
           >
             {answered ? "Sent" : "Next"}
-            <kbd className="flex h-5 items-center gap-0.5 rounded-full bg-black/10 px-1.5 text-[11px] font-medium dark:bg-black/15">
+            <kbd className="flex h-5 items-center gap-0.5 rounded-sm bg-current/15 px-1.5 font-mono text-[11px]">
               <ArrowUp className="size-3 rotate-90" />
             </kbd>
           </Button>
@@ -278,7 +278,7 @@ function Option({
         }
       }}
       className={cn(
-        "relative flex min-h-10 cursor-pointer items-center gap-3 rounded-xl px-1.5 py-1.5 text-sm transition-opacity",
+        "relative flex min-h-10 cursor-pointer items-center gap-3 rounded-md px-1.5 py-1.5 text-sm transition-opacity",
         disabled && "cursor-default",
         dim && "opacity-40",
       )}
@@ -287,15 +287,13 @@ function Option({
         <motion.span
           {...(reduce ? {} : { layoutId: "q-active" })}
           transition={SPRING_LAYOUT}
-          className="absolute inset-0 rounded-xl bg-surface-2"
+          className="absolute inset-0 rounded-md bg-muted"
         />
       )}
       <span
         className={cn(
-          "relative flex size-6 shrink-0 items-center justify-center rounded-md text-[11px] font-semibold transition-colors duration-150",
-          active || chosen
-            ? "bg-primary text-primary-foreground"
-            : "bg-surface-2 text-muted-foreground",
+          "relative flex size-6 shrink-0 items-center justify-center rounded-md font-mono text-[11px] transition-colors duration-150",
+          active || chosen ? "bg-foreground text-background" : "bg-fill text-muted-foreground",
         )}
       >
         {chosen ? <Check className="size-3.5" /> : letter}

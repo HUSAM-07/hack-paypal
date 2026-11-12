@@ -1,168 +1,82 @@
-/* Shared design tokens, fonts and base styles, imported after Tailwind by each page stylesheet. */
-@custom-variant dark (&:where(.dark, .dark *));
-
-/* Latin-only subsets, self-hosted and preloaded from the HTML entries. */
-@font-face {
-  font-family: "Geist";
-  font-style: normal;
-  font-weight: 100 900;
-  font-display: swap;
-  src: url("/fonts/geist-latin-v1.woff2") format("woff2-variations");
-}
-@font-face {
-  font-family: "Geist Mono";
-  font-style: normal;
-  font-weight: 100 900;
-  font-display: swap;
-  src: url("/fonts/geist-mono-latin-v1.woff2") format("woff2-variations");
-}
-/* Arial scaled to Geist's metrics, so swapping in the webfont doesn't shift layout. */
-@font-face {
-  font-family: "Geist Fallback";
-  src: local("Arial");
-  ascent-override: 95.94%;
-  descent-override: 28.16%;
-  line-gap-override: 0%;
-  size-adjust: 104.76%;
-}
-
 /*
- * Design tokens. Light is the default; `.dark` on <html> switches to the deep
- * violet theme. Surfaces step up in luminance; borders are hairline alpha rings so
- * cards sit on any surface without a hard edge.
+ * Tailwind theme for /app. Holds no colours: fonts, the semantic palette (light and dark) and the
+ * shared base come from site-theme.css (generated from packages/protocol/src/theme.ts), imported
+ * just before this file. Here the old utility names are pointed at those tokens.
  */
-:root {
-  --radius: 1.5rem;
 
-  --background: oklch(0.985 0.001 106);
-  --foreground: oklch(0.255 0.012 310);
-  --surface: oklch(1 0 0);
-  --surface-2: oklch(0.972 0.003 300);
-  --surface-3: oklch(0.945 0.006 295);
-  --muted-foreground: oklch(0.47 0.016 300);
-  --subtle-foreground: oklch(0.545 0.014 300);
-  --border: oklch(0.255 0.012 310 / 0.07);
-  --border-strong: oklch(0.255 0.012 310 / 0.13);
-  --ring: oklch(0.66 0.17 285 / 0.55);
-
-  --primary: oklch(0.255 0.012 310);
-  --primary-foreground: oklch(1 0 0);
-  /* Deep enough for white text at AA; the lighter lavenders are decorative. */
-  --accent: oklch(0.56 0.2 283);
-  --accent-foreground: oklch(1 0 0);
-  --accent-soft: oklch(0.68 0.165 285 / 0.12);
-  --accent-soft-foreground: oklch(0.52 0.2 283);
-  --success: oklch(0.6 0.15 160);
-  --success-soft: oklch(0.6 0.15 160 / 0.12);
-  --warning: oklch(0.68 0.15 70);
-  --warning-soft: oklch(0.7 0.15 70 / 0.14);
-  --danger: oklch(0.58 0.2 25);
-  --danger-soft: oklch(0.6 0.2 25 / 0.12);
-  --info-soft: oklch(0.68 0.165 285 / 0.12);
-
-  --lav-50: oklch(0.975 0.012 290);
-  --lav-100: oklch(0.935 0.035 287);
-  --lav-200: oklch(0.875 0.07 286);
-  --lav-400: oklch(0.72 0.14 285);
-  --lav-500: oklch(0.68 0.165 285);
-  --lav-600: oklch(0.62 0.19 283);
-  --ink-deep: oklch(0.17 0.02 300);
-
-  --shadow-card: 0 0 0 1px var(--border), 0 1px 2px 0 oklch(0.255 0.012 310 / 0.03);
-  --shadow-pop:
-    0 0 0 1px var(--border), 0 16px 40px -12px oklch(0.3 0.06 290 / 0.22),
-    0 4px 12px -4px oklch(0 0 0 / 0.06);
-  --skeleton: oklch(0.255 0.012 310 / 0.06);
-  --avatar-l: 0.5;
-}
-
-.dark {
-  --background: oklch(0.145 0.012 300);
-  --foreground: oklch(0.97 0.004 120);
-  --surface: oklch(0.185 0.016 300);
-  --surface-2: oklch(0.22 0.018 300);
-  --surface-3: oklch(0.26 0.02 300);
-  --muted-foreground: oklch(0.72 0.014 300);
-  --subtle-foreground: oklch(0.63 0.016 300);
-  --border: oklch(1 0 0 / 0.07);
-  --border-strong: oklch(1 0 0 / 0.13);
-  --ring: oklch(0.74 0.14 285 / 0.6);
-
-  --primary: oklch(0.97 0.004 120);
-  --primary-foreground: oklch(0.2 0.014 300);
-  --accent: oklch(0.72 0.15 285);
-  --accent-foreground: oklch(0.17 0.02 300);
-  --accent-soft: oklch(0.72 0.15 285 / 0.14);
-  --accent-soft-foreground: oklch(0.82 0.1 286);
-  --success: oklch(0.76 0.15 160);
-  --success-soft: oklch(0.76 0.15 160 / 0.12);
-  --warning: oklch(0.82 0.14 75);
-  --warning-soft: oklch(0.82 0.14 75 / 0.12);
-  --danger: oklch(0.72 0.18 25);
-  --danger-soft: oklch(0.72 0.18 25 / 0.12);
-  --info-soft: oklch(0.72 0.15 285 / 0.14);
-
-  --shadow-card: 0 0 0 1px var(--border), 0 1px 2px 0 oklch(0 0 0 / 0.3);
-  --shadow-pop: 0 0 0 1px var(--border-strong), 0 20px 48px -16px oklch(0 0 0 / 0.75);
-  --skeleton: oklch(1 0 0 / 0.06);
-  --avatar-l: 0.8;
+/* Dark when <html> has `.dark`, or when the OS asks for it and the visitor hasn't picked `.light`. */
+@custom-variant dark {
+  &:where(.dark, .dark *) {
+    @slot;
+  }
+  @media (prefers-color-scheme: dark) {
+    &:where(:root:not(.light), :root:not(.light) *) {
+      @slot;
+    }
+  }
 }
 
 @theme inline {
-  --font-sans: "Geist", "Geist Fallback", ui-sans-serif, system-ui, -apple-system, sans-serif;
-  --font-mono: "Geist Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  --font-sans: var(--font-sans);
+  --font-serif: var(--font-serif);
+  --font-mono: var(--font-mono);
   /* 4px spacing scale (Tailwind's default unit, stated explicitly). */
   --spacing: 0.25rem;
 
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --color-surface: var(--surface);
-  --color-surface-2: var(--surface-2);
-  --color-surface-3: var(--surface-3);
-  --color-muted-foreground: var(--muted-foreground);
-  --color-subtle-foreground: var(--subtle-foreground);
-  --color-border: var(--border);
-  --color-border-strong: var(--border-strong);
-  --color-ring: var(--ring);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
   --color-primary: var(--primary);
   --color-primary-foreground: var(--primary-foreground);
+  --color-primary-soft: var(--primary-soft);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
-  --color-success: var(--success);
-  --color-success-soft: var(--success-soft);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-destructive-soft: var(--destructive-soft);
   --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
   --color-warning-soft: var(--warning-soft);
-  --color-danger: var(--danger);
-  --color-danger-soft: var(--danger-soft);
-  --color-info-soft: var(--info-soft);
-  --color-accent-soft: var(--accent-soft);
-  --color-accent-soft-foreground: var(--accent-soft-foreground);
-  --color-lav-50: var(--lav-50);
-  --color-lav-100: var(--lav-100);
-  --color-lav-200: var(--lav-200);
-  --color-lav-400: var(--lav-400);
-  --color-lav-500: var(--lav-500);
-  --color-lav-600: var(--lav-600);
-  --color-ink-deep: var(--ink-deep);
-  --color-skeleton: var(--skeleton);
-  /* shadcn aliases */
-  --color-card: var(--surface);
-  --color-card-foreground: var(--foreground);
-  --color-popover: var(--surface-2);
-  --color-popover-foreground: var(--foreground);
-  --color-secondary: var(--surface-2);
-  --color-secondary-foreground: var(--foreground);
-  --color-muted: var(--surface-2);
-  --color-input: var(--border-strong);
-  --color-destructive: var(--danger);
+  --color-subtle: var(--subtle);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-paypal: var(--paypal);
+  --color-band: var(--band);
+  --color-hover: var(--hover);
+  --color-fill: var(--fill);
+  --color-fill-strong: var(--fill-strong);
 
-  --radius-sm: calc(var(--radius) - 8px);
-  --radius-md: calc(var(--radius) - 4px);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) + 4px);
-  --radius-2xl: calc(var(--radius) + 10px);
+  /* The app's own names, kept as aliases of the semantic tokens. */
+  --color-surface: var(--card);
+  --color-surface-2: var(--muted);
+  --color-surface-3: var(--fill-strong);
+  --color-subtle-foreground: var(--muted-foreground);
+  --color-border-strong: var(--input);
+  --color-success: var(--primary);
+  --color-success-soft: var(--primary-soft);
+  --color-danger: var(--destructive);
+  --color-danger-soft: var(--destructive-soft);
+  --color-skeleton: var(--fill);
 
-  --shadow-card: var(--shadow-card);
+  /* Small radii, as on the landing: 0.45rem base, 10px buttons. */
+  --radius-xs: calc(var(--radius) - 4px);
+  --radius-sm: calc(var(--radius) - 2px);
+  --radius-md: var(--radius);
+  --radius-lg: calc(var(--radius) + 3px);
+  --radius-xl: calc(var(--radius) + 3px);
+  --radius-2xl: calc(var(--radius) + 5px);
+  --radius-3xl: calc(var(--radius) + 8px);
+
+  /* Cards sit on a hairline, not a shadow. */
+  --shadow-card: 0 0 0 1px var(--border);
   --shadow-pop: var(--shadow-pop);
 
   --ease-out-strong: cubic-bezier(0.16, 1, 0.3, 1);
@@ -198,7 +112,6 @@
     border-color: var(--border);
   }
   html {
-    -webkit-text-size-adjust: 100%;
     text-rendering: optimizeLegibility;
   }
   html,
@@ -207,19 +120,7 @@
     height: 100%;
   }
   body {
-    background: var(--background);
-    color: var(--foreground);
-    font-family: var(--font-sans);
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
     overscroll-behavior: none;
-  }
-  ::selection {
-    background: oklch(0.68 0.165 285 / 0.3);
-  }
-  :focus-visible {
-    outline: 2px solid var(--ring);
-    outline-offset: 2px;
   }
   button {
     cursor: pointer;
@@ -231,16 +132,25 @@
   .tabular {
     font-variant-numeric: tabular-nums;
   }
-  /* Display headings: tight tracking that scales with size. */
+  /* Display headings: Instrument Serif, as on the landing. */
   .display {
-    font-weight: 550;
-    letter-spacing: -0.05em;
+    font-family: var(--font-serif);
+    font-weight: 400;
+    letter-spacing: -0.01em;
     line-height: 1.1;
   }
   .heading {
-    font-weight: 500;
-    letter-spacing: -0.03em;
-    line-height: 1.2;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    line-height: 1.25;
+  }
+  /* Mono labels: small caps-height figures and eyebrows. */
+  .label {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--muted-foreground);
   }
   .scrollbar-none {
     scrollbar-width: none;
@@ -250,18 +160,18 @@
   }
   .scrollbar-thin {
     scrollbar-width: thin;
-    scrollbar-color: var(--border-strong) transparent;
+    scrollbar-color: var(--input) transparent;
   }
-  /* Text that shimmers while the agent is working (Kobra-style reasoning line). */
+  /* Text that shimmers while the agent is working. */
   .text-shimmer {
     background:
       linear-gradient(
         90deg,
-        var(--subtle-foreground) 0%,
-        var(--subtle-foreground) 40%,
+        var(--muted-foreground) 0%,
+        var(--muted-foreground) 40%,
         var(--foreground) 50%,
-        var(--subtle-foreground) 60%,
-        var(--subtle-foreground) 100%
+        var(--muted-foreground) 60%,
+        var(--muted-foreground) 100%
       )
       0 0 / 200% 100%;
     -webkit-background-clip: text;
@@ -271,24 +181,25 @@
   }
   .skeleton {
     background:
-      linear-gradient(90deg, var(--skeleton) 0%, oklch(1 0 0 / 0.1) 50%, var(--skeleton) 100%) 0 0 /
-      200% 100%;
+      linear-gradient(90deg, var(--fill) 0%, var(--fill-strong) 50%, var(--fill) 100%) 0 0 / 200%
+      100%;
     animation: var(--animate-shimmer);
   }
+  /* Masks read only alpha, so any opaque token works as the "keep" colour. */
   .mask-fade-x {
     mask-image: linear-gradient(
       to right,
       transparent,
-      #000 24px,
-      #000 calc(100% - 40px),
+      var(--foreground) 24px,
+      var(--foreground) calc(100% - 40px),
       transparent
     );
   }
   .mask-fade-r {
-    mask-image: linear-gradient(to right, #000 calc(100% - 40px), transparent);
+    mask-image: linear-gradient(to right, var(--foreground) calc(100% - 40px), transparent);
   }
   .mask-fade-l {
-    mask-image: linear-gradient(to right, transparent, #000 24px);
+    mask-image: linear-gradient(to right, transparent, var(--foreground) 24px);
   }
 }
 

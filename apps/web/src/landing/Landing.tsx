@@ -361,7 +361,7 @@ export function Landing() {
         className="fade-foot"
         style={{ position: "fixed" }}
         pattern="clouds"
-        color={["var(--dim)", "var(--muted)", "var(--ink-2)"]}
+        color={["var(--subtle)", "var(--muted-foreground)", "var(--foreground)"]}
         intensity={0.7}
         interactive={false}
       />
@@ -678,7 +678,7 @@ export function Landing() {
           <DitherField
             className="foot-dither"
             pattern="horizon"
-            color={["var(--dim)", "var(--accent)", "var(--ink)"]}
+            color={["var(--subtle)", "var(--primary)", "var(--foreground)"]}
             intensity={0.85}
           >
             <p className="foot-mark" aria-hidden="true">

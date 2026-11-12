@@ -17,11 +17,14 @@ function MandateRow({ m, onRevoke }: { m: MandateData; onRevoke: (id: string) =>
   const pct = percentOf(spent, m.mandate.maxTotal);
   const active = m.mandate.status === "active";
   return (
-    <motion.li layout="position" className="rounded-2xl bg-surface p-3.5 shadow-card">
+    <motion.li
+      layout="position"
+      className="rounded-lg border border-dashed border-border bg-card p-3.5"
+    >
       <div className="flex items-start gap-2.5">
         <span
           className={cn(
-            "mt-0.5 flex size-7 items-center justify-center rounded-[9px]",
+            "mt-0.5 flex size-7 items-center justify-center rounded-md",
             active ? "bg-success-soft text-success" : "bg-surface-2 text-muted-foreground",
           )}
         >
@@ -36,7 +39,7 @@ function MandateRow({ m, onRevoke }: { m: MandateData; onRevoke: (id: string) =>
         </div>
         <span
           className={cn(
-            "rounded-full px-2 py-0.5 text-[11px] font-medium capitalize",
+            "rounded-sm px-1.5 py-0.5 font-mono text-[11px] capitalize",
             active ? "bg-success-soft text-success" : "bg-surface-2 text-muted-foreground",
           )}
         >
@@ -89,7 +92,7 @@ function MandateRow({ m, onRevoke }: { m: MandateData; onRevoke: (id: string) =>
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 onClick={() => setConfirm(true)}
-                className="flex items-center gap-1 rounded-full px-1.5 py-0.5 hover:bg-surface-2 hover:text-foreground"
+                className="flex items-center gap-1 rounded-md px-1.5 py-0.5 hover:bg-hover hover:text-foreground"
               >
                 <Ban className="size-3" /> Revoke
               </motion.button>
@@ -112,48 +115,40 @@ export function WalletPanel({ embedded = false }: { embedded?: boolean }) {
   return (
     <aside aria-label="Wallet" className="flex h-full flex-col">
       {!embedded && (
-        <div className="flex h-14 shrink-0 items-center gap-2 px-5">
+        <div className="flex h-14 shrink-0 items-center gap-2 border-b border-dashed border-border px-5">
           <WalletIcon className="size-4 text-muted-foreground" />
-          <h2 className="text-sm font-semibold">Wallet</h2>
+          <h2 className="display text-[22px]">Wallet</h2>
         </div>
       )}
       <div
         className={cn(
           "space-y-6",
-          !embedded && "scrollbar-thin min-h-0 flex-1 overflow-y-auto px-4 pb-6",
+          !embedded && "scrollbar-thin min-h-0 flex-1 overflow-y-auto px-4 pt-4 pb-6",
         )}
       >
         <section>
-          <div className="relative overflow-hidden rounded-[24px] bg-gradient-to-br from-[#241a3d] via-[#3a2a6e] to-[#6a5cf0] p-4 text-white shadow-card">
-            <div
-              aria-hidden
-              className="absolute -right-10 -top-10 size-36 rounded-full bg-white/10 blur-2xl"
-            />
-            <div className="flex items-center justify-between text-xs text-white/70">
+          <div className="rounded-lg border border-dashed border-border bg-band p-4">
+            <div className="flex items-center justify-between text-xs text-muted-foreground">
               <span className="flex items-center gap-1.5">
                 <CreditCard className="size-3.5" /> Funding source
               </span>
-              <span className="rounded-full bg-white/15 px-2 py-0.5 text-[10px] font-medium">
-                Sandbox
-              </span>
+              <span className="label rounded-sm bg-fill px-1.5 py-0.5 text-[10px]">Sandbox</span>
             </div>
-            <div className="mt-6 text-lg font-extrabold italic tracking-tight">
-              Pay<span className="text-lav-200">Pal</span>
+            <div className="mt-6 text-lg font-extrabold italic tracking-tight text-paypal">
+              PayPal
             </div>
-            <div className="mt-0.5 text-sm text-white/80">
+            <div className="mt-0.5 text-sm text-muted-foreground">
               {wallet ? wallet.funding.label.replace(/^PayPal · /, "") : "—"}
             </div>
           </div>
         </section>
         <section>
-          <h3 className="mb-2 px-1 text-[11px] font-medium uppercase tracking-wider text-subtle-foreground">
-            Mandates
-          </h3>
+          <h3 className="label mb-2 px-1">Mandates</h3>
           {error && <p className="px-1 text-xs text-danger">{error}</p>}
           {!wallet ? (
             <div className="space-y-2">
-              <Skeleton className="h-24 w-full rounded-2xl" />
-              <Skeleton className="h-24 w-full rounded-2xl" />
+              <Skeleton className="h-24 w-full rounded-lg" />
+              <Skeleton className="h-24 w-full rounded-lg" />
             </div>
           ) : wallet.mandates.length === 0 ? (
             <p className="px-1 text-sm text-muted-foreground">
@@ -168,14 +163,12 @@ export function WalletPanel({ embedded = false }: { embedded?: boolean }) {
           )}
         </section>
         <section>
-          <h3 className="mb-2 px-1 text-[11px] font-medium uppercase tracking-wider text-subtle-foreground">
-            Activity
-          </h3>
-          <div className="rounded-2xl bg-surface shadow-card">
+          <h3 className="label mb-2 px-1">Activity</h3>
+          <div className="rounded-lg border border-dashed border-border bg-card">
             {wallet ? (
               <ActivityRows entries={wallet.activity} limit={8} />
             ) : (
-              <Skeleton className="h-40 w-full rounded-2xl" />
+              <Skeleton className="h-40 w-full rounded-lg" />
             )}
           </div>
         </section>

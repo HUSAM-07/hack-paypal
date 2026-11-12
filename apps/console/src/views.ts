@@ -1,7 +1,7 @@
 import {
   currencySymbol,
+  SITE_HEAD_HTML,
   SITE_HEADER_CSS,
-  SITE_NAV_TOUCH_CSS,
   SITE_THEME_CSS,
   siteHeader,
   TOUR_SCRIPT,
@@ -11,85 +11,71 @@ import { creatorName, esc, money, shopName, usd } from "./format";
 import { agentLabel } from "./runs";
 
 /*
- * Fonts come from the worker's own static assets (/fonts/*), so the demo-page CSP
- * (font-src falls back to 'self') allows them. Missing files fall back to system faces.
+ * Page CSS only. Fonts, colour tokens and the layout primitives (.ui-frame-wide, .ui-band,
+ * .ui-label, ...) come from SITE_THEME_CSS; this file reads semantic tokens and defines no colour.
+ * CITED roles: the test / caused / paid = --primary; held-out (nothing) arm = --subtle;
+ * voids = --destructive; warnings = --warning; PayPal's own name = --paypal.
  */
-/* After the shared dark theme: the PayPal notification keeps PayPal's own light card. */
-const CONSOLE_DARK = `/* the film: two agent transcripts, rows aligned like a diff */
-/* payout: the CITED frame on the left, PayPal's notice on the right */
-.pay{min-height:calc(100vh - 65px);display:flex;align-items:center;justify-content:center;padding:48px 56px 64px}
-.clean .pay{min-height:100vh}
-.pay-grid{width:100%;max-width:1168px;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:4rem;align-items:center}
-.pay-k{display:flex;align-items:center;gap:.5rem;margin:0 0 1rem;font:500 .55rem/1 var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--test)}
-.pay-k::before{content:"";width:.4rem;height:.4rem;border-radius:50%;background:var(--test)}
-.pay-h{margin:0;font:300 2.5rem/1.08 var(--serif);letter-spacing:-.02em;text-wrap:balance}
-.pay-h .num{color:var(--test);font-weight:400}
-.pay-sub{margin:1.1rem 0 1.6rem;max-width:26rem;color:var(--muted);font-size:.82rem;line-height:1.5}
-.pay-cards{display:grid;gap:.55rem;max-width:28rem}
-.pay-card{display:flex;justify-content:space-between;align-items:baseline;gap:1rem;padding:.7rem .95rem;border:1px solid var(--line);border-radius:10px;background:var(--paper);font-size:.68rem;color:var(--ink-2)}
-.pay-card b{color:var(--ink);font-weight:600}
-.pay-card .zero{font-family:var(--mono);color:var(--muted);white-space:nowrap}
-.pay-card a{color:var(--ink);font-weight:500;text-underline-offset:2px}
-.pay-stmt{display:grid;gap:.3rem}
-.mail{margin:0;max-width:none}
-.notice{background:#fff;border:1px solid var(--line);border-radius:16px;box-shadow:0 1px 2px rgba(22,24,29,.05),0 28px 56px -28px rgba(22,24,29,.28)}
-.notice header{background:#fff;color:var(--ink);padding:1.1rem 1.6rem;border-bottom:1px solid var(--line)}
-.notice header .pp{font-size:1.15rem;color:#003087}
-.notice header .pp span{color:#0070E0}
-.notice header small{opacity:1;color:var(--muted);font-size:.6rem;letter-spacing:.02em}
-.notice .top{padding:1.5rem 1.6rem 1.25rem;border-bottom:1px solid var(--line)}
-.notice .hello{font-size:.85rem}
-.notice .amount{font-size:3.1rem;margin:.55rem 0 .45rem}
-.notice .amount small{font-size:.9rem}
-.notice .top p{font-size:.72rem}
-.notice dl{padding:.25rem 1.6rem .9rem}
-.notice dl div{grid-template-columns:8rem 1fr;padding:.6rem 0}
-.notice dt{font-size:.66rem}
-.notice dd{font-size:.72rem}
-.notice dd.mono{font-size:.64rem}
-.notice .status{padding:.18rem .6rem;border-radius:999px;background:#E7F1EC;font-size:.66rem}
-.notice footer{background:#F7F8FA;padding:.8rem 1.6rem;font-size:.58rem;border-radius:0 0 16px 16px}
-.pay-cap{margin:.8rem 0 0;text-align:center;font-size:.58rem;color:var(--muted)}
-.pay-cap a{color:inherit;text-decoration:underline;text-underline-offset:2px}
-@media (max-width:1100px){.pay{padding:32px 24px 48px}.pay-grid{grid-template-columns:1fr;gap:2.4rem}.pay-h{font-size:2rem}}
-@media (max-width:640px){.pay-h{font-size:1.6rem}.notice .amount{font-size:2.4rem}.notice dl div{grid-template-columns:1fr;gap:.1rem}.pay-sub,.pay-card{font-size:.85rem}.notice dt,.notice dd,.notice .top p{font-size:.8rem}}
-/* Content sits in the same 1280px frame as the site header. */
-.stage{max-width:1280px;padding-left:clamp(16px,4vw,56px);padding-right:clamp(16px,4vw,56px)}
-.film{margin:0 0 2.6rem}
-.film-grid{display:grid;grid-template-columns:minmax(0,1fr) 3.2rem minmax(0,1fr);row-gap:0}
-.fa,.fb{background:var(--paper);border-left:1px solid var(--line);border-right:1px solid var(--line);padding:.85rem 1.2rem;min-width:0;transition:background .4s,opacity .4s,box-shadow .4s}
-.fh{border-top:1px solid var(--line);border-radius:10px 10px 0 0;padding:1rem 1.2rem .9rem;display:flex;justify-content:space-between;align-items:baseline;gap:1rem}
-.fh h3{margin:0;font:400 1.05rem/1.2 var(--serif);display:flex;align-items:center;gap:.5rem}
-.fh h3::before{content:"";width:.5rem;height:.5rem;border-radius:50%;background:var(--held)}
-.fb.fh h3::before{background:var(--test)}
-.fh .model{font:400 .55rem/1 var(--mono);color:var(--muted)}
-.fl{border-bottom:1px solid var(--line);border-radius:0 0 10px 10px}
-.row{border-top:1px solid var(--line)}
-.k{display:block;font:500 .5rem/1 var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:.35rem}
-.v{font-size:.78rem;color:var(--ink)}
-.v small{display:block;color:var(--muted);font-size:.66rem;margin-top:.15rem}
-.v .dim{color:var(--muted)}
-.chip{display:inline-flex;align-items:center;gap:.35rem;margin-top:.4rem;padding:.2rem .5rem;border-radius:999px;font:500 .55rem/1.4 var(--mono);border:1px solid currentColor}
-.chip.no{color:var(--held-ink);text-decoration:line-through;text-decoration-thickness:1px}
-.chip.yes{color:var(--test)}
-.q{font:400 .9rem/1.3 var(--serif);color:var(--ink)}
-.verdict-row .v{display:flex;align-items:center;gap:.8rem}
-.amount-big{font:300 1.7rem/1 var(--serif);letter-spacing:-.01em}
-.fb .amount-big{color:var(--test)}
-.fa .amount-big{color:var(--muted)}
-.tick{flex:none;width:2.2rem;height:2.2rem}
-.tick circle,.tick path{fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
-.tick circle{stroke:var(--test);stroke-dasharray:120;stroke-dashoffset:0}
-.tick path{stroke:var(--test);stroke-dasharray:30;stroke-dashoffset:0}
-.fa .tick circle,.fa .tick path{stroke:var(--muted)}
-.eq{display:grid;place-items:center;font:500 .8rem/1 var(--mono);color:var(--muted);position:relative}
-.eq.ne{color:var(--test)}
-.eq span{display:grid;place-items:center;width:1.8rem;height:1.8rem;border-radius:50%;border:1px solid var(--line);background:var(--bg)}
-.eq.ne span{border-color:var(--test);box-shadow:0 0 0 4px var(--test-tint)}
-.film-sum{margin:1.1rem 0 0;text-align:center;font:300 1.25rem/1.35 var(--serif);color:var(--ink);text-wrap:balance}
-.film-sum em{color:var(--test);font-style:normal}
-.dots{display:none;gap:.25rem;align-items:center;height:1.2rem}
-.dots i{width:.32rem;height:.32rem;border-radius:50%;background:var(--muted);animation:blink 1s infinite}
+const CSS = `
+*{box-sizing:border-box}
+body{font-size:16px;line-height:1.6}
+h1,h2,h3,p{margin:0}
+a{color:inherit}
+.num{font-variant-numeric:tabular-nums lining-nums}
+.dim{color:var(--muted-foreground)}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+
+/* hero: mono kicker, serif display headline, muted lede */
+.hero{padding:40px var(--pad) 32px}
+.clean .hero{padding-top:56px}
+.kicker{display:flex;align-items:center;gap:8px;margin-bottom:14px}
+.kicker::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--primary)}
+.display{max-width:22ch;font:400 clamp(34px,4.6vw,54px)/1.06 var(--font-serif);letter-spacing:-.02em;text-wrap:balance}
+.display .num{color:var(--primary)}
+.lede{margin-top:14px;max-width:64ch;font-size:15px;line-height:1.65;color:var(--muted-foreground)}
+.lede-note{margin-top:8px;max-width:64ch;font-size:13.5px;line-height:1.6;color:var(--muted-foreground)}
+.lede-note a,.empty a{color:var(--foreground);text-underline-offset:3px;text-decoration-color:var(--subtle)}
+.lede-note a:hover,.empty a:hover{text-decoration-color:currentColor}
+.empty{padding:24px 0;max-width:52ch;font-size:17px;color:var(--muted-foreground)}
+.pay>.empty{padding:40px var(--pad)}
+.empty code{font-family:var(--font-mono);font-size:.8em}
+.warn{margin:16px 0 0;font-size:14px;color:var(--warning)}
+
+/* the film: two agent transcripts in dashed cards, rows aligned like a diff */
+.film-grid{display:grid;grid-template-columns:minmax(0,1fr) 48px minmax(0,1fr)}
+.fa,.fb{min-width:0;padding:14px 18px;background:var(--card);border-inline:1px dashed var(--border);transition:background-color .4s,opacity .4s,box-shadow .4s}
+.fh{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:baseline;gap:4px 12px;padding:14px 18px 12px;background:var(--band);border-top:1px dashed var(--border);border-radius:6px 6px 0 0}
+.fh h3{display:flex;align-items:center;gap:10px;font:400 24px/1.15 var(--font-serif);letter-spacing:-.01em}
+.fh h3::before{content:"";flex:none;width:8px;height:8px;border-radius:50%;background:var(--subtle)}
+.fb.fh h3::before{background:var(--primary)}
+.model{font:400 11px/1.3 var(--font-mono);color:var(--muted-foreground)}
+.fl{border-bottom:1px dashed var(--border);border-radius:0 0 6px 6px}
+.row{border-top:1px dashed var(--border)}
+.k{display:block;margin-bottom:6px;font:500 11px/1 var(--font-mono);letter-spacing:.06em;text-transform:uppercase;color:var(--muted-foreground)}
+.v{font-size:15px;line-height:1.5;color:var(--foreground)}
+.v b{font-weight:600}
+.v small{display:block;margin-top:2px;font-size:13px;color:var(--muted-foreground)}
+.chip{display:inline-flex;align-items:center;gap:6px;margin-top:6px;padding:2px 9px 1px;border-radius:3px;font:italic 400 16px/1.3 var(--font-serif);background:var(--band);box-shadow:inset 0 0 0 1px var(--border)}
+.chip.yes{color:var(--primary);background:var(--primary-soft);box-shadow:none}
+.chip.no{color:var(--muted-foreground);text-decoration:line-through;text-decoration-thickness:1px}
+.q{font:400 19px/1.3 var(--font-serif)}
+.verdict-row .v{display:flex;align-items:center;gap:12px}
+.amount-big{font:500 28px/1.1 var(--font-mono);letter-spacing:-.03em}
+.fb .amount-big{color:var(--primary)}
+.fa .amount-big{color:var(--muted-foreground)}
+.tick{flex:none;width:40px;height:40px}
+.tick circle,.tick path{fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;stroke:var(--primary)}
+.tick circle{stroke-dasharray:120;stroke-dashoffset:0}
+.tick path{stroke-dasharray:30;stroke-dashoffset:0}
+.fa .tick circle,.fa .tick path{stroke:var(--subtle)}
+.eq{position:relative;display:grid;place-items:center;font:500 14px/1 var(--font-mono);color:var(--muted-foreground)}
+.eq.ne{color:var(--primary)}
+.eq span{display:grid;place-items:center;width:30px;height:30px;border-radius:50%;background:var(--background);border:1px dashed var(--border)}
+.eq.ne span{border:1px solid var(--primary);box-shadow:0 0 0 4px var(--primary-soft)}
+.film-sum{margin:28px auto 0;max-width:760px;text-align:center;font:400 24px/1.3 var(--font-serif);letter-spacing:-.01em;text-wrap:balance}
+.film-sum em{color:var(--primary)}
+.dots{display:none;gap:4px;align-items:center;height:20px}
+.dots i{width:6px;height:6px;border-radius:50%;background:var(--muted-foreground);animation:blink 1s infinite}
 .dots i:nth-child(2){animation-delay:.15s}.dots i:nth-child(3){animation-delay:.3s}
 @keyframes blink{0%,80%,100%{opacity:.25}40%{opacity:1}}
 /* Player: rows wait, type, land. Without the script everything is simply shown. */
@@ -109,111 +95,56 @@ const CONSOLE_DARK = `/* the film: two agent transcripts, rows aligned like a di
 .film-on .eq.shown span{opacity:1;transform:none}
 .film-on .film-sum{opacity:0;transition:opacity .5s}
 .film-on .film-sum.shown{opacity:1}
-.film-on .playing{box-shadow:inset 2px 0 0 var(--accent-on,transparent)}
-.fa.playing{--accent-on:var(--held)}.fb.playing{--accent-on:var(--test)}
-.diff .fa.row.changed,.diff .fb.row.changed{background:linear-gradient(90deg,rgba(31,122,85,.07),rgba(31,122,85,.02))}
-.diff .fa.row.changed{background:linear-gradient(90deg,rgba(183,121,31,.08),rgba(183,121,31,.02))}
-.film-bar{display:flex;align-items:stretch;margin-top:1.2rem;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.film-on .fa.playing{box-shadow:inset 2px 0 0 var(--muted-foreground)}
+.film-on .fb.playing{box-shadow:inset 2px 0 0 var(--primary)}
+.diff .fb.row.changed{background:linear-gradient(90deg,var(--primary-soft),var(--card))}
+.diff .fa.row.changed{background:linear-gradient(90deg,var(--fill),var(--card))}
+.film-bar{display:none;align-items:stretch;margin-top:24px;border:1px dashed var(--border);border-radius:6px;overflow:hidden}
+.film-on .film-bar{display:flex}
 .film-chs{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));flex:1}
-.film-chs li{border-right:1px solid var(--line)}
-.film-ch{all:unset;box-sizing:border-box;display:flex;align-items:baseline;gap:.6rem;width:100%;height:100%;padding:.8rem 1rem;cursor:pointer;position:relative;color:var(--muted);transition:color .2s,background .2s}
-.film-ch i{position:absolute;left:0;right:0;top:0;height:2px;background:var(--test);transform:scaleX(var(--p,0));transform-origin:left}
-.film-ch[aria-current="step"]{color:var(--ink);background:var(--raise)}
-.film-ch:focus-visible,.film-btn:focus-visible{outline:2px solid var(--test);outline-offset:-2px}
-.film-ch .n{font:500 .55rem/1 var(--mono);color:var(--test)}
-.film-ch b{font:500 .7rem/1.25 var(--sans)}
-.film-btn{all:unset;box-sizing:border-box;cursor:pointer;padding:0 1.1rem;font:500 .55rem/1 var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--ink);border-right:1px solid var(--line)}
+.film-chs li{border-right:1px dashed var(--border)}
+.film-ch{all:unset;box-sizing:border-box;position:relative;display:flex;align-items:baseline;gap:10px;width:100%;height:100%;min-height:44px;padding:12px 16px;cursor:pointer;color:var(--muted-foreground);transition:color .2s,background-color .2s}
+.film-ch:hover{background:var(--hover);color:var(--foreground)}
+.film-ch i{position:absolute;left:0;right:0;top:0;height:2px;background:var(--primary);transform:scaleX(var(--p,0));transform-origin:left}
+.film-ch[aria-current="step"]{color:var(--foreground);background:var(--band)}
+.film-ch .n{font:500 11px/1 var(--font-mono);letter-spacing:.06em;color:var(--primary)}
+.film-ch b{font:500 14px/1.3 var(--font-sans)}
+.film-btn{all:unset;box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:0 18px;cursor:pointer;font:500 11px/1 var(--font-mono);letter-spacing:.06em;text-transform:uppercase;color:var(--foreground);border-right:1px dashed var(--border);transition:background-color .2s}
 .film-btn:last-child{border-right:0}
-.film-btn:hover{color:var(--test)}
-.film-bar{display:none}.film-on .film-bar{display:flex}
-@media (max-width:1100px){.film-ch b{font-size:.8rem}.film-ch .n,.film-btn{font-size:.7rem}.v{font-size:.85rem}.k{font-size:.6rem}}
-@media (max-width:760px){
-  .film-grid{grid-template-columns:minmax(0,1fr)}
-  .film-grid > *{order:var(--o)}
-  .eq{display:none}
-  .fb.fh{margin-top:1.4rem}
-  .film-bar{flex-wrap:wrap}
-  .film-chs{grid-template-columns:1fr;flex-basis:100%}
-  .film-chs li{border-right:0;border-bottom:1px solid var(--line)}
-  .film-btn{flex:1;padding:.9rem 1rem;text-align:center}
-}
-.notice{--ink:#16181D;--muted:#5B5F68;--line:#E6E2DA;--paper:#FFFFFF;--test:#1F7A55;color:var(--ink)}.lanes{border-top-color:var(--line-strong)}.step::before{background:var(--bg)}.verdict strong{font-weight:300}.request{font-weight:300}`;
+.film-btn:hover{background:var(--hover)}
+.film-ch:focus-visible,.film-btn:focus-visible{outline:2px solid var(--primary);outline-offset:-2px}
 
-const CSS = `
-@font-face{font-family:"Newsreader";font-style:normal;font-weight:200 800;font-display:swap;src:url("/fonts/newsreader-latin-opsz-v1.woff2") format("woff2-variations")}
-@font-face{font-family:"Newsreader";font-style:italic;font-weight:200 800;font-display:swap;src:url("/fonts/newsreader-latin-opsz-italic-v1.woff2") format("woff2-variations")}
-@font-face{font-family:"Geist";font-style:normal;font-weight:100 900;font-display:swap;src:url("/fonts/geist-latin-v1.woff2") format("woff2-variations")}
-@font-face{font-family:"Geist Mono";font-style:normal;font-weight:100 900;font-display:swap;src:url("/fonts/geist-mono-latin-v1.woff2") format("woff2-variations")}
-:root{
-  --bg:#FAF8F4;--paper:#FFFFFF;--ink:#16181D;--muted:#5B5F68;--line:#E6E2DA;
-  --test:#1F7A55;--test-tint:#E7F1EC;--held:#B7791F;--held-ink:#8A5A12;--held-tint:#F7EEDD;
-  --pp-navy:#003087;--pp-blue:#0070E0;
-  --serif:"Newsreader",Charter,"Iowan Old Style","Palatino Linotype",Georgia,serif;
-  --sans:"Geist",ui-sans-serif,-apple-system,"Segoe UI",Helvetica,Arial,sans-serif;
-  --mono:"Geist Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
-}
-*{box-sizing:border-box}
-html{font-size:20px;-webkit-text-size-adjust:100%}
-body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);line-height:1.45;-webkit-font-smoothing:antialiased}
-.num{font-variant-numeric:tabular-nums lining-nums}
-a{color:inherit}
-:focus-visible{outline:2px solid var(--ink);outline-offset:3px;border-radius:2px}
-
-/* nav (hidden with ?clean=1) */
-.nav{display:flex;align-items:baseline;gap:2rem;max-width:1760px;margin:0 auto;padding:22px 64px 0;font-size:.8rem}
-.nav .mark{font-family:var(--serif);font-size:1.15rem;font-weight:600;letter-spacing:.06em;text-decoration:none;margin-right:auto}
-.nav a{color:var(--muted);text-decoration:none;padding:.3rem 0}
-.nav a:hover{color:var(--ink)}
-.nav a[aria-current]{color:var(--ink);box-shadow:inset 0 -1.5px 0 var(--ink)}
-.clean .nav{display:none}
-
-/* ───── two agents ───── */
-.stage{max-width:1760px;margin:0 auto;padding:36px 64px 48px}
-.clean .stage{padding-top:52px}
-.lede{display:flex;justify-content:space-between;align-items:baseline;gap:2rem;margin:0 0 .6rem}
-.lede h1{margin:0;font-family:var(--sans);font-size:.8rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
-.lede p{margin:0;color:var(--muted);font-size:.8rem}
-.request{margin:0 0 2.2rem;font-family:var(--serif);font-weight:400;font-size:2.6rem;line-height:1.12;letter-spacing:-.012em;max-width:30ch;text-wrap:balance}
-.request q{quotes:"\\201C" "\\201D"}
-.lanes{display:grid;grid-template-columns:1fr 1fr;border-top:1px solid var(--ink)}
-.lane{--accent:var(--test);--accent-ink:var(--test);--tint:var(--test-tint);padding:1.6rem 3rem 0 0;display:flex;flex-direction:column}
-.lane + .lane{padding:1.6rem 0 0 3rem;border-left:1px solid var(--line)}
-.lane.held{--accent:var(--held);--accent-ink:var(--held-ink);--tint:var(--held-tint)}
-.lane-head{display:flex;justify-content:space-between;align-items:baseline;gap:1rem;margin-bottom:1.4rem}
-.lane-head h2{margin:0;font-family:var(--serif);font-size:1.7rem;font-weight:500;letter-spacing:-.005em}
-.lane-head h2::before{content:"";display:inline-block;width:.55rem;height:.55rem;border-radius:50%;background:var(--accent);margin-right:.55rem;vertical-align:.12em}
-.lede-note{font-size:.85rem;color:var(--muted);margin-top:.35rem}.lede-note a{color:inherit;text-decoration:underline;text-underline-offset:2px}
-.lane-head .model{font-family:var(--mono);font-size:.7rem;color:var(--muted)}
-
-.steps{list-style:none;margin:0;padding:0;position:relative}
-.steps::before{content:"";position:absolute;left:5px;top:.55rem;bottom:.6rem;width:2px;background:var(--accent);opacity:.35}
-.step{position:relative;display:grid;grid-template-columns:5.6rem 1fr;gap:.9rem;padding:0 0 1.7rem 1.6rem}
-.step::before{content:"";position:absolute;left:0;top:.42rem;width:12px;height:12px;border-radius:50%;background:var(--bg);border:2px solid var(--accent)}
-.step .k{font-size:.7rem;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);padding-top:.32rem}
-.step p{margin:0}
-.lane,.step > *{min-width:0}
-.dim{color:var(--muted)}
-.note{color:var(--muted);font-size:.8rem;margin-top:.35rem}
-.note.good{color:var(--test);font-weight:500}
-
+/* one run only: the two lanes as dashed cards */
+.lanes{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.lane{--accent:var(--primary);--accent-ink:var(--primary);--tint:var(--primary-soft);display:flex;flex-direction:column;min-width:0;padding:20px 20px 0;overflow:hidden}
+.lane.held{--accent:var(--subtle);--accent-ink:var(--muted-foreground);--tint:var(--fill)}
+.lane-head{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:baseline;gap:4px 12px;margin-bottom:20px}
+.lane-head h2{font:400 28px/1.15 var(--font-serif);letter-spacing:-.01em}
+.lane-head h2::before{content:"";display:inline-block;width:8px;height:8px;margin-right:10px;border-radius:50%;background:var(--accent);vertical-align:.2em}
+.steps{position:relative;list-style:none;margin:0;padding:0}
+.steps::before{content:"";position:absolute;left:5px;top:9px;bottom:12px;border-left:2px dashed var(--accent)}
+.step{position:relative;display:grid;grid-template-columns:minmax(0,1fr);gap:4px;padding:0 0 24px 28px}
+.step::before{content:"";position:absolute;left:0;top:6px;width:12px;height:12px;border-radius:50%;background:var(--card);border:2px solid var(--accent)}
+.step .k{margin:0;padding-top:4px}
+.step > *{min-width:0}
+.note{margin-top:6px;font-size:13.5px;color:var(--muted-foreground)}
+.note.good{color:var(--primary);font-weight:500}
 /* the passport ticket */
-.ticket{display:inline-flex;white-space:nowrap;align-items:stretch;margin-top:.55rem;background:var(--paper);border:1.5px solid var(--accent);border-radius:7px;position:relative;font-size:.7rem;line-height:1.25}
-.ticket .stub{background:var(--accent);color:var(--bg);padding:.42rem .6rem;font-weight:600;letter-spacing:.06em;text-transform:uppercase;display:flex;align-items:center;border-radius:4px 0 0 4px}
-.lane.held .ticket .stub{background:var(--held-ink)}
-.ticket .body{padding:.36rem .8rem .36rem .75rem;border-left:1.5px dashed var(--accent)}
-.ticket .body b{display:block;font-family:var(--mono);font-weight:500;font-size:.75rem;letter-spacing:.01em}
-.ticket .body span{color:var(--muted)}
-.ticket.mini{margin:0;font-size:.62rem}
-.ticket.mini .stub{padding:.25rem .45rem}
-.ticket.mini .body{padding:.22rem .55rem}
-.ticket.mini .body b{font-size:.66rem}
-
-/* offer → seller */
-.hop{display:flex;align-items:center;gap:0;flex-wrap:nowrap}
-.store{font-family:var(--serif);font-size:1.55rem;font-weight:500;line-height:1.1;padding:.15rem 0}
-.store small{display:block;font-family:var(--sans);font-size:.68rem;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-top:.25rem}
+.ticket{position:relative;display:inline-flex;align-items:stretch;margin-top:8px;white-space:nowrap;background:var(--card);border-radius:6px;box-shadow:inset 0 0 0 1px var(--accent-ink);font-size:12px;line-height:1.25;overflow:hidden}
+.ticket .stub{display:flex;align-items:center;padding:6px 9px;background:var(--accent-ink);color:var(--background);font:500 10.5px/1 var(--font-mono);letter-spacing:.06em;text-transform:uppercase}
+.ticket .body{padding:5px 11px 5px 10px;border-left:1px dashed var(--accent-ink)}
+.ticket .body b{display:block;font:500 12.5px/1.3 var(--font-mono)}
+.ticket .body span{color:var(--muted-foreground)}
+.ticket.mini{margin:0;font-size:11px}
+.ticket.mini .stub{padding:4px 7px;font-size:9.5px}
+.ticket.mini .body{padding:3px 8px}
+.ticket.mini .body b{font-size:11px}
+/* offer -> seller */
+.hop{display:flex;align-items:center;flex-wrap:nowrap}
+.store{padding:2px 0;font:400 24px/1.1 var(--font-serif)}
+.store small{display:block;margin-top:4px;font:500 10.5px/1.2 var(--font-mono);letter-spacing:.06em;text-transform:uppercase;color:var(--muted-foreground)}
 .store.paid small{color:var(--accent-ink)}
-.track{position:relative;flex:1 1 13.5rem;min-width:10.5rem;max-width:13.5rem;height:3.2rem;margin:0 .9rem}
+.track{position:relative;flex:1 1 220px;min-width:170px;max-width:220px;height:52px;margin:0 14px}
 .track::before{content:"";position:absolute;left:0;right:8px;top:50%;border-top:2px dashed var(--accent)}
 .track::after{content:"";position:absolute;right:0;top:calc(50% - 6px);border-left:10px solid var(--accent);border-top:7px solid transparent;border-bottom:7px solid transparent}
 .track .ticket{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%)}
@@ -221,94 +152,108 @@ a{color:inherit}
   .animate .track .ticket{animation:travel 1.6s cubic-bezier(.45,0,.2,1) .5s both}
 }
 @keyframes travel{from{left:0;transform:translate(0,-50%)}to{left:50%;transform:translate(-50%,-50%)}}
-
-.product{font-family:var(--serif);font-size:1.55rem;font-weight:500;line-height:1.15}
-.product .price{font-family:var(--sans);font-size:1.05rem;font-weight:500;color:var(--muted);margin-left:.35rem}
-.capture{display:flex;align-items:center;gap:.6rem;flex-wrap:wrap;font-size:.85rem;margin-top:.3rem!important}
-.capture .via{flex-basis:100%;font-size:.8rem}
-.capture .pp{font-weight:700;font-style:italic;color:var(--pp-text);letter-spacing:-.01em}
-.capture code{font-family:var(--mono);font-size:.75rem;background:var(--paper);border:1px solid var(--line);border-radius:4px;padding:.08rem .35rem}
-
+.product{font:400 24px/1.15 var(--font-serif)}
+.product .price{margin-left:8px;font:500 14px/1 var(--font-mono);color:var(--muted-foreground)}
+.capture{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;margin-top:6px;font-size:14px}
+.capture .via{flex-basis:100%;font-size:13px}
+.capture .pp{font-weight:700;font-style:italic;letter-spacing:-.01em;color:var(--paypal)}
 /* verdict */
-.verdict{margin-top:auto;border-top:3px solid var(--accent);background:var(--tint);padding:1.1rem 1.4rem 1.2rem}
-.verdict .k{font-size:.7rem;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--accent-ink)}
-.verdict strong{display:block;font-family:var(--serif);font-weight:500;font-size:2.5rem;line-height:1.08;letter-spacing:-.015em;margin:.2rem 0 .3rem}
-.verdict p{margin:0;font-size:.95rem}
-.verdict .amt{font-weight:600;color:var(--accent-ink)}
-.lane.held .verdict strong{color:var(--ink)}
+.verdict{margin:auto -20px 0;padding:16px 20px 18px;background:var(--tint);border-top:2px solid var(--accent)}
+.verdict .k{color:var(--accent-ink)}
+.verdict strong{display:block;margin:4px 0 6px;font:400 34px/1.08 var(--font-serif);letter-spacing:-.015em}
+.verdict p{font-size:15px}
+.verdict .amt{font-family:var(--font-mono);font-weight:500;color:var(--accent-ink)}
+.lane.held .verdict strong{color:var(--foreground)}
 
-.empty{padding:3rem 0;color:var(--muted);font-size:1.05rem;max-width:42ch}
-.empty code{font-family:var(--mono);font-size:.8em}
-.warn{color:var(--held-ink);font-size:.85rem;margin:1.2rem 0 0}
+/* ledger rows: mono index, label, right-aligned mono figure */
+.ledger{list-style:none;margin:0;padding:0}
+.ledger>li{display:grid;grid-template-columns:32px minmax(0,1fr) auto;align-items:baseline;gap:12px;padding:11px 0;border-bottom:1px dashed var(--border);font-size:14px}
+.ledger>li:first-child{border-top:1px dashed var(--border)}
+.l-no{font:400 11.5px/1 var(--font-mono);letter-spacing:.06em;color:var(--subtle)}
+.l-label{min-width:0;color:var(--foreground)}
+.l-label b{font-weight:600}
+.l-value{font:500 13.5px/1.4 var(--font-mono);font-variant-numeric:tabular-nums;text-align:right}
+.l-muted .l-value{color:var(--muted-foreground)}
+.l-void .l-label{color:var(--muted-foreground)}
+.l-void .l-value{color:var(--destructive)}
+.l-total{background:var(--primary-soft)}
+.l-total>.l-no{padding-left:6px}
+.l-total .l-label,.l-total .l-value{color:var(--primary);font-weight:600}
+.l-total .l-value{padding-right:6px;font-size:15px}
+.l-link{display:inline-flex;align-items:center;gap:4px;margin-top:4px;font-weight:500;color:var(--foreground);text-decoration:none}
+.l-link:hover{text-decoration:underline;text-underline-offset:3px}
+.arrow{font-size:12px;color:var(--muted-foreground)}
 
-/* ───── payout notification ───── */
-.pay{min-height:calc(100vh - 60px);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 24px 56px}
-.clean .pay{min-height:100vh}
-.mail{width:100%;max-width:760px}
-.notice{background:var(--paper);border:1px solid var(--line);border-radius:12px;overflow:hidden;box-shadow:0 1px 2px rgba(22,24,29,.06),0 12px 32px -12px rgba(22,24,29,.14)}
-.notice header{background:var(--pp-navy);color:#fff;padding:1.05rem 2.2rem;display:flex;justify-content:space-between;align-items:center}
-.notice header .pp{font-size:1.4rem;font-weight:800;font-style:italic;letter-spacing:-.02em}
-.notice header .pp span{color:#7FB8FF}
-.notice header small{font-size:.75rem;opacity:.85}
-.notice .top{padding:2.2rem 2.2rem 1.8rem;border-bottom:1px solid var(--line)}
-.notice .top p{margin:0;color:var(--muted)}
-.notice .hello{margin:0;font-size:1.05rem;font-weight:400;color:var(--ink)!important}
-.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
-.amount{font-size:4.4rem;font-weight:600;line-height:1;margin:.9rem 0 .7rem;letter-spacing:-.03em}
-.amount small{font-size:1.2rem;color:var(--muted);font-weight:500;margin-left:.5rem;letter-spacing:0}
-.status{display:inline-flex;align-items:center;gap:.45rem;color:var(--test);font-weight:600}
-.status::before{content:"";width:.55rem;height:.55rem;border-radius:50%;background:var(--test)}
-.notice dl{margin:0;padding:.4rem 2.2rem 1.4rem}
-.notice dl div{display:grid;grid-template-columns:11rem 1fr;gap:1rem;padding:.75rem 0;border-top:1px solid var(--line)}
+/* payout: the ledger beside PayPal's notice, on a dotted figure */
+.pay-band{padding-bottom:0}
+.pay-band .ui-band-h{margin-bottom:0}
+.pay-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+.pay-cell{min-width:0;padding:24px var(--pad) 32px}
+.pay-fig{display:flex;align-items:center;justify-content:center;padding:40px var(--pad);border-left:1px dashed var(--border)}
+.pay-cell .caption{margin-top:12px;font-size:12.5px;line-height:1.55;color:var(--muted-foreground)}
+.mail{width:100%;max-width:540px;margin:0}
+.notice{overflow:hidden;background:var(--card);color:var(--card-foreground);border-radius:12px;box-shadow:var(--shadow-pop)}
+.notice header{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:16px 24px;border-bottom:1px solid var(--border)}
+.notice header .pp{font:italic 800 21px/1 var(--font-sans);letter-spacing:-.02em;color:var(--paypal)}
+.notice header .pp span{color:color-mix(in oklab,var(--paypal) 35%,var(--primary))}
+.notice header small{font-size:12px;line-height:1.3;text-align:right;color:var(--muted-foreground)}
+.notice .top{padding:24px 24px 20px;border-bottom:1px solid var(--border)}
+.notice .top p{font-size:13.5px;color:var(--muted-foreground)}
+.notice .hello{font:400 15px/1.4 var(--font-sans);color:var(--foreground)}
+.notice .top p.hello{color:var(--foreground)}
+.amount{margin:12px 0 10px;font:600 52px/1 var(--font-sans);letter-spacing:-.03em;font-variant-numeric:tabular-nums}
+.amount small{margin-left:8px;font:500 14px/1 var(--font-mono);letter-spacing:.04em;color:var(--muted-foreground)}
+.status{display:inline-flex;align-items:center;gap:7px;padding:2px 10px;border-radius:999px;background:var(--primary-soft);color:var(--primary);font-size:13px;font-weight:600}
+.status::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--primary)}
+.notice dl{margin:0;padding:4px 24px 14px}
+.notice dl div{display:grid;grid-template-columns:136px minmax(0,1fr);gap:12px;padding:10px 0;border-top:1px dashed var(--border)}
 .notice dl div:first-child{border-top:0}
-.notice dt{color:var(--muted);font-size:.85rem;padding-top:.08rem}
-.notice dd{margin:0;font-weight:500;overflow-wrap:anywhere}
-.notice dd.mono{font-family:var(--mono);font-size:.8rem;font-weight:400;padding-top:.12rem}
+.notice dt{padding-top:3px;font:500 11px/1.5 var(--font-mono);letter-spacing:.06em;text-transform:uppercase;color:var(--muted-foreground)}
+.notice dd{margin:0;font-size:14px;font-weight:500;overflow-wrap:anywhere}
+.notice dd.mono{padding-top:1px;font:400 13px/1.5 var(--font-mono)}
 .notice dd .dim{font-weight:400}
-.notice footer{background:#F5F7FA;color:var(--muted);font-size:.72rem;padding:.9rem 2.2rem}
-.rival{display:flex;justify-content:space-between;align-items:baseline;gap:1rem;margin-top:1.4rem;padding:1rem .2rem 0;border-top:1px solid var(--line);color:var(--muted)}
-.rival b{color:var(--ink);font-weight:600}
-.stmt-link{margin:1rem .2rem 0;font-size:.85rem;color:var(--muted)}
-.stmt-link a{color:var(--ink);font-weight:500}
-.notice .lines{margin:0;padding:.4rem 2.2rem 1rem;border-bottom:1px solid var(--line)}
-.notice .lines div{display:flex;justify-content:space-between;gap:1rem;padding:.55rem 0;border-top:1px solid var(--line)}
-.notice .lines div:first-child{border-top:0}
-.notice .lines .total{font-weight:600}
-.notice .lines .minus{color:var(--held-ink)}
-.rival .amt{color:var(--ink);font-weight:600}
+.notice .ledger{padding:6px 24px 14px;border-bottom:1px solid var(--border)}
+.notice .ledger>li:first-child{border-top:0}
+.notice .ledger>li:last-child{border-bottom:0}
+.notice footer{padding:12px 24px;background:var(--band);border-top:1px solid var(--border);font-size:12px;line-height:1.5;color:var(--muted-foreground)}
+.pay-cap{margin:14px 0 0;text-align:center;font-size:12.5px;line-height:1.55;color:var(--muted-foreground)}
+.pay-cap a{color:inherit;text-decoration:underline;text-underline-offset:2px}
+.pay-cap .mono{font-family:var(--font-mono)}
+/* statement: the notice alone, centred on the dotted figure */
+.stmt{display:flex;flex-direction:column;align-items:center;gap:16px;padding:40px var(--pad) 56px;border-top:1px dashed var(--border)}
+.stmt .mail{max-width:640px}
 
-@media (min-width:1600px){html{font-size:21px}}
-/* Laptop widths: each lane is too narrow for a label column beside the offer → seller row. */
-@media (max-width:1500px){
-  .step{grid-template-columns:1fr;gap:.25rem}
+@media (max-width:960px){
+  .pay-grid,.lanes{grid-template-columns:minmax(0,1fr)}
+  .pay-fig{border-left:0;border-top:1px dashed var(--border)}
 }
-@media (max-width:1100px){
-  html{font-size:17px}
-  .nav,.stage{padding-left:24px;padding-right:24px}
-  .lanes{grid-template-columns:1fr}
-  .lane,.lane + .lane{padding:1.3rem 0 1.6rem;border-left:0}
-  .lane + .lane{border-top:1px solid var(--line)}
-  .request{font-size:2rem}
+@media (max-width:760px){
+  .film-grid{grid-template-columns:minmax(0,1fr)}
+  .film-grid > *{order:var(--o)}
+  .eq{display:none}
+  .fb.fh{margin-top:24px}
+  .film-bar{flex-wrap:wrap}
+  .film-chs{grid-template-columns:minmax(0,1fr);flex-basis:100%}
+  .film-chs li{border-right:0;border-bottom:1px dashed var(--border)}
+  .film-btn{flex:1;padding:12px 16px}
+  .film-sum{font-size:20px}
 }
 @media (max-width:640px){
-  html{font-size:16px}
-  .nav{gap:.2rem 1.1rem;flex-wrap:wrap}
-  .nav .mark{flex-basis:100%}
-  .lede{flex-direction:column;gap:.2rem}
-  .request{font-size:1.65rem}
-  .step{grid-template-columns:1fr;gap:.2rem}
+  .hero{padding:28px var(--pad) 24px}
+  .display{font-size:34px}
   .hop{flex-direction:column;align-items:flex-start}
-  .track{flex:none;width:2px;min-width:0;height:4.4rem;margin:.4rem 0 .4rem 1.2rem}
+  .track{flex:none;width:2px;min-width:0;height:70px;margin:6px 0 6px 20px}
   .track::before{left:0;right:auto;top:0;bottom:8px;border-top:0;border-left:2px dashed var(--accent)}
   .track::after{right:auto;left:-6px;top:auto;bottom:0;border-left:7px solid transparent;border-right:7px solid transparent;border-top:10px solid var(--accent);border-bottom:0}
-  .track .ticket{left:1.2rem;transform:translate(0,-50%)}
+  .track .ticket{left:20px;transform:translate(0,-50%)}
   .animate .track .ticket{animation:none}
-  .verdict strong{font-size:2rem}
-  .lane-head h2{font-size:1.45rem}
-  .amount{font-size:3.2rem}
-  .notice header,.notice .top,.notice dl,.notice footer{padding-left:1.3rem;padding-right:1.3rem}
-  .notice dl div{grid-template-columns:1fr;gap:.15rem}
-  .rival{flex-direction:column;gap:.2rem}
+  .verdict strong{font-size:28px}
+  .lane-head h2{font-size:24px}
+  .amount{font-size:40px}
+  .pay-fig,.stmt{padding:24px 12px}
+  .notice header,.notice .top,.notice dl,.notice footer,.notice .ledger{padding-left:16px;padding-right:16px}
+  .notice dl div{grid-template-columns:minmax(0,1fr);gap:2px}
+  .ledger>li{grid-template-columns:24px minmax(0,1fr) auto;gap:10px}
 }
 `;
 
@@ -334,7 +279,8 @@ function page(title: string, here: Here, body: string, opts: Opts): string {
   return `<!doctype html><html lang="en"><head><meta charset="utf-8"><title>${esc(title)}</title>
 <meta name="viewport" content="width=device-width,initial-scale=1">
 ${opts.live ? '<meta http-equiv="refresh" content="2">' : ""}
-<style>${CSS}${SITE_NAV_TOUCH_CSS}${SITE_THEME_CSS}${SITE_HEADER_CSS}${CONSOLE_DARK}</style></head><body class="${cls}">${nav(here)}${body}${TOUR_SCRIPT}</body></html>`;
+${SITE_HEAD_HTML}
+<style>${SITE_THEME_CSS}${CSS}${SITE_HEADER_CSS}</style></head><body class="${cls}">${nav(here)}${body}${TOUR_SCRIPT}</body></html>`;
 }
 
 function waiting(msg: string): string {
@@ -374,7 +320,7 @@ function verdict(v: RunView, kind: "exposed" | "held"): string {
 }
 
 function runColumn(v: RunView | null, kind: "exposed" | "held"): string {
-  const cls = kind === "exposed" ? "lane" : "lane held";
+  const cls = kind === "exposed" ? "lane ui-card" : "lane ui-card held";
   if (!v) {
     return `<section class="${cls}"><div class="lane-head"><h2>${laneTitle(kind, null)}</h2></div>${waiting("Waiting for this agent to buy.")}</section>`;
   }
@@ -531,8 +477,9 @@ function film(d: DemoData): string {
 }
 
 export function demoPage(d: DemoData, opts: Opts): string {
-  const body = `<main id="main" class="stage">
-<div class="lede"><h1>One A/B test, two agents</h1><p>Same request, same offers, same ranking. Watch an agent shop without the creator's review, then the same request with it, then compare.</p><p class="lede-note">These two are seeded replays. The effect was measured with live GPT, Gemini and Claude agents in a pre-registered eval: <a href="../proof">see the proof</a>.</p></div>
+  const body = `<main id="main" class="ui-frame-wide stage">
+<div class="hero"><p class="ui-label kicker">Console · seeded replay</p><h1 class="display">One A/B test, two agents</h1><p class="lede">Same request, same offers, same ranking. Watch an agent shop without the creator's review, then the same request with it, then compare.</p><p class="lede-note">These two are seeded replays. The effect was measured with live GPT, Gemini and Claude agents in a pre-registered eval: <a href="../proof">see the proof</a>.</p></div>
+<section class="ui-band" aria-labelledby="film-h"><h2 id="film-h" class="ui-band-h">Same request, two agents</h2><div class="ui-band-body">
 ${
   d.exposed && d.heldOut
     ? film(d)
@@ -543,6 +490,7 @@ ${
         )
 }
 ${d.engineError ? `<p class="warn">${esc(d.engineError)}</p>` : ""}
+</div></section>
 </main>`;
   return page("CITED · two agents", "console", body, opts);
 }
@@ -553,43 +501,70 @@ function statusWord(s: string): string {
   return s === "SUCCESS" ? "Completed" : s === "PENDING" || s === "PROCESSING" ? "Pending" : s;
 }
 
+/** One ledger row: mono index, label, right-aligned mono figure. */
+function ledgerRow(i: number, label: string, value: string, cls = ""): string {
+  return `<li${cls ? ` class="${cls}"` : ""}><span class="l-no">${String(i).padStart(2, "0")}</span><span class="l-label">${label}</span><span class="l-value num">${value}</span></li>`;
+}
+
 export function payoutPage(p: PayoutData | null, opts: Opts): string {
   if (!p) {
     return page(
       "CITED · payout",
       "payout",
-      `<main id="main" class="pay"><h1 class="sr">Creator payout</h1>${waiting("No payout yet. Payouts are sent when a 30-day hold ends.")}</main>`,
+      `<main id="main" class="ui-frame-wide pay"><h1 class="sr">Creator payout</h1>${waiting("No payout yet. Payouts are sent when a 30-day hold ends.")}</main>`,
       opts,
     );
   }
   const mismatch = p.ledgerPaidMinor !== null && p.ledgerPaidMinor !== p.amountMinor;
   const name = p.creatorName;
   const cur = p.currency;
+  const venmo = p.wallet === "VENMO";
   // The demo clock jumps past the hold, so a calendar date would sit in the future: say when
   // the payout happened relative to the demo instead.
   const date = "After the 30-day hold";
-  const body = `<main id="main" class="pay"><div class="pay-grid">
-<div class="pay-copy">
-  <p class="pay-k">Day 30 · creator payout</p>
-  <h1 class="pay-h">${esc(name)} got paid <span class="num">${money(p.amountMinor, cur)}</span> through PayPal Payouts${p.wallet === "VENMO" ? ", to Venmo" : ""}.</h1>
-  <p class="pay-sub">Commission on the sales its test caused, paid once the 30-day hold ended. AI shopping agents read the test and bought; nobody clicked a link.</p>
-  <div class="pay-cards">
-${
-  p.rival
-    ? `  <div class="pay-card"><span><b>${esc(p.rival.name)}</b> · <span class="num">${p.rival.causedUnits}</span> extra units caused</span><span class="num zero">${money(p.rival.paidMinor, cur)} paid · no lift</span></div>`
-    : ""
-}
-${
-  p.statement && !opts.clean
-    ? `  <div class="pay-card pay-stmt"><span>${esc(p.statement.brandName)} paid for it from its deposit: ${esc(invoiceStatusWord(p.statement.status))}${p.statement.dueMinor === 0 ? `, ${currencySymbol(cur)}0 due` : ""}</span><a href="/statement?brand=${encodeURIComponent(p.statement.brandId)}">Statement ${esc(p.statement.invoiceNumber)} →</a></div>`
-    : ""
-}
-  </div>
-${mismatch ? `<p class="warn">Ledger shows ${money(p.ledgerPaidMinor ?? 0, cur)} paid, which differs from this payout.</p>` : ""}
+  const rows: string[] = [
+    ledgerRow(
+      1,
+      `${esc(name)} · paid through PayPal Payouts${venmo ? ", to Venmo" : ""}`,
+      money(p.amountMinor, cur),
+      "l-total",
+    ),
+  ];
+  if (p.rival) {
+    rows.push(
+      ledgerRow(
+        rows.length + 1,
+        `<b>${esc(p.rival.name)}</b> · <span class="num">${p.rival.causedUnits}</span> extra units caused`,
+        `${money(p.rival.paidMinor, cur)} paid · no lift`,
+        "l-muted",
+      ),
+    );
+  }
+  if (p.statement && !opts.clean) {
+    rows.push(
+      ledgerRow(
+        rows.length + 1,
+        `${esc(p.statement.brandName)} paid for it from its deposit: ${esc(invoiceStatusWord(p.statement.status))}${p.statement.dueMinor === 0 ? `, ${currencySymbol(cur)}0 due` : ""}<br><a class="l-link" href="/statement?brand=${encodeURIComponent(p.statement.brandId)}">Statement ${esc(p.statement.invoiceNumber)} <span class="arrow" aria-hidden="true">↗</span></a>`,
+        "",
+      ),
+    );
+  }
+  const body = `<main id="main" class="ui-frame-wide pay">
+<div class="hero">
+  <p class="ui-label kicker">Day 30 · creator payout</p>
+  <h1 class="display">${esc(name)} got paid <span class="num">${money(p.amountMinor, cur)}</span> through PayPal Payouts${venmo ? ", to Venmo" : ""}.</h1>
+  <p class="lede">Commission on the sales its test caused, paid once the 30-day hold ended. AI shopping agents read the test and bought; nobody clicked a link.</p>
 </div>
+<section class="ui-band pay-band" aria-labelledby="pay-h"><h2 id="pay-h" class="ui-band-h">The payout</h2>
+<div class="pay-grid">
+<div class="pay-cell">
+  <ol class="ledger">${rows.join("")}</ol>
+${mismatch ? `  <p class="warn">Ledger shows ${money(p.ledgerPaidMinor ?? 0, cur)} paid, which differs from this payout.</p>` : ""}
+</div>
+<div class="pay-fig ui-dots">
 <figure class="mail">
 <article class="notice" aria-label="PayPal payment notice">
-<header><span class="pp">Pay<span>Pal</span></span><small>Payment received${p.wallet === "VENMO" ? " · paid to Venmo" : ""}</small></header>
+<header><span class="pp">Pay<span>Pal</span></span><small>Payment received${venmo ? " · paid to Venmo" : ""}</small></header>
 <div class="top">
   <p class="hello">${esc(name)}, you received a payment</p>
   <div class="amount num">${money(p.amountMinor, cur)}<small>${esc(p.currency)}</small></div>
@@ -602,11 +577,14 @@ ${mismatch ? `<p class="warn">Ledger shows ${money(p.ledgerPaidMinor ?? 0, cur)}
   <div><dt>Payout batch ID</dt><dd class="mono">${esc(p.paypalBatchId ?? p.senderBatchId)}</dd></div>
   <div><dt>${p.itemIdKind === "payout_item_id" ? "Payout item ID" : "Item reference"}</dt><dd class="mono">${esc(p.itemId)}</dd></div>
 </dl>
-<footer>Sent with PayPal Payouts${p.wallet === "VENMO" ? " to Venmo" : ""}. A refund during the hold voids the credit; a dispute holds it until PayPal decides.</footer>
+<footer>Sent with PayPal Payouts${venmo ? " to Venmo" : ""}. A refund during the hold voids the credit; a dispute holds it until PayPal decides.</footer>
 </article>
 <figcaption class="pay-cap">The notice ${esc(name)} receives from PayPal. Simulated PayPal on this demo.${p.amountMinor === 38396 && cur === "USD" ? ` The same $383.96 payout also ran on the real PayPal sandbox: <a href="https://github.com/HUSAM-07/hack-paypal/blob/main/cited/SANDBOX-EVIDENCE.md">batch <span class="mono">ME2KV57B7KYNS</span>, SUCCESS</a>.` : ""}</figcaption>
 </figure>
-</div></main>`;
+</div>
+</div>
+</section>
+</main>`;
   return page("CITED · payout", "payout", body, opts);
 }
 
@@ -627,7 +605,7 @@ export function statementPage(d: StatementData | null, opts: Opts): string {
     return page(
       "CITED · statement",
       "payout",
-      `<main id="main" class="pay"><h1 class="sr">Brand statement</h1>${waiting("No statement yet. Brands get one when a programme cycle closes.")}</main>`,
+      `<main id="main" class="ui-frame-wide pay"><h1 class="sr">Brand statement</h1>${waiting("No statement yet. Brands get one when a programme cycle closes.")}</main>`,
       opts,
     );
   }
@@ -636,21 +614,28 @@ export function statementPage(d: StatementData | null, opts: Opts): string {
   const mismatch =
     s.invoiceId !== null &&
     (s.invoiceTotalMinor !== s.paidMinor || s.creditedMinor - s.voidedMinor !== s.paidMinor);
-  const row = (label: string, amount: string, cls = "") =>
-    `<div${cls ? ` class="${cls}"` : ""}><span>${label}</span><span class="num">${amount}</span></div>`;
-  const lines = [
-    ...s.lines.map((l) =>
-      row(
-        `Commission credited: ${esc(l.name)} <span class="dim">· ${l.credits} credit${l.credits === 1 ? "" : "s"}</span>`,
-        usd(l.creditedMinor),
-      ),
-    ),
+  const entries: [label: string, amount: string, cls?: string][] = [
+    ...s.lines.map((l): [string, string] => [
+      `Commission credited: ${esc(l.name)} <span class="dim">· ${l.credits} credit${l.credits === 1 ? "" : "s"}</span>`,
+      usd(l.creditedMinor),
+    ]),
     ...(s.voidedMinor
-      ? [row("Voided by refunds or lost disputes", `−${usd(s.voidedMinor)}`, "minus")]
+      ? [
+          ["Voided by refunds or lost disputes", `−${usd(s.voidedMinor)}`, "l-void"] as [
+            string,
+            string,
+            string,
+          ],
+        ]
       : []),
-    row("Paid to creators through PayPal Payouts", usd(s.paidMinor), "total"),
-  ].join("");
-  const body = `<main id="main" class="pay"><div class="mail">
+    ["Paid to creators through PayPal Payouts", usd(s.paidMinor), "l-total"],
+  ];
+  const lines = entries
+    .map(([label, amount, cls], i) => ledgerRow(i + 1, label, amount, cls))
+    .join("");
+  const body = `<main id="main" class="ui-frame-wide pay">
+<div class="hero"><p class="ui-label kicker">Brand statement · PayPal Invoicing</p></div>
+<div class="stmt ui-dots"><div class="mail">
 <article class="notice">
 <header><span class="pp">Pay<span>Pal</span></span><small>${s.invoiceId ? "Invoice · statement" : "Statement"}</small></header>
 <div class="top">
@@ -658,7 +643,7 @@ export function statementPage(d: StatementData | null, opts: Opts): string {
   <div class="amount num">${usd(s.paidMinor)}<small>${esc(s.currency)}</small></div>
   <p>${s.invoiceId ? "Settled from your prepaid deposit · nothing due" : "Nothing paid this cycle, so no PayPal invoice"}</p>
 </div>
-<div class="lines">${lines}</div>
+<ol class="ledger">${lines}</ol>
 <dl>
   <div><dt>Status</dt><dd><span class="status">${esc(capitalize(invoiceStatusWord(s.status)))}</span>${s.invoiceDueMinor !== null ? ` <span class="dim">· ${usd(s.invoiceDueMinor)} due</span>` : ""}</dd></div>
   <div><dt>Invoice number</dt><dd class="mono">${esc(s.invoiceNumber)}</dd></div>
@@ -671,6 +656,6 @@ export function statementPage(d: StatementData | null, opts: Opts): string {
 <footer>Issued with PayPal Invoicing and marked paid against the deposit capture, so no money moves twice. You pay only for units your creators' tests caused.</footer>
 </article>
 ${mismatch ? `<p class="warn">The PayPal invoice shows ${usd(s.invoiceTotalMinor ?? 0)}, which differs from the ${usd(s.paidMinor)} the ledger paid.</p>` : ""}
-</div></main>`;
+</div></div></main>`;
   return page("CITED · statement", "payout", body, opts);
 }
