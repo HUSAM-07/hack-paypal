@@ -2,11 +2,20 @@
  * The CITED site navigation, shared by every public page (landing, /proof, /try, /mcp,
  * /creators, the console) so the top nav is the same wherever a judge lands.
  */
-export type SiteNavKey = "console" | "payout" | "try" | "mcp" | "proof" | "studio" | "creators";
+export type SiteNavKey =
+  | "console"
+  | "payout"
+  | "ledger"
+  | "try"
+  | "mcp"
+  | "proof"
+  | "studio"
+  | "creators";
 
 export const SITE_NAV: readonly { key: SiteNavKey; href: string; label: string }[] = [
   { key: "console", href: "/console", label: "Console" },
   { key: "payout", href: "/console/payout", label: "Payout" },
+  { key: "ledger", href: "/console/ledger", label: "Ledger" },
   { key: "try", href: "/try", label: "Run an agent" },
   { key: "mcp", href: "/mcp", label: "MCP" },
   { key: "proof", href: "/proof", label: "Proof" },
