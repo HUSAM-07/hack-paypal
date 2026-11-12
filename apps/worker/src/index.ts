@@ -1,3 +1,4 @@
+import { shopRouter } from "@shop/server";
 import { type Context, Hono } from "hono";
 import { auth } from "./auth/routes";
 import { sessionUser } from "./auth/session";
@@ -22,14 +23,19 @@ import { notFoundPage, wantsHtml } from "./not-found";
 import { payments } from "./payments/routes";
 import { webhooks } from "./payments/webhooks";
 import { clearReadCache } from "./read-cache";
-import { ipRateLimit, originAllowed, securityHeaders } from "./security";
+import {
+  ipRateLimit,
+  originAllowed,
+  securityHeaders,
+  shopEnabled,
+  withShopPageHeaders,
+} from "./security";
 
+export { ShopperAgent } from "@shop/server";
 export { CitedDemoDO } from "./do/cited-demo";
 export { PactDO } from "./do/pact";
 export { ThreadDO } from "./do/thread";
 export { UserDO } from "./do/user";
-// TEMPORARY stand-ins for the shop's bindings; the integrator swaps in apps/shop's classes.
-export { CheckoutWorkflow, ShopperAgent } from "./shop-placeholders";
 
 const app = new Hono<{ Bindings: Env }>();
 
@@ -78,6 +84,15 @@ const appPage = async (c: Context<{ Bindings: Env }>) => {
 };
 // The old Pact home: nothing links here any more, so a stray visit lands on CITED.
 app.get("/app", (c) => c.redirect("/", 302));
+
+// Shop (shop/spec/SHOP-SPEC.md): the page and its API exist only while SHOP_ENABLED is "true".
+const shopPage = async (c: Context<{ Bindings: Env }>) => {
+  if (!shopEnabled(c.env)) return c.notFound();
+  // Assets serve shop.html at its pretty URL (/shop).
+  return withShopPageHeaders(await c.env.ASSETS.fetch(new URL("/shop", c.req.url)));
+};
+app.get("/shop", shopPage);
+app.get("/shop/*", shopPage);
 app.get("/app/*", appPage);
 
 // The live reconciliation page sits under /console (so no new asset route), ahead of the console app.
@@ -109,6 +124,14 @@ app.route("/api/auth", auth);
 app.route("/api/paypal/webhooks", webhooks);
 // CITED has its own auth (bearer token) and PayPal webhook, so it also goes before `payments`.
 app.all(`${CITED_PREFIX}/*`, citedHandler);
+app.use("/api/shop/*", async (c, next) => (shopEnabled(c.env) ? next() : c.notFound()));
+app.route(
+  "/api/shop",
+  shopRouter<Env>({
+    getUserId: (c) => sessionUser(c),
+    allowOrigin: (c) => originAllowed(c.req.raw, allowedOrigins(c.env)),
+  }),
+);
 app.route("/api", payments);
 
 /**

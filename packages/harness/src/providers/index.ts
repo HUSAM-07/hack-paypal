@@ -8,6 +8,8 @@ export * from "./openrouter";
 /** The env names the harness reads. Secrets come from `.dev.vars` / wrangler secrets. */
 export interface ModelEnv {
   MODEL_PROVIDER?: string;
+  /** Wins over MODEL_PROVIDER, so a host whose MODEL_PROVIDER means something else can set it. */
+  SHOP_MODEL_PROVIDER?: string;
   OPENROUTER_API_KEY?: string;
   SHOP_MODEL?: string;
   CF_ACCOUNT_ID?: string;
@@ -32,7 +34,7 @@ export function openRouterConfigFromEnv(env: ModelEnv): OpenRouterConfig | undef
  * OpenRouter when a key exists, else fake, so a fresh checkout works with no secrets.
  */
 export function resolveModelProvider(env: ModelEnv, fake: FakeProviderOptions = {}): ModelProvider {
-  const mode = env.MODEL_PROVIDER?.toLowerCase();
+  const mode = (env.SHOP_MODEL_PROVIDER ?? env.MODEL_PROVIDER)?.toLowerCase();
   if (mode === "fake") return fakeProvider(fake);
   const cfg = openRouterConfigFromEnv(env);
   if (mode === "openrouter" && !cfg) {

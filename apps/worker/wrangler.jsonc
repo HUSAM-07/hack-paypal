@@ -41,7 +41,7 @@
       { "name": "PACT", "class_name": "PactDO" },
       { "name": "CITED_DEMO", "class_name": "CitedDemoDO" },
       // Shop: one Agents SDK agent per user (apps/shop).
-      { "name": "SHOPPER", "class_name": "ShopperAgent" }
+      { "name": "SHOPPER_AGENT", "class_name": "ShopperAgent" }
     ]
   },
   "migrations": [
@@ -49,22 +49,9 @@
     { "tag": "v2", "new_sqlite_classes": ["CitedDemoDO"] },
     { "tag": "v3", "new_sqlite_classes": ["ShopperAgent"] }
   ],
-  // Shop checkout: re-verify → authorize → cooling-off → capture or void (apps/shop).
-  "workflows": [
-    { "name": "pact-shop-checkout", "binding": "CHECKOUT", "class_name": "CheckoutWorkflow" }
-  ],
-  // KV and R2 have no ids here on purpose: wrangler provisions them in each target's account on
-  // its first deploy and keeps them linked after. scripts/deploy.mjs can pin ids per target.
-  "kv_namespaces": [{ "binding": "SHOP_CACHE" }],
-  "r2_buckets": [{ "binding": "SHOP_FILES" }],
-  // Browser Run (shop price extraction, Live View). Workers Free allows 10 browser-minutes a
-  // day; the shop needs Workers Paid for real use and degrades to Exa contents without it.
-  "browser": { "binding": "BROWSER" },
-  // Workers AI (binding AI) is added by scripts/deploy.mjs for deploys only: an AI binding here
-  // would make `wrangler dev` and the test pool open a remote session that needs Cloudflare
-  // credentials (CI has none). Locally the shop runs without it.
-  // Shop reconciliation sweep: missed watch checks, stuck checkouts, authorizations near expiry.
-  "triggers": { "crons": ["*/15 * * * *"] },
+  // Shop extras (Browser Run as BROWSER, KV as SHOP_CACHE) are opt-in per deploy: see SHOP_EXTRAS
+  // in scripts/deploy.mjs. Without them the shop runs on Exa + plain fetch and no price cache,
+  // and a deploy never provisions resources or needs Workers Paid.
   "d1_databases": [
     {
       "binding": "DB",
@@ -102,7 +89,7 @@
     "AI_GATEWAY_ID": "pact-shop",
     // The team account's id; scripts/deploy.mjs sets each other target's.
     "CF_ACCOUNT_ID": "",
-    "SHOP_MODEL_ID": "anthropic/claude-sonnet-5.5",
+    "SHOP_MODEL": "anthropic/claude-sonnet-5.5",
     "SHOP_COOLING_OFF_MINUTES": "10"
   }
 }

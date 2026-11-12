@@ -17,9 +17,8 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
-// Optional per target: `kv` / `r2` pin a binding to an existing namespace id / bucket name.
-// Without them wrangler provisions SHOP_CACHE and SHOP_FILES in the target's account on its
-// first deploy and keeps them linked (wrangler.jsonc leaves their ids out on purpose).
+// Optional per target: `kv` pins SHOP_CACHE (SHOP_EXTRAS=1 only) to an existing namespace id;
+// without it wrangler provisions one in the target's account on its first deploy.
 const TARGETS = {
   // The team account on workers.dev; wrangler.jsonc as committed.
   "workers-dev": {},
@@ -38,9 +37,12 @@ const TARGETS = {
   },
 };
 
-// Workers AI always runs remotely: in wrangler.jsonc it would make `wrangler dev` and the
-// vitest pool open a remote session that needs Cloudflare credentials (CI tests have none).
-const DEPLOY_ONLY = { ai: { binding: "AI" } };
+// Shop extras, opt-in with SHOP_EXTRAS=1: the SHOP_CACHE KV namespace is provisioned in the
+// target account on first deploy, so it is off by default (a plain deploy of the worker must
+// never fail or create resources because of the shop). The shop treats it as optional. Browser
+// Run is reached over its REST API (CF_BROWSER_RUN_TOKEN secret), so it needs no binding.
+const DEPLOY_ONLY =
+  process.env.SHOP_EXTRAS === "1" ? { kv_namespaces: [{ binding: "SHOP_CACHE" }] } : {};
 
 const workerDir = join(dirname(fileURLToPath(import.meta.url)), "..");
 const args = process.argv.slice(2);
@@ -100,12 +102,11 @@ function configFor(name) {
     d1_databases: base.d1_databases.map((db) =>
       o.d1?.[db.binding] ? { ...db, database_id: o.d1[db.binding] } : db,
     ),
-    kv_namespaces: (base.kv_namespaces ?? []).map((kv) =>
-      o.kv?.[kv.binding] ? { ...kv, id: o.kv[kv.binding] } : kv,
-    ),
-    r2_buckets: (base.r2_buckets ?? []).map((r2) =>
-      o.r2?.[r2.binding] ? { ...r2, bucket_name: o.r2[r2.binding] } : r2,
-    ),
+    ...(DEPLOY_ONLY.kv_namespaces && {
+      kv_namespaces: DEPLOY_ONLY.kv_namespaces.map((kv) =>
+        o.kv?.[kv.binding] ? { ...kv, id: o.kv[kv.binding] } : kv,
+      ),
+    }),
   };
   // Written next to wrangler.jsonc so its relative paths (main, assets, migrations) resolve.
   const file = `wrangler.${name}.generated.jsonc`;

@@ -65,6 +65,11 @@ export const SHOP_PAGE_HEADERS: Readonly<Record<string, string>> = {
   "Cache-Control": "no-cache",
 };
 
+/** The shop (page, API, Google sign-in) is on only when SHOP_ENABLED is exactly "true". */
+export function shopEnabled(env: { SHOP_ENABLED?: string }): boolean {
+  return env.SHOP_ENABLED === "true";
+}
+
 /** A copy of `res` (asset responses have immutable headers) carrying SHOP_PAGE_HEADERS. */
 export function withShopPageHeaders(res: Response): Response {
   const out = new Response(res.body, res);

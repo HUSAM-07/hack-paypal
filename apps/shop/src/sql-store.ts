@@ -161,3 +161,21 @@ export class SqlStateStore {
       ON CONFLICT (id) DO UPDATE SET version = excluded.version, json = excluded.json`;
   }
 }
+
+/**
+ * Server-only product state (vault ids, mandates, checkouts). Never broadcast and never part of
+ * `state/*`; kept in its own row so a state diff can't leak it.
+ */
+export class SqlPrivateStore {
+  constructor(private readonly sql: SqlTag) {
+    sql`CREATE TABLE IF NOT EXISTS shop_private (id INTEGER PRIMARY KEY CHECK (id = 1), json TEXT NOT NULL)`;
+  }
+  read(): unknown {
+    const r = this.sql<{ json: string }>`SELECT json FROM shop_private WHERE id = 1`[0];
+    return r ? JSON.parse(r.json) : undefined;
+  }
+  write(value: unknown) {
+    this.sql`INSERT INTO shop_private (id, json) VALUES (1, ${JSON.stringify(value)})
+      ON CONFLICT (id) DO UPDATE SET json = excluded.json`;
+  }
+}

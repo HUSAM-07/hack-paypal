@@ -33,8 +33,9 @@ import {
 import { Agent, type Connection, type WSMessage } from "agents";
 import { z } from "zod";
 import { createAguiTranslator, interpretRunInput } from "./agui";
+import { commerceDomain } from "./commerce-domain";
 import type { ShopDomain, ShopDomainContext } from "./domain";
-import { SqlStateStore, type SqlTag, SqlThreadStore } from "./sql-store";
+import { SqlPrivateStore, SqlStateStore, type SqlTag, SqlThreadStore } from "./sql-store";
 import { stubDomain } from "./stub-domain";
 
 export interface ShopEnv extends ModelEnv {
@@ -43,6 +44,8 @@ export interface ShopEnv extends ModelEnv {
   SHOP_MAX_STEPS?: string;
   /** Approval time-to-live in seconds (default 900). */
   SHOP_APPROVAL_TTL_SECONDS?: string;
+  /** "stub" swaps the commerce domain for canned demo tools (protocol tests). */
+  SHOP_DOMAIN?: string;
 }
 
 interface ConnState {
@@ -82,9 +85,10 @@ export class ShopperAgent extends Agent<ShopEnv> {
   /** In-process subscribers (AG-UI streams) to every notification. */
   private readonly listeners = new Set<(n: Notification) => void>();
 
-  /** Override to plug in the product domain (`@shop/commerce`). */
+  /** The product domain: `@shop/commerce`, or the canned stub when `SHOP_DOMAIN=stub` (tests). */
   protected createDomain(ctx: ShopDomainContext<never>): ShopDomain<unknown> {
-    return stubDomain(ctx as never) as ShopDomain<unknown>;
+    if (this.env.SHOP_DOMAIN === "stub") return stubDomain(ctx as never) as ShopDomain<unknown>;
+    return commerceDomain(ctx as never) as ShopDomain<unknown>;
   }
 
   override shouldSendProtocolMessages(): boolean {
@@ -100,7 +104,7 @@ export class ShopperAgent extends Agent<ShopEnv> {
     const sql = this.sql.bind(this) as SqlTag;
     const store = new SqlThreadStore(sql);
     const state = new SqlStateStore(sql);
-    const domainCtx = this.domainContext(state);
+    const domainCtx = this.domainContext(state, new SqlPrivateStore(sql));
     const domain = this.createDomain(domainCtx as ShopDomainContext<never>);
     const env = this.env;
     const harness = createHarness({
@@ -147,8 +151,13 @@ export class ShopperAgent extends Agent<ShopEnv> {
     return stored;
   }
 
-  private domainContext(stateStore: SqlStateStore): ShopDomainContext<unknown> {
+  private domainContext(
+    stateStore: SqlStateStore,
+    privateStore: SqlPrivateStore,
+  ): ShopDomainContext<unknown> {
     return {
+      getPrivate: () => privateStore.read(),
+      setPrivate: (value) => privateStore.write(value),
       userId: this.userId,
       env: this.env as unknown as Record<string, unknown>,
       now: () => new Date(),

@@ -15,6 +15,8 @@ function rig() {
     now: () => new Date(0),
     getState: () => initialShopState(),
     updateState: (f) => f(initialShopState()),
+    getPrivate: () => undefined,
+    setPrivate: () => {},
     notify: () => {},
     schedule: async () => "s",
     cancelSchedule: async () => true,

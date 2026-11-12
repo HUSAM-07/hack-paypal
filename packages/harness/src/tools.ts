@@ -23,8 +23,16 @@ export interface ToolContext {
   now(): Date;
   /** Streams `item/toolCall/progress`. */
   progress(label: string, fraction?: number): void;
-  /** Present when the call ran after an approval; `edits` are the user's changes on the card. */
-  approval?: { decision: "approved"; edits?: Record<string, unknown> };
+  /**
+   * Present when the call ran after an approval: `edits` are the user's changes on the card,
+   * `details` what the card showed, `stepUpVerified` whether a passkey check passed.
+   */
+  approval?: {
+    decision: "approved";
+    edits?: Record<string, unknown>;
+    details?: unknown;
+    stepUpVerified?: boolean;
+  };
 }
 
 export interface ToolDef<A extends z.ZodType = z.ZodType, R extends z.ZodType = z.ZodType> {

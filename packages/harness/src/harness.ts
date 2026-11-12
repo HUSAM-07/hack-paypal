@@ -511,6 +511,9 @@ export function createHarness(deps: HarnessDeps): Harness {
       await execute(call, tool, call.args, rt.controller.signal, {
         decision: "approved",
         ...(edits ? { edits } : {}),
+        ...(approval.details === undefined ? {} : { details: approval.details }),
+        // respondApproval only approves a step-up approval after verifyStepUp passed.
+        ...(approval.stepUp ? { stepUpVerified: true } : {}),
       });
       return;
     }

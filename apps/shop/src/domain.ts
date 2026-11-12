@@ -17,6 +17,9 @@ export interface ShopDomainContext<S> {
   getState(): S;
   /** Persists, bumps the version and broadcasts `state/patch`. */
   updateState(fn: (state: S) => S): S;
+  /** Server-only state (vault ids, mandates). Undefined until first written. */
+  getPrivate(): unknown;
+  setPrivate(value: unknown): void;
   /** Broadcast `inbox/added` (something happened while no turn was running). */
   notify(entry: InboxEntry): void;
   /** Run `onSchedule(payload)` later: a Date, a delay in seconds, or a cron string. */

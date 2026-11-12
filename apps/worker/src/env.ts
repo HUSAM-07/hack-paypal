@@ -1,3 +1,4 @@
+import type { ShopperAgent } from "@shop/server";
 import type { CitedDemoDO } from "./do/cited-demo";
 import type { PactDO } from "./do/pact";
 import type { ThreadDO } from "./do/thread";
@@ -81,29 +82,21 @@ export interface Env {
   /** "true" turns the shop on (routes, Google sign-in, the sweep). Anything else: they 404. */
   SHOP_ENABLED?: string;
   /** One ShopperAgent per user (Agents SDK), named by the session user id. */
-  SHOPPER: DurableObjectNamespace;
-  /** CheckoutWorkflow: re-verify → authorize → cooling-off → capture or void. */
-  CHECKOUT: Workflow;
-  /**
-   * Browser Run: price extraction fallback and Live View. Optional: a target can deploy
-   * without it, and the shop then falls back to Exa contents.
-   */
-  BROWSER?: BrowserRun;
-  /** Product and price snapshots (short TTL). */
-  SHOP_CACHE: KVNamespace;
-  /** Receipts and page screenshots. */
-  SHOP_FILES: R2Bucket;
-  /**
-   * Workers AI: Browser Run /json extraction and cheap classification. Deployed targets only
-   * (scripts/deploy.mjs adds it); absent under `wrangler dev` and in tests.
-   */
-  AI?: Ai;
-  /** AI Gateway that model calls go through (`env.AI.gateway(id)`). */
+  SHOPPER_AGENT: DurableObjectNamespace<ShopperAgent>;
+  /** Browser Run REST token (price extraction fallback); optional secret. */
+  CF_BROWSER_RUN_TOKEN?: string;
+  /** Public origin for PayPal wallet return links (defaults to the request origin). */
+  SHOP_PUBLIC_ORIGIN?: string;
+  /** Price-check cache. Opt-in (SHOP_EXTRAS=1 at deploy); optional. */
+  SHOP_CACHE?: KVNamespace;
+  /** AI Gateway that model calls go through (with CF_ACCOUNT_ID). */
   AI_GATEWAY_ID?: string;
   /** This target's Cloudflare account id, for AI Gateway URLs built by hand. */
   CF_ACCOUNT_ID?: string;
   /** OpenRouter model id for the shopper agent. */
-  SHOP_MODEL_ID?: string;
+  SHOP_MODEL?: string;
+  /** "fake" runs the shop's scripted model; otherwise OpenRouter when a key is set. */
+  SHOP_MODEL_PROVIDER?: string;
   /** Minutes between authorizing a purchase and capturing it (the undo window). */
   SHOP_COOLING_OFF_MINUTES?: string;
   /** Secrets (.dev.vars / `wrangler secret put`). */

@@ -15,6 +15,8 @@ function appEntryRewrite(): Plugin {
         } else if (path === "/fx/tour.js") {
           // Production serves the built tour at this fixed URL (the server-rendered pages load it).
           req.url = `/src/tour/main.ts${req.url?.slice(path.length) ?? ""}`;
+        } else if (path === "/shop" || path.startsWith("/shop/")) {
+          req.url = `/shop.html${req.url?.slice(path.length) ?? ""}`;
         } else if (path === "/proof") {
           req.url = `/proof.html${req.url?.slice(path.length) ?? ""}`;
         } else if (path === "/studio" || path === "/studio/" || path === "/studio/creator") {
@@ -67,6 +69,7 @@ export default defineConfig(({ isSsrBuild }) => ({
             app: new URL("./app.html", import.meta.url).pathname,
             studio: new URL("./studio.html", import.meta.url).pathname,
             proof: new URL("./proof.html", import.meta.url).pathname,
+            shop: new URL("./shop.html", import.meta.url).pathname,
             // The console is server-rendered by the worker, so its scene script needs a fixed URL.
             "console-scene": new URL("./src/console-scene/main.ts", import.meta.url).pathname,
             // The judge tour's bar, loaded by every public page, the server-rendered ones too.

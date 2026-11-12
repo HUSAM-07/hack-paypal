@@ -12,7 +12,12 @@ export default defineConfig({
           cloudflareTest({
             wrangler: { configPath: "./wrangler.jsonc" },
             miniflare: {
-              bindings: { MODEL_PROVIDER: "fake", DEV_USER: "u_test", OPENROUTER_API_KEY: "" },
+              bindings: {
+                MODEL_PROVIDER: "fake",
+                DEV_USER: "u_test",
+                OPENROUTER_API_KEY: "",
+                SHOP_DOMAIN: "stub",
+              },
             },
           }),
         ],
