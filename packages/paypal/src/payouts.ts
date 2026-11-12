@@ -4,7 +4,7 @@ import { PayoutBatch, PayoutBatchCreated, PayoutItem, toPayoutAmount } from "./s
 
 const enc = encodeURIComponent;
 
-export type RecipientType = "EMAIL" | "PHONE" | "PAYPAL_ID";
+export type RecipientType = "EMAIL" | "PHONE" | "PAYPAL_ID" | "USER_HANDLE";
 
 export interface PayoutItemInput {
   recipient_type?: RecipientType;

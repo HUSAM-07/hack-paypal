@@ -283,6 +283,69 @@ describe("payouts", () => {
     expect((await s.raw("POST", "/v1/payments/payouts", { items: [] })).status).toBe(400);
   });
 
+  describe("Venmo items", () => {
+    const venmo = (over: Record<string, unknown> = {}) => ({
+      recipient_type: "PHONE",
+      receiver: "1-415-555-0123",
+      amount: { currency: "USD", value: "0.50" },
+      sender_item_id: "v1",
+      recipient_wallet: "VENMO",
+      note: "Thanks for your patronage!",
+      ...over,
+    });
+    const send = (s: ReturnType<typeof setup>, id: string, items: unknown[]) =>
+      s.raw("POST", "/v1/payments/payouts", {
+        sender_batch_header: { sender_batch_id: id },
+        items,
+      });
+
+    it("accepts a Venmo item next to a PayPal one and echoes each wallet and type", async () => {
+      const s = setup();
+      const created = await send(s, "mix", [
+        venmo(),
+        venmo({ recipient_type: "USER_HANDLE", receiver: "@quietrooms", sender_item_id: "v2" }),
+        {
+          recipient_type: "PAYPAL_ID",
+          receiver: "SIMPAYER23456",
+          amount: { currency: "USD", value: "1.00" },
+          sender_item_id: "p1",
+        },
+      ]);
+      expect(created.status).toBe(201);
+      expect(validateResponse(PAYOUTS, "POST", "/v1/payments/payouts", created.json)).toEqual([]);
+      const id = created.json.batch_header.payout_batch_id as string;
+      s.mock.settlePayouts(id);
+      const got = await s.raw("GET", `/v1/payments/payouts/${id}`);
+      const echoed = got.json.items.map((i: any) => [
+        i.payout_item.sender_item_id,
+        i.payout_item.recipient_wallet,
+        i.payout_item.recipient_type,
+        i.transaction_status,
+      ]);
+      expect(echoed).toEqual([
+        ["v1", "VENMO", "PHONE", "SUCCESS"],
+        ["v2", "VENMO", "USER_HANDLE", "SUCCESS"],
+        ["p1", "PAYPAL", "PAYPAL_ID", "SUCCESS"],
+      ]);
+      expect(got.json.batch_header.amount).toEqual({ currency: "USD", value: "2.00" });
+    });
+
+    it("rejects a Venmo item with no note, in another currency, or with a PAYPAL_ID receiver", async () => {
+      const s = setup();
+      const noNote = await send(s, "n1", [venmo({ note: undefined })]);
+      expect(noNote.status).toBe(400);
+      expect(noNote.json.details[0].issue).toBe("MISSING_REQUIRED_PARAMETER");
+      const eur = await send(s, "n2", [venmo({ amount: { currency: "EUR", value: "1.00" } })]);
+      expect(eur.status).toBe(400);
+      expect(eur.json.details[0].issue).toBe("CURRENCY_NOT_SUPPORTED");
+      const badType = await send(s, "n3", [venmo({ recipient_type: "PAYPAL_ID" })]);
+      expect(badType.status).toBe(400);
+      const badWallet = await send(s, "n4", [venmo({ recipient_wallet: "CASHAPP" })]);
+      expect(badWallet.status).toBe(400);
+      expect(s.mock.state.batches.size).toBe(0);
+    });
+  });
+
   it("autoSettlePayouts settles after creation", async () => {
     const s = setup({ autoSettlePayouts: true });
     const created = await s.paypal.payouts.createBatch(

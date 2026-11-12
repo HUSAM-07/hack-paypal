@@ -246,6 +246,19 @@ describe("payout moment (#29)", () => {
     expect(clean).toContain('class="clean');
   });
 
+  it("says paid to Venmo for a Venmo item, and not for a PayPal one", async () => {
+    const venmo = structuredClone(ENGINE) as any;
+    venmo["/api/payouts"].batches[0].items[0].wallet = "VENMO";
+    venmo["/api/payouts"].batches[0].items[0].receiver = "Venmo ···0123";
+    const html = await (await appWith(RUNS, venmo).request("/payout")).text();
+    expect(html).toContain("through PayPal Payouts, to Venmo.");
+    expect(html).toContain("paid to Venmo");
+    expect(html).toContain("Venmo ···0123");
+    expect(html).toContain("Sent with PayPal Payouts to Venmo.");
+    const paypal = await (await appWith(RUNS).request("/payout")).text();
+    expect(paypal).not.toContain("Venmo");
+  });
+
   it("flags a payout that disagrees with the ledger", async () => {
     const bad = structuredClone(ENGINE) as any;
     bad["/api/credits"].creators[0].totals.paid = 100;
