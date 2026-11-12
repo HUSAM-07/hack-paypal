@@ -189,7 +189,8 @@ function useFitCanvas() {
         ro.observe(canvas);
         observed = canvas;
       }
-      if (canvas) host.style.minHeight = `${Math.ceil(canvas.getBoundingClientRect().height) + 24}px`;
+      if (canvas)
+        host.style.minHeight = `${Math.ceil(canvas.getBoundingClientRect().height) + 24}px`;
     };
     const ro = new ResizeObserver(fit);
     const mo = new MutationObserver(fit);

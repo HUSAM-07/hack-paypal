@@ -578,21 +578,27 @@ export function Proof() {
             </Section>
 
             <Section id="secondary" kicker="Predictions" title="Every prediction, checked.">
-              <table className="hyp-table">
-                <tbody>
-                  {[...h.priceMatched, ...h.catalogue].map((x) => (
-                    <tr key={x.id}>
-                      <th scope="row" className="num">
-                        {x.id}
-                      </th>
-                      <td>{x.text}</td>
-                      <td>
-                        <VerdictTag v={x.verdict} />
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+              {(
+                [
+                  ["Price-matched study", h.priceMatched],
+                  ["First study, Winix already cheaper", h.catalogue],
+                ] as const
+              ).map(([study, list]) => (
+                <div key={study} className="hyp-group">
+                  <p className="hyp-study">{study}</p>
+                  <ul className="hyp-cards">
+                    {list.map((x) => (
+                      <li key={x.id} className={`hyp-card hv-${x.verdict.replace(" ", "-")}`}>
+                        <span className="hyp-top">
+                          <span className="hyp-id num">{x.id}</span>
+                          <VerdictTag v={x.verdict} />
+                        </span>
+                        <span className="hyp-text">{x.text}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
             </Section>
 
             <Section

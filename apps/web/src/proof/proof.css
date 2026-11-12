@@ -770,3 +770,92 @@
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+/* Session squares grow with the column: one grid track per session, square cells. */
+.sessions .sq-run {
+  display: grid;
+  grid-template-columns: repeat(19, minmax(0, 1fr));
+  gap: 4px;
+  width: 100%;
+}
+.sessions .sq-run .sq {
+  width: auto;
+  height: auto;
+  aspect-ratio: 1;
+  border-radius: 3px;
+}
+.sessions .arm-model {
+  grid-template-columns: 9rem minmax(0, 1fr);
+  padding: 3px 0;
+}
+.sessions .arm-model-name {
+  font-size: 0.82rem;
+}
+@media (max-width: 760px) {
+  .sessions .arm-model {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 4px;
+  }
+  .sessions .sq-run {
+    gap: 2px;
+  }
+}
+
+/* Predictions as cards, grouped by study. */
+.hyp-group + .hyp-group {
+  margin-top: 22px;
+}
+.hyp-study {
+  margin: 0 0 10px;
+  font: 500 11px / 1.4 var(--font-mono);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted-foreground);
+}
+.hyp-cards {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.hyp-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px 16px 16px;
+  border: 1px solid var(--border);
+  border-top: 3px solid var(--primary);
+  border-radius: 10px;
+  background: var(--card);
+}
+.hyp-card.hv-not-met {
+  border-top-color: var(--warning);
+}
+.hyp-card.hv-reported {
+  border-top-color: var(--subtle);
+}
+.hyp-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.hyp-id {
+  font: 400 30px / 1 var(--font-serif);
+}
+.hyp-text {
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--muted-foreground);
+}
+@media (max-width: 900px) {
+  .hyp-cards {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 520px) {
+  .hyp-cards {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

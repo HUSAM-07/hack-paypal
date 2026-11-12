@@ -12,8 +12,6 @@ import { currencyOf, money, num, useOfBrand, useRows } from "./useRows";
 
 type P = AgWidgetParams<never, unknown, StudioContext>;
 
-const pts = (x: unknown) =>
-  typeof x === "number" ? `${x >= 0 ? "+" : "−"}${Math.abs(x * 100).toFixed(1)} pts` : "–";
 const pct = (x: unknown) => (typeof x === "number" ? `${Math.round(x * 100)}%` : "–");
 
 const BRAND_FIELDS = [
@@ -53,15 +51,14 @@ function useBrand(p: P, brandId: string) {
   return { rows, scope, row, rival };
 }
 
-/** The signature tile: only the sales the test caused, as a lower bound, beside Levoit's $0. */
+/** The signature tile: only the sales the test caused, as a lower bound. */
 export function CausedTile(p: P) {
-  const { row, rival, scope } = useBrand(p, p.context?.brandId ?? "winix");
+  const { row } = useBrand(p, p.context?.brandId ?? "winix");
   if (!row) return <div className="cw-empty">Waiting for the first agent sale.</div>;
   const m = (n: number) => money(n, true, currencyOf(row));
   const caused = num(row.causedUnits);
   const exposed = num(row.exposedSales);
   const notCredited = Math.max(0, exposed - caused);
-  const share = exposed > 0 ? caused / exposed : 0;
   return (
     // biome-ignore lint/a11y/noNoninteractiveTabindex: the body scrolls when the widget is small; keyboard users must reach it (WCAG 2.1.1)
     <div className="cw cw-caused" tabIndex={0}>
@@ -82,29 +79,7 @@ export function CausedTile(p: P) {
       </div>
       <p className="cw-proofbar-legend">
         <b>{caused}</b> of <b>{exposed}</b> sales by agents shown the test
-        {notCredited > 0 ? (
-          <>
-            {" "}
-            ·{" "}
-            <span className="cw-muted">
-              {notCredited} could have happened anyway: nobody is paid for them
-            </span>
-          </>
-        ) : null}
       </p>
-      <Note>
-        {scope === "todate" ? (
-          <>
-            At least {caused}: lift is {pts(row.lift)}, and the engine credits only its 80% lower
-            bound ({pct(row.lowerBound)} of exposed sales).
-          </>
-        ) : (
-          <>
-            The cycle the first payout settled: {caused} sales credited ({pct(share)} of {exposed}{" "}
-            exposed), {m(num(row.voided))} voided by a refund before it ran.
-          </>
-        )}
-      </Note>
       <dl className="cw-figures">
         <div>
           <dt>Credited</dt>
@@ -125,18 +100,6 @@ export function CausedTile(p: P) {
           </div>
         ) : null}
       </dl>
-      {rival ? (
-        <div className="cw-rival">
-          <span>
-            <b>{String(rival.brand)}</b> · {num(rival.causedUnits)} caused
-          </span>
-          <span className="cw-rival-amount">{money(num(rival.paid), true, currencyOf(rival))}</span>
-          <small>
-            {scope === "todate" ? `lift bound ${pts(rival.lowerBound)}: ` : ""}a close or negative
-            verdict pays nothing
-          </small>
-        </div>
-      ) : null}
     </div>
   );
 }
@@ -166,8 +129,6 @@ export function ArmStrip(p: P) {
     rows?.find((r) => r.brandId === brandId && r.scopeKey === scope && r.armKey === k),
   ).filter((r): r is NonNullable<typeof r> => !!r);
   if (!mine.length) return <div className="cw-empty">No agent sessions yet.</div>;
-  const test = mine.find((r) => r.armKey === "test");
-  const placebo = mine.find((r) => r.armKey === "placebo");
   return (
     // biome-ignore lint/a11y/noNoninteractiveTabindex: the body scrolls when the widget is small; keyboard users must reach it (WCAG 2.1.1)
     <div className="cw cw-arms" tabIndex={0}>
@@ -185,15 +146,6 @@ export function ArmStrip(p: P) {
           <div className="cw-arm-share">{pct(r.share)}</div>
         </div>
       ))}
-      <Note>
-        {test && placebo ? (
-          <>
-            Shown the test vs. the same creator's other content:{" "}
-            <b>{pts(num(test.share) - num(placebo.share))}</b>.
-          </>
-        ) : null}{" "}
-        Every group sees the same offers in the same order; only the test is added or withheld.
-      </Note>
     </div>
   );
 }
@@ -244,10 +196,6 @@ export function DepositMeter(p: P) {
           </div>
         ))}
       </dl>
-      <Note>
-        {String(row.brand)} pays only for its own lifted units. Unspent money goes back through
-        PayPal refunds; a top-up funds the category, never a creator or a verdict.
-      </Note>
     </div>
   );
 }

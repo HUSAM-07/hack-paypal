@@ -977,3 +977,103 @@ a:hover .row-arrow {
     height: 44px;
   }
 }
+
+/* Payout: the deposit split beside the PayPal notice the creator receives. */
+.pay-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+  gap: 28px;
+  align-items: start;
+  margin: 28px var(--pad) 0;
+}
+.pay-row .deposit {
+  margin: 0;
+}
+.pp-notice {
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--card);
+  box-shadow: var(--shadow-pop);
+  padding: 18px 20px 6px;
+}
+.pp-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin: 0 0 14px;
+}
+.pp-logo {
+  font: italic 800 20px / 1 var(--font-sans);
+  letter-spacing: -0.02em;
+  color: var(--paypal);
+}
+.pp-kind {
+  font-size: 12px;
+  color: var(--muted-foreground);
+}
+.pp-to {
+  margin: 0;
+  font-size: 14px;
+}
+.pp-amt {
+  margin: 6px 0 2px;
+  font: 600 40px / 1.05 var(--font-sans);
+  letter-spacing: -0.02em;
+}
+.pp-amt small {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--muted-foreground);
+}
+.pp-from {
+  margin: 0 0 14px;
+  font-size: 13px;
+  color: var(--muted-foreground);
+}
+.pp-rows {
+  margin: 0;
+  border-top: 1px solid var(--border);
+}
+.pp-rows > div {
+  display: grid;
+  grid-template-columns: 110px minmax(0, 1fr);
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 13.5px;
+}
+.pp-rows > div:last-child {
+  border-bottom: 0;
+}
+.pp-rows dt {
+  font: 500 11px / 1.6 var(--font-mono);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted-foreground);
+}
+.pp-rows dd {
+  margin: 0;
+}
+.pp-ok {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 9px;
+  border-radius: 999px;
+  background: var(--success-soft);
+  color: var(--success-text);
+  font-size: 12.5px;
+  font-weight: 550;
+}
+.pp-ok::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+@media (max-width: 760px) {
+  .pay-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

@@ -27,6 +27,11 @@ body {
   /* .ui-frame-wide asks for a full viewport; the top bar already takes some of it. */
   min-height: 640px;
 }
+/* Studio is a working dashboard: it takes the whole window, not the 1080px reading column. */
+.st-page.ui-frame-wide {
+  max-width: none;
+  border-inline: 0;
+}
 .st-head {
   display: flex;
   flex-direction: column;
@@ -260,7 +265,7 @@ body {
 }
 .cw-figures {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(84px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(64px, 1fr));
   gap: 8px;
   margin: 2px 0 0;
   padding-top: 10px;
@@ -274,7 +279,7 @@ body {
 }
 .cw-figures dd {
   margin: 2px 0 0;
-  font: 500 15px / 1.3 var(--font-mono);
+  font: 500 14px / 1.3 var(--font-mono);
   letter-spacing: -0.01em;
 }
 .cw-figures dd.is-paid {

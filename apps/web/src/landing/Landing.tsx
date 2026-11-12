@@ -142,7 +142,7 @@ const STEPS: Step[] = [
     no: "04",
     tab: "Pay",
     sticker: "envelope",
-    href: "/console/payout?clean=1",
+    href: "#money",
     title: "The engine pays only what the test caused.",
     body: (
       <>
@@ -184,7 +184,7 @@ const FOOT: { title: string; links: { href: string; label: string }[] }[] = [
     title: "Demo",
     links: [
       { href: "/console?clean=1", label: "Two agents, side by side" },
-      { href: "/console/payout?clean=1", label: "The day-30 payout" },
+      { href: "/console/ledger", label: "The ledger" },
       { href: "/try", label: "Run an agent" },
     ],
   },
@@ -192,7 +192,6 @@ const FOOT: { title: string; links: { href: string; label: string }[] }[] = [
     title: "Evidence",
     links: [
       { href: "/proof", label: "The proof" },
-      { href: "/console/ledger", label: "The ledger" },
       { href: blob("cited/SANDBOX-EVIDENCE.md"), label: "Sandbox evidence" },
     ],
   },
@@ -386,28 +385,57 @@ export function Landing() {
               </li>
             ))}
           </ol>
-          <figure className="deposit">
-            <figcaption className="deposit-h">
-              <span>Where Winix's $1,000 deposit went</span>
-              <span className="mono">after the 30-day hold</span>
-            </figcaption>
-            <div
-              className="deposit-bar"
-              role="img"
-              aria-label="$383.96 to HouseFresh, $616.04 back to Winix"
-            >
-              <span className="dep-paid" style={{ flexGrow: 383.96 }}>
-                <b>$383.96</b> to HouseFresh
-              </span>
-              <span className="dep-back" style={{ flexGrow: 616.04 }}>
-                <b>$616.04</b> back to Winix
-              </span>
-            </div>
-            <p className="deposit-note">
-              <b className="mono">$0.00</b> Levoit's test moved no agents, so its creator earns
-              nothing and Levoit pays nothing.
-            </p>
-          </figure>
+          <div className="pay-row">
+            <figure className="deposit">
+              <figcaption className="deposit-h">
+                <span>Where Winix's $1,000 deposit went</span>
+                <span className="mono">after the 30-day hold</span>
+              </figcaption>
+              <div
+                className="deposit-bar"
+                role="img"
+                aria-label="$383.96 to HouseFresh, $616.04 back to Winix"
+              >
+                <span className="dep-paid" style={{ flexGrow: 383.96 }}>
+                  <b>$383.96</b> to HouseFresh
+                </span>
+                <span className="dep-back" style={{ flexGrow: 616.04 }}>
+                  <b>$616.04</b> back to Winix
+                </span>
+              </div>
+              <p className="deposit-note">
+                <b className="mono">$0.00</b> Levoit's test moved no agents, so its creator earns
+                nothing and Levoit pays nothing.
+              </p>
+            </figure>
+            <aside className="pp-notice" aria-label="The PayPal notice HouseFresh receives">
+              <p className="pp-top">
+                <span className="pp-logo">PayPal</span>
+                <span className="pp-kind">Payment received</span>
+              </p>
+              <p className="pp-to">HouseFresh, you received a payment</p>
+              <p className="pp-amt">
+                $383.96 <small>USD</small>
+              </p>
+              <p className="pp-from">From CITED · commission on sales your test caused</p>
+              <dl className="pp-rows">
+                <div>
+                  <dt>Status</dt>
+                  <dd>
+                    <span className="pp-ok">Completed</span>
+                  </dd>
+                </div>
+                <div>
+                  <dt>Sent with</dt>
+                  <dd>PayPal Payouts, after the 30-day hold</dd>
+                </div>
+                <div>
+                  <dt>Sandbox batch</dt>
+                  <dd className="mono">ME2KV57B7KYNS</dd>
+                </div>
+              </dl>
+            </aside>
+          </div>
         </Band>
 
         <Band id="try" title="Try it">
