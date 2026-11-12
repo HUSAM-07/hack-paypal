@@ -197,7 +197,23 @@ async function programmeFor(deps: LiveRunDeps, upc: string): Promise<ProgrammeFa
   const f = deps.endpoints.engineFetch ?? fetch;
   const res = await f(`${deps.endpoints.engineUrl}/api/lift/${encodeURIComponent(b.brand_id)}`);
   const lift = res.ok ? ((await res.json()) as { causedUnits?: number }) : {};
-  return { brand: { brandId: b.brand_id, name: b.name }, causedUnits: lift.causedUnits ?? 0 };
+  const facts: ProgrammeFacts = {
+    brand: { brandId: b.brand_id, name: b.name },
+    causedUnits: lift.causedUnits ?? 0,
+  };
+  try {
+    const dep = await f(`${deps.endpoints.engineUrl}/api/deposits`);
+    if (dep.ok) {
+      const { brands } = (await dep.json()) as {
+        brands?: { brandId: string; available: number }[];
+      };
+      const mine = brands?.find((x) => x.brandId === b.brand_id);
+      if (mine && Number.isFinite(mine.available)) facts.availableMinor = mine.available;
+    }
+  } catch {
+    // Deposits unreadable: leave availableMinor unset and skip the deposit check.
+  }
+  return facts;
 }
 
 async function creatorNames(db: D1Database, ids: string[]): Promise<Record<string, string>> {

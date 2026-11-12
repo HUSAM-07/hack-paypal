@@ -100,6 +100,17 @@ describe("live verdict", () => {
     expect(liveVerdict(sale, { ...funded, causedUnits: 0 }).credited).toBe(false);
     expect(liveVerdict(null, funded).credited).toBe(false);
   });
+
+  it("never credits more than the brand's deposit has left", () => {
+    // The commission on a $95.99 sale is $7.67 (767 minor units, rounded down).
+    const short = liveVerdict(sale, { ...funded, availableMinor: 766 });
+    expect(short.credited).toBe(false);
+    expect(short.why).toMatch(/top it up/);
+    expect(short.brandId).toBe("winix");
+    expect(liveVerdict(sale, { ...funded, availableMinor: 767 }).credited).toBe(true);
+    // Unknown balance: the check is skipped, not guessed.
+    expect(liveVerdict(sale, funded).credited).toBe(true);
+  });
 });
 
 describe("cleanRequest", () => {
