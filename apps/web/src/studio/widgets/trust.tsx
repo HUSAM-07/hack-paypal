@@ -6,8 +6,10 @@
  */
 import type { AgWidgetParams } from "ag-studio";
 import { Fragment, useState } from "react";
-import type { StudioContext } from "../context";
+import { asOfStore, type StudioContext } from "../context";
+import { csvFileName, downloadCsv, trustCsv } from "../csvExport";
 import { API, privateNote } from "../data";
+import { ExportButton } from "./ExportButton";
 import { currencyOf, money, num, useRows } from "./useRows";
 
 type P = AgWidgetParams<never, unknown, StudioContext>;
@@ -210,9 +212,20 @@ export function TrustList(p: P) {
     n: rows.filter((r) => codesOf(r).includes(c.code)).length,
   })).filter((c) => c.n > 0);
   const shown = pick ? rows.filter((r) => codesOf(r).includes(pick)) : rows;
+  // The list is not a grid, so its rows go through the same CSV helper; the chip narrows the file too.
+  const exportCsv = () => {
+    const name = csvFileName(["trust-review", pick ?? "all"], asOfStore.get());
+    downloadCsv(name, trustCsv(shown));
+    return name;
+  };
   return (
     // biome-ignore lint/a11y/noNoninteractiveTabindex: the body scrolls when the widget is small; keyboard users must reach it (WCAG 2.1.1)
     <div className="cw cw-trust" tabIndex={0}>
+      <ExportButton
+        label="credits held, frozen or voided"
+        count={shown.length}
+        onExport={exportCsv}
+      />
       <nav className="cw-trust-chips" aria-label="Filter by reason">
         <button type="button" aria-pressed={pick === null} onClick={() => setPick(null)}>
           All <b>{rows.length}</b>

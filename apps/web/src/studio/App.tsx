@@ -2,7 +2,7 @@ import type { Scope } from "@cited/studio/tables";
 import type { AgStudioApi, AgStudioApiReadyEvent } from "ag-studio";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { SiteHeader } from "../landing/SiteHeader";
-import { type StudioContext, scopeStore, whatIfStore } from "./context";
+import { asOfStore, type StudioContext, scopeStore, whatIfStore } from "./context";
 import { diffTables, getJson, POLL_MS, type StudioConfig, type StudioTables } from "./data";
 import { startPolling } from "./poll";
 import { scopeFromParams, searchWithScope } from "./scope";
@@ -94,6 +94,7 @@ export function App() {
         setConfig(c);
         setFirst(d);
         setAsOf(d.asOf);
+        asOfStore.set(d.asOf);
         setFirstBatch(d.firstBatch?.label ?? null);
       })
       .catch((e: Error) => setError(e.message));
@@ -109,6 +110,7 @@ export function App() {
         setLive(true);
         whatIfStore.set(next.whatIf ?? null);
         setAsOf(next.asOf);
+        asOfStore.set(next.asOf);
         setFirstBatch(next.firstBatch?.label ?? null);
         const engine = api.current?.getDataEngine();
         if (engine?.applyTransaction && last.current && next.version !== last.current.version) {

@@ -1088,3 +1088,58 @@ body {
   color: var(--muted);
   font-size: 12px;
 }
+
+/* Export CSV: one quiet button per CITED table, top right, with the saved file's name beside it */
+.cw-grid-body {
+  flex: 1;
+  min-height: 0;
+}
+.cw-export {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  flex: none;
+}
+.cw-export-saved {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--muted);
+  font-size: 12px;
+}
+.cw-export-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex: none;
+  min-height: 34px;
+  padding: 7px 12px;
+  border: 1px solid var(--hair);
+  border-radius: 6px;
+  background: var(--paper);
+  color: var(--ink);
+  font: 600 13px / 1 var(--sans);
+  cursor: pointer;
+}
+.cw-export-btn:hover:not(:disabled) {
+  border-color: var(--proof);
+  color: var(--proof);
+}
+.cw-export-btn:active:not(:disabled) {
+  transform: scale(0.96);
+}
+.cw-export-btn:disabled {
+  color: var(--muted);
+  cursor: default;
+}
+.cw-export-btn:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+@media (max-width: 760px) {
+  .cw-export-btn {
+    min-height: 44px;
+  }
+}

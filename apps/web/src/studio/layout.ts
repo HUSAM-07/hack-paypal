@@ -126,21 +126,7 @@ export function initialState(
             format: { title: { enabled: true, text: "Credits by state" } },
           },
           credits: {
-            type: "grid",
-            dataMapping: {
-              cols: [
-                { id: "credits.orderId" },
-                { id: "credits.brand" },
-                { id: "credits.amount" },
-                ...cur("credits"),
-                { id: "credits.state" },
-                { id: "credits.voidReason" },
-                { id: "credits.holdReason" },
-                { id: "credits.holdUntil" },
-                { id: "credits.payoutBatch" },
-                { id: "credits.splitWith" },
-              ],
-            },
+            type: "cited-credits",
             format: { title: { enabled: true, text: "Every credit, live from the ledger" } },
           },
           flags: {
