@@ -18,6 +18,7 @@ import { CITED_PREFIX, internalEngineFetch } from "../cited";
 import { DEMO_PAGE_CSP } from "../cited-apps";
 import type { Env } from "../env";
 import { clientIp } from "../security";
+import { creatorCategory, DEFAULT_CREATOR_CATEGORY } from "./categories";
 import { authorizeUrl, exchange, IdentityError, identityMode } from "./identity";
 import { consentPage, messagePage, publishPage, welcomePage } from "./page";
 import {
@@ -37,8 +38,6 @@ import {
 /** Mirrors the engine's per-creator cap, for the message. */
 const MAX_PUBLISHED_PER_CREATOR = 10;
 export const CREATORS_PREFIX = "/creators";
-/** The one category the catalogue sells; tests outside it would never be shown. */
-export const CREATOR_CATEGORY = "air-purifier";
 export const DEFAULT_DISCLOSURE = DEFAULT_CREATOR_DISCLOSURE;
 
 type C = Context<{ Bindings: Env }>;
@@ -102,6 +101,7 @@ async function publishedTests(c: C, creatorId: string) {
       id: t.test.id,
       kind: t.test.kind,
       verdict: verdictLabel(t.test),
+      category: t.test.category,
       publishedAt: t.publishedAt,
     }));
   } catch {
@@ -161,6 +161,8 @@ function clean(raw: unknown, max: number, multiline = false): string {
 }
 
 export interface TestForm {
+  /** One of the catalogue's categories; the form has always meant air purifiers when it sends none. */
+  category?: string;
   name: string;
   skus: string[];
   verdict: string;
@@ -180,11 +182,22 @@ export function buildTests(
   suffix: string,
 ): { ok: true; test: VerifiedTest; placebo: VerifiedTest } | { ok: false; errors: string[] } {
   const errors: string[] = [];
-  const skus = [...new Set(form.skus)]
-    .map((upc) => PRODUCTS.find((p) => p.upc === upc && p.category === CREATOR_CATEGORY))
-    .filter((p) => p !== undefined)
+  const category = creatorCategory(form.category || DEFAULT_CREATOR_CATEGORY);
+  if (!category)
+    return { ok: false, errors: ["Pick a category: air purifiers, robot vacuums or headphones."] };
+  const found = [...new Set(form.skus)].map((upc) => PRODUCTS.find((p) => p.upc === upc));
+  // A product we don't sell is dropped; one from another category is said out loud, because it
+  // would never be shown to anyone searching this category.
+  const known = found.filter((p) => p !== undefined);
+  const skus = known
+    .filter((p) => p.category === category.id)
     .map((p) => ({ upc: p.upc, brand: p.brand, name: p.name }));
+  const stray = known.filter((p) => p.category !== category.id);
   if (!form.name) errors.push("Add the name you publish under.");
+  if (stray.length)
+    errors.push(
+      `Pick ${category.noun} only: ${stray.map((p) => `${p.brand} ${p.name}`).join(", ")} ${stray.length === 1 ? "isn't one" : "aren't"}.`,
+    );
   if (skus.length < 2) errors.push("Pick at least two products: a test compares them.");
   const verdictUpc = form.verdict === "close" ? undefined : form.verdict;
   if (form.verdict !== "close" && !skus.some((s) => s.upc === verdictUpc))
@@ -194,8 +207,8 @@ export function buildTests(
   if (!/commission/i.test(form.disclosure))
     errors.push("The disclosure must say you may earn a commission.");
   if (!form.placeboTopic) errors.push("Give your placebo article a topic.");
-  if (/purifier/i.test(form.placeboTopic))
-    errors.push("The placebo must be about something other than air purifiers.");
+  if (category.placeboBan.test(form.placeboTopic))
+    errors.push(`The placebo must be about something other than ${category.noun}.`);
   if (form.placeboSummary.length < 40)
     errors.push("Describe the placebo article in at least 40 characters.");
   if (errors.length) return { ok: false, errors };
@@ -208,7 +221,7 @@ export function buildTests(
     id: `${creatorId}-t-${suffix}`,
     kind: "test",
     creatorId,
-    category: CREATOR_CATEGORY,
+    category: category.id,
     skus,
     ...(verdictUpc ? { verdictUpc } : {}),
     summary: form.summary,
@@ -249,6 +262,7 @@ creators.get("/", async (c) => {
   const creatorId = await creatorIdFor(s.payerId);
   const publishedId = c.req.query("published");
   const tests = await publishedTests(c, creatorId);
+  const published = tests.find((t) => t.id === publishedId && t.kind === "test");
   return page(
     publishPage({
       name: s.name,
@@ -256,8 +270,8 @@ creators.get("/", async (c) => {
       creatorId,
       simulated: s.mode === "simulated",
       csrf: await csrfToken(c.env.SESSION_SECRET, s),
-      products: PRODUCTS.filter((p) => p.category === CREATOR_CATEGORY),
-      category: CREATOR_CATEGORY,
+      products: PRODUCTS,
+      category: published?.category ?? DEFAULT_CREATOR_CATEGORY,
       defaultDisclosure: DEFAULT_DISCLOSURE,
       dashboardUrl: studioUrl(creatorId, c.req.query("as") ?? s.name),
       tests,
@@ -265,10 +279,11 @@ creators.get("/", async (c) => {
         ...(await payoutChoice(c, creatorId)),
         ...(c.req.query("payout") === "saved" ? { saved: true } : {}),
       },
-      ...(publishedId && tests.some((t) => t.id === publishedId)
+      ...(publishedId && published
         ? {
             published: {
               testId: publishedId,
+              category: published.category,
               studioUrl: studioUrl(creatorId, c.req.query("as") ?? s.name),
             },
           }
@@ -378,6 +393,7 @@ creators.post("/tests", async (c) => {
     return page(messagePage("Form expired", "Reload the creators page and publish again."), 403);
   const rawSkus = body.skus;
   const form: TestForm = {
+    category: cleanCreatorText(body.category, 24) || DEFAULT_CREATOR_CATEGORY,
     name: cleanCreatorText(body.name, CREATOR_TEXT_LIMITS.name),
     skus: (Array.isArray(rawSkus) ? rawSkus : rawSkus === undefined ? [] : [rawSkus])
       .filter((x): x is string => typeof x === "string")
@@ -398,11 +414,15 @@ creators.post("/tests", async (c) => {
         creatorId,
         simulated: s.mode === "simulated",
         csrf: await csrfToken(c.env.SESSION_SECRET, s),
-        products: PRODUCTS.filter((p) => p.category === CREATOR_CATEGORY),
-        category: CREATOR_CATEGORY,
+        products: PRODUCTS,
+        category: creatorCategory(form.category)?.id ?? DEFAULT_CREATOR_CATEGORY,
         defaultDisclosure: DEFAULT_DISCLOSURE,
         dashboardUrl: studioUrl(creatorId, form.name || s.name),
-        values: { ...form, skus: form.skus },
+        values: {
+          ...form,
+          category: creatorCategory(form.category)?.id ?? DEFAULT_CREATOR_CATEGORY,
+          skus: form.skus,
+        },
         errors,
         tests: await publishedTests(c, creatorId),
         payout: await payoutChoice(c, creatorId),
@@ -459,7 +479,7 @@ creators.post("/payout", async (c) => {
         simulated: s.mode === "simulated",
         csrf: await csrfToken(c.env.SESSION_SECRET, s),
         products: PRODUCTS,
-        category: CREATOR_CATEGORY,
+        category: DEFAULT_CREATOR_CATEGORY,
         defaultDisclosure: DEFAULT_DISCLOSURE,
         dashboardUrl: studioUrl(creatorId, s.name),
         tests: await publishedTests(c, creatorId),
