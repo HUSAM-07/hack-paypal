@@ -150,7 +150,7 @@ function verdictOf(t: VerifiedTest): string {
   return p ? clean1(`${p.brand} ${p.name}`, 80) : "Verdict on one of the products";
 }
 
-const pp = (x: number) => `${x >= 0 ? "+" : "−"}${Math.abs(x * 100).toFixed(1)} pp`;
+const pp = (x: number) => `${x >= 0 ? "+" : "−"}${Math.abs(x * 100).toFixed(1)} points`;
 
 function measuredFor(t: VerifiedTest, fixture: boolean): MeasuredView | null {
   const m = fixture ? MEASURED[t.id] : undefined;
