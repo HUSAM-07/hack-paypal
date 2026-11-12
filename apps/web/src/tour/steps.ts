@@ -46,7 +46,7 @@ export const TOUR_STOPS: readonly TourStop[] = [
     hash: "result",
     label: "The eval",
     caption:
-      "Agents shown the creator's test bought the tested pick 57/57 times; agents shown a placebo from the same creator, 3/54. That is +94pp, and CITED pays on the 80% lower bound, +90.3pp.",
+      "Agents shown the creator's test bought the tested pick 57/57 times; agents shown a placebo from the same creator, 3/54. That is +94 points, and CITED pays on the cautious 80% lower bound, +90.3 points.",
   },
   {
     path: "/studio",
@@ -67,7 +67,7 @@ export const TOUR_STOPS: readonly TourStop[] = [
     hash: "vacuums",
     label: "Second category",
     caption:
-      "The same study on robot vacuums: 57/57 against 45/54, +16.7pp (80% lower bound +11.7pp). Smaller, and Sonnet showed no lift; the page says so.",
+      "The same study on robot vacuums: 57/57 against 45/54, +16.7 points (80% lower bound +11.7 points). Smaller, and Sonnet showed no lift; the page says so.",
   },
   {
     path: "/mcp",

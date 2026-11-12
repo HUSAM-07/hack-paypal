@@ -52,7 +52,7 @@ test("the landing starts the tour, Next and Back carry it across pages, Esc ends
 test("a stop can be opened directly, and the bar leaves the page readable", async ({ page }) => {
   await page.goto("/proof?tour=4#result");
   const bar = page.getByRole("region", { name: "Guided tour" });
-  await expect(bar).toContainText("+90.3pp");
+  await expect(bar).toContainText("+90.3 points");
   const noOverflow = await page.evaluate(
     () => document.documentElement.scrollWidth <= document.documentElement.clientWidth,
   );
