@@ -1,0 +1,118 @@
+<div id="root" data-composition-id="main" data-start="0" data-duration="67" data-width="1920" data-height="1080">
+
+  <!-- 1. The mark builds, then the camera pushes into the disc -->
+  <section id="s1" class="scene clip" data-start="0" data-duration="3.4">
+    <div class="cam"><div class="center"><div class="hero-mark">{{mark}}</div></div></div>
+  </section>
+
+  <!-- 2. A notification on the primary field: the agent bought while you were away -->
+  <section id="s2" class="scene clip field-primary" data-start="3" data-duration="3.8">
+    <div class="cam"><div class="center"><div class="frag w760 s15">{{part:awc}}</div></div></div>
+  </section>
+
+  <!-- 3. Introducing CITED, stickers orbit like teammates -->
+  <section id="s3" class="scene clip" data-start="6.6" data-duration="4.2">
+    <div class="cam"><div class="center">
+      <div class="intro">
+        <span class="intro-w">Introducing</span>
+        <span class="intro-brand"><span class="intro-mark">{{mark}}</span><span class="intro-name">CITED</span></span>
+        <span class="intro-chip">Shop + Creators</span>
+      </div>
+      <div class="orbit">
+        <span class="o o1">{{sticker:robot}}</span><span class="o o2">{{sticker:cart}}</span>
+        <span class="o o3">{{sticker:passport}}</span><span class="o o4">{{sticker:coins}}</span>
+        <span class="o o5">{{sticker:microphone}}</span><span class="o o6">{{sticker:receipt}}</span>
+      </div>
+    </div></div>
+  </section>
+
+  <section id="s4" class="scene clip" data-start="10.8" data-duration="2.2">
+    <div class="center"><h1 class="title">{{title:An agent that *shops* for you.}}</h1></div>
+  </section>
+
+  <!-- 5. The composer: the ask, typed -->
+  <section id="s5" class="scene clip field-soft" data-start="13" data-duration="4">
+    <div class="cam"><div class="center"><div class="frag w760 s18 composer-host">{{part:composer}}</div></div></div>
+  </section>
+
+  <!-- 5b. Kinetic type whip -->
+  <section id="s5b" class="scene clip field-soft" data-start="16.6" data-duration="1.4">
+    <div class="whip"><span>noise-cancelling headphones under $350</span></div>
+  </section>
+
+  <!-- 6. Tool call renders product cards -->
+  <section id="s6" class="scene clip" data-start="17.8" data-duration="5">
+    <div class="cam"><div class="center"><div class="frag w1100 s14 stackcol">
+      <div class="thread__item">{{item:0}}</div>
+      <div class="thread__item">{{item:2}}</div>
+    </div></div></div>
+  </section>
+
+  <!-- 7. Offer comparison, cursor picks -->
+  <section id="s7" class="scene clip field-soft" data-start="22.6" data-duration="5.4">
+    <div class="cam"><div class="center"><div class="frag w820 s13">{{item:5}}</div></div>
+    <svg class="cursor" viewBox="0 0 32 32" aria-hidden="true"><path d="M6 3l19 12.5-8.2 1.6 4.9 9.4-3.6 1.9-4.9-9.5L6 25z"/></svg></div>
+  </section>
+
+  <section id="s8" class="scene clip" data-start="28" data-duration="2.2">
+    <div class="center"><h1 class="title">{{title:Spends only with *your OK*.}}</h1></div>
+  </section>
+
+  <!-- 9. Approval → authorized, with the undo window counting down -->
+  <section id="s9" class="scene clip field-soft" data-start="30.2" data-duration="7">
+    <div class="cam">
+      <div class="center"><div class="frag w760 s14 st-approval">{{item:9}}</div></div>
+      <div class="center"><div class="frag w760 s14 st-order"><div class="thread__item">{{item:10}}</div><div class="thread__item">{{item:11}}</div></div></div>
+      <svg class="cursor" viewBox="0 0 32 32" aria-hidden="true"><path d="M6 3l19 12.5-8.2 1.6 4.9 9.4-3.6 1.9-4.9-9.5L6 25z"/></svg>
+    </div>
+  </section>
+
+  <!-- 10. Light → dark wipe; the price watch fires the auto-buy -->
+  <section id="s10" class="scene clip" data-start="37" data-duration="8">
+    <div class="center"><h1 class="title">{{title:Light or *dark*.}}</h1></div>
+    <div class="wipe theme-dark">
+      <div class="cam"><div class="center">
+        <div class="pair">
+          <div class="frag w640 stack watchstack"><div class="w-on">{{item:19}}</div><div class="w-done">{{item:23}}</div></div>
+          <div class="frag w640 auto-order">{{item:25}}</div>
+        </div>
+      </div></div>
+    </div>
+  </section>
+
+  <section id="s11" class="scene clip" data-start="45" data-duration="2.4">
+    <div class="center"><h1 class="title">{{title:And pays the creators *who caused it*.}}</h1></div>
+  </section>
+
+  <!-- 12. Three arms: test, placebo, nothing -->
+  <section id="s12" class="scene clip" data-start="47.4" data-duration="5">
+    <div class="cam"><div class="center"><div class="cited-wrap">
+      <p class="kicker">Same ranking. Agents see the test, a placebo, or nothing.</p>
+      <div class="frag w1030 s15">{{cited:field}}</div>
+    </div></div></div>
+  </section>
+
+  <!-- 13. 147 sessions, one square each -->
+  <section id="s13" class="scene clip" data-start="52.2" data-duration="5.2">
+    <div class="cam"><div class="top"><div class="frag w1030 s15 sessions-host">{{cited:sessions}}</div></div></div>
+  </section>
+
+  <!-- 14. The PayPal API trail, ending in the creator payout -->
+  <section id="s14" class="scene clip" data-start="57.2" data-duration="4.8">
+    <div class="cam"><div class="center"><div class="frag w1030 s15 trail-host">{{cited:apitrail}}</div></div></div>
+  </section>
+
+  <!-- 15. Outro: the stickers fold into the mark -->
+  <section id="s15" class="scene clip" data-start="62" data-duration="5">
+    <div class="center">
+      <div class="lineup">
+        <span class="l">{{sticker:robot}}</span><span class="l">{{sticker:cart}}</span><span class="l">{{sticker:passport}}</span><span class="l">{{sticker:coins}}</span><span class="l">{{sticker:microphone}}</span>
+      </div>
+      <div class="end">
+        <div class="end-brand"><span class="end-mark">{{mark}}</span><span class="end-name">CITED</span></div>
+        <p class="end-tag">Shops with your OK. Pays creators on proven lift.</p>
+        <p class="end-by">Built on PayPal</p>
+      </div>
+    </div>
+  </section>
+</div>

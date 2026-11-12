@@ -22,17 +22,18 @@ export const SITE_OG_IMAGE = {
 };
 
 /**
- * The mark's geometry, in a 24×24 box: a disc with an arc cut out (a holdout) and a dot cut out
- * (the credited sale). The top bar draws it with currentColor; the icons draw it with the tokens.
+ * The mark's geometry, in a 24×24 box: a disc with a "C" cut out, open to the right (the holdout
+ * gap), and a dot cut out in its mouth (the credited sale). The top bar draws it with
+ * currentColor (SITE_MARK_SVG); the icons draw it with the tokens.
  */
 export const SITE_MARK = {
   disc: { cx: 12, cy: 12, r: 11 },
-  arc: "M16.6 8.2A6 6 0 1 0 17.6 14",
-  arcWidth: 2.2,
-  dot: { cx: 17.4, cy: 10.9, r: 1.5 },
+  arc: "M15.47 16.14A5.4 5.4 0 1 1 15.47 7.86",
+  arcWidth: 2.8,
+  dot: { cx: 17.4, cy: 12, r: 1.9 },
 } as const;
 
-const markCutouts = (stroke: string) => {
+export const markCutouts = (stroke: string) => {
   const { arc, arcWidth, dot } = SITE_MARK;
   return `<path d="${arc}" fill="none" stroke="${stroke}" stroke-width="${arcWidth}" stroke-linecap="round"/><circle cx="${dot.cx}" cy="${dot.cy}" r="${dot.r}" fill="${stroke}"/>`;
 };
@@ -55,7 +56,7 @@ export function appIconSvg(size: number, inset = 0.18, rounded = true): string {
   const pad = size * inset;
   const scale = (size - 2 * pad) / 24;
   const rx = rounded ? size * 0.22 : 0;
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}"><rect width="${size}" height="${size}" rx="${rx}" fill="${background}"/><g transform="translate(${pad} ${pad}) scale(${scale})"><circle cx="12" cy="12" r="11" fill="${primary}"/>${markCutouts(background)}</g></svg>`;
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}"><rect width="${size}" height="${size}" rx="${rx}" fill="${background}"/><g transform="translate(${pad} ${pad}) scale(${scale})"><circle cx="${SITE_MARK.disc.cx}" cy="${SITE_MARK.disc.cy}" r="${SITE_MARK.disc.r}" fill="${primary}"/>${markCutouts(background)}</g></svg>`;
 }
 
 /** The PNG icons generated from appIconSvg (apps/web/scripts/gen-icons.ts). */

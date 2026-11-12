@@ -62,6 +62,10 @@ The page is a sheet of paper: one bordered column, sections stacked with dashed 
   `.ui-label` (mono uppercase label), `.ui-btn` with `-solid`, `-quiet` or `-primary`.
 - Radius: `--radius` (0.45rem) for controls, 10px for buttons and pills, 6px for cards. No big rounded cards.
 - Spacing: `--pad` (24px, 16px under 640px) inside the column.
+- Motion: `--ease-out` with `--dur-fast` (150ms), `--dur` (220ms) or `--dur-slow` (300ms). Hovers that move
+  things (rotate, scale, translate) sit inside `(hover:hover) and (pointer:fine)` and `prefers-reduced-motion:no-preference`;
+  colour hovers don't need the gate. Pressed rows and cells darken to `--fill-strong` rather than scale.
+- Wrapping: headings `text-wrap:balance`, body copy `text-wrap:pretty`. Flex rows give their text `min-width:0`.
 
 Server-rendered pages: put `SITE_THEME_CSS` **first** in `<style>`, then the page CSS, then
 `SITE_HEADER_CSS`; put `SITE_HEAD_HTML` in `<head>` and `siteHeader()` at the top of `<body>`.
@@ -75,7 +79,8 @@ React entries: import `styles/site-theme.css` first and render `<SiteHeader />`;
   magnifier, microphone, passport, purifier, receipt, robot, stamp). Use them small, beside headings,
   with `filter: var(--shadow-sticker)` and `alt=""`. To add one, generate it with the Codex CLI
   (`image_generation`) in the same style and run `scripts/optimize-stickers.ts`.
-- The mark (`SITE_MARK` in `packages/protocol/src/meta.ts`) is the only logo. Favicon, app icons and the
+- The mark (`SITE_MARK` in `packages/protocol/src/meta.ts`) is the only logo: a disc with a "C" cut out, open
+  to the right (the holdout), and a dot in its mouth (the credited sale). `SITE_MARK_SVG` is built from it. Favicon, app icons and the
   manifest are generated from it by `scripts/gen-icons.ts`; don't hand-edit them.
 - The dither field (`components/magicui/dither-field.tsx`) is for the footer and the bottom fade.
 
@@ -93,8 +98,11 @@ Before using a component from shadcn, agentsUI (components.ihusam.tech), Magic U
 
 ## 6. Responsive and accessible
 
-- Works from 320px up; no horizontal page scroll at 375px. Breakpoints in use: 640px (single column,
-  `--pad` 16px), 760px (nav wraps under the mark), 1100px (left rail hides), 1180px (margin notes hide).
+- Works from 320px up; no horizontal page scroll at 320px. Breakpoints in use: 400px (the bar drops the
+  GitHub icon), 640px (single column, `--pad` 16px), 760px (nav wraps under the mark), 800px (columns clip
+  sideways overflow with `overflow-x:clip`), 900px (tighter nav pills), 1100px (left rail hides), 1240px
+  (margin notes hide).
+- Anchor links land below the sticky bar: `SITE_HEADER_CSS` sets `scroll-padding-top` from `--site-top-h`.
 - Touch targets at least 40×40px on coarse pointers (the shared header already does this).
 - Every page has the skip link (`siteHeader` / `<SiteHeader skip />`) and a `<main id="main">`.
 - Visible focus: `:focus-visible` uses `--primary`. Text meets WCAG AA on both themes (the token

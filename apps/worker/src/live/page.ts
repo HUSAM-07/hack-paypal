@@ -134,9 +134,9 @@ code{font-size:12px;overflow-wrap:anywhere}
 .note p + p{margin-top:10px;font:400 14px/1.6 var(--font-sans);color:var(--muted-foreground)}
 .tally h3{margin:0 0 10px;font:400 11px/1.4 var(--font-mono);letter-spacing:.06em;text-transform:uppercase;color:var(--muted-foreground)}
 .tally[hidden]{display:none}
-.trow{display:grid;grid-template-columns:110px auto 1fr;align-items:center;gap:14px;padding:8px 0;border-top:1px dashed var(--border);font-size:14px}
+.trow{display:grid;grid-template-columns:110px auto minmax(0,1fr);align-items:center;gap:14px;padding:8px 0;border-top:1px dashed var(--border);font-size:14px}
 .trow b{font-weight:600;color:var(--lane-ink)}
-.dots{display:flex;gap:5px}
+.dots{display:flex;flex-wrap:wrap;gap:5px}
 .dot{width:12px;height:12px;border-radius:50%;border:1.5px solid var(--lane-ink);background:transparent}
 .dot.y{background:var(--lane-ink)}
 .dot.x{border-style:dashed;opacity:.5}
