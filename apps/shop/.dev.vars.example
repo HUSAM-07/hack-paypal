@@ -1,0 +1,11 @@
+# Copy to .dev.vars (gitignored). Names only; never commit values.
+# fake (offline, default) | openrouter
+MODEL_PROVIDER=
+OPENROUTER_API_KEY=
+# Optional OpenRouter model id, default anthropic/claude-sonnet-5.5
+SHOP_MODEL=
+# Optional: route model calls through Cloudflare AI Gateway
+CF_ACCOUNT_ID=
+AI_GATEWAY_ID=
+# Optional: authenticated AI Gateway token
+CF_AIG_TOKEN=

@@ -8,8 +8,9 @@
   },
   "scripts": {
     "dev": "wrangler dev --port 8810",
+    "client": "tsx scripts/ws-client.ts",
     "typecheck": "tsc -p tsconfig.json",
-    "test": "vitest run --passWithNoTests"
+    "test": "vitest run"
   },
   "dependencies": {
     "@ag-ui/core": "^1.0.4",

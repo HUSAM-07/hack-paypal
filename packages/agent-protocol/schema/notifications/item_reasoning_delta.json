@@ -1,0 +1,22 @@
+{
+  "title": "item/reasoning/delta",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "threadId": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "itemId": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "delta": {
+      "type": "string"
+    }
+  },
+  "required": ["threadId", "itemId", "delta"],
+  "additionalProperties": false
+}

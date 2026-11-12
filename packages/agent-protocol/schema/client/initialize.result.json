@@ -1,0 +1,28 @@
+{
+  "title": "initialize result",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "userAgent": {
+      "type": "string"
+    },
+    "protocolVersion": {
+      "type": "integer",
+      "minimum": -9007199254740991,
+      "maximum": 9007199254740991
+    },
+    "userId": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "capabilities": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "required": ["userAgent", "protocolVersion", "userId", "capabilities"],
+  "additionalProperties": false
+}

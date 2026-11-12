@@ -1,3 +1,8 @@
 // Cloudflare layer for the shop vertical: ShopperAgent (per-user Durable Object = App Server),
-// CheckoutWorkflow, and the /api/shop routes mounted by pact-worker. Built in the shop-harness workstream.
-export {};
+// the /api/shop routes pact-worker mounts, the AG-UI adapter and the domain seam.
+export { type ShopEnv, ShopperAgent } from "./agent";
+export * from "./agui";
+export * from "./domain";
+export { type ShopRouterOptions, shopRouter } from "./router";
+export { migrateShopTables, SqlStateStore, type SqlTag, SqlThreadStore } from "./sql-store";
+export { initialShopState, stubDomain } from "./stub-domain";

@@ -333,6 +333,11 @@ export const ServerNotifications = {
   "thread/updated": z.object({ thread: Thread }),
   "turn/started": z.object({ turn: Turn }),
   "turn/completed": z.object({ turn: Turn }),
+  /**
+   * A turn changed status without ending: it paused on an approval (`awaitingApproval`) or
+   * resumed after one (`inProgress`). Additive; clients that ignore it still see the items.
+   */
+  "turn/updated": z.object({ turn: Turn }),
   "item/started": z.object({ item: Item }),
   "item/agentMessage/delta": z.object({ threadId: Id, itemId: Id, delta: z.string() }),
   "item/reasoning/delta": z.object({ threadId: Id, itemId: Id, delta: z.string() }),
