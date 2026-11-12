@@ -70,6 +70,7 @@ live.get("/", (c) => {
       request: tryCategory(category).examples[0],
       agent: choice.label,
       scripted: choice.kind === "scripted",
+      paypalMode: c.env.CITED_PAYPAL_MODE ?? c.env.PAYPAL_MODE,
     }),
   );
 });
