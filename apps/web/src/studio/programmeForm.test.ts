@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   canContinue,
+  categoryOf,
   exampleLine,
   type FormState,
   firstOpenCategory,
@@ -9,6 +10,7 @@ import {
   PROMISES,
   parseDollars,
   parsePercent,
+  productOf,
   reduce,
   requestOf,
   reviewOf,
@@ -142,6 +144,15 @@ describe("the words before confirming", () => {
       "A sale at $295.99 that a creator's test caused pays creators $35.51.",
     );
     expect(exampleLine(null, 800)).toBeNull();
+    // The third category: $345.99 at Lumen, 12% rounded down to the cent: $41.51.
+    expect(exampleLine("100000000021", 1_200)).toBe(
+      "A sale at $345.99 that a creator's test caused pays creators $41.51.",
+    );
+  });
+  it("offers noise-cancelling headphones as a third category with two products", () => {
+    expect(productOf("100000000021")).toMatchObject({ category: "headphones", brandId: "bose" });
+    expect(categoryOf("headphones")?.products.map((p) => p.brandId)).toEqual(["sony", "bose"]);
+    expect(categoryOf("headphones")?.label).toBe("Noise-cancelling headphones");
   });
   it("is honest that the hosted demo makes no PayPal order", () => {
     const priv = outcomeMessage({ private: true, depositMinor: 50_000, brand: "Roborock" });

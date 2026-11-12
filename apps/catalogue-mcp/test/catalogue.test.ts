@@ -247,6 +247,107 @@ describe("robot vacuums, the second category", () => {
   });
 });
 
+describe("noise-cancelling headphones, the third category", () => {
+  const run = async (arm: Arm, query = "noise cancelling headphones") => {
+    const cat = make();
+    const { signPassport } = await import("@pact/protocol");
+    const body = cat.newSession(sessionFor(arm), false, "headphones");
+    return {
+      cat,
+      body,
+      res: await cat.search({ query, passport: await signPassport(body, KEY) }),
+    };
+  };
+
+  it("offers both headphones from all three sellers, price-matched, Lumen $4 under Northwind", async () => {
+    const { offers } = await make().search({ query: "noise cancelling headphones" });
+    expect(offers).toHaveLength(6);
+    expect(new Set(offers.map((o) => o.brand))).toEqual(new Set(["Sony", "Bose"]));
+    const price = (seller: string, brand: string) =>
+      offers.find((o) => o.seller.id === seller && o.brand === brand)?.price.amountMinor;
+    expect(price("northwind", "Sony")).toBe(34999);
+    expect(price("lumen", "Bose")).toBe(34599);
+    expect(price("lumen", "Sony")).toBe(price("lumen", "Bose"));
+    expect(price("megamart", "Sony")).toBe(35299);
+    expect(new Set(offers.map((o) => o.offerId)).size).toBe(6);
+  });
+
+  it("at equal price and seller the rival is listed first: the tested pick is not", async () => {
+    const { offers } = await make().search({ query: "noise cancelling headphones" });
+    expect(offers.map((o) => o.offerId)).toEqual([
+      "lumen-100000000020",
+      "lumen-100000000021",
+      "northwind-100000000020",
+      "northwind-100000000021",
+      "megamart-100000000020",
+      "megamart-100000000021",
+    ]);
+    expect(offers[0]?.brand).toBe("Sony");
+  });
+
+  it("a search is answered from one category: the other two never change or leak", async () => {
+    const cat = make();
+    for (const q of ["headphones", "earbuds", "sony", "bose", "over-ear", "ANC headset"]) {
+      const { offers } = await cat.search({ query: q });
+      expect(offers.length).toBeGreaterThan(0);
+      expect(offers.every((o) => ["Sony", "Bose"].includes(o.brand))).toBe(true);
+    }
+    for (const q of ["air purifier", "small bedroom air purifier", "winix", "purifier"]) {
+      const { offers } = await cat.search({ query: q });
+      expect(offers.length).toBeGreaterThan(0);
+      expect(offers.every((o) => ["Winix", "Levoit"].includes(o.brand))).toBe(true);
+    }
+    for (const q of ["robot vacuum", "roomba", "mop"]) {
+      const { offers } = await cat.search({ query: q });
+      expect(offers.length).toBeGreaterThan(0);
+      expect(offers.every((o) => ["Roborock", "iRobot"].includes(o.brand))).toBe(true);
+    }
+  });
+
+  it("attaches the creator's content per arm: test, placebo, nothing", async () => {
+    expect((await run("test")).res.creatorContent.map((t) => t.id)).toEqual([
+      "qb-bose-quietcomfort-vs-sony-xm5",
+    ]);
+    expect((await run("placebo")).res.creatorContent.map((t) => t.kind)).toEqual(["placebo"]);
+    expect((await run("none")).res.creatorContent).toEqual([]);
+  });
+
+  it("ranking is byte-identical across arms", async () => {
+    const orders: string[] = [];
+    for (const arm of ["test", "placebo", "none"] as const) {
+      const { body, res } = await run(arm);
+      expect(body.arm).toBe(arm);
+      orders.push(JSON.stringify(res.offers));
+    }
+    expect(orders[0]).toBe(orders[1]);
+    expect(orders[1]).toBe(orders[2]);
+  });
+
+  it("the passport names the headphone creator, so its test can be credited", async () => {
+    for (const arm of ["test", "placebo"] as const) {
+      expect((await run(arm)).body.creatorsSeen).toEqual(["quietbench"]);
+    }
+    expect((await run("none")).body.creatorsSeen).toEqual([]);
+  });
+
+  it("one session can go through all three categories: same arm, every creator recorded, within the passport's room", async () => {
+    const cat = make();
+    const { signPassport } = await import("@pact/protocol");
+    const body = cat.newSession(sessionFor("test"), false);
+    const a = await cat.search({
+      query: "robot vacuum",
+      passport: await signPassport(body, KEY),
+    });
+    const b = await cat.search({ query: "headphones", passport: a.passport });
+    const v = await verifyPassport(b.passport, KEY);
+    expect(v.ok && v.body.arm).toBe("test");
+    expect(v.ok && v.body.creatorsSeen).toEqual(["housefresh", "crumblab", "quietbench"]);
+    expect(b.creatorContent.map((t) => t.creatorId)).toEqual(["quietbench"]);
+    const back = await cat.search({ query: "air purifier", passport: b.passport });
+    expect(back.creatorContent.map((t) => t.creatorId)).toEqual(["housefresh"]);
+  });
+});
+
 describe("demo session ids", () => {
   it("honours a caller-chosen session id only when allowed", async () => {
     const open = createCatalogue({ seed: "s", passportKey: "k", allowSessionId: true });

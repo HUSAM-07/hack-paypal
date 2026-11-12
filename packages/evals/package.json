@@ -15,7 +15,9 @@
     "cited:run:price": "tsx src/cited/run.ts --set price-matched",
     "cited:summarize:price": "tsx src/cited/summarize.ts results/cited-price-matched price-matched",
     "cited:run:vacuum": "tsx src/cited/run.ts --set robot-vacuum",
-    "cited:summarize:vacuum": "tsx src/cited/summarize.ts results/cited-robot-vacuum robot-vacuum"
+    "cited:summarize:vacuum": "tsx src/cited/summarize.ts results/cited-robot-vacuum robot-vacuum",
+    "cited:run:headphones": "tsx src/cited/run.ts --set headphones",
+    "cited:summarize:headphones": "tsx src/cited/summarize.ts results/cited-headphones headphones"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^4.0.94",
