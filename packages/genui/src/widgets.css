@@ -235,7 +235,8 @@
   flex-shrink: 0;
   overflow: hidden;
   border-radius: var(--aui-radius-md);
-  background: var(--aui-surface-2);
+  /* Photo backdrop: --card until the theme has a dedicated role. */
+  background: var(--card);
   box-shadow: inset 0 0 0 1px var(--aui-border);
   color: var(--aui-fg-faint);
 }
@@ -651,7 +652,8 @@
 .g-product__media {
   position: relative;
   aspect-ratio: 4 / 3;
-  background: var(--aui-surface-2);
+  /* Photo backdrop: --card until the theme has a dedicated role. */
+  background: var(--card);
   border-bottom: 1px dashed var(--border);
 }
 .g-product__media > .g-skel.g-skel {
