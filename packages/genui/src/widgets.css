@@ -128,7 +128,7 @@
 }
 .g-price[data-size="lg"],
 .g-price[data-size="xl"] {
-  font-family: var(--font-serif, var(--aui-font));
+  font-family: var(--font-serif);
   font-weight: 400;
   letter-spacing: -0.02em;
   line-height: 1;
@@ -176,7 +176,7 @@
   gap: 6px;
   height: 22px;
   padding: 0 8px;
-  border-radius: var(--aui-radius-pill);
+  border-radius: 10px;
   background: var(--_bg);
   color: var(--_c);
   font-size: 11.5px;
@@ -201,8 +201,8 @@
   --_bg: var(--aui-danger-soft);
 }
 .g-pill[data-tone="paypal"] {
-  --_c: var(--paypal, var(--aui-accent-text));
-  --_bg: color-mix(in oklab, var(--paypal, var(--aui-accent)) 9%, transparent);
+  --_c: var(--paypal);
+  --_bg: color-mix(in oklab, var(--paypal) 9%, transparent);
 }
 .g-pill__dot {
   width: 6px;
@@ -349,9 +349,9 @@
   max-width: 200px;
   height: 24px;
   padding: 0 8px 0 3px;
-  border-radius: var(--aui-radius-pill);
-  background: var(--aui-surface);
-  box-shadow: 0 0 0 1px var(--aui-border);
+  border-radius: 10px;
+  background: var(--card);
+  border: 1px dashed var(--border);
   font-size: var(--aui-text-sm);
   color: var(--aui-fg-muted);
   text-decoration: none;
@@ -384,9 +384,9 @@
 .g-card {
   position: relative;
   padding: 16px;
+  border: 1px dashed var(--border);
   border-radius: var(--aui-radius-card);
-  background: var(--aui-surface);
-  box-shadow: var(--aui-shadow-card);
+  background: var(--card);
 }
 .g-card--flush {
   padding: 0;
@@ -508,12 +508,11 @@
   padding: 0;
 }
 .g-btn--quiet {
-  background: var(--aui-surface);
-  color: var(--aui-fg-strong);
-  box-shadow: var(--aui-shadow-field);
+  background: var(--fill);
+  color: var(--foreground);
 }
 .g-btn--quiet:hover:not(:disabled) {
-  background: var(--aui-hover);
+  background: var(--fill-strong);
 }
 .g-btn--ghost {
   background: transparent;
@@ -531,13 +530,12 @@
   background: color-mix(in oklab, var(--aui-danger) 18%, transparent);
 }
 .g-btn--paypal {
-  --_pp: var(--paypal, var(--aui-accent));
-  background: color-mix(in oklab, var(--_pp) 10%, var(--aui-surface));
-  color: var(--_pp);
-  box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--_pp) 22%, transparent);
+  background: color-mix(in oklab, var(--paypal) 10%, var(--card));
+  color: var(--paypal);
+  box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--paypal) 24%, transparent);
 }
 .g-btn--paypal:hover:not(:disabled) {
-  background: color-mix(in oklab, var(--_pp) 16%, var(--aui-surface));
+  background: color-mix(in oklab, var(--paypal) 16%, var(--card));
 }
 .g-btn__step {
   display: inline-flex;
@@ -562,7 +560,7 @@
   font-weight: 800;
   font-style: italic;
   letter-spacing: -0.02em;
-  color: var(--paypal, var(--aui-accent));
+  color: var(--paypal);
 }
 .g-ppmark__pal {
   opacity: 0.72;
@@ -635,23 +633,21 @@
   width: 100%;
   min-width: 0;
   overflow: hidden;
+  border: 1px dashed var(--border);
   border-radius: var(--aui-radius-card);
-  background: var(--aui-surface);
-  box-shadow: var(--aui-shadow-card);
-  transition:
-    box-shadow var(--aui-dur) var(--aui-ease),
-    transform var(--aui-dur) var(--aui-ease);
+  background: var(--card);
+  transition: border-color var(--aui-dur) var(--aui-ease);
 }
 @media (hover: hover) {
   .g-product:not(.g-product--skel):hover {
-    box-shadow: var(--aui-shadow-pop);
+    border-color: color-mix(in oklab, var(--foreground) 24%, transparent);
   }
 }
 .g-product__media {
   position: relative;
   aspect-ratio: 4 / 3;
   background: var(--aui-surface-2);
-  border-bottom: 1px solid var(--aui-border);
+  border-bottom: 1px dashed var(--border);
 }
 .g-product__media > .g-skel.g-skel {
   height: 100%;
@@ -663,8 +659,8 @@
   left: 8px;
 }
 .g-product__badge .g-pill {
-  background: color-mix(in oklab, var(--aui-surface) 88%, transparent);
-  box-shadow: 0 0 0 1px var(--aui-border);
+  background: color-mix(in oklab, var(--card) 90%, transparent);
+  box-shadow: 0 0 0 1px var(--border);
   backdrop-filter: blur(6px);
 }
 .g-product__body {
@@ -1105,8 +1101,8 @@ button.g-watchrow:hover {
   margin: 0;
   padding: 12px 14px;
   border-radius: var(--aui-radius-md);
-  background: var(--aui-surface-2);
-  box-shadow: inset 0 0 0 1px var(--aui-border);
+  background: var(--band);
+  border: 1px dashed var(--border);
   font-size: var(--aui-text);
 }
 .g-receipt > div {
@@ -1148,9 +1144,9 @@ button.g-watchrow:hover {
   align-items: center;
   gap: 12px;
   padding: 12px;
+  border: 1px dashed var(--border);
   border-radius: var(--aui-radius-md);
-  background: var(--aui-surface);
-  box-shadow: 0 0 0 1px var(--aui-border);
+  background: var(--card);
 }
 .g-wallet__icon {
   display: grid;
@@ -1159,8 +1155,8 @@ button.g-watchrow:hover {
   height: 36px;
   flex-shrink: 0;
   border-radius: 10px;
-  background: color-mix(in oklab, var(--paypal, var(--aui-accent)) 10%, transparent);
-  color: var(--paypal, var(--aui-accent));
+  background: color-mix(in oklab, var(--paypal) 10%, transparent);
+  color: var(--paypal);
 }
 .g-wallet__icon svg {
   width: 18px;

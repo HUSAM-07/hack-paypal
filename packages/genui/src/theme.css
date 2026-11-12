@@ -1,8 +1,8 @@
 /*
  * Token bridge. The vendored agentsUI blocks read `--aui-*` variables; here every one of them
- * points at the host app's semantic tokens (shadcn names: background, foreground, card, primary,
- * muted, border, destructive, warning, ...). The kit defines no colour of its own, so a host's
- * light/dark swap (or any rebrand) restyles every widget with no JS.
+ * points at the CITED design system's semantic tokens (cited/spec/DESIGN.md; values live only in
+ * packages/protocol/src/theme.ts). The kit defines no colour of its own and uses no fallbacks,
+ * so the host's light/dark token swap restyles every widget with no JS.
  *
  * Declared on each widget root as well as :root so a theme scoped to a subtree still applies.
  */
@@ -10,8 +10,8 @@
 .aui-root,
 .genui {
   /* type */
-  --aui-font: var(--font-sans, ui-sans-serif, system-ui, sans-serif);
-  --aui-mono: var(--font-mono, ui-monospace, "SF Mono", Menlo, monospace);
+  --aui-font: var(--font-sans);
+  --aui-mono: var(--font-mono);
   --aui-text-xs: 11px;
   --aui-text-sm: 12px;
   --aui-text: 13px;
@@ -34,11 +34,11 @@
   --aui-surface-2: color-mix(in oklab, var(--muted) 50%, var(--card));
   --aui-surface-3: var(--muted);
   --aui-field: var(--card);
-  --aui-pop: var(--popover, var(--card));
-  --aui-muted: color-mix(in oklab, var(--foreground) 4%, transparent);
-  --aui-hover: color-mix(in oklab, var(--foreground) 5%, transparent);
-  --aui-active: color-mix(in oklab, var(--foreground) 8%, transparent);
-  --aui-selected: color-mix(in oklab, var(--foreground) 6%, transparent);
+  --aui-pop: var(--popover);
+  --aui-muted: var(--fill);
+  --aui-hover: var(--hover);
+  --aui-active: var(--fill-strong);
+  --aui-selected: var(--fill);
   --aui-tray: var(--muted);
 
   /* text */
@@ -61,51 +61,50 @@
   --aui-primary-fg: var(--background);
   --aui-accent: var(--primary);
   --aui-accent-fg: var(--primary-foreground);
-  --aui-accent-soft: color-mix(in oklab, var(--primary) 12%, transparent);
+  --aui-accent-soft: var(--primary-soft);
   --aui-accent-text: var(--primary);
   --aui-danger: var(--destructive);
   --aui-danger-text: var(--destructive);
-  --aui-danger-soft: color-mix(in oklab, var(--destructive) 10%, transparent);
+  --aui-danger-soft: var(--destructive-soft);
   --aui-danger-ring: color-mix(in oklab, var(--destructive) 55%, transparent);
   --aui-field-error-text: var(--destructive);
   --aui-field-error-edge: color-mix(in oklab, var(--destructive) 55%, transparent);
   --aui-field-error-bg: var(--aui-field);
-  /* The redesign has no success role; hosts may add `--success`, else money-safe states read primary. */
-  --aui-success: var(--success, var(--primary));
-  --aui-success-text: var(--success, var(--primary));
-  --aui-success-soft: color-mix(in oklab, var(--success, var(--primary)) 12%, transparent);
+  /* CITED has no green: money paid and "done" read primary (design system section 1). */
+  --aui-success: var(--primary);
+  --aui-success-text: var(--primary);
+  --aui-success-soft: var(--primary-soft);
   --aui-warning: var(--warning);
   --aui-warning-text: var(--warning);
-  --aui-warning-soft: color-mix(in oklab, var(--warning) 14%, transparent);
-  --aui-violet: var(--chart-2, var(--primary));
-  --aui-violet-soft: color-mix(in oklab, var(--chart-2, var(--primary)) 12%, transparent);
+  --aui-warning-soft: var(--warning-soft);
+  --aui-violet: var(--chart-2);
+  --aui-violet-soft: color-mix(in oklab, var(--chart-2) 12%, transparent);
   --aui-pink: var(--destructive);
   --aui-orange: var(--warning);
-  --aui-c1: var(--chart-1, var(--primary));
-  --aui-c2: var(--chart-2, var(--primary));
-  --aui-c3: var(--chart-3, var(--primary));
-  --aui-c4: var(--chart-4, var(--warning));
-  --aui-c5: var(--chart-5, var(--muted-foreground));
+  --aui-c1: var(--chart-1);
+  --aui-c2: var(--chart-2);
+  --aui-c3: var(--chart-3);
+  --aui-c4: var(--chart-4);
+  --aui-c5: var(--chart-5);
   --aui-c6: var(--muted-foreground);
 
-  /* elevation */
-  --aui-shadow-color: var(--shadow-color, color-mix(in oklab, var(--foreground) 10%, transparent));
-  --aui-shadow-card: 0 0 0 1px var(--border), 0 1px 2px 0 var(--aui-shadow-color);
-  --aui-shadow-field: 0 0 0 1px var(--input, var(--border)), 0 1px 2px 0 var(--aui-shadow-color);
-  --aui-shadow-pop: 0 0 0 1px var(--border), 0 16px 40px -12px var(--aui-shadow-color);
-  --aui-shadow-lift: 0 4px 12px -6px var(--aui-shadow-color);
+  /* elevation: hairlines, not shadows (only popovers float) */
+  --aui-shadow-card: 0 0 0 1px var(--border);
+  --aui-shadow-field: 0 0 0 1px var(--input);
+  --aui-shadow-pop: var(--shadow-pop);
+  --aui-shadow-lift: 0 0 0 1px var(--border);
   --aui-focus-ring: var(--primary);
   --aui-focus: 0 0 0 2px var(--aui-surface), 0 0 0 4px var(--aui-focus-ring);
   --aui-tray-ring: 0 0 0 0 transparent;
 
-  /* metrics */
-  --aui-radius-xs: 4px;
-  --aui-radius-sm: 5px;
-  --aui-radius: 7px;
-  --aui-radius-md: 8px;
-  --aui-radius-card: 12px;
-  --aui-radius-lg: 12px;
-  --aui-radius-xl: 16px;
+  /* metrics: --radius (0.45rem) controls, 10px buttons and pills, 6px cards */
+  --aui-radius-xs: 3px;
+  --aui-radius-sm: 4px;
+  --aui-radius: var(--radius);
+  --aui-radius-md: 6px;
+  --aui-radius-card: 6px;
+  --aui-radius-lg: 8px;
+  --aui-radius-xl: 10px;
   --aui-radius-pill: 999px;
   --aui-control-h: 32px;
   --aui-control-h-sm: 28px;

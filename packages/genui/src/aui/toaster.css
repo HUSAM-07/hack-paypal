@@ -2,40 +2,28 @@
   --_w: 356px;
   --_ease: cubic-bezier(0.22, 1, 0.36, 1);
   --_shadow:
-    0 0 0 0.5px rgba(0, 0, 0, 0.08), 0 1px 1px -1px rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(
-      0,
-      0,
-      0,
-      0.05
-    ),
-    0 10px 24px -10px rgba(0, 0, 0, 0.14);
+    0 0 0 0.5px color-mix(in oklab, var(--foreground) 8%, transparent), 0 1px 1px -1px color-mix(
+      in oklab,
+      var(--foreground) 10%,
+      transparent
+    ), 0 1px 2px 0 rgba(0, 0, 0, 0.05),
+    0 10px 24px -10px color-mix(in oklab, var(--foreground) 14%, transparent);
   --_btn-hover:
-    0 0 0 0.5px rgba(0, 0, 0, 0.1), 0 1px 1px -1px rgba(0, 0, 0, 0.12),
-    0 1px 3px 0 rgba(0, 0, 0, 0.07);
+    0 0 0 0.5px color-mix(in oklab, var(--foreground) 10%, transparent),
+    0 1px 1px -1px color-mix(in oklab, var(--foreground) 12%, transparent),
+    0 1px 3px 0 color-mix(in oklab, var(--foreground) 7%, transparent);
   --_btn-bg: var(--aui-pop);
   --_close-bg: var(--aui-pop);
   --_icon: var(--aui-icon);
-  --_ok: #1e8a4f;
-  --_err: #f04438;
-  --_timer: rgba(0, 0, 0, 0.1);
+  --_ok: var(--primary);
+  --_err: var(--destructive);
+  --_timer: color-mix(in oklab, var(--foreground) 10%, transparent);
   position: fixed;
   z-index: 1000;
   width: var(--_w);
   max-width: calc(100% - var(--_off) * 2);
   color: var(--aui-fg-muted);
   outline: none;
-}
-:is(.dark, [data-theme="dark"]) .aui-ts {
-  --_shadow:
-    0 0 0 0.5px rgba(255, 255, 255, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.4),
-    0 12px 28px -10px rgba(0, 0, 0, 0.6);
-  --_btn-hover: 0 0 0 0.5px rgba(255, 255, 255, 0.16), 0 1px 3px 0 rgba(0, 0, 0, 0.5);
-  --_btn-bg: rgba(255, 255, 255, 0.06);
-  --_close-bg: #2a2a2d;
-  --_icon: var(--aui-fg-subtle);
-  --_ok: #5fc88a;
-  --_err: #ff6b5f;
-  --_timer: rgba(255, 255, 255, 0.14);
 }
 .aui-ts[data-inline] {
   position: absolute;
@@ -401,69 +389,6 @@
 }
 
 /* ---------- classic ---------- */
-[data-aui-style="classic"] .aui-ts {
-  --_shadow:
-    0 0 0 1px var(--aui-card-stroke), 0 1px 2px 0 rgba(0, 0, 0, 0.04),
-    0 8px 24px -6px rgba(0, 0, 0, 0.1);
-  font-size: 13.5px;
-}
-[data-aui-style="classic"] .aui-ts__card {
-  border-radius: 14px;
-}
-[data-aui-style="classic"] .aui-ts__content {
-  gap: 10px;
-  padding: 14px;
-}
-[data-aui-style="classic"] .aui-ts__content[data-action] {
-  padding: 14px 10px 14px 14px;
-}
-[data-aui-style="classic"] .aui-ts__icon {
-  width: 20px;
-  height: 20px;
-}
-[data-aui-style="classic"] .aui-ts__title {
-  color: var(--aui-fg);
-}
-[data-aui-style="classic"] .aui-ts__desc {
-  margin-top: 1px;
-  font-size: 13px;
-  line-height: 18px;
-  color: var(--aui-icon);
-}
-[data-aui-style="classic"] .aui-ts__action {
-  height: 28px;
-  border-radius: 8px;
-  background: var(--aui-tray);
-  box-shadow: none;
-  font-size: 12.5px;
-  color: var(--aui-fg);
-  transition: background-color 0.16s ease;
-}
-[data-aui-style="classic"] .aui-ts__action:hover {
-  background: color-mix(in srgb, var(--aui-tray), var(--aui-fg-strong) 4%);
-  box-shadow: none;
-}
-[data-aui-style="classic"] .aui-ts__action:active {
-  transform: none;
-}
-[data-aui-style="classic"] .aui-ts__close svg {
-  stroke-width: 1.8;
-}
-[data-aui-style="classic"] .aui-ts__close:hover {
-  box-shadow:
-    0 0 0 1px var(--aui-card-stroke),
-    0 1px 3px rgba(0, 0, 0, 0.08);
-}
-[data-aui-style="classic"] .aui-ts__close {
-  box-shadow:
-    0 0 0 1px var(--aui-card-stroke),
-    0 1px 3px rgba(0, 0, 0, 0.08);
-}
-[data-aui-style="classic"] .aui-ts__timer {
-  left: 14px;
-  right: 14px;
-  background: color-mix(in srgb, var(--aui-fg) 14%, transparent);
-}
 
 /* ---------- phones ---------- */
 @media (max-width: 600px) {
@@ -572,14 +497,9 @@
 }
 .aui-ts-demo__btn:hover {
   box-shadow:
-    0 0 0 0.5px rgba(0, 0, 0, 0.1),
-    0 1px 1px -1px rgba(0, 0, 0, 0.12),
-    0 1px 3px 0 rgba(0, 0, 0, 0.07);
-}
-:is(.dark, [data-theme="dark"]) .aui-ts-demo__btn:hover {
-  box-shadow:
-    0 0 0 0.5px rgba(255, 255, 255, 0.16),
-    0 1px 3px 0 rgba(0, 0, 0, 0.5);
+    0 0 0 0.5px color-mix(in oklab, var(--foreground) 10%, transparent),
+    0 1px 1px -1px color-mix(in oklab, var(--foreground) 12%, transparent),
+    0 1px 3px 0 color-mix(in oklab, var(--foreground) 7%, transparent);
 }
 .aui-ts-demo__btn:active {
   transform: scale(0.97);
@@ -607,74 +527,4 @@
 }
 .aui-ts-demo__slot .aui-ts {
   --_w: 100%;
-}
-[data-aui-style="classic"] .aui-ts-demo {
-  gap: 14px;
-  width: 356px;
-  zoom: 1;
-  font-size: 13.5px;
-}
-[data-aui-style="classic"] .aui-ts-demo__panel {
-  padding: 4px;
-  border-radius: 20px;
-  background: var(--aui-tray);
-}
-[data-aui-style="classic"] .aui-ts-demo__card {
-  padding: 14px;
-  border-radius: 16px;
-  background: var(--aui-surface);
-}
-[data-aui-style="classic"] .aui-ts-demo__head {
-  padding: 0 2px 14px;
-}
-[data-aui-style="classic"] .aui-ts-demo__doc {
-  width: 34px;
-  height: 34px;
-  border-radius: 10px;
-  background: var(--aui-tray);
-  box-shadow: none;
-  color: var(--aui-fg);
-}
-[data-aui-style="classic"] .aui-ts-demo__grid {
-  gap: 6px;
-}
-[data-aui-style="classic"] .aui-ts-demo__name {
-  font-size: 14px;
-  color: var(--aui-fg);
-}
-[data-aui-style="classic"] .aui-ts-demo__sub {
-  font-size: 12.5px;
-  line-height: 18px;
-  color: var(--aui-icon);
-}
-[data-aui-style="classic"] .aui-ts-demo__btn {
-  gap: 8px;
-  height: 38px;
-  padding: 0 12px;
-  border-radius: 10px;
-  background: var(--aui-surface);
-  box-shadow: 0 0 0 1px var(--aui-card-stroke);
-  color: var(--aui-fg);
-  transition:
-    background-color 0.16s ease,
-    transform 0.16s ease;
-}
-[data-aui-style="classic"] .aui-ts-demo__btn:hover {
-  background: color-mix(in srgb, var(--aui-surface), var(--aui-fg-strong) 4%);
-  box-shadow: 0 0 0 1px var(--aui-card-stroke);
-}
-[data-aui-style="classic"] .aui-ts-demo__btn svg {
-  stroke-width: 1.75;
-}
-[data-aui-style="classic"] .aui-ts-demo__foot {
-  padding: 10px 12px 8px;
-  font-size: 12.5px;
-  line-height: 18.57px;
-  color: var(--aui-icon);
-}
-[data-aui-style="classic"] .aui-ts-demo__foot kbd {
-  border-radius: 5px;
-  box-shadow: 0 0 0 1px var(--aui-card-stroke);
-  font-size: 11.5px;
-  line-height: 18px;
 }

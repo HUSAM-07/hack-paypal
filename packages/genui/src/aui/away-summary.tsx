@@ -114,7 +114,7 @@ export const DEFAULT_AWAY_ITEMS: AwayItem[] = [
     kind: "failed",
     detail: "Failed: rate limit on Stripe after 1,284 invoices",
   },
-  { id: "auth", title: "Auth refactor", kind: "done", detail: "Opened PR #482 · on staging" },
+  { id: "auth", title: "Auth refactor", kind: "done", detail: "Opened PR 482 · on staging" },
   { id: "usage", title: "Usage page", kind: "done", detail: "Shipped to Northwind" },
   { id: "docs", title: "Evalkit docs", kind: "done", detail: "Published 14 pages" },
   { id: "load", title: "Load test", kind: "done", detail: "Passed at 20k events a minute" },

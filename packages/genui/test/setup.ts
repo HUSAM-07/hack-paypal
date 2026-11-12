@@ -5,7 +5,7 @@ import { afterEach } from "vitest";
 afterEach(() => cleanup());
 
 // jsdom lacks these; the vendored agentsUI blocks call them.
-if (!window.matchMedia) {
+if (typeof window !== "undefined" && !window.matchMedia) {
   window.matchMedia = (query: string) =>
     ({
       matches: false,
@@ -18,14 +18,14 @@ if (!window.matchMedia) {
       dispatchEvent: () => false,
     }) as MediaQueryList;
 }
-if (!("ResizeObserver" in window)) {
+if (typeof window !== "undefined" && !("ResizeObserver" in window)) {
   (window as unknown as { ResizeObserver: unknown }).ResizeObserver = class {
     observe() {}
     unobserve() {}
     disconnect() {}
   };
 }
-if (!Element.prototype.animate) {
+if (typeof Element !== "undefined" && !Element.prototype.animate) {
   Element.prototype.animate = () =>
     ({ finished: Promise.resolve(), cancel() {}, onfinish: null }) as unknown as Animation;
 }

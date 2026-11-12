@@ -1,7 +1,7 @@
 .aui-tl {
   /* no shared token for these; dark and classic values below */
-  --aui-tl-ray: rgba(0, 96, 226, 0.765);
-  --aui-tl-band: rgba(255, 255, 255, 0.82);
+  --aui-tl-ray: color-mix(in oklab, var(--primary) 76.5%, transparent);
+  --aui-tl-band: color-mix(in oklab, var(--background) 82%, transparent);
   --aui-tl-sweep: 1.6s;
   --_h: 32px;
   --_line: 20px;
@@ -21,10 +21,6 @@
   letter-spacing: -0.003em;
   white-space: nowrap;
   vertical-align: middle;
-}
-:is(.dark, [data-theme="dark"]) .aui-tl {
-  --aui-tl-ray: #4fb0fe;
-  --aui-tl-band: #ffffff;
 }
 .aui-tl[data-size="sm"] {
   --_h: 26px;
@@ -214,57 +210,6 @@
 }
 
 /* ---- classic ---- */
-[data-aui-style="classic"] .aui-tl {
-  --aui-tl-ray: var(--aui-fg);
-  --aui-tl-sweep: 1.8s;
-  --aui-tl-edge: #e7e7e7;
-  --aui-tl-fg: #6b6b6b;
-  --_h: 34px;
-  --_line: 18.2px;
-  --_icon: 15px;
-  gap: 8px;
-  padding: 0 15px 0 12px;
-  border-radius: 999px;
-  background: var(--aui-surface);
-  box-shadow:
-    inset 0 0 0 1px var(--aui-tl-edge),
-    0 1px 2px rgba(0, 0, 0, 0.04);
-  color: var(--aui-tl-fg);
-  font-size: 14px;
-  line-height: 1;
-  font-weight: 450;
-  letter-spacing: -0.006em;
-}
-[data-aui-style="classic"]:is(.dark, [data-theme="dark"]) .aui-tl,
-:is(.dark, [data-theme="dark"]) [data-aui-style="classic"] .aui-tl,
-[data-aui-style="classic"] :is(.dark, [data-theme="dark"]) .aui-tl {
-  --aui-tl-band: rgba(255, 255, 255, 0.95);
-  --aui-tl-edge: rgba(255, 255, 255, 0.1);
-  --aui-tl-fg: #8f8f8f;
-}
-[data-aui-style="classic"] .aui-tl__rays {
-  stroke-width: 1.6;
-}
-[data-aui-style="classic"] .aui-tl__check {
-  stroke-width: 1.8;
-}
-[data-aui-style="classic"] .aui-tl__label {
-  line-height: var(--_line);
-}
-[data-aui-style="classic"] .aui-tl[data-size="sm"] {
-  --_h: 28px;
-  --_line: 16px;
-  --_icon: 13px;
-  padding: 0 12px 0 10px;
-  font-size: 12.5px;
-}
-[data-aui-style="classic"] .aui-tl[data-variant="plain"] {
-  height: auto;
-  padding: 0;
-  border-radius: 0;
-  background: none;
-  box-shadow: none;
-}
 
 /* ---- docs demo: a tiny chat ---- */
 .aui-tl-demo {
@@ -282,21 +227,4 @@
   border-radius: 10px 10px 4px 10px;
   background: var(--aui-tl-you);
   color: var(--aui-fg);
-}
-:is(.dark, [data-theme="dark"]) .aui-tl-demo {
-  --aui-tl-you: rgba(255, 255, 255, 0.08);
-}
-[data-aui-style="classic"] .aui-tl-demo {
-  --aui-tl-you: var(--aui-tray);
-}
-[data-aui-style="classic"]:is(.dark, [data-theme="dark"]) .aui-tl-demo,
-:is(.dark, [data-theme="dark"]) [data-aui-style="classic"] .aui-tl-demo,
-[data-aui-style="classic"] :is(.dark, [data-theme="dark"]) .aui-tl-demo {
-  --aui-tl-you: #262628;
-}
-[data-aui-style="classic"] .aui-tl-demo__you {
-  padding: 10px 14px;
-  border-radius: 18px 18px 6px 18px;
-  font-size: 14px;
-  line-height: 20.3px;
 }

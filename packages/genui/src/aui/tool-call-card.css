@@ -1,14 +1,9 @@
 .aui-tcc,
 .aui-tcg {
-  --_str: color-mix(in srgb, #007bac 90%, transparent);
-  --_num: #b25b0c;
-  --_lit: #5b5bd6;
+  --_str: color-mix(in srgb, var(--primary) 90%, transparent);
+  --_num: var(--warning);
+  --_lit: var(--primary);
   --_ok: var(--aui-accent);
-}
-:is(.dark, [data-theme="dark"]) :is(.aui-tcc, .aui-tcg) {
-  --_str: #5cc1e8;
-  --_num: #f0a35c;
-  --_lit: #a5a5f5;
 }
 
 /* ---------- card ---------- */
@@ -115,7 +110,7 @@
 }
 .aui-tcc__ok-mark {
   fill: none;
-  stroke: #fff;
+  stroke: var(--border);
   stroke-width: 1.6;
   stroke-linecap: round;
   stroke-linejoin: round;
@@ -182,7 +177,7 @@
   color: var(--aui-fg-subtle);
 }
 .aui-tcc__copy {
-  --_copied: rgba(0, 96, 226, 0.765);
+  --_copied: color-mix(in oklab, var(--primary) 76.5%, transparent);
   display: grid;
   place-items: center;
   width: 28px;
@@ -195,9 +190,6 @@
   transition:
     background-color 0.16s ease,
     color 0.16s ease;
-}
-:is(.dark, [data-theme="dark"]) .aui-tcc__copy {
-  --_copied: rgba(77, 141, 255, 0.9);
 }
 @media (hover: hover) {
   .aui-tcc__copy:hover {
@@ -250,7 +242,7 @@
   font-size: 13px;
 }
 .aui-tcc__code[data-capped] {
-  mask-image: linear-gradient(#000 calc(100% - 48px), transparent);
+  mask-image: linear-gradient(var(--foreground) calc(100% - 48px), transparent);
 }
 .aui-tcc__t-key {
   color: var(--aui-fg);
@@ -385,66 +377,6 @@
 }
 
 /* ---------- classic ---------- */
-[data-aui-style="classic"] :is(.aui-tcc, .aui-tcg) {
-  --_ok: var(--aui-fg-strong);
-}
-[data-aui-style="classic"] .aui-tcc {
-  border-radius: 14px;
-  background: var(--aui-surface);
-  box-shadow:
-    0 0 0 1px var(--aui-card-stroke),
-    0 1px 2px rgba(0, 0, 0, 0.04);
-}
-[data-aui-style="classic"] .aui-tcc__head {
-  height: 42px;
-  padding: 0 14px 0 8px;
-  border-radius: 14px;
-}
-[data-aui-style="classic"] .aui-tcc[data-open] > .aui-tcc__head {
-  border-radius: 14px 14px 0 0;
-}
-[data-aui-style="classic"] .aui-tcc__icon {
-  width: 28px;
-  height: 28px;
-  border-radius: 8px;
-  background: var(--aui-surface-3);
-  box-shadow: inset 0 0 0 1px var(--aui-card-stroke);
-  color: var(--aui-fg);
-}
-[data-aui-style="classic"] .aui-tcc__icon svg {
-  width: 14px;
-  height: 14px;
-}
-[data-aui-style="classic"] .aui-tcc__name {
-  font-size: 12.5px;
-  font-weight: 400;
-}
-[data-aui-style="classic"] .aui-tcc__summary {
-  font-size: 13px;
-}
-[data-aui-style="classic"] .aui-tcc__ok-bg {
-  fill: transparent;
-}
-[data-aui-style="classic"] .aui-tcc__ok-mark {
-  stroke: var(--aui-fg-strong);
-  stroke-width: 1.8;
-}
-[data-aui-style="classic"] .aui-tcc__code {
-  border-radius: 10px;
-}
-[data-aui-style="classic"] .aui-tcg__tile {
-  width: 24px;
-  height: 24px;
-  border-radius: 7px;
-  background: var(--aui-surface-3);
-  box-shadow:
-    0 0 0 1px var(--aui-card-stroke),
-    0 0 0 2.5px var(--aui-canvas);
-  color: var(--aui-fg);
-}
-[data-aui-style="classic"] .aui-tcg__label {
-  font-weight: 500;
-}
 
 @container (max-width: 360px) {
   .aui-tcc__head {
@@ -489,7 +421,4 @@
 }
 .aui-tcg__label.aui-shimmer {
   color: transparent;
-}
-:is(.dark, [data-theme="dark"]) .aui-tcc-demo__you {
-  background: #2a2a2d;
 }

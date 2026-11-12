@@ -121,11 +121,7 @@
 .aui-field[data-invalid] {
   box-shadow:
     0 0 0 1px var(--aui-danger-ring),
-    0 1px 2px rgba(0, 0, 0, 0.05);
-}
-[data-aui-style="classic"] .aui-field[aria-invalid="true"],
-[data-aui-style="classic"] .aui-field[data-invalid] {
-  background: color-mix(in srgb, var(--aui-danger) 4%, var(--aui-field));
+    0 1px 2px color-mix(in oklab, var(--foreground) 5%, transparent);
 }
 .aui-field :where(input, textarea):focus-visible {
   box-shadow: none;
@@ -343,7 +339,7 @@
   background: var(--aui-surface);
   box-shadow:
     0 0 0 0.5px var(--aui-border),
-    0 1px 1px rgba(0, 0, 0, 0.04);
+    0 1px 1px color-mix(in oklab, var(--foreground) 4%, transparent);
   flex-shrink: 0;
 }
 .aui-tile svg {

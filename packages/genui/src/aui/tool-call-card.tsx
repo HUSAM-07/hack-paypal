@@ -56,8 +56,13 @@ export interface ToolCallGroupProps extends HTMLAttributes<HTMLDivElement> {
 const FailIcon = ({ size = 14, className }: { size?: number; className?: string }) => (
   <svg viewBox="0 0 16 16" width={size} height={size} className={className} aria-hidden="true">
     <circle cx="8" cy="8" r="7" fill="currentColor" />
-    <path d="M8 4.6v4" stroke="#fff" strokeWidth="1.6" strokeLinecap="round" />
-    <circle cx="8" cy="11.1" r="0.95" fill="#fff" />
+    <path
+      d="M8 4.6v4"
+      style={{ stroke: "var(--background)" }}
+      strokeWidth="1.6"
+      strokeLinecap="round"
+    />
+    <circle cx="8" cy="11.1" r="0.95" style={{ fill: "var(--background)" }} />
   </svg>
 );
 

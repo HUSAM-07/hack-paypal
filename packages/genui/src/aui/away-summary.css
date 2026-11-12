@@ -1,38 +1,28 @@
 .aui-awc {
-  --aui-awc-needs: #e8b000;
-  --aui-awc-failed: #f04438;
-  --aui-awc-done: #0190fe;
-  --aui-awc-on: #ffffff;
+  --aui-awc-needs: var(--warning);
+  --aui-awc-failed: var(--destructive);
+  --aui-awc-done: var(--primary);
+  --aui-awc-on: var(--background);
   --aui-awc-card: var(--aui-surface);
   --_text: 13px;
-  --_title: #000000;
+  --_title: var(--foreground);
   --_strong: var(--aui-fg);
   --_muted: var(--aui-fg-muted);
   --_subtle: var(--aui-fg-subtle);
   --_hover: var(--aui-hover);
   --_act-hover: var(--aui-hover);
-  --_faint: rgba(0, 0, 0, 0.27);
-  --_rule: rgba(0, 0, 0, 0.1);
-  --_row-hover: rgba(0, 0, 0, 0.024);
+  --_faint: color-mix(in oklab, var(--foreground) 27%, transparent);
+  --_rule: color-mix(in oklab, var(--foreground) 10%, transparent);
+  --_row-hover: color-mix(in oklab, var(--foreground) 2.4%, transparent);
   --_act-shadow:
-    0 0 0 0.5px rgba(0, 0, 0, 0.06), 0 1px 1px -1px rgba(0, 0, 0, 0.1),
-    0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    0 0 0 0.5px color-mix(in oklab, var(--foreground) 6%, transparent),
+    0 1px 1px -1px color-mix(in oklab, var(--foreground) 10%, transparent),
+    0 1px 2px 0 color-mix(in oklab, var(--foreground) 5%, transparent);
   --_ease: cubic-bezier(0.32, 0.72, 0.24, 1);
   position: relative;
   container-type: inline-size;
   font-size: var(--_text);
   color: var(--_muted);
-}
-:is(.dark, [data-theme="dark"]) .aui-awc {
-  --aui-awc-needs: #e6c24d;
-  --aui-awc-failed: #ff6b5f;
-  --aui-awc-done: #4fb0fe;
-  --aui-awc-card: #1c1c1f;
-  --_title: #ffffff;
-  --_faint: rgba(255, 255, 255, 0.28);
-  --_rule: rgba(255, 255, 255, 0.12);
-  --_row-hover: rgba(255, 255, 255, 0.024);
-  --_act-shadow: 0 0 0 0.5px rgba(255, 255, 255, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.4);
 }
 
 /* ---- fold: card <-> divider ---- */
@@ -76,7 +66,7 @@
   min-width: 0;
   height: 28px;
   padding: 0 8px 0 10px;
-  border-radius: 14px;
+  border-radius: 6px;
   color: var(--_subtle);
   font-size: var(--aui-text-sm);
   line-height: 16px;
@@ -104,7 +94,7 @@
 .aui-awc__card {
   display: grid;
   background: var(--aui-awc-card);
-  border-radius: 12px;
+  border-radius: 6px;
   box-shadow: var(--aui-shadow-card);
 }
 .aui-awc__head {
@@ -421,62 +411,6 @@
 }
 
 /* ---- classic: solid greys, a tray around the rows ---- */
-[data-aui-style="classic"] .aui-awc {
-  --_title: #171717;
-  --_strong: #171717;
-  --_muted: #6b6b6b;
-  --_subtle: #8a8a8a;
-  --_faint: #b8b8b8;
-  --_rule: #e2e2e2;
-  --_hover: #ebebeb;
-  --_act-hover: #f7f7f7;
-  --_row-hover: #f7f7f7;
-  --_tray: #f0f0f0;
-  --_rows: #ffffff;
-  --_act-bg: #ffffff;
-  --_act-shadow: 0 0 0 1px #ececec, 0 1px 2px 0 rgba(0, 0, 0, 0.04);
-}
-[data-aui-style="classic"]:is(.dark, [data-theme="dark"]) .aui-awc,
-:is(.dark, [data-theme="dark"]) [data-aui-style="classic"] .aui-awc {
-  --_title: #ededed;
-  --_strong: #ededed;
-  --_muted: #a1a1a6;
-  --_subtle: #7c7c82;
-  --_hover: #2c2c30;
-  --_act-hover: #28282b;
-  --_row-hover: #28282b;
-  --_faint: #4a4a50;
-  --_rule: #2f2f34;
-  --_tray: #19191c;
-  --_rows: #232326;
-  --_act-bg: #232326;
-  --_act-shadow: 0 0 0 1px #2f2f34, 0 1px 2px 0 rgba(0, 0, 0, 0.3);
-}
-[data-aui-style="classic"] .aui-awc__card {
-  padding: 4px;
-  background: var(--_tray);
-  border-radius: 16px;
-  box-shadow: none;
-}
-[data-aui-style="classic"] .aui-awc__head {
-  padding: 6px 10px 8px;
-  border-bottom: 0;
-}
-[data-aui-style="classic"] .aui-awc__rows {
-  background: var(--_rows);
-  border-radius: 12px;
-  box-shadow: var(--_act-shadow);
-}
-[data-aui-style="classic"] .aui-awc__foot {
-  padding: 4px 2px 0;
-  border-top: 0;
-}
-[data-aui-style="classic"] .aui-awc__divider-btn {
-  background: var(--_tray);
-}
-[data-aui-style="classic"] .aui-awc__divider-btn:hover {
-  background: var(--_hover);
-}
 
 @media (pointer: coarse) {
   .aui-awc__act,

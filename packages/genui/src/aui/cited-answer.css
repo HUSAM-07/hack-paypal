@@ -2,36 +2,36 @@
   /* surfaces */
   --_card: var(--aui-pop);
   --_card-shadow: var(--aui-shadow-card);
-  --_pop-hover: #fafafa;
-  --_line: rgba(0, 0, 0, 0.06);
+  --_pop-hover: var(--hover);
+  --_line: color-mix(in oklab, var(--foreground) 6%, transparent);
   /* text */
   --_fg: var(--aui-fg);
-  --_strong: #000;
+  --_strong: var(--foreground);
   --_muted: var(--aui-fg-muted);
   --_subtle: var(--aui-fg-subtle);
-  --_faint: rgba(0, 0, 0, 0.27);
+  --_faint: color-mix(in oklab, var(--foreground) 27%, transparent);
   --_icon: var(--aui-icon);
-  --_ok: #1e8a4f;
+  --_ok: var(--primary);
   /* markers, chips, glyphs */
-  --_tag: rgba(0, 0, 0, 0.06);
+  --_tag: color-mix(in oklab, var(--foreground) 6%, transparent);
   --_tag-ring: inset 0 0 0 0.5px var(--_line);
-  --_tag-lit: rgba(0, 0, 0, 0.1);
+  --_tag-lit: color-mix(in oklab, var(--foreground) 10%, transparent);
   --_tag-lit-fg: var(--_fg);
   --_tag-open: var(--_tag-lit);
   --_tag-open-fg: var(--_fg);
   --_chip-ring: inset 0 0 0 0.5px var(--_line);
-  --_chip-lit: rgba(0, 0, 0, 0.03);
+  --_chip-lit: color-mix(in oklab, var(--foreground) 3%, transparent);
   --_chip-lit-shadow: var(--_chip-ring);
-  --_chip-open: rgba(0, 0, 0, 0.06);
+  --_chip-open: color-mix(in oklab, var(--foreground) 6%, transparent);
   --_chip-open-shadow: var(--_chip-ring);
-  --_wash: rgba(0, 0, 0, 0.03);
-  --_glyph: rgba(0, 0, 0, 0.06);
-  --_glyph-fg: rgba(0, 0, 0, 0.55);
-  --_glyph-green: rgba(95, 200, 138, 0.09);
-  --_glyph-green-fg: #1e8a4f;
+  --_wash: color-mix(in oklab, var(--foreground) 3%, transparent);
+  --_glyph: color-mix(in oklab, var(--foreground) 6%, transparent);
+  --_glyph-fg: color-mix(in oklab, var(--foreground) 55%, transparent);
+  --_glyph-green: color-mix(in oklab, var(--primary) 9%, transparent);
+  --_glyph-green-fg: var(--primary);
   /* highlights */
-  --_hl: rgba(0, 96, 226, 0.07);
-  --_mark: rgba(0, 96, 226, 0.1);
+  --_hl: color-mix(in oklab, var(--primary) 7%, transparent);
+  --_mark: color-mix(in oklab, var(--primary) 10%, transparent);
   --_mark-fg: var(--_fg);
   --_dim: 0.5;
   /* shape and pace */
@@ -57,24 +57,6 @@
   line-height: 20px;
   text-align: left;
   container: aui-ca / inline-size;
-}
-:is(.dark, [data-theme="dark"]) .aui-ca {
-  --_pop-hover: #232326;
-  --_line: rgba(255, 255, 255, 0.08);
-  --_strong: #fff;
-  --_faint: rgba(255, 255, 255, 0.3);
-  --_ok: #5fc88a;
-  --_tag: rgba(255, 255, 255, 0.08);
-  --_tag-lit: rgba(255, 255, 255, 0.14);
-  --_chip-lit: rgba(255, 255, 255, 0.04);
-  --_chip-open: rgba(255, 255, 255, 0.08);
-  --_wash: rgba(255, 255, 255, 0.04);
-  --_glyph: rgba(255, 255, 255, 0.08);
-  --_glyph-fg: rgba(255, 255, 255, 0.62);
-  --_glyph-green: rgba(125, 207, 159, 0.16);
-  --_glyph-green-fg: #7dcf9f;
-  --_hl: rgba(77, 141, 255, 0.14);
-  --_mark: rgba(77, 141, 255, 0.24);
 }
 .aui-ca > * {
   grid-column: 1;
@@ -658,256 +640,7 @@
 }
 
 /* ---- classic: the answer is a card in a tray, the chips and the last row sit on the tray ---- */
-[data-aui-style="classic"] .aui-ca {
-  --_card: #fff;
-  --_card-shadow: 0 0 0 1px #ececec, 0 1px 2px rgba(0, 0, 0, 0.04);
-  --_line: #ececec;
-  --_fg: #404040;
-  --_strong: #171717;
-  --_muted: #404040;
-  --_subtle: #8f8f8f;
-  --_faint: #b4b4b8;
-  --_icon: #8f8f8f;
-  --_tag: #f4f4f5;
-  --_tag-ring: inset 0 0 0 1px #ececec;
-  --_tag-lit: #4fb0fe;
-  --_tag-lit-ring: inset 0 0 0 1px #4fb0fe;
-  --_tag-lit-fg: #fff;
-  --_tag-open: #171717;
-  --_tag-open-ring: inset 0 0 0 1px #171717;
-  --_tag-open-fg: #fff;
-  --_chip-ring: 0 0 transparent;
-  --_chip-lit: #fff;
-  --_chip-lit-shadow: var(--_card-shadow);
-  --_chip-open: #fff;
-  --_chip-open-shadow: var(--_card-shadow), inset 0 0 0 1px rgba(23, 23, 23, 0.45);
-  --_wash: #ececec;
-  --_wash-fg: #171717;
-  --_glyph: rgba(110, 110, 120, 0.12);
-  --_glyph-fg: #5f5f66;
-  --_glyph-green: rgba(95, 200, 138, 0.13);
-  --_hl: rgba(1, 144, 254, 0.1);
-  --_mark: rgba(1, 144, 254, 0.16);
-  --_mark-fg: #171717;
-  --_b: #171717;
-  --_dim: 0.45;
-  --_dim-open: revert-layer;
-  --_pv: #f4f4f5;
-  --_pv-shadow: none;
-  --_pv-tag: #fff;
-  --_r-tag: 5px;
-  --_r-chip: 8px;
-  --_r-pop: 12px;
-  --_t: 0.16s;
-  --_t-mark: 0.18s;
-  --_t-hl: 0.22s;
-  --_fold-ease: cubic-bezier(0.32, 0.72, 0.24, 1);
-  border-radius: 20px;
-  background: #f0f0f0;
-  box-shadow: none;
-  font-size: 12.5px;
-}
-[data-aui-style="classic"]:is(.dark, [data-theme="dark"]) .aui-ca,
-:is(.dark, [data-theme="dark"]) [data-aui-style="classic"] .aui-ca {
-  --_card: #19191b;
-  --_card-shadow: 0 0 0 1px #2a2a2e, 0 1px 2px rgba(0, 0, 0, 0.04);
-  --_line: #2a2a2e;
-  --_fg: #c8c8cc;
-  --_strong: #ededed;
-  --_muted: #c8c8cc;
-  --_subtle: #8b8b92;
-  --_faint: #5c5c63;
-  --_icon: #8b8b92;
-  --_ok: #7dcf9f;
-  --_tag: #222225;
-  --_tag-ring: inset 0 0 0 1px #2a2a2e;
-  --_tag-open: #ededed;
-  --_tag-open-ring: inset 0 0 0 1px #ededed;
-  --_tag-open-fg: #19191b;
-  --_chip-lit: #19191b;
-  --_chip-open: #19191b;
-  --_chip-open-shadow: var(--_card-shadow), inset 0 0 0 1px rgba(237, 237, 237, 0.45);
-  --_wash: #2a2a2e;
-  --_wash-fg: #ededed;
-  --_glyph: rgba(110, 110, 120, 0.22);
-  --_glyph-fg: #b4b4bb;
-  --_glyph-green: rgba(125, 207, 159, 0.2);
-  --_glyph-green-fg: #7dcf9f;
-  --_hl: rgba(79, 176, 254, 0.16);
-  --_mark: rgba(79, 176, 254, 0.28);
-  --_mark-fg: #ededed;
-  --_b: #ededed;
-  --_pv: #222225;
-  --_pv-tag: #19191b;
-  background: #111113;
-}
-[data-aui-style="classic"] .aui-ca__card-bg {
-  display: block;
-  grid-row: 1 / 4;
-  margin: 4px 4px 0;
-  border-radius: 16px;
-  background: var(--_card);
-  box-shadow: var(--_card-shadow);
-}
-[data-aui-style="classic"] .aui-ca__head {
-  position: relative;
-  min-height: 22px;
-  margin: 16px 20px 0;
-}
-[data-aui-style="classic"] .aui-ca__text {
-  position: relative;
-  margin: 8px 20px 0;
-}
-[data-aui-style="classic"] .aui-ca__fold {
-  position: relative;
-  grid-row: 3;
-  margin: 0 20px 14px;
-}
-[data-aui-style="classic"] .aui-ca__chips {
-  grid-row: 4;
-  flex-wrap: wrap;
-  margin: 6px 8px 0;
-}
-[data-aui-style="classic"] .aui-ca__dot {
-  color: inherit;
-}
-[data-aui-style="classic"] .aui-ca__glyph {
-  font-weight: 600;
-}
-[data-aui-style="classic"] .aui-ca__meta {
-  font-size: 12.5px;
-  line-height: 20px;
-}
-[data-aui-style="classic"] .aui-ca__p {
-  font-size: 13.5px;
-  line-height: 23px;
-}
-[data-aui-style="classic"] .aui-ca__marker {
-  font-size: 10.5px;
-  font-weight: 600;
-  transition:
-    background-color var(--_t-mark),
-    color var(--_t-mark),
-    box-shadow var(--_t-mark),
-    opacity var(--_t-hl);
-}
-[data-aui-style="classic"] .aui-ca__chip {
-  font-size: 12.5px;
-  line-height: 20px;
-  font-weight: 400;
-  transition:
-    background-color var(--_t),
-    box-shadow var(--_t),
-    opacity var(--_t-hl),
-    color var(--_t);
-}
-[data-aui-style="classic"] .aui-ca__chip:is(:hover, [data-lit], [aria-expanded="true"]) {
-  color: var(--_strong);
-}
-[data-aui-style="classic"] .aui-ca__chip[aria-expanded="true"][data-dim] {
-  opacity: var(--_dim);
-}
-[data-aui-style="classic"] .aui-ca__chip-num {
-  margin-left: 0;
-  color: var(--_subtle);
-  font-size: 11.5px;
-}
-[data-aui-style="classic"] .aui-ca__clip {
-  padding: 0;
-  margin: 0;
-}
-[data-aui-style="classic"] .aui-ca__pv-meta {
-  line-height: 20px;
-}
-[data-aui-style="classic"] .aui-ca__pv-num {
-  min-width: 18px;
-  height: 18px;
-  padding: 0 5px;
-  box-shadow: var(--_tag-ring);
-  font-size: 10.5px;
-  line-height: 20px;
-  font-weight: 600;
-}
-[data-aui-style="classic"] .aui-ca__close {
-  width: 22px;
-  height: 22px;
-  margin-right: -4px;
-  border-radius: 7px;
-}
-[data-aui-style="classic"] .aui-ca__close .aui-ca__icon {
-  width: 10px;
-  height: 10px;
-  stroke-width: 2.24;
-}
-[data-aui-style="classic"] .aui-ca__pv-title {
-  font-size: 13.5px;
-  font-weight: 600;
-}
-[data-aui-style="classic"] .aui-ca__quote {
-  font-size: 12.5px;
-}
-[data-aui-style="classic"] .aui-ca__pv-actions {
-  gap: 6px;
-}
-[data-aui-style="classic"] .aui-ca__btn {
-  gap: 5px;
-  padding: 0 9px;
-}
-[data-aui-style="classic"] .aui-ca__btn .aui-ca__icon,
-[data-aui-style="classic"] .aui-ca__btn-icon,
-[data-aui-style="classic"] .aui-ca__action .aui-ca__icon {
-  width: 12px;
-  height: 12px;
-  stroke-width: 1.87;
-}
-[data-aui-style="classic"] .aui-ca__btn--main {
-  padding: 0 8px 0 10px;
-}
-[data-aui-style="classic"] .aui-ca__btn--main:hover {
-  background: var(--_card);
-}
 /* the arrow follows the label here, and leans out on hover */
-[data-aui-style="classic"] .aui-ca__btn--main .aui-ca__icon {
-  order: 1;
-  transition: transform 0.22s var(--_fold-ease);
-}
-[data-aui-style="classic"] .aui-ca__btn--main:hover .aui-ca__icon {
-  transform: translate(1px, -1px);
-}
-[data-aui-style="classic"] .aui-ca__foot {
-  height: auto;
-  min-height: 36px;
-  padding: 2px 4px 0 10px;
-  margin: 0 4px 4px;
-  gap: 8px;
-  border-top: 0;
-}
-[data-aui-style="classic"] .aui-ca__caption {
-  font-size: 12.5px;
-  line-height: 20px;
-}
-[data-aui-style="classic"] .aui-ca__action {
-  gap: 4px;
-  height: 26px;
-  padding: 0 6px 0 8px;
-  border-radius: 10px;
-  background: transparent;
-  box-shadow: none;
-  color: var(--_fg);
-  transition:
-    background-color var(--_t),
-    color var(--_t);
-}
-[data-aui-style="classic"] .aui-ca__action:hover {
-  background: var(--_card);
-  color: var(--_strong);
-}
-[data-aui-style="classic"] .aui-ca__action .aui-ca__icon {
-  transition: transform 0.22s var(--_fold-ease);
-}
-[data-aui-style="classic"] .aui-ca__action:hover .aui-ca__icon {
-  transform: translateX(2px);
-}
 
 @media (prefers-reduced-motion: reduce) {
   .aui-ca *,
