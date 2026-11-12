@@ -4,6 +4,13 @@ import { DEMO_PAGE_CSP } from "../cited-apps";
 import type { Env } from "../env";
 import { newId } from "../ids";
 import { clientIp } from "../security";
+import {
+  DEFAULT_CATEGORY_ID,
+  parseCategory,
+  TRY_CATEGORIES,
+  type TryCategoryId,
+  tryCategory,
+} from "./categories";
 import { tryPage } from "./page";
 import { type LiveAgentChoice, liveAgentChoice } from "./provider";
 import { type LiveEvent, type LiveRunRecord, runLive } from "./run";
@@ -11,8 +18,7 @@ import { type LiveEvent, type LiveRunRecord, runLive } from "./run";
 /** /try: a judge types a shopping request and watches a real agent buy through PayPal. */
 export const TRY_PREFIX = "/try";
 
-export const DEFAULT_LIVE_REQUEST =
-  "Small bedroom purifier, light sleeper, around $100, just buy it";
+export const DEFAULT_LIVE_REQUEST = tryCategory(DEFAULT_CATEGORY_ID).examples[0];
 /** Model runs per visitor per hour, and across everyone per day. Scripted runs cost nothing. */
 export const LIVE_RUNS_PER_HOUR = 6;
 export const LIVE_RUNS_PER_DAY = 300;
@@ -56,9 +62,12 @@ export const live = new Hono<{ Bindings: Env }>();
 
 live.get("/", (c) => {
   const choice = liveAgentChoice(c.env);
+  // ?category= opens the page on a category; anything unknown is the default, purifiers.
+  const category = parseCategory(c.req.query("category")) ?? DEFAULT_CATEGORY_ID;
   return page(
     tryPage({
-      request: DEFAULT_LIVE_REQUEST,
+      category,
+      request: tryCategory(category).examples[0],
       agent: choice.label,
       scripted: choice.kind === "scripted",
     }),
@@ -75,7 +84,10 @@ type Denied = { status: 400 | 403 | 429; body: { error: string; message?: string
 async function admit(
   c: LiveCtx,
   runs: number,
-): Promise<{ denied: Denied } | { request: string; hash: string; choice: LiveAgentChoice }> {
+): Promise<
+  | { denied: Denied }
+  | { request: string; category: TryCategoryId; hash: string; choice: LiveAgentChoice }
+> {
   const env = c.env;
   const ip = clientIp(c.req.raw);
   const { success } = await env.IP_LIMITER.limit({ key: `try:${ip}` });
@@ -90,7 +102,21 @@ async function admit(
   if (origin && origin !== new URL(c.req.url).origin)
     return { denied: { status: 403, body: { error: "forbidden" } } };
 
-  const body = (await c.req.json().catch(() => null)) as { request?: unknown } | null;
+  const body = (await c.req.json().catch(() => null)) as {
+    request?: unknown;
+    category?: unknown;
+  } | null;
+  const category = parseCategory(body?.category);
+  if (!category)
+    return {
+      denied: {
+        status: 400,
+        body: {
+          error: "bad_request",
+          message: `Pick one of: ${TRY_CATEGORIES.map((x) => x.label.toLowerCase()).join(", ")}.`,
+        },
+      },
+    };
   const request = cleanRequest(body?.request);
   if (!request)
     return {
@@ -135,7 +161,7 @@ async function admit(
         },
       };
   }
-  return { request, hash, choice };
+  return { request, category, hash, choice };
 }
 
 /** The catalogue (and, simulated, the engine) live in the one demo Durable Object. */
@@ -203,6 +229,7 @@ live.post("/run", async (c) => {
         emit,
         runId,
         request: a.request,
+        category: a.category,
         endpoints: endpointsFor(c),
       });
       await record(c, r, a.choice.kind, a.hash);
@@ -242,6 +269,7 @@ live.post("/pair", async (c) => {
             emit: (e) => emit({ ...e, lane } satisfies PairEvent),
             runId: newId("live"),
             request: a.request,
+            category: a.category,
             endpoints,
             arm,
             pairId,

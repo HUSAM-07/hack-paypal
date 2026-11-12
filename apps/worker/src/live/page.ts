@@ -4,13 +4,8 @@
  * passes through, so each row compares the two agents at the same moment of their run.
  * Everything a model or a third party wrote is rendered with textContent, never as HTML.
  */
-import {
-  SITE_HEADER_CSS,
-  SITE_NAV_TOUCH_CSS,
-  SITE_THEME_CSS,
-  siteHeader,
-  UPC_WINIX_A230,
-} from "@pact/protocol";
+import { SITE_HEADER_CSS, SITE_NAV_TOUCH_CSS, SITE_THEME_CSS, siteHeader } from "@pact/protocol";
+import { TRY_CATEGORIES, type TryCategoryId, tryCategory } from "./categories";
 
 const esc = (s: string) => s.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
 
@@ -55,6 +50,18 @@ a{color:inherit}
 main{max-width:1320px;margin:0 auto;padding:40px 48px 72px}
 .eyebrow{margin:0 0 .5rem;font-size:.8rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
 form{margin:0}
+.cats{border:0;margin:0 0 1.8rem;padding:0;min-width:0}
+.cats legend{padding:0;margin:0 0 .6rem;font-size:.8rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.cats .opts{display:flex;flex-wrap:wrap;gap:.5rem}
+.cats label{position:relative;display:inline-flex;align-items:center;min-height:44px;padding:.45rem 1.1rem;border:1.5px solid var(--line);border-radius:999px;font-size:.9rem;font-weight:500;cursor:pointer}
+.cats label:hover{border-color:var(--ink)}
+.cats input{position:absolute;inset:0;width:100%;height:100%;margin:0;opacity:0;cursor:pointer}
+.cats label:has(input:checked){background:var(--ink);border-color:var(--ink);color:var(--bg)}
+.cats label:has(input:focus-visible){outline:2px solid var(--ink);outline-offset:3px}
+.cats label:has(input:disabled){cursor:default;opacity:.65}
+.examples{margin:1.1rem 0 0;padding:0;border:0;min-width:0}
+.examples legend{padding:0;margin:0 0 .4rem;font-size:.8rem;color:var(--muted)}
+.examples .opts{display:flex;flex-wrap:wrap;gap:.5rem}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
 textarea{display:block;width:100%;max-width:34ch;resize:none;border:0;border-bottom:1.5px solid var(--line);background:transparent;color:var(--ink);
   font-family:var(--serif);font-weight:400;font-size:2.4rem;line-height:1.12;letter-spacing:-.012em;padding:0 0 .35rem;field-sizing:content;min-height:2.4em}
@@ -65,6 +72,8 @@ button{font:inherit;font-size:.9rem;font-weight:600;background:var(--ink);color:
 button:hover{background:#2B2E36}
 button.quiet{background:transparent;color:var(--ink)}
 button.quiet:hover{background:var(--paper)}
+button.chip{font-family:var(--sans);font-size:.8rem;font-weight:500;letter-spacing:0;text-transform:none;text-align:left;line-height:1.3;border-radius:14px;padding:.5rem .9rem;border-color:var(--line)}
+button.chip:hover{border-color:var(--ink)}
 button:active{transform:scale(.96)}
 button:disabled{background:transparent;border-color:var(--line);color:var(--muted);cursor:default;transform:none}
 .who{font-size:.8rem;color:var(--muted);margin:0}
@@ -175,13 +184,29 @@ code{font-family:var(--mono);font-size:.7rem;background:var(--paper);border:1px 
 }
 `;
 
+/** What the page's script needs of each category. */
+const CLIENT_CATS = TRY_CATEGORIES.map((c) => ({
+  id: c.id,
+  creatorId: c.creatorId,
+  creatorName: c.creatorName,
+  testedUpc: c.tested.upc,
+  testedName: c.tested.name,
+  testedShort: c.tested.short,
+  placeholder: c.placeholder,
+  examples: c.examples,
+  note: c.note,
+}));
+
 /* Client: POST the request to /try/pair, read the event stream, route each event to its lane. */
 const JS = `
 const $ = (s) => document.querySelector(s);
 const form = $("#ask"), field = $("#request"), go = $("#go"), five = $("#five"), status = $("#status");
+const picker = $("#cats"), examples = $("#examples");
 const board = $("#board"), tally = $("#tally");
 const usd = (m) => "$" + (m / 100).toFixed(2);
-const WINIX = ${JSON.stringify(UPC_WINIX_A230)};
+const CATS = ${JSON.stringify(CLIENT_CATS)};
+const NAMES = Object.fromEntries(CATS.map((c) => [c.creatorId, c.creatorName]));
+let cat = CATS.find((c) => c.id === picker.querySelector("input:checked").value) || CATS[0];
 const STAGES = ${JSON.stringify(STAGES.map(([id]) => id))};
 
 function el(tag, attrs, ...kids) {
@@ -190,7 +215,7 @@ function el(tag, attrs, ...kids) {
   for (const c of kids) if (c != null) n.append(c);
   return n;
 }
-const LANE = { test: "Test arm", held: "Held out" };
+const LANE = { test: "Test group", held: "Held out" };
 const cell = (lane, stage) => $("#" + lane + "-" + stage);
 
 /* Per-lane state for the pair in progress. */
@@ -231,6 +256,33 @@ function sameOrder() {
   $("#same").textContent = key(a) === key(b) ? "same " + a.length + " offers, same order" : "rankings differ";
 }
 
+/* A category sets the placeholder, the examples, the lane captions and the note. */
+function drawExamples() {
+  examples.querySelector(".opts").replaceChildren(...cat.examples.map((text) => {
+    const b = el("button", { type: "button", class: "quiet chip" }, text);
+    b.addEventListener("click", () => { field.value = text; field.focus(); });
+    return b;
+  }));
+}
+function setCategory(next) {
+  const wasStock = !field.value.trim() || cat.examples.includes(field.value.trim());
+  cat = next;
+  field.placeholder = cat.placeholder;
+  if (wasStock) field.value = cat.examples[0];
+  drawExamples();
+  $("#test-sub").textContent = "Sees " + cat.creatorName + "'s test of the " + cat.testedName;
+  $("#note-text").textContent = cat.note;
+  $("#tally-title").textContent = cat.testedShort + " picks over five pairs";
+  board.hidden = true; tally.hidden = true;
+  say("");
+  history.replaceState(null, "", cat.id === CATS[0].id ? "/try" : "/try?category=" + cat.id);
+}
+picker.addEventListener("change", (ev) => {
+  const next = CATS.find((c) => c.id === ev.target.value);
+  if (next && next !== cat) setCategory(next);
+});
+drawExamples();
+
 const handlers = {
   start(lane, e) { $("#" + lane + "-agent").textContent = e.scripted ? "scripted agent" : e.agent; },
   thought(lane, e) { cell(lane, lanes[lane].stage).append(el("p", { class: "thought" }, e.text)); },
@@ -251,7 +303,7 @@ const handlers = {
     const r = at(lane, "reads");
     if (r.childElementCount) return;
     const tests = e.content.filter((c) => c.kind === "test");
-    if (tests.length) for (const c of tests) r.append(el("blockquote", {}, el("cite", {}, c.creatorId + " · product test"), c.summary));
+    if (tests.length) for (const c of tests) r.append(el("blockquote", {}, el("cite", {}, (NAMES[c.creatorId] || c.creatorId) + " · product test"), c.summary), el("p", { class: "sub" }, c.disclosure));
     else r.append(el("p", { class: "absent" }, "No creator content. The test was held back."));
   },
   checkout(lane, e) { at(lane, "chooses").append(el("p", {}, "checkout " + e.offerId)); },
@@ -276,7 +328,7 @@ const handlers = {
       const names = v.credits.map((c) => (e.creatorNames[c.creatorId] || c.creatorId) + " " + usd(c.amount.amountMinor));
       credit = el("p", { class: "credit" }, el("b", {}, "Credited: " + names.join(", ")), " · 8% commission, pending until " + (v.holdUntil || "").slice(0, 10));
     } else {
-      credit = el("p", { class: "credit" }, el("b", {}, "HouseFresh not credited"), " · " + v.why.replace(/^Not credited: /, ""));
+      credit = el("p", { class: "credit" }, el("b", {}, cat.creatorName + " not credited"), " · " + v.why.replace(/^Not credited: /, ""));
     }
     setOut(lane, LANE[lane] + (p ? " · bought from " + p.seller + " · " + usd(p.total.amountMinor) : ""), head, credit, e.reason ? '"' + e.reason + '"' : null, false);
   },
@@ -289,7 +341,7 @@ const handlers = {
 
 /* Runs one pair; resolves with the Winix pick per lane, or null if it didn't run. */
 async function runPair(request) {
-  const res = await fetch("/try/pair", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ request }) });
+  const res = await fetch("/try/pair", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ request, category: cat.id }) });
   if (!res.ok || !res.body) {
     const j = await res.json().catch(() => ({}));
     throw new Error(j.message || "The side by side didn't start (" + res.status + ").");
@@ -312,11 +364,16 @@ async function runPair(request) {
     }
   }
   if (!ended) throw new Error("The connection closed before both agents finished.");
-  const pick = (l) => lanes[l].paid ? lanes[l].paid.upc === WINIX : null;
+  const tested = cat.testedUpc;
+  const pick = (l) => lanes[l].paid ? lanes[l].paid.upc === tested : null;
   return { test: pick("test"), held: pick("held") };
 }
 
-function busy(on) { go.disabled = on; five.disabled = on; field.disabled = on; }
+function busy(on) {
+  go.disabled = on; five.disabled = on; field.disabled = on;
+  for (const i of picker.querySelectorAll("input")) i.disabled = on;
+  for (const b of examples.querySelectorAll("button")) b.disabled = on;
+}
 function say(msg, bad) { status.textContent = msg; status.className = "status" + (bad ? " bad" : ""); }
 
 function drawTally(rows, of) {
@@ -327,7 +384,7 @@ function drawTally(rows, of) {
     dots.replaceChildren(...Array.from({ length: of }, (_, i) =>
       el("span", { class: "dot" + (picks[i] === true ? " y" : picks[i] === false ? "" : " x"), "aria-hidden": "true" })));
     const n = picks.filter((p) => p === true).length;
-    $("#" + lane + "-count").textContent = n + " of " + picks.length + " bought the Winix";
+    $("#" + lane + "-count").textContent = n + " of " + picks.length + " bought the " + cat.testedShort;
   }
 }
 
@@ -345,7 +402,7 @@ async function start(times) {
     }
     const errs = ["test", "held"].map((l) => lanes[l].error).filter(Boolean);
     if (errs.length) say(errs.join(" "), true);
-    else say(times > 1 ? "Done: " + times + " pairs." : "Done. Run it again, or run five pairs and count the Winix picks.");
+    else say(times > 1 ? "Done: " + times + " pairs." : "Done. Run it again, or run five pairs and count the " + cat.testedShort + " picks.");
   } catch (err) {
     say((times > 1 && rows.length ? "Stopped after " + rows.length + " of " + times + " pairs. " : "") + err.message, true);
   } finally {
@@ -361,12 +418,18 @@ five.addEventListener("click", () => start(5));
 const laneHead = (lane: "test" | "held", title: string, sub: string, agent: string) =>
   `<div class="lh ${lane}"><h2>${title}</h2><p>${sub}</p><p class="agent" id="${lane}-agent">${esc(agent)}</p></div>`;
 
-export function tryPage(o: { request: string; agent: string; scripted: boolean }): string {
+export function tryPage(o: {
+  request: string;
+  agent: string;
+  scripted: boolean;
+  category?: TryCategoryId;
+}): string {
+  const cat = tryCategory(o.category ?? "purifier");
   // DOM order is spine, test, held (read in that order on a phone); wide screens place each
   // row by --r so the stage label sits between the two lanes.
   const rows = STAGES.map(
     ([id, label], i) =>
-      `<div class="spine" style="--r:${i + 2}"><span>${label}</span>${id === "catalogue" ? '<small id="same" aria-live="polite"></small>' : ""}</div><div class="cell test" style="--r:${i + 2}" id="test-${id}" data-lane="Test arm"></div><div class="cell held" style="--r:${i + 2}" id="held-${id}" data-lane="Held out"></div>`,
+      `<div class="spine" style="--r:${i + 2}"><span>${label}</span>${id === "catalogue" ? '<small id="same" aria-live="polite"></small>' : ""}</div><div class="cell test" style="--r:${i + 2}" id="test-${id}" data-lane="Test group"></div><div class="cell held" style="--r:${i + 2}" id="held-${id}" data-lane="Held out"></div>`,
   ).join("");
   const last = STAGES.length + 2;
   return `<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Two agents, one request · CITED</title>
@@ -391,28 +454,33 @@ ${siteHeader("try")}
 <main id="main">
 <h1 class="eyebrow">One request, two live shopping agents</h1>
 <form id="ask">
+<fieldset class="cats" id="cats"><legend>What are they shopping for?</legend><div class="opts">${TRY_CATEGORIES.map(
+    (c) =>
+      `<label><input type="radio" name="category" value="${c.id}"${c.id === cat.id ? " checked" : ""}>${esc(c.label)}</label>`,
+  ).join("")}</div></fieldset>
 <label class="sr" for="request">What should the agents buy?</label>
-<textarea id="request" name="request" rows="2" maxlength="280" spellcheck="false">${esc(o.request)}</textarea>
+<textarea id="request" name="request" rows="2" maxlength="280" spellcheck="false" placeholder="${esc(cat.placeholder)}">${esc(o.request)}</textarea>
+<fieldset class="examples" id="examples"><legend>Or start from an example</legend><div class="opts">${cat.examples.map((x) => `<button type="button" class="quiet chip">${esc(x)}</button>`).join("")}</div></fieldset>
 <div class="controls">
 <button id="go" type="submit">Run side by side</button>
 <button id="five" type="button" class="quiet">Run 5 pairs</button>
 <p class="who${o.scripted ? " scripted" : ""}">Agents: <b>${esc(o.agent)}</b> · each pays the seller through PayPal from the buyer's linked wallet (simulated PayPal)</p>
 </div>
-<p class="fixed">Both agents get the same request and the same offers in the same order. For this side by side we fix the arms; the real catalogue assigns them at random.</p>
+<p class="fixed">Both agents get the same request and the same offers in the same order. For this side by side we fix the groups; the real catalogue assigns them at random.</p>
 <p id="status" class="status" role="status" aria-live="polite"></p>
 </form>
 <section id="board" class="board" hidden aria-label="The two agents' runs">
-<div class="spine head" style="--r:1"></div>${laneHead("test", "Test arm", "Sees HouseFresh's test of the Winix A230", o.agent)}${laneHead("held", "Held out", "Sees everything except the test", o.agent)}
+<div class="spine head" style="--r:1"></div>${laneHead("test", "Test group", `Sees ${esc(cat.creatorName)}'s test of the ${esc(cat.tested.name)}`, o.agent)}${laneHead("held", "Held out", "Sees everything except the test", o.agent)}
 ${rows}
 <div class="spine result" style="--r:${last}"><span>Bought</span></div><div class="result-cell test" style="--r:${last}"><div id="test-out" class="out test wait" aria-live="polite"></div></div><div class="result-cell held" style="--r:${last}"><div id="held-out" class="out held wait" aria-live="polite"></div></div>
 </section>
 <section class="after">
-<div class="note"><p>One pair shows one outcome, not a lift. Across 147 forced-buy sessions on GPT, Gemini and Sonnet, agents shown the test bought the Winix every time, against 6% of agents shown other content from the same creator: a lift of +94 percentage points. <a href="/proof">See the proof</a>.</p>
+<div class="note"><p><span id="note-text">${esc(cat.note)}</span> <a href="/proof">See the proof</a>.</p>
 <p>Live runs keep their own record. They never change the recorded demo's numbers on the console, and a side by side counts as two runs against the hourly limit.</p></div>
-<div id="tally" class="tally" hidden aria-live="polite"><h3>Winix picks over five pairs</h3>
-<div class="trow test"><b>Test arm</b><span class="dots" id="test-dots"></span><span id="test-count" class="num"></span></div>
+<div id="tally" class="tally" hidden aria-live="polite"><h3 id="tally-title">${esc(cat.tested.short)} picks over five pairs</h3>
+<div class="trow test"><b>Test group</b><span class="dots" id="test-dots"></span><span id="test-count" class="num"></span></div>
 <div class="trow held"><b>Held out</b><span class="dots" id="held-dots"></span><span id="held-count" class="num"></span></div>
-<p class="sub">Filled: bought the Winix. Dashed: not run yet, or no purchase.</p></div>
+<p class="sub">Filled: bought the tested product. Dashed: not run yet, or no purchase.</p></div>
 </section>
 </main>
 <script>${JS}</script>
