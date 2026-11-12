@@ -17,10 +17,8 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const TARGETS = {
-  // The team account on workers.dev; wrangler.jsonc as committed.
-  "workers-dev": null,
-  // Husam's account on the custom domain. Passkeys are bound to RP_ID, so this target
-  // has its own users (and its own D1) separate from workers-dev.
+  // The one deploy target: Husam's Cloudflare account on the custom domain. Passkeys are bound
+  // to RP_ID, so its users are its own. (The old team workers.dev target is retired.)
   shipwith: {
     account_id: "22d85cc3a000928da154b1f41ead366e",
     workers_dev: false,
@@ -32,7 +30,7 @@ const TARGETS = {
 
 const workerDir = join(dirname(fileURLToPath(import.meta.url)), "..");
 const args = process.argv.slice(2);
-const target = args.find((a) => !a.startsWith("--")) ?? "workers-dev";
+const target = args.find((a) => !a.startsWith("--")) ?? "shipwith";
 const mode = args.includes("--dry-run")
   ? "dry-run"
   : args.includes("--rollback")

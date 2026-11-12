@@ -15,9 +15,7 @@ describe("site metadata", () => {
   });
   it("gives a page its canonical URL and share card, escaped", () => {
     const html = siteMeta({ title: 'A "quoted" <title>', path: "/try" });
-    expect(html).toContain(
-      '<link rel="canonical" href="https://pact-worker.vincent-wesley-liem.workers.dev/try">',
-    );
+    expect(html).toContain('<link rel="canonical" href="https://caaash.shipwith.si/try">');
     expect(html).toContain("A &quot;quoted&quot; &lt;title&gt;");
     expect(html).toContain('name="twitter:card"');
   });

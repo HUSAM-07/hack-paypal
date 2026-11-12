@@ -14,7 +14,7 @@
 import { authorizeUrl, exchange } from "../src/creators/identity";
 import type { Env } from "../src/env";
 
-const ORIGIN = process.env.CITED_ORIGIN ?? "https://pact-worker.vincent-wesley-liem.workers.dev";
+const ORIGIN = process.env.CITED_ORIGIN ?? "https://caaash.shipwith.si";
 const env = {
   PAYPAL_MODE: "sandbox",
   PAYPAL_CLIENT_ID: process.env.PAYPAL_CLIENT_ID,

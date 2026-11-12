@@ -44,9 +44,7 @@ import type { Env } from "../src/env";
 import { app } from "../src/index";
 
 const ROOT = resolve(import.meta.dirname, "../../..");
-const HOSTED = (
-  process.env.CITED_HOSTED_URL ?? "https://pact-worker.vincent-wesley-liem.workers.dev"
-).replace(/\/$/, "");
+const HOSTED = (process.env.CITED_HOSTED_URL ?? "https://caaash.shipwith.si").replace(/\/$/, "");
 /** The hosted subscription PayPal signs our events for. */
 const WEBHOOK_ID = process.env.CITED_WEBHOOK_ID ?? "8042373202922840X";
 const PRICE_MINOR = 200;
