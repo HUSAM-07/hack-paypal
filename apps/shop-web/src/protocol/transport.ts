@@ -15,6 +15,15 @@ export type Transport = {
 
 export type Connect = (handlers: TransportHandlers) => Transport;
 
+/** True only when the page's origin says there is no session (`/api/session`). */
+async function signedOut(socketUrl: URL): Promise<boolean> {
+  const origin = `${socketUrl.protocol === "wss:" ? "https:" : "http:"}//${socketUrl.host}`;
+  const res = await fetch(`${origin}/api/session`, { credentials: "same-origin" });
+  if (!res.ok) return false;
+  const body = (await res.json()) as { signedIn?: boolean };
+  return body.signedIn === false;
+}
+
 /** WebSocket transport. Relative URLs ("/api/shop/ws") resolve against the page origin. */
 export function webSocketTransport(url: string): Connect {
   return (h) => {
@@ -36,11 +45,16 @@ export function webSocketTransport(url: string): Connect {
       }
     });
     ws.addEventListener("close", (e) => {
-      // 4401 is our "sign in first" close code; a refused upgrade never opens at all.
-      h.onClose({
-        unauthorized: e.code === 4401 || e.code === 4403,
-        reason: e.reason || (opened ? undefined : "refused"),
-      });
+      // 4401 is our "sign in first" close code. A refused upgrade (the server answers a
+      // signed-out visitor with a plain 401) never opens and only reports 1006, so ask the
+      // session endpoint whether that was the reason before showing "offline".
+      const reason = e.reason || (opened ? undefined : "refused");
+      if (e.code === 4401 || e.code === 4403) return h.onClose({ unauthorized: true, reason });
+      if (opened) return h.onClose({ unauthorized: false, reason });
+      signedOut(abs).then(
+        (out) => h.onClose({ unauthorized: out, reason }),
+        () => h.onClose({ unauthorized: false, reason }),
+      );
     });
     return {
       send: (frame) => {
