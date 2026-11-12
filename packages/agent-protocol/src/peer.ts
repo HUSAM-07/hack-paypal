@@ -18,6 +18,11 @@ import {
   type ServerRequestResultOf,
 } from "./protocol";
 
+// Every JS runtime has timers, but the ES lib doesn't type them; declared here so consumers
+// typecheck without DOM or node types.
+declare const setTimeout: (fn: () => void, ms: number) => unknown;
+declare const clearTimeout: (id: unknown) => void;
+
 export class RpcRequestError extends Error {
   constructor(
     readonly code: number,
@@ -82,7 +87,7 @@ export function createRpcPeer(opts: RpcPeerOptions): RpcPeer {
   let nextId = 1;
   const pending = new Map<
     string | number,
-    { resolve(v: unknown): void; reject(e: Error): void; timer?: ReturnType<typeof setTimeout> }
+    { resolve(v: unknown): void; reject(e: Error): void; timer?: unknown }
   >();
   const handlers = new Map<string, Set<(params: unknown, meta: { seq?: number }) => void>>();
   const seqs = new Map<string, number>();
@@ -117,7 +122,7 @@ export function createRpcPeer(opts: RpcPeerOptions): RpcPeer {
         const entry: {
           resolve(v: unknown): void;
           reject(e: Error): void;
-          timer?: ReturnType<typeof setTimeout>;
+          timer?: unknown;
         } = { resolve: resolve as (v: unknown) => void, reject };
         if (timeoutMs > 0) {
           entry.timer = setTimeout(() => {

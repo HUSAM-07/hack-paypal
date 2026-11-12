@@ -9,6 +9,9 @@ export type PatchOp =
 
 type JsonObject = Record<string, unknown>;
 
+// Plain JSON in, plain JSON out; avoids needing DOM/node lib types for structuredClone.
+const clone = <T>(v: T): T => (v === undefined ? v : (JSON.parse(JSON.stringify(v)) as T));
+
 const isObject = (v: unknown): v is JsonObject =>
   typeof v === "object" && v !== null && !Array.isArray(v);
 
@@ -72,12 +75,12 @@ export function applyPatch<T>(
   doc: T,
   ops: readonly { op: string; path: string; value?: unknown }[],
 ): T {
-  let root: unknown = structuredClone(doc);
+  let root: unknown = clone(doc);
   for (const op of ops) {
     const tokens = parsePath(op.path);
     if (tokens.length === 0) {
       if (op.op === "remove") throw new Error("cannot remove the root");
-      root = structuredClone(op.value);
+      root = clone(op.value);
       continue;
     }
     const last = tokens[tokens.length - 1] as string;
@@ -91,12 +94,12 @@ export function applyPatch<T>(
       if (!Number.isInteger(i) || i < 0 || i > parent.length) {
         throw new Error(`bad index: ${op.path}`);
       }
-      if (op.op === "add") parent.splice(i, 0, structuredClone(op.value));
+      if (op.op === "add") parent.splice(i, 0, clone(op.value));
       else if (op.op === "remove") parent.splice(i, 1);
-      else if (op.op === "replace") parent[i] = structuredClone(op.value);
+      else if (op.op === "replace") parent[i] = clone(op.value);
       else throw new Error(`unsupported op: ${op.op}`);
     } else if (isObject(parent)) {
-      if (op.op === "add" || op.op === "replace") parent[last] = structuredClone(op.value);
+      if (op.op === "add" || op.op === "replace") parent[last] = clone(op.value);
       else if (op.op === "remove") delete parent[last];
       else throw new Error(`unsupported op: ${op.op}`);
     } else {
