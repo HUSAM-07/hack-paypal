@@ -152,9 +152,15 @@ const me = async (res: Response) =>
 
 describe("Google sign-in", () => {
   it("404s on the deployed config (shop off, no Google client)", async () => {
+    // The committed config, not a developer's .dev.vars (which may turn the shop on locally).
+    const deployed = {
+      ...shopEnv,
+      SHOP_ENABLED: "false",
+      GOOGLE_CLIENT_ID: undefined,
+      GOOGLE_CLIENT_SECRET: undefined,
+    } as unknown as Env;
     for (const path of ["/api/auth/google/start", "/api/auth/google/callback?code=x&state=y"]) {
-      const res = await api(path);
-      expect(res.status).toBe(404);
+      expect((await call(path, undefined, deployed)).status).toBe(404);
     }
     // Shop on but no client: still 404.
     const noClient = { ...shopEnv, GOOGLE_CLIENT_SECRET: undefined } as unknown as Env;
