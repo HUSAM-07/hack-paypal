@@ -45,6 +45,9 @@ const TARGETS = {
       // The shop vertical (shop/spec/SHOP-SPEC.md). Needs the worker secrets OPENROUTER_API_KEY,
       // EXA_API_KEY, GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET; its PayPal stays simulated.
       SHOP_ENABLED: "true",
+      // The "pact-shop" AI Gateway on this account requires its own token (401 without one), so
+      // the shop calls OpenRouter directly until CF_AIG_TOKEN is set.
+      AI_GATEWAY_ID: "",
       CF_ACCOUNT_ID: "22d85cc3a000928da154b1f41ead366e",
       SHOP_PUBLIC_ORIGIN: "https://caaash.shipwith.si",
     },

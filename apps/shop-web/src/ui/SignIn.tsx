@@ -1,10 +1,10 @@
+import { BrandMark } from "./BrandMark";
+
 export function SignIn({ url = "/api/auth/google/start?returnTo=/shop" }: { url?: string }) {
   return (
     <main className="signin" id="main">
       <div className="signin__card">
-        <span className="brand-mark" aria-hidden>
-          S
-        </span>
+        <BrandMark />
         <h1 className="signin__title">
           Shop, <em>with an agent</em>
         </h1>

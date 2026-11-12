@@ -18,7 +18,11 @@
       "!tasks",
       "!**/*.md",
       "!apps/web/src/styles/site-theme.css",
-      "!apps/web/src/styles/site-head.html"
+      "!apps/web/src/styles/site-head.html",
+      "!video/index.html",
+      "!video/src/captured",
+      "!video/.hyperframes",
+      "!video/out"
     ]
   },
   "formatter": {
