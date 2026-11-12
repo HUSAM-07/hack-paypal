@@ -10,11 +10,20 @@ semantic tokens (shadcn names + warning/subtle/paypal).
 - [x] site-theme.css generated for React entries (+ drift test); theme.js wires every toggle
 - [x] Guard test: no colour literal outside theme.ts (no-raw-colours.test.ts)
 - [x] Landing, /proof (pruned base.css, framed column + bands), tour bar
-- [ ] Server pages (/try, /creators, profile, /mcp, ledger, 404) - subagent
-- [ ] Console + payout - subagent
-- [ ] Studio - subagent
-- [ ] Legacy /app - subagent
-- [ ] Verify all pages light/dark/375px; full test/lint/typecheck/build; push to PR #170
+- [x] Server pages (/try, /creators, profile, /mcp, ledger, 404) - subagent
+- [x] Console + payout + statement - subagent
+- [x] Studio - subagent
+- [x] Legacy /app - subagent
+- [x] Favicon/app icons/manifest from the mark (gen-icons.ts), shared head, siteMeta, sitemap.xml, robots.txt
+- [x] cited/spec/DESIGN.md + CLAUDE.md rule 12; note sent to the four Shop sessions
+- [x] Responsive + a11y audit: 12 pages x 320/375/768/1440, light and dark; full test/lint/typecheck/build; pushed to PR #170
+
+Review (v3, 2026-11-13)
+- Audit (built-in browser, local worker build): no horizontal scroll at any width; contrast AA on every page in
+  both themes (after fixes); every control named, every image has alt; one h1, main, lang, skip link per page.
+- Not run: Playwright e2e, `CITED_ENGINE=worker npm run demo:cited`, a real-device test. Studio and the console
+  showed empty states locally (no seeded engine); Studio's AG canvas scrolls inside itself at 375px.
+- 404 has no theme toggle (its CSP allows no scripts); it follows the OS theme.
 
 # CITED UI revamp v2: sticker column (branch `feat/ui-redesign`, 2026-11-12)
 
