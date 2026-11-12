@@ -31,6 +31,47 @@ export const securityHeaders: MiddlewareHandler<{ Bindings: Env }> = async (c, n
   h.set("Cache-Control", "no-store");
 };
 
+/**
+ * Headers for the shop's page (/shop and /shop/*), set by the route that serves its HTML, like
+ * APP_PAGE_HEADERS in index.ts does for /app. Scoped to the shop so no other page loosens:
+ * - connect-src 'self' covers the agent's same-origin WebSocket (/api/shop/ws) and SSE; no
+ *   wildcard wss: as the /app page has.
+ * - frame-src adds Browser Run Live View (live.browser.run) beside PayPal's checkout frames.
+ * - img-src https: because product images come from any merchant.
+ * - form-action allows accounts.google.com: a form that posts to /api/auth/google/start is
+ *   redirected there, and form-action applies to that redirect.
+ * Google sign-in itself is a top-level navigation, which CSP doesn't govern.
+ */
+export const SHOP_PAGE_CSP = [
+  "default-src 'self'",
+  "script-src 'self' https://*.paypal.com https://*.paypalobjects.com https://static.cloudflareinsights.com",
+  "style-src 'self' 'unsafe-inline'",
+  "img-src 'self' data: https:",
+  "font-src 'self'",
+  "connect-src 'self' https://*.paypal.com https://cloudflareinsights.com",
+  "frame-src https://*.paypal.com https://live.browser.run",
+  "base-uri 'none'",
+  "object-src 'none'",
+  "form-action 'self' https://accounts.google.com",
+  "frame-ancestors 'none'",
+].join("; ");
+
+export const SHOP_PAGE_HEADERS: Readonly<Record<string, string>> = {
+  "Content-Security-Policy": SHOP_PAGE_CSP,
+  "Referrer-Policy": "strict-origin-when-cross-origin",
+  "X-Content-Type-Options": "nosniff",
+  "Permissions-Policy":
+    "camera=(), microphone=(), geolocation=(), publickey-credentials-get=(self)",
+  "Cache-Control": "no-cache",
+};
+
+/** A copy of `res` (asset responses have immutable headers) carrying SHOP_PAGE_HEADERS. */
+export function withShopPageHeaders(res: Response): Response {
+  const out = new Response(res.body, res);
+  for (const [k, v] of Object.entries(SHOP_PAGE_HEADERS)) out.headers.set(k, v);
+  return out;
+}
+
 export function clientIp(req: Request): string {
   return req.headers.get("cf-connecting-ip") ?? "local";
 }

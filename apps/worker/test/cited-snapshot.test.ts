@@ -5,7 +5,7 @@ import { checkCited, LOCKED } from "../scripts/verify-cited.mjs";
 
 const DB = (env as unknown as { DB: D1Database }).DB;
 
-/** Pact's own tables: the reseed must never name them. */
+/** Pact's own tables, and the shop's (0011): the reseed must never name them. */
 const PACT_TABLES = [
   "users",
   "auth_challenges",
@@ -13,6 +13,9 @@ const PACT_TABLES = [
   "thread_members",
   "paypal_webhook_events",
   "paypal_refs",
+  "shop_oauth_accounts",
+  "shop_watch_index",
+  "shop_orders",
 ];
 
 /** Runs a snapshot file the way `d1 execute --file` does: every statement, one batch. */
