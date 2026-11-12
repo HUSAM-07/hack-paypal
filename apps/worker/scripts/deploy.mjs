@@ -17,7 +17,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 /** The sandbox app's own business account: every seller's payee on the shipwith target. */
-const SANDBOX_PAYEE = "TODO_APP_BUSINESS_ACCOUNT";
+const SANDBOX_PAYEE = "M5R4D5A6BC3QC"; // sb-iicfz53660186@business.example.com
 
 const TARGETS = {
   // The one deploy target: Husam's Cloudflare account on the custom domain. Passkeys are bound
