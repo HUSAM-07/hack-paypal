@@ -10,7 +10,6 @@
 html {
   -webkit-text-size-adjust: 100%;
   scroll-behavior: smooth;
-  scroll-padding-top: 76px;
 }
 @media (prefers-reduced-motion: reduce) {
   html {
@@ -49,7 +48,19 @@ a {
 :focus-visible {
   outline: 2px solid var(--primary);
   outline-offset: 2px;
-  border-radius: 4px;
+}
+.row:focus-visible {
+  outline-offset: -2px;
+}
+.row:focus-visible .row-title {
+  color: var(--primary);
+}
+a:focus-visible .row-arrow {
+  color: var(--primary);
+  transform: translate(2px, -2px);
+}
+.row:active {
+  background: var(--fill-strong);
 }
 
 /* The column: everything sits between two hairlines, like a sheet of paper. */
@@ -233,8 +244,8 @@ a {
 .margin-note {
   position: absolute;
   top: 70px;
-  left: calc(100% + 28px);
-  width: 170px;
+  left: calc(100% + 20px);
+  width: min(150px, calc((100vw - var(--frame)) / 2 - 40px));
   font: 500 22px / 1.1 var(--font-hand);
   color: var(--muted-foreground);
   transform: rotate(-4deg);
@@ -309,8 +320,10 @@ a {
   transform: rotate(-6deg);
   transition: transform 0.2s cubic-bezier(0.2, 0.7, 0.2, 1);
 }
-.step:hover .stk-tag {
-  transform: rotate(4deg) scale(1.08);
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  .step:hover .stk-tag {
+    transform: rotate(4deg) scale(1.08);
+  }
 }
 .chip-serif {
   display: inline-block;
@@ -378,7 +391,12 @@ a {
 a:hover > .row-arrow,
 a:hover .row-arrow {
   color: var(--primary);
-  transform: translate(2px, -2px);
+}
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  a:hover > .row-arrow,
+  a:hover .row-arrow {
+    transform: translate(2px, -2px);
+  }
 }
 .pill-new {
   padding: 2px 7px;
@@ -581,6 +599,12 @@ a:hover .row-arrow {
   white-space: nowrap;
   scrollbar-width: none;
 }
+@media (max-width: 640px) {
+  .cmd-v {
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+  }
+}
 .copy {
   height: 28px;
   padding: 0 10px;
@@ -632,9 +656,10 @@ a:hover .row-arrow {
 
 .foot-line {
   display: flex;
+  flex-wrap: wrap;
   justify-content: space-between;
   align-items: baseline;
-  gap: 12px;
+  gap: 4px 12px;
   margin-top: 28px;
   padding: 16px var(--pad) 0;
   border-top: 1px dashed var(--border);
@@ -792,8 +817,10 @@ a:hover .row-arrow {
   transform: rotate(var(--rot));
   transition: transform 0.2s cubic-bezier(0.2, 0.7, 0.2, 1);
 }
-.shelf > li:hover {
-  transform: rotate(0deg) translateY(-6px);
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  .shelf > li:hover {
+    transform: rotate(0deg) translateY(-6px);
+  }
 }
 .foot-links {
   display: grid;
@@ -1075,5 +1102,24 @@ a:hover .row-arrow {
 @media (max-width: 760px) {
   .pay-row {
     grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* Wrapping: balanced headings, no orphans in body copy. */
+.row-title {
+  text-wrap: balance;
+}
+.lede,
+.prose,
+.row-body,
+.caption,
+.real > li {
+  text-wrap: pretty;
+}
+
+/* Where the column is the viewport, nothing may push the page sideways (clip keeps sticky working). */
+@media (max-width: 800px) {
+  .col {
+    overflow-x: clip;
   }
 }
