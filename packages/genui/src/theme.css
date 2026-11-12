@@ -70,10 +70,10 @@
   --aui-field-error-text: var(--destructive);
   --aui-field-error-edge: color-mix(in oklab, var(--destructive) 55%, transparent);
   --aui-field-error-bg: var(--aui-field);
-  /* CITED has no green: money paid and "done" read primary (design system section 1). */
-  --aui-success: var(--primary);
-  --aui-success-text: var(--primary);
-  --aui-success-soft: var(--primary-soft);
+  /* A step done: paid, settled, verified, connected. Test-arm meanings stay --primary. */
+  --aui-success: var(--success);
+  --aui-success-text: var(--success-text);
+  --aui-success-soft: var(--success-soft);
   --aui-warning: var(--warning);
   --aui-warning-text: var(--warning);
   --aui-warning-soft: var(--warning-soft);
