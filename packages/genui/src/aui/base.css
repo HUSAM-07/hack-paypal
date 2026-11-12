@@ -1,0 +1,527 @@
+/*
+ * Shared primitives every component builds on. Class names are prefixed `aui-`.
+ * Keep component-specific CSS in the component's own file; only truly shared
+ * atoms live here (card, field, button, badge, kbd, spinner, shimmer, focus).
+ */
+
+.aui-root,
+.aui-root * {
+  box-sizing: border-box;
+}
+.aui-root {
+  font-family: var(--aui-font);
+  font-size: var(--aui-text);
+  line-height: var(--aui-leading);
+  color: var(--aui-fg);
+  -webkit-font-smoothing: antialiased;
+  font-feature-settings: "cv11", "ss01";
+  text-rendering: optimizeLegibility;
+}
+.aui-root :where(h1, h2, h3, h4, h5, h6, p, ul, ol, figure, blockquote, dl, dd),
+.aui-root:where(h1, h2, h3, h4, h5, h6, p, ul, ol, figure, blockquote, dl, dd, form, fieldset) {
+  margin: 0;
+}
+.aui-root :where(ul, ol),
+.aui-root:where(ul, ol) {
+  padding: 0;
+  list-style: none;
+}
+.aui-root :where(button, input, textarea, select) {
+  font: inherit;
+  color: inherit;
+  letter-spacing: inherit;
+}
+:where(.aui-root) :where(button),
+:where(button.aui-root) {
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.aui-root :where(button:disabled) {
+  cursor: default;
+}
+.aui-root :where(a) {
+  color: inherit;
+  text-decoration: none;
+}
+.aui-root :where(svg) {
+  flex-shrink: 0;
+  display: block;
+}
+.aui-root :where(:focus-visible) {
+  outline: 2px solid var(--aui-focus-ring);
+  outline-offset: 2px;
+}
+.aui-tnum {
+  font-variant-numeric: tabular-nums;
+}
+.aui-mono {
+  font-family: var(--aui-mono);
+  font-size: 0.92em;
+}
+.aui-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+.aui-truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+/* ---------- card ---------- */
+.aui-card {
+  background: var(--aui-surface);
+  border-radius: var(--aui-radius-card);
+  box-shadow: var(--aui-shadow-card), var(--aui-tray-ring);
+  color: var(--aui-fg);
+}
+.aui-card--pad {
+  padding: var(--aui-card-pad);
+}
+
+/* ---------- field (inputs, triggers) ---------- */
+.aui-field {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: var(--aui-control-h);
+  padding: 0 var(--aui-control-px);
+  background: var(--aui-field);
+  border-radius: var(--aui-radius);
+  box-shadow: var(--aui-shadow-field);
+  color: var(--aui-fg);
+  font-size: var(--aui-control-text);
+  transition:
+    box-shadow var(--aui-dur) var(--aui-ease),
+    background-color var(--aui-dur) var(--aui-ease);
+}
+.aui-field:hover {
+  box-shadow:
+    var(--aui-shadow-field),
+    0 0 0 0.5px var(--aui-border-strong);
+}
+.aui-field:focus-within,
+.aui-field[data-focus] {
+  box-shadow:
+    0 0 0 1px var(--aui-border-strong),
+    0 0 0 3.5px var(--aui-muted);
+}
+.aui-field[aria-invalid="true"],
+.aui-field[data-invalid] {
+  box-shadow:
+    0 0 0 1px var(--aui-danger-ring),
+    0 1px 2px rgba(0, 0, 0, 0.05);
+}
+[data-aui-style="classic"] .aui-field[aria-invalid="true"],
+[data-aui-style="classic"] .aui-field[data-invalid] {
+  background: color-mix(in srgb, var(--aui-danger) 4%, var(--aui-field));
+}
+.aui-field :where(input, textarea):focus-visible {
+  box-shadow: none;
+}
+.aui-field input,
+.aui-field textarea {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  outline: none;
+  background: transparent;
+  padding: 0;
+  color: inherit;
+}
+.aui-field ::placeholder {
+  color: var(--aui-fg-faint);
+}
+.aui-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--aui-fg);
+}
+.aui-hint {
+  font-size: var(--aui-text-sm);
+  line-height: 16px;
+  color: var(--aui-fg-subtle);
+}
+.aui-hint[data-error] {
+  color: var(--aui-danger-text);
+}
+
+/* ---------- button ---------- */
+.aui-btn {
+  --_h: var(--aui-control-h);
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: var(--_h);
+  padding: 0 10px;
+  border-radius: calc(var(--aui-radius) - 1px);
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 20px;
+  white-space: nowrap;
+  user-select: none;
+  transition:
+    background-color var(--aui-dur) var(--aui-ease),
+    box-shadow var(--aui-dur) var(--aui-ease),
+    color var(--aui-dur) var(--aui-ease),
+    transform var(--aui-dur-fast) var(--aui-ease),
+    opacity var(--aui-dur);
+}
+.aui-btn:active:not(:disabled) {
+  transform: scale(0.97);
+}
+.aui-btn:disabled {
+  opacity: 0.5;
+}
+.aui-btn--sm {
+  --_h: var(--aui-control-h-sm);
+  padding: 0 8px;
+  font-size: var(--aui-text-sm);
+  gap: 4px;
+}
+.aui-btn--xs {
+  --_h: 24px;
+  padding: 0 7px;
+  font-size: var(--aui-text-sm);
+  gap: 4px;
+  border-radius: var(--aui-radius-sm);
+}
+.aui-btn--lg {
+  --_h: var(--aui-control-h-lg);
+  padding: 0 14px;
+}
+.aui-btn--icon {
+  width: var(--_h);
+  padding: 0;
+}
+.aui-btn--primary {
+  background: var(--aui-primary);
+  color: var(--aui-primary-fg);
+}
+.aui-btn--primary:hover:not(:disabled) {
+  background: var(--aui-primary-hover);
+}
+.aui-btn--secondary {
+  background: var(--aui-field);
+  color: var(--aui-fg-strong);
+  box-shadow: var(--aui-shadow-field);
+}
+.aui-btn--secondary:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--aui-field) 94%, var(--aui-fg));
+}
+.aui-btn--ghost {
+  color: var(--aui-fg-muted);
+}
+.aui-btn--ghost:hover:not(:disabled) {
+  background: var(--aui-hover);
+  color: var(--aui-fg);
+}
+.aui-btn--danger {
+  background: var(--aui-danger-soft);
+  color: var(--aui-danger);
+}
+.aui-btn--danger:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--aui-danger) 14%, transparent);
+}
+.aui-btn--accent {
+  background: var(--aui-accent);
+  color: var(--aui-accent-fg);
+}
+.aui-btn svg {
+  width: 16px;
+  height: 16px;
+  opacity: 0.8;
+}
+
+/* ---------- badge / pill ---------- */
+.aui-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: var(--aui-radius-sm);
+  background: var(--aui-muted);
+  color: var(--aui-fg-muted);
+  font-size: var(--aui-text-sm);
+  font-weight: 500;
+  line-height: 16px;
+  white-space: nowrap;
+}
+.aui-badge svg {
+  width: 12px;
+  height: 12px;
+}
+.aui-badge--pill {
+  border-radius: var(--aui-radius-pill);
+  padding: 0 8px;
+}
+.aui-badge--accent {
+  background: var(--aui-accent-soft);
+  color: var(--aui-accent-text);
+}
+.aui-badge--success {
+  background: var(--aui-success-soft);
+  color: var(--aui-success-text);
+}
+.aui-badge--warning {
+  background: var(--aui-warning-soft);
+  color: var(--aui-warning-text);
+}
+.aui-badge--danger {
+  background: var(--aui-danger-soft);
+  color: var(--aui-danger-text);
+}
+.aui-badge--violet {
+  background: var(--aui-violet-soft);
+  color: var(--aui-violet);
+}
+.aui-badge--outline {
+  background: transparent;
+  box-shadow: inset 0 0 0 1px var(--aui-border);
+}
+
+/* ---------- kbd ---------- */
+.aui-kbd {
+  display: inline-grid;
+  place-items: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  border-radius: 4px;
+  background: var(--aui-muted);
+  box-shadow: inset 0 0 0 0.5px var(--aui-border);
+  color: var(--aui-fg-subtle);
+  font-size: 11px;
+  font-weight: 500;
+  font-family: var(--aui-font);
+}
+
+/* ---------- avatar ---------- */
+.aui-avatar {
+  --_s: 24px;
+  display: inline-grid;
+  place-items: center;
+  width: var(--_s);
+  height: var(--_s);
+  border-radius: 50%;
+  background: var(--aui-surface-3);
+  color: var(--aui-fg-muted);
+  font-size: calc(var(--_s) * 0.42);
+  font-weight: 600;
+  overflow: hidden;
+  flex-shrink: 0;
+  box-shadow: inset 0 0 0 0.5px var(--aui-border);
+}
+.aui-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* ---------- logo tile (brand / integration icon) ---------- */
+.aui-tile {
+  --_s: 20px;
+  display: inline-grid;
+  place-items: center;
+  width: var(--_s);
+  height: var(--_s);
+  border-radius: calc(var(--_s) * 0.28);
+  background: var(--aui-surface);
+  box-shadow:
+    0 0 0 0.5px var(--aui-border),
+    0 1px 1px rgba(0, 0, 0, 0.04);
+  flex-shrink: 0;
+}
+.aui-tile svg {
+  width: 62%;
+  height: 62%;
+}
+
+/* ---------- divider ---------- */
+.aui-divider {
+  height: 1px;
+  background: var(--aui-divider);
+  border: 0;
+  margin: 0;
+}
+
+/* ---------- spinner: eight rays ---------- */
+.aui-spinner {
+  --_s: 14px;
+  width: var(--_s);
+  height: var(--_s);
+  animation: aui-spin 0.9s steps(8) infinite;
+  color: currentColor;
+}
+@keyframes aui-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.aui-ring-spinner {
+  --_s: 12px;
+  width: var(--_s);
+  height: var(--_s);
+  border-radius: 50%;
+  border: 1.5px solid color-mix(in srgb, currentColor 25%, transparent);
+  border-top-color: currentColor;
+  animation: aui-spin-smooth 0.8s linear infinite;
+  flex-shrink: 0;
+}
+@keyframes aui-spin-smooth {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ---------- shimmer text (thinking labels) ---------- */
+.aui-shimmer {
+  background:
+    linear-gradient(
+      90deg,
+      var(--aui-fg-subtle) 0%,
+      var(--aui-fg-subtle) 35%,
+      var(--aui-fg-strong) 50%,
+      var(--aui-fg-subtle) 65%,
+      var(--aui-fg-subtle) 100%
+    )
+    0 0 / 250% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+  animation: aui-shimmer 2.2s linear infinite;
+}
+@keyframes aui-shimmer {
+  from {
+    background-position: 100% 0;
+  }
+  to {
+    background-position: -150% 0;
+  }
+}
+
+/* ---------- pulse dot ---------- */
+.aui-dot {
+  --_c: var(--aui-fg-faint);
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--_c);
+  flex-shrink: 0;
+}
+.aui-dot--live {
+  --_c: var(--aui-success);
+  box-shadow: 0 0 0 0 color-mix(in srgb, var(--_c) 50%, transparent);
+  animation: aui-pulse 1.8s var(--aui-ease) infinite;
+}
+@keyframes aui-pulse {
+  70% {
+    box-shadow: 0 0 0 5px transparent;
+  }
+  100% {
+    box-shadow: 0 0 0 0 transparent;
+  }
+}
+
+/* ---------- enter animations ---------- */
+.aui-enter {
+  animation: aui-enter var(--aui-dur-slow) var(--aui-ease) both;
+}
+@keyframes aui-enter {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+    filter: blur(2px);
+  }
+}
+.aui-pop-in {
+  animation: aui-pop-in 0.22s var(--aui-ease) both;
+}
+@keyframes aui-pop-in {
+  from {
+    opacity: 0;
+    transform: scale(0.96) translateY(-2px);
+  }
+}
+
+/* ---------- popover surface ---------- */
+.aui-popover {
+  background: var(--aui-pop);
+  border-radius: var(--aui-radius-lg);
+  box-shadow: var(--aui-shadow-pop);
+  padding: 4px;
+  z-index: 50;
+}
+.aui-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 30px;
+  padding: 5px 8px;
+  border-radius: calc(var(--aui-radius-lg) - 4px);
+  color: var(--aui-fg);
+  text-align: left;
+  cursor: default;
+}
+.aui-menu-item:is(:hover, [data-active]) {
+  background: var(--aui-hover);
+}
+.aui-menu-item svg {
+  width: 16px;
+  height: 16px;
+  color: var(--aui-icon);
+}
+
+/* ---------- scroll ---------- */
+.aui-scroll {
+  overflow: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--aui-border-strong) transparent;
+}
+
+/* ---------- progress track ---------- */
+.aui-track {
+  height: 4px;
+  border-radius: 999px;
+  background: var(--aui-muted);
+  overflow: hidden;
+}
+.aui-track > i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--aui-fg);
+  transition: width 0.5s var(--aui-ease);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .aui-root *,
+  .aui-root *::before,
+  .aui-root *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+
+@media (pointer: coarse) {
+  .aui-root {
+    --aui-control-h: 40px;
+  }
+}

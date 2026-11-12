@@ -1,0 +1,495 @@
+.aui-tcc,
+.aui-tcg {
+  --_str: color-mix(in srgb, #007bac 90%, transparent);
+  --_num: #b25b0c;
+  --_lit: #5b5bd6;
+  --_ok: var(--aui-accent);
+}
+:is(.dark, [data-theme="dark"]) :is(.aui-tcc, .aui-tcg) {
+  --_str: #5cc1e8;
+  --_num: #f0a35c;
+  --_lit: #a5a5f5;
+}
+
+/* ---------- card ---------- */
+.aui-tcc {
+  position: relative;
+  container-type: inline-size;
+  width: 100%;
+  background: var(--aui-pop);
+  border-radius: var(--aui-radius-card);
+  box-shadow: var(--aui-shadow-card);
+}
+.aui-tcc__head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  height: 44px;
+  padding: 0 14px;
+  border-radius: var(--aui-radius-card);
+  text-align: left;
+  transition:
+    background-color 0.16s ease,
+    border-radius 0s linear;
+}
+.aui-tcc[data-open] > .aui-tcc__head {
+  border-radius: var(--aui-radius-card) var(--aui-radius-card) 0 0;
+}
+@media (hover: hover) {
+  .aui-tcc__head:hover {
+    background: color-mix(in srgb, var(--aui-fg) 1.8%, transparent);
+  }
+  .aui-tcc__head:hover .aui-tcc__chev {
+    color: var(--aui-fg);
+  }
+}
+.aui-tcc__icon {
+  display: grid;
+  place-items: center;
+  color: var(--aui-icon);
+  flex-shrink: 0;
+}
+.aui-tcc__main {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+}
+.aui-tcc__name {
+  font-family: var(--aui-mono);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--aui-fg-strong);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.aui-tcc__summary {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--aui-fg-muted);
+}
+.aui-tcc__status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--aui-fg-subtle);
+  white-space: nowrap;
+  flex-shrink: 0;
+  animation: aui-tcc-blur 0.36s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+@keyframes aui-tcc-blur {
+  from {
+    opacity: 0;
+    transform: translateY(3px);
+    filter: blur(2px);
+  }
+}
+.aui-tcc__status[data-status="error"] {
+  color: var(--aui-danger-text);
+  font-weight: 500;
+}
+.aui-tcc__spin {
+  --_s: 13px;
+  color: var(--_ok);
+}
+.aui-tcc__time {
+  min-width: 26px;
+}
+.aui-tcc__ok {
+  animation: aui-tcc-pop 0.46s var(--aui-spring) both;
+}
+@keyframes aui-tcc-pop {
+  from {
+    transform: scale(0.6);
+    opacity: 0;
+  }
+}
+.aui-tcc__ok-bg {
+  fill: var(--_ok);
+}
+.aui-tcc__ok-mark {
+  fill: none;
+  stroke: #fff;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 1;
+  animation: aui-tcc-draw 0.36s cubic-bezier(0.22, 1, 0.36, 1) 0.16s both;
+}
+@keyframes aui-tcc-draw {
+  from {
+    stroke-dashoffset: 1;
+  }
+}
+.aui-tcc__chev,
+.aui-tcg__chev {
+  color: var(--aui-icon);
+  flex-shrink: 0;
+  transition: transform var(--aui-dur) var(--aui-ease);
+}
+.aui-tcc[data-open] .aui-tcc__chev,
+.aui-tcg[data-open] > .aui-tcg__head .aui-tcg__chev {
+  transform: rotate(180deg);
+}
+
+/* body fold (shared by card and group) */
+.aui-tcc__body {
+  display: grid;
+  grid-template-rows: 0fr;
+  opacity: 0;
+  transition:
+    grid-template-rows var(--aui-dur-slow) var(--aui-ease),
+    opacity var(--aui-dur-slow) var(--aui-ease);
+}
+:is(.aui-tcc, .aui-tcg)[data-open] > .aui-tcc__body {
+  grid-template-rows: 1fr;
+  opacity: 1;
+}
+.aui-tcc__clip {
+  min-height: 0;
+  overflow: hidden;
+}
+.aui-tcc__sections {
+  display: grid;
+  gap: 14px;
+  padding: 12px 14px 14px;
+  border-top: 1px solid var(--aui-divider);
+}
+.aui-tcc__section {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+.aui-tcc__section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 28px;
+}
+.aui-tcc__label {
+  font-size: 10px;
+  line-height: 16px;
+  font-weight: 500;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: var(--aui-fg-subtle);
+}
+.aui-tcc__copy {
+  --_copied: rgba(0, 96, 226, 0.765);
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  background: var(--aui-pop);
+  box-shadow: var(--aui-shadow-card);
+  color: var(--aui-icon);
+  cursor: pointer;
+  transition:
+    background-color 0.16s ease,
+    color 0.16s ease;
+}
+:is(.dark, [data-theme="dark"]) .aui-tcc__copy {
+  --_copied: rgba(77, 141, 255, 0.9);
+}
+@media (hover: hover) {
+  .aui-tcc__copy:hover {
+    background: color-mix(in srgb, var(--aui-fg) 1.8%, transparent);
+    color: var(--aui-fg);
+  }
+}
+.aui-tcc__copy[data-copied] {
+  color: var(--_copied);
+}
+.aui-tcc__copy-icon,
+.aui-tcc__copy-done {
+  display: grid;
+  grid-area: 1 / 1;
+  transition:
+    opacity 0.2s ease,
+    transform 0.2s cubic-bezier(0.22, 1, 0.36, 1),
+    filter 0.2s ease;
+}
+.aui-tcc__copy-done,
+.aui-tcc__copy[data-copied] .aui-tcc__copy-icon {
+  opacity: 0;
+  transform: scale(0.6);
+  filter: blur(2px);
+}
+.aui-tcc__copy[data-copied] .aui-tcc__copy-done {
+  opacity: 1;
+  transform: none;
+  filter: none;
+}
+.aui-tcc__code {
+  position: relative;
+  margin: 0;
+  padding: 10px 12px;
+  overflow: hidden;
+  border-radius: 8px;
+  background: var(--aui-surface-2);
+  box-shadow: inset 0 0 0 0.5px var(--aui-card-stroke);
+  color: var(--aui-fg-subtle);
+  font-family: var(--aui-mono);
+  font-size: 12px;
+  line-height: 20px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  transition: max-height var(--aui-dur-slow) var(--aui-ease);
+}
+.aui-tcc__code[data-text] {
+  color: var(--aui-fg);
+  font-family: var(--aui-font);
+  font-size: 13px;
+}
+.aui-tcc__code[data-capped] {
+  mask-image: linear-gradient(#000 calc(100% - 48px), transparent);
+}
+.aui-tcc__t-key {
+  color: var(--aui-fg);
+}
+.aui-tcc__t-str {
+  color: var(--_str);
+}
+.aui-tcc__t-num {
+  color: var(--_num);
+}
+.aui-tcc__t-lit {
+  color: var(--_lit);
+}
+.aui-tcc__more {
+  justify-self: start;
+  margin-left: -4px;
+  padding: 2px 4px;
+  border-radius: 6px;
+  color: var(--aui-fg-muted);
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 500;
+}
+.aui-tcc__more:hover {
+  background: var(--aui-hover);
+  color: var(--aui-fg);
+}
+.aui-tcc__wait {
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: var(--aui-surface-2);
+  box-shadow: inset 0 0 0 0.5px var(--aui-card-stroke);
+  font-size: 12px;
+}
+.aui-tcc__error {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 8px 8px 12px;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--aui-danger) 4%, transparent);
+  box-shadow: inset 0 0 0 0.5px color-mix(in srgb, var(--aui-danger) 14%, transparent);
+}
+.aui-tcc__error-icon {
+  color: var(--aui-danger-text);
+}
+.aui-tcc__error-text {
+  flex: 1;
+  min-width: 0;
+  color: var(--aui-danger-text);
+}
+.aui-tcc__retry {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  padding: 0 10px 0 7px;
+  border-radius: 6px;
+  background: var(--aui-pop);
+  box-shadow: var(--aui-shadow-card);
+  color: var(--aui-fg-strong);
+  font-weight: 500;
+  flex-shrink: 0;
+}
+.aui-tcc__retry svg {
+  color: var(--aui-icon);
+}
+
+/* ---------- group ---------- */
+.aui-tcg {
+  display: grid;
+  width: 100%;
+}
+.aui-tcg__head {
+  justify-self: start;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: -6px;
+  padding: 4px 10px 4px 6px;
+  border-radius: 8px;
+  max-width: calc(100% + 6px);
+  transition: background-color var(--aui-dur) var(--aui-ease);
+}
+.aui-tcg__head:hover {
+  background: var(--aui-hover);
+}
+.aui-tcg__stack {
+  display: flex;
+  padding: 0.5px;
+}
+.aui-tcg__tile {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  background: var(--aui-pop);
+  box-shadow: var(--aui-shadow-card);
+  color: var(--aui-icon);
+  animation: aui-tcc-pop 0.42s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.aui-tcg__tile + .aui-tcg__tile {
+  margin-left: -4px;
+}
+.aui-tcg__tile svg {
+  width: 13px;
+  height: 13px;
+}
+.aui-tcg__title {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  min-width: 0;
+  white-space: nowrap;
+  animation: aui-tcc-blur 0.36s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.aui-tcg__label {
+  font-weight: 500;
+  color: var(--aui-fg);
+}
+.aui-tcg__failed {
+  color: var(--aui-danger-text);
+}
+.aui-tcg__time {
+  color: color-mix(in srgb, var(--aui-fg) 30%, transparent);
+}
+.aui-tcg__list {
+  display: grid;
+  gap: 8px;
+  padding: 6px 0 2px;
+}
+
+/* ---------- classic ---------- */
+[data-aui-style="classic"] :is(.aui-tcc, .aui-tcg) {
+  --_ok: var(--aui-fg-strong);
+}
+[data-aui-style="classic"] .aui-tcc {
+  border-radius: 14px;
+  background: var(--aui-surface);
+  box-shadow:
+    0 0 0 1px var(--aui-card-stroke),
+    0 1px 2px rgba(0, 0, 0, 0.04);
+}
+[data-aui-style="classic"] .aui-tcc__head {
+  height: 42px;
+  padding: 0 14px 0 8px;
+  border-radius: 14px;
+}
+[data-aui-style="classic"] .aui-tcc[data-open] > .aui-tcc__head {
+  border-radius: 14px 14px 0 0;
+}
+[data-aui-style="classic"] .aui-tcc__icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background: var(--aui-surface-3);
+  box-shadow: inset 0 0 0 1px var(--aui-card-stroke);
+  color: var(--aui-fg);
+}
+[data-aui-style="classic"] .aui-tcc__icon svg {
+  width: 14px;
+  height: 14px;
+}
+[data-aui-style="classic"] .aui-tcc__name {
+  font-size: 12.5px;
+  font-weight: 400;
+}
+[data-aui-style="classic"] .aui-tcc__summary {
+  font-size: 13px;
+}
+[data-aui-style="classic"] .aui-tcc__ok-bg {
+  fill: transparent;
+}
+[data-aui-style="classic"] .aui-tcc__ok-mark {
+  stroke: var(--aui-fg-strong);
+  stroke-width: 1.8;
+}
+[data-aui-style="classic"] .aui-tcc__code {
+  border-radius: 10px;
+}
+[data-aui-style="classic"] .aui-tcg__tile {
+  width: 24px;
+  height: 24px;
+  border-radius: 7px;
+  background: var(--aui-surface-3);
+  box-shadow:
+    0 0 0 1px var(--aui-card-stroke),
+    0 0 0 2.5px var(--aui-canvas);
+  color: var(--aui-fg);
+}
+[data-aui-style="classic"] .aui-tcg__label {
+  font-weight: 500;
+}
+
+@container (max-width: 360px) {
+  .aui-tcc__head {
+    padding: 0 10px;
+    gap: 8px;
+  }
+  .aui-tcc__sections {
+    padding: 10px;
+  }
+}
+@media (pointer: coarse) {
+  .aui-tcc__head {
+    height: 52px;
+  }
+}
+
+/* demo sizing – the reference preview shows the chat a little larger */
+.aui-tcc-demo {
+  /* the chat grows downward as calls arrive, so it starts at the top like the reference preview */
+  align-self: start;
+  justify-self: center;
+  align-content: start;
+  padding-top: 56px;
+  display: grid;
+  gap: 18px;
+  width: 460px;
+  max-width: 100%;
+}
+.aui-tcc-demo > .aui-tcg {
+  zoom: 1.08;
+}
+.aui-tcc-demo__you {
+  justify-self: end;
+  margin: 0;
+  max-width: 405px;
+  padding: 10px 14px;
+  border-radius: 18px 18px 6px 18px;
+  background: var(--aui-tray);
+  color: var(--aui-fg-strong);
+  font-size: 14px;
+  line-height: 20.3px;
+}
+.aui-tcg__label.aui-shimmer {
+  color: transparent;
+}
+:is(.dark, [data-theme="dark"]) .aui-tcc-demo__you {
+  background: #2a2a2d;
+}

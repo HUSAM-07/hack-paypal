@@ -5,6 +5,7 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
+    "./fixtures": "./src/fixtures.ts",
     "./styles.css": "./src/styles.css"
   },
   "scripts": {
@@ -12,13 +13,12 @@
     "test": "vitest run --passWithNoTests"
   },
   "dependencies": {
+    "@paypal/react-paypal-js": "^10.6.1",
     "@shop/agent-protocol": "*",
     "@shop/commerce": "*",
-    "class-variance-authority": "^0.7",
-    "clsx": "^2",
     "lucide-react": "^1.66.0",
-    "motion": "^14.9.0",
-    "tailwind-merge": "^3",
+    "react-markdown": "^10.1.0",
+    "rehype-sanitize": "^6.0.0",
     "zod": "^4.6.7"
   },
   "peerDependencies": {
