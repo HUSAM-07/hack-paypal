@@ -15,10 +15,10 @@ export const SITE_DESCRIPTION =
   "CITED pays creators on proven lift, not last-click cookies. AI shopping agents are randomly shown a creator's test, a placebo or nothing; PayPal Payouts credit only the sales the test caused.";
 
 export const SITE_OG_IMAGE = {
-  path: "/og/cited-proof-v1.png",
+  path: "/og/cited-agents-v1.png",
   width: 1200,
   height: 630,
-  alt: "Bar chart: 100% of AI agents shown a creator's test bought the Winix, against 6% shown a placebo and 8% shown nothing.",
+  alt: "CITED: AI agents for payments. Your wallet, behind gates. Agents, control gates and wallets on PayPal.",
 };
 
 /**
