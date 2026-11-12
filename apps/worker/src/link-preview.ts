@@ -25,6 +25,14 @@ const PREVIEWS: [string, Preview][] = [
     },
   ],
   [
+    "/console/ledger",
+    {
+      title: "CITED: does the ledger match PayPal?",
+      description:
+        "Live checks that every sale is recorded, every payout matches PayPal to the cent, and every deposit is accounted for. PayPal is simulated on the hosted demo.",
+    },
+  ],
+  [
     "/console/statement",
     {
       title: "CITED: the brand's PayPal statement",
