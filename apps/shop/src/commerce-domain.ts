@@ -24,6 +24,7 @@ import {
   type ScheduleOutcome,
   type ShopContext,
   ShopError,
+  type ShopPayPalSimSnapshot,
   type ShopState,
   ShopState as ShopStateSchema,
   systemClock,
@@ -43,10 +44,14 @@ export interface CommerceEnv extends PayPalModeEnv {
   SHOP_PUBLIC_ORIGIN?: string;
 }
 
-/** Private storage = commerce's private state + the schedule id behind each commerce task. */
+/**
+ * Private storage: commerce's private state, the schedule id behind each commerce task, and (in
+ * simulated mode) the PayPal simulator's records, which must outlive the object's memory.
+ */
 interface Stored {
   commerce: PrivateState;
   schedules: Record<string, string>;
+  paypalSim?: ShopPayPalSimSnapshot;
 }
 
 const taskKey = (t: ScheduledTask) => (t.kind === "watch" ? `w:${t.watchId}` : `c:${t.orderId}`);
@@ -93,19 +98,25 @@ export const commerceDomain = defineShopDomain<ShopState>((ctx) => {
     return {
       commerce: raw?.commerce ?? initialPrivateState(),
       schedules: raw?.schedules ?? {},
+      ...(raw?.paypalSim ? { paypalSim: raw.paypalSim } : {}),
     };
   };
   const writeStored = (s: Stored) => ctx.setPrivate(s);
 
-  // The simulator lives in this Durable Object's memory; re-register a wallet vaulted before an
-  // eviction so purchases keep working against it.
-  const vaulted = readStored().commerce.wallet;
-  if (sim && vaulted) {
-    sim.vaultWallet({
-      id: vaulted.vaultId,
-      ...(vaulted.payerEmail ? { email: vaulted.payerEmail } : {}),
-    });
-  }
+  // The simulator lives in memory, which a hibernating Durable Object loses between calls:
+  // restore its records on start and save them after every piece of work that may call PayPal.
+  const saved = readStored().paypalSim;
+  if (sim && saved) sim.restore(saved);
+  const persistSim = () => {
+    if (sim) writeStored({ ...readStored(), paypalSim: sim.snapshot() });
+  };
+  const withSim = async <T>(work: () => Promise<T>): Promise<T> => {
+    try {
+      return await work();
+    } finally {
+      persistSim();
+    }
+  };
 
   const origin = env.SHOP_PUBLIC_ORIGIN ?? "http://localhost:8790";
   const browserRun = browserRunFrom(env);
@@ -217,7 +228,7 @@ export const commerceDomain = defineShopDomain<ShopState>((ctx) => {
             },
           }
         : {}),
-      run: (a, tc) => t.run(a, shopContext(tc.threadId, tc.approval)) as never,
+      run: (a, tc) => withSim(() => t.run(a, shopContext(tc.threadId, tc.approval))) as never,
       ...(name === "search_products" ? { toModel: compactSearch } : {}),
     }) as AnyTool;
   });
@@ -230,15 +241,16 @@ export const commerceDomain = defineShopDomain<ShopState>((ctx) => {
     };
     actions[name] = defineAction({
       args: action.args,
-      run: async (args) => {
-        const result = await action.run(args, shopContext());
-        // The simulator stands in for the buyer approving the wallet link on PayPal's site.
-        if (sim && name === "wallet.startConnect") {
-          const id = (result as { setupTokenId?: string }).setupTokenId;
-          if (id) sim.approveSetupToken(id, { email: "buyer@example.com" });
-        }
-        return result;
-      },
+      run: (args) =>
+        withSim(async () => {
+          const result = await action.run(args, shopContext());
+          // The simulator stands in for the buyer approving the wallet link on PayPal's site.
+          if (sim && name === "wallet.startConnect") {
+            const id = (result as { setupTokenId?: string }).setupTokenId;
+            if (id) sim.approveSetupToken(id, { email: "buyer@example.com" });
+          }
+          return result;
+        }),
     });
   }
 
@@ -248,7 +260,7 @@ export const commerceDomain = defineShopDomain<ShopState>((ctx) => {
     const stored = readStored();
     const { [taskKey(task)]: _fired, ...rest } = stored.schedules;
     writeStored({ ...stored, schedules: rest });
-    const outcome = await shop.onSchedule(task, shopContext());
+    const outcome = await withSim(() => shop.onSchedule(task, shopContext()));
     announce(outcome);
   }
 

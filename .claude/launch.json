@@ -44,6 +44,25 @@
         "@shop/web"
       ],
       "port": 5181
+    },
+    {
+      "name": "shop-worker",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "exec",
+        "-w",
+        "@pact/worker",
+        "--",
+        "wrangler",
+        "dev",
+        "--port",
+        "8795",
+        "--var",
+        "ORIGINS:http://localhost:8795",
+        "--var",
+        "SHOP_PUBLIC_ORIGIN:http://localhost:8795"
+      ],
+      "port": 8795
     }
   ]
 }

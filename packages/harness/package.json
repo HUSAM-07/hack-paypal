@@ -11,9 +11,9 @@
     "test": "vitest run --passWithNoTests"
   },
   "dependencies": {
-    "@ai-sdk/openai-compatible": "^3.0.90",
+    "@ai-sdk/openai-compatible": "3.0.84",
     "@shop/agent-protocol": "*",
-    "ai": "^7.0.170",
+    "ai": "7.0.159",
     "zod": "^4.6.7"
   }
 }

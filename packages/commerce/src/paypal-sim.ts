@@ -14,7 +14,7 @@ import { createMockPayPal, createPayPal, type MockPayPal, type PayPalClient } fr
 
 type Json = Record<string, unknown>;
 
-interface SimAuthorization {
+export interface SimAuthorization {
   id: string;
   orderId: string;
   status: "CREATED" | "CAPTURED" | "VOIDED";
@@ -27,7 +27,7 @@ interface SimAuthorization {
   expirationTime: string;
 }
 
-interface SimSetupToken {
+export interface SimSetupToken {
   id: string;
   status: "PAYER_ACTION_REQUIRED" | "APPROVED" | "VAULTED";
   email?: string;
@@ -50,6 +50,22 @@ export interface ShopPayPalSim {
   failNext(kind: "authorize" | "capture" | "void", issue: string): void;
   /** How many times each route actually executed (replays don't count). */
   calls(): Record<string, number>;
+  /**
+   * The simulator's PayPal-side records as JSON, and back. A host whose memory doesn't outlive
+   * a request (a hibernating Durable Object) persists this between calls so an authorization made
+   * now can still be captured or voided later, as it could at the real PayPal.
+   */
+  snapshot(): ShopPayPalSimSnapshot;
+  restore(snapshot: ShopPayPalSimSnapshot): void;
+}
+
+export interface ShopPayPalSimSnapshot {
+  seq: number;
+  auths: SimAuthorization[];
+  orders: { id: string; intent: string; unit: Json; vaultId?: string; authId: string }[];
+  setupTokens: SimSetupToken[];
+  vault: [string, { customerId: string; email: string; payerId: string }][];
+  replays: [string, { status: number; body: string }][];
 }
 
 /** Thrown by a sim route that doesn't own this request: the base mock answers it. */
@@ -389,6 +405,22 @@ export function createShopPayPalSim(opts: { now?: () => number } = {}): ShopPayP
       if (buyer.payerId) st.payerId = buyer.payerId;
     },
     vaultWallet,
+    snapshot: () => ({
+      seq,
+      auths: [...auths.values()],
+      orders: [...orders.values()],
+      setupTokens: [...setupTokens.values()],
+      vault: [...vault.entries()],
+      replays: [...replays.entries()].slice(-200),
+    }),
+    restore(snap) {
+      seq = Math.max(seq, snap.seq);
+      for (const a of snap.auths) auths.set(a.id, { ...a });
+      for (const o of snap.orders) orders.set(o.id, { ...o });
+      for (const t of snap.setupTokens) setupTokens.set(t.id, { ...t });
+      for (const [k, v] of snap.vault) vault.set(k, { ...v });
+      for (const [k, v] of snap.replays) replays.set(k, { ...v });
+    },
     authorization: (id) => auths.get(id),
     orders: () =>
       [...orders.values()].map((o) => ({

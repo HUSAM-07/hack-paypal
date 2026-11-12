@@ -12,6 +12,7 @@ import {
 } from "../src/contract";
 import { ShopError } from "../src/deps";
 import { createShopDomain } from "../src/domain";
+import { createShopPayPalSim } from "../src/paypal-sim";
 import { fakeExa, makeDeps, memoryCtx, pageFetch, T0 } from "./helpers";
 
 const usd = (amountMinor: number) => ({ amountMinor, currency: "USD" });
@@ -207,6 +208,21 @@ describe("auto-buy, end to end (simulated PayPal)", () => {
     await expect(
       env.domain.actions["order.captureNow"].run({ orderId: order?.id as string }, env.mem.ctx),
     ).rejects.toBeInstanceOf(ShopError);
+  });
+
+  it("a restored simulator still holds the authorization (hibernating hosts)", async () => {
+    const env = setup();
+    await connectWallet(env);
+    const watch = await watchWithAutoBuy(env);
+    env.sellers.setPrice("pp_sony_xm6", usd(25_999));
+    const hit = await env.domain.onSchedule(watch.id, env.mem.ctx);
+    const authId = (hit.kind === "watchChecked" ? hit.order : undefined)?.paypal
+      .authorizationId as string;
+
+    const fresh = createShopPayPalSim();
+    fresh.restore(JSON.parse(JSON.stringify(env.sim.snapshot())));
+    expect(fresh.authorization(authId)).toEqual(env.sim.authorization(authId));
+    expect(fresh.snapshot()).toEqual(env.sim.snapshot());
   });
 
   it("a too-good-to-be-true drop pauses for review; approving it buys within the same limits", async () => {
