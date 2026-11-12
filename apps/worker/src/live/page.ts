@@ -408,6 +408,8 @@ export function tryPage(o: {
   agent: string;
   scripted: boolean;
   category?: TryCategoryId;
+  /** CITED's PayPal mode: "sandbox" pays real PayPal sandbox orders. Default simulated. */
+  paypalMode?: string;
 }): string {
   const cat = tryCategory(o.category ?? "purifier");
   // DOM order is spine, test, held (read in that order on a phone); wide screens place each
@@ -437,7 +439,7 @@ ${siteHeader("try")}
 <div class="controls">
 <button id="go" type="submit" class="ui-btn ui-btn-solid">Run side by side</button>
 <button id="five" type="button" class="ui-btn ui-btn-quiet">Run 5 pairs</button>
-<p class="who${o.scripted ? " scripted" : ""}">Agents: <b>${esc(o.agent)}</b> · each pays the seller through PayPal from the buyer's linked wallet (simulated PayPal)</p>
+<p class="who${o.scripted ? " scripted" : ""}">Agents: <b>${esc(o.agent)}</b> · each pays the seller through PayPal from the buyer's linked wallet (${o.paypalMode === "sandbox" ? "real PayPal sandbox orders" : "simulated PayPal"})</p>
 </div>
 <p class="fixed">Both agents get the same request and the same offers in the same order. For this side by side we fix the groups; the real catalogue assigns them at random.</p>
 <p id="status" class="status" role="status" aria-live="polite"></p>

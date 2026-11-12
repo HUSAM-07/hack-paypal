@@ -32,7 +32,7 @@ Every money step ran against the PayPal sandbox through the engine's own code. T
 
 AI does three jobs: shopping agents (Claude, GPT and Gemini) read the catalogue and buy through PayPal; pre-registered evals of 2,139 sessions across those models measures how much a creator's test moves their choice; and an AG Studio Analyst agent answers the brand's questions from the ledger.
 
-The hosted demo uses a simulated PayPal so anyone can click through it without keys, and its seeded shopper runs are scripted. [`/try`](https://caaash.shipwith.si/try) runs a live model. Locally, everything runs with no keys; set `PAYPAL_MODE=sandbox` to use the sandbox (below).
+The hosted demo runs CITED on the real PayPal sandbox: every checkout on [`/try`](https://caaash.shipwith.si/try) and over the public MCP server is a sandbox Orders v2 order charged to the buyer's vaulted wallet, paid to the sandbox app's business account, and credited from PayPal's signed webhook. The seeded console and payout pages are a recorded replay of the demo (scripted shopper runs), so their numbers stay fixed. [`/try`](https://caaash.shipwith.si/try) runs a live model. Locally, everything runs with no keys; set `PAYPAL_MODE=sandbox` to use the sandbox (below).
 
 ## Try it
 
