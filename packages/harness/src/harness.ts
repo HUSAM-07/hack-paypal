@@ -82,6 +82,7 @@ export interface Harness {
   forkThread(opts: { threadId: string; turnId?: string; title?: string }): Thread;
   /** Persisted thread-scoped notifications after `afterSeq`, for `thread/resume`. */
   replay(threadId: string, afterSeq: number): StoredEvent[];
+  lastSeq(threadId: string): number;
   startTurn(opts: {
     threadId: string;
     text: string;
@@ -550,6 +551,26 @@ export function createHarness(deps: HarnessDeps): Harness {
     return { accepted, done };
   }
 
+  /**
+   * A turn persisted as inProgress with no live loop and no queued work was cut off by a restart
+   * (Durable Object eviction). Close it so the thread isn't blocked forever.
+   */
+  function recoverOrphan(threadId: string): Turn | undefined {
+    const active = activeTurn(threadId);
+    if (active?.status !== "inProgress" || running.has(active.id) || locks.has(threadId)) {
+      return active;
+    }
+    for (const item of store.listItems(threadId, active.id)) {
+      if (item.type === "approvalRequest" && item.decision === undefined) {
+        completeItem({ ...item, decision: "expired", status: "declined" });
+      } else if (item.status === "inProgress") {
+        completeItem({ ...item, status: "failed" } as Item);
+      }
+    }
+    finishTurn(active, "interrupted", "The agent restarted before this turn finished.");
+    return undefined;
+  }
+
   function activeTurn(threadId: string): Turn | undefined {
     return store
       .listTurns(threadId)
@@ -648,7 +669,7 @@ export function createHarness(deps: HarnessDeps): Harness {
 
     startTurn({ threadId, text, uiState, origin = "user" }) {
       const thread = requireThread(threadId);
-      const active = activeTurn(threadId);
+      const active = recoverOrphan(threadId);
       if (active?.status === "inProgress") {
         throw new HarnessError(
           ErrorCodes.turnInProgress,
@@ -694,6 +715,7 @@ export function createHarness(deps: HarnessDeps): Harness {
       const turn = store.getTurn(threadId, turnId);
       if (!turn) throw new HarnessError(ErrorCodes.notFound, `turn not found: ${turnId}`);
       running.get(turnId)?.controller.abort();
+      recoverOrphan(threadId);
       await withLock(threadId, async () => {
         const t = store.getTurn(threadId, turnId);
         if (t?.status !== "awaitingApproval") return;
@@ -724,6 +746,7 @@ export function createHarness(deps: HarnessDeps): Harness {
       for (const a of due) await (await resolve(a, "expired")).done;
     },
 
+    lastSeq: (threadId) => store.lastSeq(threadId),
     pendingApprovals: () => store.listPendingApprovals(),
     activeTurn,
   };

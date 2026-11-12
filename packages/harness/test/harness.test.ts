@@ -143,6 +143,21 @@ describe("threads", () => {
     }
     await done;
   });
+  it("closes a turn cut off by a restart instead of blocking the thread", async () => {
+    const first = setup({ fake: { chunkDelayMs: 50 } });
+    const t = first.harness.startThread();
+    const { turn } = first.harness.startTurn({ threadId: t.id, text: "a long answer please" });
+    // A second harness on the same store is what a Durable Object sees after eviction.
+    const restarted = setup({ store: first.store });
+    const next = await restarted.harness.startTurn({ threadId: t.id, text: "hello again" }).done;
+    expect(next.status).toBe("completed");
+    const old = restarted.harness.readThread(t.id).turns.find((x) => x.id === turn.id);
+    expect(old).toMatchObject({
+      status: "interrupted",
+      error: expect.stringContaining("restarted"),
+    });
+    await first.harness.interrupt({ threadId: t.id, turnId: turn.id });
+  });
 });
 
 describe("steer and interrupt", () => {
