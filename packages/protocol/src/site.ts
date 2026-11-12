@@ -17,7 +17,6 @@ export type SiteNavKey =
 
 export const SITE_NAV: readonly { key: SiteNavKey; href: string; label: string }[] = [
   { key: "console", href: "/console", label: "Console" },
-  { key: "payout", href: "/console/payout", label: "Payout" },
   { key: "ledger", href: "/console/ledger", label: "Ledger" },
   { key: "try", href: "/try", label: "Run an agent" },
   { key: "mcp", href: "/mcp", label: "MCP" },
@@ -80,22 +79,25 @@ export const SITE_CTA_KEY: SiteNavKey = "try";
 export const SITE_HEADER_CSS = [
   ".site-top{position:sticky;top:0;z-index:50;background:color-mix(in oklab,var(--background) 80%,transparent);-webkit-backdrop-filter:saturate(1.6) blur(12px);backdrop-filter:saturate(1.6) blur(12px);border-bottom:1px dashed var(--border)}",
   ".site-bar{box-sizing:border-box;max-width:var(--site-col,var(--frame-wide));margin:0 auto;padding:0 clamp(14px,3vw,24px);height:60px;display:flex;align-items:center;gap:6px;border-inline:1px solid var(--border)}",
-  ".site-col .site-bar{--site-col:var(--frame)}",
   ".site-mark{display:inline-flex;align-items:center;gap:8px;margin-right:8px;font:650 16px/1 var(--font-sans);letter-spacing:-.01em;color:var(--foreground);text-decoration:none;flex:none}",
-  ".site-mark svg{width:24px;height:24px;flex:none;color:var(--primary);transition:transform .3s cubic-bezier(.34,1.56,.64,1)}",
+  ".site-mark svg{width:24px;height:24px;flex:none;color:var(--primary);transition:transform .3s cubic-bezier(.2,.7,.2,1)}",
   ".site-mark:hover svg{transform:rotate(-14deg) scale(1.06)}",
-  ".site-nav{display:flex;gap:6px;min-width:0;overflow-x:auto;scrollbar-width:none}",
+  ".site-nav{display:flex;gap:2px;min-width:0;overflow-x:auto;scrollbar-width:none;padding:3px;border-radius:13px;background:var(--fill);box-shadow:inset 0 0 0 1px var(--border)}",
   ".site-nav::-webkit-scrollbar{display:none}",
   ".site-nav a,.site-cta,.site-icon{box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;gap:6px;height:30px;border-radius:10px;font:500 13px/1 var(--font-sans);text-decoration:none;white-space:nowrap;transition:background-color .15s,color .15s,transform .15s}",
-  ".site-nav a{padding:0 12px;background:var(--fill);color:var(--foreground)}",
+  ".site-nav a{position:relative;height:28px;padding:0 12px;border-radius:10px;background:transparent;color:var(--muted-foreground)}",
   ".site-nav a:hover{background:var(--fill-strong);color:var(--foreground)}",
-  ".site-nav a[aria-current]{background:var(--primary-soft);color:var(--primary)}",
+  ".site-nav a[aria-current]{padding-left:22px;background:var(--background);color:var(--foreground);box-shadow:0 0 0 1px var(--border),0 1px 3px var(--shadow-color)}",
+  '.site-nav a[aria-current]::before{content:"";position:absolute;left:10px;top:50%;width:6px;height:6px;margin-top:-3px;border-radius:50%;background:var(--primary);box-shadow:0 0 0 3px var(--primary-soft)}',
   ".site-tools{margin-left:auto;display:flex;align-items:center;gap:6px;flex:none;padding-left:6px}",
-  ".site-icon{width:30px;padding:0;border:0;cursor:pointer;background:var(--fill);color:var(--foreground)}",
+  ".site-icon{width:30px;padding:0;border:0;cursor:pointer;background:transparent;color:var(--muted-foreground)}",
   ".site-icon:hover{color:var(--foreground);background:var(--fill-strong)}",
   ".site-icon svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}",
-  ".site-cta{padding:0 13px;background:var(--foreground);color:var(--background)}",
-  ".site-cta:hover{opacity:.86}.site-cta:active,.site-icon:active,.site-nav a:active{transform:scale(.96)}",
+  ".site-cta{position:relative;overflow:hidden;height:32px;padding:0 14px;background:var(--primary);color:var(--primary-foreground);box-shadow:inset 0 1px 0 color-mix(in oklab,var(--primary-foreground) 22%,transparent),0 1px 2px var(--shadow-color),0 4px 14px -6px var(--primary)}",
+  '.site-cta::after{content:"";position:absolute;inset:0;background:linear-gradient(105deg,transparent 35%,color-mix(in oklab,var(--primary-foreground) 28%,transparent) 50%,transparent 65%);transform:translateX(-120%);transition:transform .5s cubic-bezier(.2,.7,.2,1)}',
+  ".site-cta:hover::after{transform:translateX(120%)}",
+  ".site-cta .site-cta-dot{width:7px;height:7px;border-radius:50%;background:currentColor;box-shadow:0 0 0 3px color-mix(in oklab,var(--primary-foreground) 25%,transparent)}",
+  ".site-cta:hover{transform:translateY(-1px)}.site-cta:active,.site-icon:active,.site-nav a:active{transform:scale(.96)}",
   ".site-mark:focus-visible,.site-nav a:focus-visible,.site-cta:focus-visible,.site-icon:focus-visible{outline:2px solid var(--primary);outline-offset:2px}",
   "@media (max-width:760px){.site-bar{height:auto;flex-wrap:wrap;padding-top:10px;padding-bottom:10px;row-gap:8px}.site-nav{order:3;flex-basis:100%}}",
   "@media (pointer:coarse){.site-nav a,.site-cta,.site-icon{min-height:40px}.site-icon{min-width:40px}}",
@@ -126,7 +128,7 @@ export function siteHeader(
     )
     .join("");
   const ctaHtml = cta
-    ? `<a class="site-cta" href="${href(cta.href)}"${current === SITE_CTA_KEY ? ' aria-current="page"' : ""}>${cta.label}</a>`
+    ? `<a class="site-cta" href="${href(cta.href)}"${current === SITE_CTA_KEY ? ' aria-current="page"' : ""}><span class="site-cta-dot" aria-hidden="true"></span>${cta.label}</a>`
     : "";
   const tools = `<div class="site-tools">${SITE_GITHUB_HTML}${SITE_THEME_TOGGLE_HTML}${ctaHtml}</div>`;
   return `${SITE_SKIP_HTML}<header class="site-top"><div class="site-bar"><a class="site-mark" href="${href("/")}">${SITE_MARK_SVG}CITED</a><nav class="site-nav" aria-label="CITED">${links}</nav>${tools}</div></header>`;

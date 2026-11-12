@@ -24,11 +24,11 @@ describe("tour stops", () => {
     expect(TOUR_STOPS.map((_, i) => stopHref(i + 1))).toEqual([
       "/?tour=1#problem",
       "/console?clean=1&tour=2",
-      "/console/payout?clean=1&tour=3",
+      "/?tour=3#money",
       "/proof?tour=4#result",
       "/studio?view=first&tour=5",
       "/studio?page=trust&tour=6",
-      "/proof?tour=7#vacuums",
+      "/proof?tour=7#result",
       "/mcp?tour=8",
     ]);
   });

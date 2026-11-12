@@ -5,7 +5,6 @@ describe("site nav", () => {
   it("links every public CITED page", () => {
     expect(SITE_NAV.map((l) => l.href)).toEqual([
       "/console",
-      "/console/payout",
       "/console/ledger",
       "/try",
       "/mcp",

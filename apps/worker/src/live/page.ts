@@ -128,7 +128,9 @@ code{font-size:12px;overflow-wrap:anywhere}
 .after{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
 .after > *{padding:4px var(--pad) 0}
 .note{border-right:1px dashed var(--border)}
-.note p{margin:0;font:400 20px/1.4 var(--font-serif);max-width:36em}
+.after:has(.tally[hidden]){grid-template-columns:minmax(0,1fr)}
+.after:has(.tally[hidden]) .note{border-right:0}
+.note p{margin:0;font:400 16px/1.6 var(--font-sans);max-width:62ch}
 .note p + p{margin-top:10px;font:400 14px/1.6 var(--font-sans);color:var(--muted-foreground)}
 .tally h3{margin:0 0 10px;font:400 11px/1.4 var(--font-mono);letter-spacing:.06em;text-transform:uppercase;color:var(--muted-foreground)}
 .tally[hidden]{display:none}

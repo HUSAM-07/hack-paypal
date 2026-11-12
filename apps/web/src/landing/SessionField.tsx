@@ -1,10 +1,9 @@
 import type { ReactNode } from "react";
 
 /**
- * Fig. 1 as a field of glyphs: one cell per session of the price-matched study (147).
- * `$` bought the Winix, `/` bought the Levoit. Counts are the committed eval's, the
- * scatter of the few Winix buys in the placebo and nothing arms is a fixed seed, so
- * the server and the client render the same field.
+ * Fig. 1 as three dotted rings: one dot per session of the price-matched study (147).
+ * A solid dot bought the Winix, a faint one bought the Levoit. Counts are the
+ * committed eval's; the centre carries each arm's Winix count.
  */
 
 type Arm = {
@@ -27,28 +26,25 @@ const ARMS: Arm[] = [
   { key: "none", label: "Nothing", note: "test withheld, nothing added", n: 36, winix: 3 },
 ];
 
-const ROWS = 4;
+// Ring geometry in viewBox units: every arm uses the same dot size, so a smaller arm
+// reads as a sparser ring rather than smaller dots.
+const VIEW = 200;
+const RING = 86;
+const DOT = 3.4;
 
-function rng(seed: number) {
-  let s = seed;
-  return () => {
-    s = (s * 1103515245 + 12345) % 2147483648;
-    return s / 2147483648;
-  };
-}
-
-function cells(arm: Arm, seed: number): boolean[] {
-  const out = Array.from({ length: arm.n }, (_, i) => i < arm.winix);
-  const r = rng(seed);
-  for (let i = out.length - 1; i > 0; i--) {
-    const j = Math.floor(r() * (i + 1));
-    [out[i], out[j]] = [out[j] as boolean, out[i] as boolean];
-  }
-  return out;
+function dots(arm: Arm) {
+  return Array.from({ length: arm.n }, (_, i) => {
+    // Start at 12 o'clock and run clockwise, Winix buys first, so the buys read as an arc.
+    const t = (i / arm.n) * 2 * Math.PI - Math.PI / 2;
+    return {
+      x: +(VIEW / 2 + RING * Math.cos(t)).toFixed(2),
+      y: +(VIEW / 2 + RING * Math.sin(t)).toFixed(2),
+      winix: i < arm.winix,
+    };
+  });
 }
 
 export function SessionField({ caption }: { caption: ReactNode }) {
-  const delay = rng(7);
   return (
     <figure className="field" aria-labelledby="field-cap">
       <div
@@ -56,41 +52,39 @@ export function SessionField({ caption }: { caption: ReactNode }) {
         role="img"
         aria-label="Agents that bought the Winix: shown the test, 57 of 57; placebo, 3 of 54; nothing, 3 of 36."
       >
-        {ARMS.map((a, k) => {
-          const cols = Math.ceil(a.n / ROWS);
-          return (
-            <div key={a.key} className={`field-block fb-${a.key}`} style={{ flexGrow: cols }}>
-              <div
-                className="field-grid"
-                aria-hidden="true"
-                style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }}
-              >
-                {cells(a, 11 + k * 31).map((w, i) => (
-                  <span
-                    // biome-ignore lint/suspicious/noArrayIndexKey: fixed-length static field
+        {ARMS.map((a) => (
+          <div key={a.key} className={`field-block fb-${a.key}`}>
+            <div className="field-ring" aria-hidden="true">
+              <svg viewBox={`0 0 ${VIEW} ${VIEW}`} aria-hidden="true">
+                <circle className="ring-track" cx={VIEW / 2} cy={VIEW / 2} r={RING - 14} />
+                {dots(a).map((d, i) => (
+                  <circle
+                    // biome-ignore lint/suspicious/noArrayIndexKey: fixed-length static ring
                     key={i}
-                    className={w ? "g g-w" : "g g-l"}
-                    style={{ animationDelay: `${Math.round(delay() * 1400)}ms` }}
-                  >
-                    {w ? "$" : "/"}
-                  </span>
+                    className={d.winix ? "g g-w" : "g g-l"}
+                    cx={d.x}
+                    cy={d.y}
+                    r={DOT}
+                    style={{ animationDelay: `${i * 14}ms` }}
+                  />
                 ))}
-              </div>
-              <div className="field-label">
-                <span className="field-name">{a.label}</span>
-                <span className="field-count num">
-                  {a.winix} / {a.n}
-                </span>
-                <span className="field-note">{a.note}</span>
+              </svg>
+              <div className="ring-center">
+                <span className="ring-num num">{a.winix}</span>
+                <span className="ring-of num">of {a.n}</span>
               </div>
             </div>
-          );
-        })}
+            <div className="field-label">
+              <span className="field-name">{a.label}</span>
+              <span className="field-note">{a.note}</span>
+            </div>
+          </div>
+        ))}
       </div>
       <figcaption id="field-cap" className="caption field-cap">
         <span className="field-legend" aria-hidden="true">
-          <span className="g g-w">$</span> bought the Winix <span className="g g-l">/</span> bought
-          the Levoit
+          <span className="field-key fk-w" /> bought the Winix <span className="field-key fk-l" />{" "}
+          bought the Levoit
         </span>
         {caption}
       </figcaption>

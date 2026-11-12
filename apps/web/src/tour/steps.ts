@@ -35,11 +35,11 @@ export const TOUR_STOPS: readonly TourStop[] = [
       "Two agents get the same request. The one shown the creator's test buys the Winix; the one held out buys the Levoit.",
   },
   {
-    path: "/console/payout",
-    query: "clean=1",
+    path: "/",
+    hash: "money",
     label: "The payout",
     caption:
-      "Day 30: HouseFresh is paid $383.96 through PayPal Payouts. The same payout also ran on the real PayPal sandbox; its batch id is under the card.",
+      "Day 30: HouseFresh is paid $383.96 through PayPal Payouts. The same payout also ran on the real PayPal sandbox; its batch id is on the PayPal notice.",
   },
   {
     path: "/proof",
@@ -64,7 +64,7 @@ export const TOUR_STOPS: readonly TourStop[] = [
   },
   {
     path: "/proof",
-    hash: "vacuums",
+    hash: "result",
     label: "Second category",
     caption:
       "The same study on robot vacuums: 57/57 against 45/54, +16.7 points (80% lower bound +11.7 points). Smaller, and Sonnet showed no lift; the page says so.",

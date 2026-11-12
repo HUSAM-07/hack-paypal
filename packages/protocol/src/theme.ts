@@ -111,8 +111,8 @@ const DERIVED = [
   '--font-serif:"Instrument Serif",ui-serif,Georgia,serif',
   '--font-mono:"Geist Mono",ui-monospace,"SF Mono",Menlo,monospace',
   '--font-hand:"Caveat","Bradley Hand",cursive',
-  "--frame:768px",
-  "--frame-wide:1200px",
+  "--frame:1080px",
+  "--frame-wide:1080px",
   "--pad:24px",
 ].join(";");
 
