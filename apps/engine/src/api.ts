@@ -556,7 +556,7 @@ function mcpVerdict(arm: unknown, creatorsSeen: string[]) {
   };
 }
 
-async function journeys(env: Env, limit: number, source: "agent" | "mcp" = "agent") {
+async function journeys(env: Env, limit: number, source: "agent" | "mcp" = "agent", offset = 0) {
   const sales = (
     await env.DB.prepare(
       `SELECT x.*, s.stores_viewed AS stores_viewed FROM sales x
@@ -564,7 +564,7 @@ async function journeys(env: Env, limit: number, source: "agent" | "mcp" = "agen
        WHERE x.unattributed_reason IS NULL AND x.source = ? AND COALESCE(s.category, '') != ?
        ORDER BY x.captured_at DESC, x.order_id LIMIT ?`,
     )
-      .bind(source, LIVE_CATEGORY, limit * 4)
+      .bind(source, LIVE_CATEGORY, (offset + limit) * 4)
       .all<Row>()
   ).results;
   const prices = new Map(
@@ -578,7 +578,7 @@ async function journeys(env: Env, limit: number, source: "agent" | "mcp" = "agen
   for (const r of sales)
     orders.set(r.order_id as string, [...(orders.get(r.order_id as string) ?? []), r]);
 
-  return [...orders.entries()].slice(0, limit).map(([orderId, rows]) => {
+  return [...orders.entries()].slice(offset, offset + limit).map(([orderId, rows]) => {
     const first = rows[0] as Row;
     const viewed = JSON.parse((first.stores_viewed as string) ?? "[]") as string[];
     const captureIds = [...new Set(rows.map((r) => r.capture_id as string))];
@@ -656,6 +656,8 @@ api.get("/journeys", async (c) =>
       c.env,
       Math.min(200, Number(c.req.query("limit")) || 50),
       c.req.query("source") === "mcp" ? "mcp" : "agent",
+      // Optional paging, newest first; absent means the first page as before.
+      Math.min(20_000, Math.max(0, Math.floor(Number(c.req.query("offset"))) || 0)),
     ),
   }),
 );

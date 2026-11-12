@@ -102,4 +102,11 @@ it("records public /mcp sales apart: the study's numbers and ledger do not move"
   });
   expect(byArm.placebo.verdict.creditable).toBe(false);
   expect(byArm.none.verdict.creditable).toBe(false);
+
+  // Paging: offset moves through the same newest-first list; absent offset is unchanged.
+  const ids = mcp.json.journeys.map((j: Json) => j.orderId);
+  const p0 = await call<Json>("GET", "/journeys?source=mcp&limit=2&offset=0");
+  const p1 = await call<Json>("GET", "/journeys?source=mcp&limit=2&offset=2");
+  expect(p0.json.journeys.map((j: Json) => j.orderId)).toEqual(ids.slice(0, 2));
+  expect(p1.json.journeys.map((j: Json) => j.orderId)).toEqual(ids.slice(2, 4));
 });
