@@ -9,6 +9,7 @@ import {
   depositBalance,
   type ReviewFlag,
   type VoidEvent,
+  type WhatIfBrand,
 } from "@pact/attribution";
 import { type AttributedSale, type Credit, LIVE_CATEGORY } from "@pact/protocol";
 import type { Env } from "./env";
@@ -193,6 +194,49 @@ export async function coalitionValueFor(env: Env, brand: Brand): Promise<Coaliti
     memo.set(key, v);
     return v;
   };
+}
+
+/** More recorded sales than this and the what-if is left out: the page would be re-sending them every poll. */
+export const WHAT_IF_MAX_SALES = 5_000;
+
+/**
+ * What the Studio commission what-if needs to run the ledger's own maths again in the browser:
+ * per brand, the exposed-arm sales and the lift of every coalition of creators those sales saw.
+ * Read-only; nothing here changes a credit.
+ */
+export async function whatIfInputs(env: Env): Promise<{
+  brands: WhatIfBrand[];
+  truncated: boolean;
+}> {
+  const brands = await listBrands(env);
+  const all = (await loadAttributedSales(env)).filter((s) => s.arm === "test");
+  if (all.length > WHAT_IF_MAX_SALES) return { brands: [], truncated: true };
+  const selfDealt = await selfDealtSessions(env);
+  const out: WhatIfBrand[] = [];
+  for (const brand of brands) {
+    const mine = all.filter((s) => s.upc === brand.upc);
+    const value = await coalitionValueFor(env, brand);
+    const coalitions: Record<string, number> = {};
+    for (const sale of mine) {
+      const ids = [...new Set(sale.creatorsSeen)].sort();
+      // Shapley needs every non-empty subset of the creators this sale saw (at most 4).
+      for (let mask = 1; mask < 1 << ids.length; mask++) {
+        const subset = ids.filter((_, i) => mask & (1 << i));
+        coalitions[subset.join("+")] = value(subset);
+      }
+    }
+    const lift = evaluateBrand(await brandLiftData(env, brand));
+    out.push({
+      brandId: brand.brandId,
+      upc: brand.upc,
+      currency: brand.currency,
+      causedUnits: lift.units,
+      sales: mine.filter((s) => !selfDealt.has(s.sessionId)),
+      selfDealtSales: mine.filter((s) => selfDealt.has(s.sessionId)),
+      coalitions,
+    });
+  }
+  return { brands: out, truncated: false };
 }
 
 export interface RecomputeSummary {
