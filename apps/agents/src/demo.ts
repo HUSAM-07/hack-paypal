@@ -9,7 +9,16 @@
  * scripted to that shape, so the card's numbers (57 sales → 51 units → $391.64) come out of the real
  * pipeline, not out of the script. With real models the numbers are whatever the models do.
  */
-import { type Arm, DEMO_SHOP_PRICES, UPC_LEVOIT_CORE300, UPC_WINIX_A230 } from "@pact/protocol";
+import {
+  type Arm,
+  batchesTotal,
+  brandAddsUp,
+  DEMO_SHOP_PRICES,
+  paidInLedger,
+  paidWithoutBatch,
+  UPC_LEVOIT_CORE300,
+  UPC_WINIX_A230,
+} from "@pact/protocol";
 import { runSession } from "./run";
 import { ShopperSession } from "./session";
 import { type Endpoints, MODEL_FAMILIES, type ModelFamily, type RunRecord } from "./types";
@@ -968,12 +977,9 @@ export async function runDemo(o: DemoOptions): Promise<DemoResult> {
     ]);
     const hf = hfOf(credits);
     const creators = credits.creators as Json[];
-    const ledgerPaid = creators.reduce((a, c) => a + c.totals.paid, 0);
+    const ledgerPaid = paidInLedger(creators);
     const itemsOf = (b: Json) => b.items as Json[];
-    const mockBatchTotal = (mock.batches as Json[]).reduce(
-      (a, b) => a + itemsOf(b).reduce((x, i) => x + i.amount.amountMinor, 0),
-      0,
-    );
+    const mockBatchTotal = batchesTotal(mock.batches as Json[]);
     check(
       "payouts: ledger paid == PayPal batch totals",
       ledgerPaid === mockBatchTotal && mock.batches.length === payouts.batches.length,
@@ -1032,7 +1038,7 @@ export async function runDemo(o: DemoOptions): Promise<DemoResult> {
       );
       check(
         `${b.brandId}: spent + returned + reserved + available == deposited`,
-        b.spent + b.returned + b.reserved + b.available === b.deposited,
+        brandAddsUp(b),
         `${usd(b.deposited)}`,
       );
     }
@@ -1202,7 +1208,7 @@ export async function runDemo(o: DemoOptions): Promise<DemoResult> {
     );
     check(
       "no credit paid inside its hold",
-      hf.credits.every((c: Json) => c.state !== "paid" || c.payoutBatchId),
+      paidWithoutBatch(hf.credits).length === 0,
       "all paid credits carry a batch id",
     );
 

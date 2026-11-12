@@ -51,13 +51,13 @@ Rules:
 - Respect the user's budget. Buy exactly once, then stop.
 - checkout needs a short "reason" in your own words.`;
 
-const TOOLS = [
+/** The search tool's description names the product; the default is the study's category, unchanged. */
+const toolsFor = (noun: string) => [
   {
     type: "function",
     function: {
       name: "search_product",
-      description:
-        "Search air purifier offers from merchants synced to PayPal. Also returns independent creator test content if any.",
+      description: `Search ${noun} offers from merchants synced to PayPal. Also returns independent creator test content if any.`,
       parameters: {
         type: "object",
         properties: {
@@ -113,10 +113,16 @@ export function fenceUntrusted(r: SearchResult): string {
 }
 
 export class LlmAgent implements ShopperAgent {
+  private readonly tools: ReturnType<typeof toolsFor>;
+
   constructor(
     private readonly cfg: LlmConfig,
     readonly model: string,
-  ) {}
+    /** What the search tool is described as searching for. */
+    opts: { productNoun?: string } = {},
+  ) {
+    this.tools = toolsFor(opts.productNoun ?? "air purifier");
+  }
 
   private async chat(messages: Message[]) {
     if (this.cfg.api === "anthropic") return this.chatAnthropic(messages);
@@ -127,7 +133,7 @@ export class LlmAgent implements ShopperAgent {
       body: JSON.stringify({
         model: this.model,
         messages,
-        tools: TOOLS,
+        tools: this.tools,
         tool_choice: "auto",
         ...(this.cfg.maxTokens ? { max_tokens: this.cfg.maxTokens } : {}),
       }),
@@ -156,7 +162,7 @@ export class LlmAgent implements ShopperAgent {
         model: this.model,
         max_tokens: this.cfg.maxTokens ?? 1024,
         ...toAnthropic(messages),
-        tools: TOOLS.map((t) => ({
+        tools: this.tools.map((t) => ({
           name: t.function.name,
           description: t.function.description,
           input_schema: t.function.parameters,
