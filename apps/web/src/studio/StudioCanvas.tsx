@@ -17,7 +17,7 @@ import { useMemo } from "react";
 import type * as Analyst from "./agents/analyst";
 import type { StudioContext } from "./context";
 import type { StudioConfig, StudioTables } from "./data";
-import { initialState, sourcesFor } from "./layout";
+import { currenciesIn, initialState, sourcesFor } from "./layout";
 import { citedTheme } from "./theme";
 import { ArmStrip, CausedTile, CreatorTiles, DepositMeter, ReviewFlags } from "./widgets/cited";
 import { JourneysGrid } from "./widgets/JourneysGrid";
@@ -162,10 +162,18 @@ export interface StudioCanvasProps {
 
 export function StudioCanvas(p: StudioCanvasProps) {
   const { config, tables, analyst, initialView, creatorName } = p;
-  const data = useMemo(() => sourcesFor(config, tables), [config, tables]);
+  const data = useMemo(
+    () => sourcesFor(config, tables, creatorName),
+    [config, tables, creatorName],
+  );
+  // A creator paid in two currencies sees a Currency column in their grids.
+  const mixed = useMemo(
+    () => currenciesIn((tables.credits ?? []).filter((r) => r.creator === creatorName)).length > 1,
+    [tables, creatorName],
+  );
   const state = useMemo(
-    () => initialState(initialView, creatorName, window.innerWidth),
-    [initialView, creatorName],
+    () => initialState(initialView, creatorName, window.innerWidth, mixed),
+    [initialView, creatorName, mixed],
   );
   // The harness reads the view the page opened on; `context` is one object for Studio's lifetime.
   const ai = useMemo(() => analyst.citedHarness(config, p.context), [analyst, config, p.context]);

@@ -24,11 +24,17 @@ subscription are dispatched; simulator-signed ones are recorded only.
    Simulated: approved and captured at once (`201`). Sandbox: `202` with the order; after the
    brand approves at PayPal call `POST /api/deposits/:orderId/capture`.
    Idempotent on `key` (default `initial`).
-   `POST /api/programmes {category, upc, depositMinor, commissionBps}` starts a whole programme
-   for a catalogue product (`purifier` or `robot-vacuum`): it creates the brand with its own
-   commission rate and captures the `initial` deposit, with `PayPal-Request-Id`
+   `POST /api/programmes {category, upc, depositMinor, commissionBps, currency?}` starts a whole
+   programme for a catalogue product (`purifier` or `robot-vacuum`): it creates the brand with
+   its own commission rate and captures the `initial` deposit, with `PayPal-Request-Id`
    `cited-dep:<brandId>:initial`. One programme per product (`409 programme_exists`), so a new
-   programme never shares a sale with another.
+   programme never shares a sale with another. `currency` is `USD` (the default), `GBP` or
+   `EUR` (`400 unsupported_currency` otherwise): the programme lives entirely in it. Its deposit
+   is captured in it, its credits (sales of the product in that currency only) and payouts are
+   in it, and its statement is in it. Nothing is ever converted. A payout batch may carry items
+   in several currencies (each item has its own `amount.currency`, and a creator credited in two
+   currencies gets one item per currency, `sender_item_id` ending `-GBP` or `-EUR`); Venmo stays
+   USD-only, so a Venmo creator's pounds or euros go to their PayPal account.
 2. `POST /api/approvals/:approvalId/approve` `{brandId, amountMinor}` — an approved Analyst
    recommendation adds a top-up deposit (own capture). Approving twice charges once.
 3. `POST /api/credits/recompute` — per brand: model-stratified lift at the 80% lower bound →
@@ -76,7 +82,7 @@ catalogue reports every session it assigns an arm; lift needs the non-buyers).
 | Endpoint | Response |
 | --- | --- |
 | `GET /api/clock` | `{now}` |
-| `GET /api/lift`, `/api/lift/:brandId` | `{brands: Lift[]}` / `Lift` |
+| `GET /api/lift`, `/api/lift/:brandId` | `{brands: Lift[]}` / `Lift` (each with the programme's `currency`) |
 | `GET /api/caused-units` | `{skus: [{brandId, upc, exposedSales, attributableFraction, causedUnits, lowerBound}]}` |
 | `GET /api/deposits` | `{brands: [{brandId, name, category, currency, deposited, reserved, spent, returned, available, deposits[], refunds[]}]}` |
 | `GET /api/credits?creatorId=` | `{creators: [{creatorId, name, paypalLinked, totals:{pending,voided,paid,frozen,held}, credits[]}], reviewFlags[]}` (`frozen` is the part of `pending` held by an open dispute; `held`, the part the abuse guard holds for review) |
@@ -96,6 +102,8 @@ placeboRate, lift, weight}]}` (`stdError`/`lowerBound` are `null` when there is 
 
 `credits[]`: `{id, captureId, brandId, upc, amountMinor, currency, state: pending|voided|paid,
 voidReason, holdUntil, payoutBatchId, payoutStatus, frozen}`.
+Each creator in `GET /api/credits` also has `currency` (their first, USD when they have any) and
+`totalsByCurrency`; `totals` are in `currency`, so money in two currencies is never added.
 
 `Journey`: `{orderId, sessionId, model, arm, storesViewed[], storeChosen, items:[{upc,
 amountMinor, currency}], priceSavedMinor|null, commission:{pending,paid,voided}, holdStatus:

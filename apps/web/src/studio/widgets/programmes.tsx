@@ -4,20 +4,23 @@
  * `brands` table as the Winix view, so a programme the brand starts shows up in every dashboard
  * the moment the next read lands (the page asks for one right after confirming).
  */
-import { PROGRAMME_CATEGORIES } from "@pact/protocol";
+import { CURRENCY_NAME, currencySymbol, PROGRAMME_CATEGORIES } from "@pact/protocol";
 import type { AgWidgetParams } from "ag-studio";
 import { useEffect, useMemo, useReducer, useState, useSyncExternalStore } from "react";
 import type { StudioContext } from "../context";
 import { API } from "../data";
 import {
   type Action,
+  CURRENCY_WORD,
   categoryOf,
   DEMO_NOTE,
   exampleLine,
   type FormState,
+  fmt,
   freeProducts,
   initialForm,
   outcomeMessage,
+  PROGRAMME_CURRENCIES,
   PROMISES,
   parsePercent,
   productOf,
@@ -27,7 +30,7 @@ import {
   STEPS,
   termsProblems,
 } from "../programmeForm";
-import { money, num, useRows } from "./useRows";
+import { currencyOf, money, num, useRows } from "./useRows";
 import "./programmes.css";
 
 type P = AgWidgetParams<never, unknown, StudioContext>;
@@ -36,6 +39,7 @@ const FIELDS = [
   "brandId",
   "brand",
   "category",
+  "currency",
   "commissionRate",
   "scopeKey",
   "exposedSales",
@@ -96,6 +100,8 @@ export function ProgrammesList(p: P) {
     // biome-ignore lint/a11y/noNoninteractiveTabindex: the body scrolls when the widget is small; keyboard users must reach it (WCAG 2.1.1)
     <div className="cw pg-list" tabIndex={0}>
       {programmes.map((r) => {
+        const cur = currencyOf(r);
+        const m = (n: number) => money(n, true, cur);
         const parts = [
           { key: "paid", label: "Paid to creators", value: num(r.spent) },
           { key: "held", label: "Reserved for pending credits", value: num(r.reserved) },
@@ -112,7 +118,7 @@ export function ProgrammesList(p: P) {
               {isNew ? <span className="pg-new">Just started</span> : null}
             </header>
             <p className="pg-terms">
-              <b>{money(num(r.deposited))}</b> deposited · pays creators{" "}
+              <b>{m(num(r.deposited))}</b> deposited · pays creators{" "}
               <b>{ratePct(r.commissionRate)}</b> of each sale the test caused
             </p>
             <div className="cw-meter" role="img" aria-label="Deposit breakdown">
@@ -122,7 +128,7 @@ export function ProgrammesList(p: P) {
                     key={x.key}
                     className={`cw-meter-${x.key}`}
                     style={{ flexGrow: x.value }}
-                    title={`${x.label}: ${money(x.value)}`}
+                    title={`${x.label}: ${m(x.value)}`}
                   />
                 ) : null,
               )}
@@ -134,7 +140,7 @@ export function ProgrammesList(p: P) {
                     <i />
                     {x.label}
                   </dt>
-                  <dd>{money(x.value)}</dd>
+                  <dd>{m(x.value)}</dd>
                 </div>
               ))}
             </dl>
@@ -154,9 +160,6 @@ export function ProgrammesList(p: P) {
     </div>
   );
 }
-
-const usd = (minor: number) =>
-  (minor / 100).toLocaleString("en-US", { style: "currency", currency: "USD" });
 
 /** Pick a category and product, set the terms, read the summary, confirm. */
 export function StartProgramme(p: P) {
@@ -206,6 +209,7 @@ export function StartProgramme(p: P) {
           resetsAt: body.resetsAt,
           depositMinor: req.depositMinor,
           brand: product?.brand ?? "The",
+          currency: form.currency,
         }),
       );
       startedStore.set(body.brandId ?? product?.brandId ?? null);
@@ -359,13 +363,35 @@ function TermsStep(props: { form: FormState; send: (a: Action) => void }) {
   const { form, send } = props;
   const problems = termsProblems(form);
   const bps = parsePercent(form.commission);
-  const example = bps !== null && !problems.commission ? exampleLine(form.upc, bps) : null;
+  const example =
+    bps !== null && !problems.commission ? exampleLine(form.upc, bps, form.currency) : null;
   return (
     <div className="pg-step">
+      <fieldset className="pg-fieldset pg-field">
+        <legend>Currency</legend>
+        <div className="pg-presets">
+          {PROGRAMME_CURRENCIES.map((c) => (
+            <button
+              key={c}
+              type="button"
+              aria-pressed={form.currency === c}
+              className={`pg-preset${form.currency === c ? " is-on" : ""}`}
+              onClick={() => send({ type: "currency", currency: c })}
+              title={CURRENCY_NAME[c]}
+            >
+              {currencySymbol(c)} {c}
+            </button>
+          ))}
+        </div>
+        <small className="cw-muted">
+          The deposit, the credits, the creator payouts and the statement are all in{" "}
+          {CURRENCY_WORD[form.currency]}. Nothing is converted.
+        </small>
+      </fieldset>
       <div className="pg-field">
         <label htmlFor="pg-deposit">Deposit</label>
         <div className={`pg-input${problems.deposit ? " is-bad" : ""}`}>
-          <span aria-hidden="true">$</span>
+          <span aria-hidden="true">{currencySymbol(form.currency)}</span>
           <input
             id="pg-deposit"
             inputMode="decimal"
@@ -384,7 +410,7 @@ function TermsStep(props: { form: FormState; send: (a: Action) => void }) {
               className={`pg-preset${form.deposit === v ? " is-on" : ""}`}
               onClick={() => send({ type: "deposit", value: v })}
             >
-              {usd(Number(v) * 100)}
+              {fmt(Number(v) * 100, form.currency)}
             </button>
           ))}
         </div>
@@ -473,8 +499,8 @@ function ReviewStep(props: {
           {busy
             ? "Starting…"
             : demo
-              ? `Confirm in demo mode · ${usd(req.depositMinor)}`
-              : `Confirm and fund ${usd(req.depositMinor)}`}
+              ? `Confirm in demo mode · ${fmt(req.depositMinor, form.currency)}`
+              : `Confirm and fund ${fmt(req.depositMinor, form.currency)}`}
         </button>
       </div>
     </div>

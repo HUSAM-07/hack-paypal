@@ -3,7 +3,12 @@
  * cookie and replayed over the engine's reads, so they see the effect while the shared ledger
  * (the numbers the demo script and every other visitor rely on) never changes. Pure.
  */
-import { PROGRAMME_CATEGORIES, type ProgrammeTerms } from "@pact/protocol";
+import {
+  isProgrammeCurrency,
+  PROGRAMME_CATEGORIES,
+  type ProgrammeCurrency,
+  type ProgrammeTerms,
+} from "@pact/protocol";
 import type { RawEngine, RawReviewFlag, ReviewAction } from "./dashboard";
 import { ReviewRejected } from "./dashboard";
 
@@ -16,7 +21,11 @@ const MAX_CHANGES = 24;
 export type OverlayChange =
   | { kind: "approve"; approvalId: string; brandId: string; amountMinor: number }
   | { kind: "review"; flagId: string; action: ReviewAction }
-  | { kind: "programme"; terms: ProgrammeTerms };
+  // A cookie from before currencies carries no currency: it is a dollar programme.
+  | {
+      kind: "programme";
+      terms: Omit<ProgrammeTerms, "currency"> & { currency?: ProgrammeCurrency };
+    };
 
 export interface Overlay {
   /** Unix seconds: when this visitor's private changes are dropped. */
@@ -61,6 +70,9 @@ function isTerms(x: unknown): boolean {
     t.category === product.category &&
     t.name === product.brand &&
     t.product === product.product &&
+    // A cookie from before currencies has none: it is a dollar programme.
+    (t.currency === undefined ||
+      (typeof t.currency === "string" && isProgrammeCurrency(t.currency))) &&
     Number.isSafeInteger(t.depositMinor) &&
     (t.depositMinor as number) > 0 &&
     Number.isSafeInteger(t.commissionBps) &&
@@ -170,6 +182,7 @@ function programme(raw: RawEngine, c: Extract<OverlayChange, { kind: "programme"
         name: t.name,
         category: t.category,
         upc: t.upc,
+        currency: t.currency ?? "USD",
         commissionBps: t.commissionBps,
         arms: {
           test: { sessions: 0, purchases: 0 },
@@ -188,7 +201,7 @@ function programme(raw: RawEngine, c: Extract<OverlayChange, { kind: "programme"
       {
         brandId: t.brandId,
         name: t.name,
-        currency: "USD",
+        currency: t.currency ?? "USD",
         deposited: t.depositMinor,
         reserved: 0,
         spent: 0,

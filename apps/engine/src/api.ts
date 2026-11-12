@@ -125,6 +125,8 @@ api.post("/programmes", async (c) => {
       upc: Upc,
       depositMinor: z.number(),
       commissionBps: z.number(),
+      /** USD, GBP or EUR; absent means USD. The terms check refuses any other. */
+      currency: z.string().max(8).optional(),
     }),
   );
   if ("error" in r) return c.json(r, 400);
@@ -363,6 +365,7 @@ async function liftView(env: Env, brandId?: string) {
       name: brand.name,
       category: brand.category,
       upc: brand.upc,
+      currency: brand.currency,
       commissionBps: brand.commissionBps,
       arms: data.arms,
       exposedRate: r.exposedRate,
@@ -464,6 +467,11 @@ api.get("/credits", async (c) => {
   for (const x of credits) by.set(x.creatorId, [...(by.get(x.creatorId) ?? []), x]);
   const sum = (xs: typeof credits, state: string) =>
     xs.filter((x) => x.state === state).reduce((a, x) => a + x.amount.amountMinor, 0);
+  /** A creator's credits per currency, USD first: money in two currencies is never added together. */
+  const currenciesOf = (xs: typeof credits) =>
+    [...new Set(xs.map((x) => x.amount.currency))].sort(
+      (a, b) => Number(b === "USD") - Number(a === "USD") || (a < b ? -1 : 1),
+    );
   const flags = await listFlags(c.env);
   const frozen = await frozenCaptures(c.env);
   const isFrozen = (x: (typeof credits)[number]) =>
@@ -475,11 +483,8 @@ api.get("/credits", async (c) => {
   return c.json({
     creators: [...by.entries()]
       .sort(([a], [b]) => (a < b ? -1 : 1))
-      .map(([creatorId, xs]) => ({
-        creatorId,
-        name: names.get(creatorId)?.name ?? creatorId,
-        paypalLinked: names.get(creatorId)?.paypalLinked ?? false,
-        totals: {
+      .map(([creatorId, all]) => {
+        const totalsOf = (xs: typeof credits) => ({
           pending: sum(xs, "pending"),
           voided: sum(xs, "voided"),
           paid: sum(xs, "paid"),
@@ -487,24 +492,38 @@ api.get("/credits", async (c) => {
           frozen: xs.filter(isFrozen).reduce((a, x) => a + x.amount.amountMinor, 0),
           /** Part of `pending`: held by the abuse guard for a reviewer; never paid automatically. */
           held: xs.filter(isHeld).reduce((a, x) => a + x.amount.amountMinor, 0),
-        },
-        credits: xs.map((x) => ({
-          id: x.id,
-          captureId: x.captureId,
-          brandId: x.brandId,
-          upc: x.upc,
-          amountMinor: x.amount.amountMinor,
-          currency: x.amount.currency,
-          state: x.state,
-          voidReason: x.voidReason ?? null,
-          holdUntil: x.holdUntil,
-          payoutBatchId: x.payoutBatchId ?? null,
-          payoutStatus: x.payoutStatus,
-          frozen: isFrozen(x),
-          held: isHeld(x),
-          holdReasons: isHeld(x) ? holdReasons(x.id) : [],
-        })),
-      })),
+        });
+        const currencies = currenciesOf(all);
+        // `totals` is in `currency` (the creator's first, USD when they have any); the rest are in
+        // `totalsByCurrency`. A creator paid in one currency, as every creator was, sees no change.
+        const xs = all.filter((x) => x.amount.currency === currencies[0]);
+        return {
+          creatorId,
+          name: names.get(creatorId)?.name ?? creatorId,
+          paypalLinked: names.get(creatorId)?.paypalLinked ?? false,
+          currency: currencies[0] ?? "USD",
+          totals: totalsOf(xs),
+          totalsByCurrency: Object.fromEntries(
+            currencies.map((cur) => [cur, totalsOf(all.filter((x) => x.amount.currency === cur))]),
+          ),
+          credits: all.map((x) => ({
+            id: x.id,
+            captureId: x.captureId,
+            brandId: x.brandId,
+            upc: x.upc,
+            amountMinor: x.amount.amountMinor,
+            currency: x.amount.currency,
+            state: x.state,
+            voidReason: x.voidReason ?? null,
+            holdUntil: x.holdUntil,
+            payoutBatchId: x.payoutBatchId ?? null,
+            payoutStatus: x.payoutStatus,
+            frozen: isFrozen(x),
+            held: isHeld(x),
+            holdReasons: isHeld(x) ? holdReasons(x.id) : [],
+          })),
+        };
+      }),
     reviewFlags: flags.map((f) => ({
       id: f.id,
       creditId: f.creditId,
@@ -691,8 +710,10 @@ api.get("/payouts", async (c) => {
     const ids = r.paypal_batch_id
       ? await payoutItemIds(c.env, r.paypal_batch_id as string)
       : new Map<string, string>();
-    const items = (JSON.parse(r.items_json as string) as { creatorId: string }[]).map((i) => {
-      const payoutItemId = ids.get(senderItemId(i.creatorId, senderBatchId));
+    const items = (
+      JSON.parse(r.items_json as string) as { creatorId: string; currency?: string }[]
+    ).map((i) => {
+      const payoutItemId = ids.get(senderItemId(i.creatorId, senderBatchId, i.currency));
       return payoutItemId ? { ...i, payoutItemId } : i;
     });
     batches.push({

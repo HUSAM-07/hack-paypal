@@ -1,4 +1,5 @@
 import {
+  currencySymbol,
   SITE_HEADER_CSS,
   SITE_NAV_TOUCH_CSS,
   SITE_THEME_CSS,
@@ -6,7 +7,7 @@ import {
   TOUR_SCRIPT,
 } from "@pact/protocol";
 import type { DemoData, PayoutData, RunView, StatementData } from "./data";
-import { creatorName, esc, shopName, usd } from "./format";
+import { creatorName, esc, money, shopName, usd } from "./format";
 import { agentLabel } from "./runs";
 
 /*
@@ -563,34 +564,35 @@ export function payoutPage(p: PayoutData | null, opts: Opts): string {
   }
   const mismatch = p.ledgerPaidMinor !== null && p.ledgerPaidMinor !== p.amountMinor;
   const name = p.creatorName;
+  const cur = p.currency;
   // The demo clock jumps past the hold, so a calendar date would sit in the future: say when
   // the payout happened relative to the demo instead.
   const date = "After the 30-day hold";
   const body = `<main id="main" class="pay"><div class="pay-grid">
 <div class="pay-copy">
   <p class="pay-k">Day 30 · creator payout</p>
-  <h1 class="pay-h">${esc(name)} got paid <span class="num">${usd(p.amountMinor)}</span> through PayPal Payouts${p.wallet === "VENMO" ? ", to Venmo" : ""}.</h1>
+  <h1 class="pay-h">${esc(name)} got paid <span class="num">${money(p.amountMinor, cur)}</span> through PayPal Payouts${p.wallet === "VENMO" ? ", to Venmo" : ""}.</h1>
   <p class="pay-sub">Commission on the sales its test caused, paid once the 30-day hold ended. AI shopping agents read the test and bought; nobody clicked a link.</p>
   <div class="pay-cards">
 ${
   p.rival
-    ? `  <div class="pay-card"><span><b>${esc(p.rival.name)}</b> · <span class="num">${p.rival.causedUnits}</span> extra units caused</span><span class="num zero">${usd(p.rival.paidMinor)} paid · no lift</span></div>`
+    ? `  <div class="pay-card"><span><b>${esc(p.rival.name)}</b> · <span class="num">${p.rival.causedUnits}</span> extra units caused</span><span class="num zero">${money(p.rival.paidMinor, cur)} paid · no lift</span></div>`
     : ""
 }
 ${
   p.statement && !opts.clean
-    ? `  <div class="pay-card pay-stmt"><span>${esc(p.statement.brandName)} paid for it from its deposit: ${esc(invoiceStatusWord(p.statement.status))}${p.statement.dueMinor === 0 ? ", $0 due" : ""}</span><a href="/statement?brand=${encodeURIComponent(p.statement.brandId)}">Statement ${esc(p.statement.invoiceNumber)} →</a></div>`
+    ? `  <div class="pay-card pay-stmt"><span>${esc(p.statement.brandName)} paid for it from its deposit: ${esc(invoiceStatusWord(p.statement.status))}${p.statement.dueMinor === 0 ? `, ${currencySymbol(cur)}0 due` : ""}</span><a href="/statement?brand=${encodeURIComponent(p.statement.brandId)}">Statement ${esc(p.statement.invoiceNumber)} →</a></div>`
     : ""
 }
   </div>
-${mismatch ? `<p class="warn">Ledger shows ${usd(p.ledgerPaidMinor ?? 0)} paid, which differs from this payout.</p>` : ""}
+${mismatch ? `<p class="warn">Ledger shows ${money(p.ledgerPaidMinor ?? 0, cur)} paid, which differs from this payout.</p>` : ""}
 </div>
 <figure class="mail">
 <article class="notice" aria-label="PayPal payment notice">
 <header><span class="pp">Pay<span>Pal</span></span><small>Payment received${p.wallet === "VENMO" ? " · paid to Venmo" : ""}</small></header>
 <div class="top">
   <p class="hello">${esc(name)}, you received a payment</p>
-  <div class="amount num">${usd(p.amountMinor)}<small>${esc(p.currency)}</small></div>
+  <div class="amount num">${money(p.amountMinor, cur)}<small>${esc(p.currency)}</small></div>
   <p>From CITED · commission on sales your test caused</p>
 </div>
 <dl>
@@ -602,7 +604,7 @@ ${mismatch ? `<p class="warn">Ledger shows ${usd(p.ledgerPaidMinor ?? 0)} paid, 
 </dl>
 <footer>Sent with PayPal Payouts${p.wallet === "VENMO" ? " to Venmo" : ""}. A refund during the hold voids the credit; a dispute holds it until PayPal decides.</footer>
 </article>
-<figcaption class="pay-cap">The notice ${esc(name)} receives from PayPal. Simulated PayPal on this demo.${p.amountMinor === 38396 ? ` The same $383.96 payout also ran on the real PayPal sandbox: <a href="https://github.com/HUSAM-07/hack-paypal/blob/main/cited/SANDBOX-EVIDENCE.md">batch <span class="mono">ME2KV57B7KYNS</span>, SUCCESS</a>.` : ""}</figcaption>
+<figcaption class="pay-cap">The notice ${esc(name)} receives from PayPal. Simulated PayPal on this demo.${p.amountMinor === 38396 && cur === "USD" ? ` The same $383.96 payout also ran on the real PayPal sandbox: <a href="https://github.com/HUSAM-07/hack-paypal/blob/main/cited/SANDBOX-EVIDENCE.md">batch <span class="mono">ME2KV57B7KYNS</span>, SUCCESS</a>.` : ""}</figcaption>
 </figure>
 </div></main>`;
   return page("CITED · payout", "payout", body, opts);
@@ -630,6 +632,7 @@ export function statementPage(d: StatementData | null, opts: Opts): string {
     );
   }
   const s = d.statement;
+  const usd = (minor: number) => money(minor, s.currency);
   const mismatch =
     s.invoiceId !== null &&
     (s.invoiceTotalMinor !== s.paidMinor || s.creditedMinor - s.voidedMinor !== s.paidMinor);

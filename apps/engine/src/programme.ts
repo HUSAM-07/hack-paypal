@@ -223,8 +223,9 @@ export type StartProgramme =
   | { ok: false; status: 400 | 409; error: ProgrammeRefusal | "terms_changed"; message: string };
 
 /**
- * A brand starts a programme: pick a catalogue product, set the deposit and the commission rate.
- * Creates the programme and the Orders v2 deposit that funds it. Each product has one programme,
+ * A brand starts a programme: pick a catalogue product, a currency (USD, GBP or EUR), the deposit
+ * and the commission rate. Creates the programme and the Orders v2 deposit, captured in that
+ * currency, that funds it. The programme then lives entirely in that currency: nothing is converted. Each product has one programme,
  * so a new one can never share a UPC (and so a sale) with a programme that already runs.
  *
  * The deposit's PayPal-Request-Id is derived from the programme id and the fixed key "initial",
@@ -233,7 +234,13 @@ export type StartProgramme =
  */
 export async function startProgramme(
   env: Env,
-  input: { category: string; upc: string; depositMinor: number; commissionBps: number },
+  input: {
+    category: string;
+    upc: string;
+    depositMinor: number;
+    commissionBps: number;
+    currency?: string | undefined;
+  },
 ): Promise<StartProgramme> {
   const brands = await listBrands(env);
   const running = new Set<string>();
@@ -254,7 +261,12 @@ export async function startProgramme(
     };
   const t: ProgrammeTerms = check.terms;
   const half = unfunded.get(t.upc);
-  if (half && (half.brandId !== t.brandId || half.commissionBps !== t.commissionBps))
+  if (
+    half &&
+    (half.brandId !== t.brandId ||
+      half.commissionBps !== t.commissionBps ||
+      half.currency !== t.currency)
+  )
     return {
       ok: false,
       status: 409,
@@ -275,7 +287,7 @@ export async function startProgramme(
     name: t.name,
     category: t.category,
     upc: t.upc,
-    currency: "USD",
+    currency: t.currency,
     commissionBps: t.commissionBps,
   });
   const deposit = await requestDeposit(env, {

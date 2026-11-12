@@ -77,6 +77,64 @@ describe("starting a programme on the hosted demo (locked writes)", () => {
     expect(JSON.stringify(raw)).toBe(h.before);
   });
 
+  it("starts a programme in pounds or euros in the visitor's view only, in that currency", async () => {
+    const h = hosted();
+    const res = await h.post({ ...TERMS, currency: "GBP" });
+    expect(res.status).toBe(201);
+    expect(await res.json()).toMatchObject({
+      started: true,
+      private: true,
+      currency: "GBP",
+      depositMinor: 50_000,
+      deposit: { status: "captured", currency: "GBP" },
+    });
+    const mine = await h.data(h.cookieOf(res));
+    expect(brandRows(mine).find((r) => r.id === "roborock:todate")).toMatchObject({
+      currency: "GBP",
+      deposited: 500,
+      available: 500,
+    });
+    // The dollar programme next to it is untouched, and the shared engine was never written.
+    expect(brandRows(mine).find((r) => r.id === "winix:todate")?.currency).toBe("USD");
+    expect(h.startProgramme).not.toHaveBeenCalled();
+    expect(JSON.stringify(raw)).toBe(h.before);
+  });
+
+  it("refuses a currency a programme cannot run in", async () => {
+    const h = hosted();
+    for (const currency of ["JPY", "gbp", ""]) {
+      const res = await h.post({ ...TERMS, currency });
+      expect(res.status, currency).toBe(400);
+      expect(await res.json()).toMatchObject({ error: "unsupported_currency" });
+    }
+  });
+
+  it("still reads a cookie from before currencies as a dollar programme", () => {
+    const o = {
+      expiresAt: Math.floor(NOW() / 1000) + 600,
+      changes: [
+        {
+          kind: "programme" as const,
+          terms: {
+            brandId: "roborock",
+            name: "Roborock",
+            product: "Q7 Max",
+            category: "robot-vacuum" as const,
+            upc: ROBOROCK,
+            depositMinor: 50_000,
+            commissionBps: 800,
+          },
+        },
+      ],
+    };
+    const t = JSON.parse(
+      JSON.stringify(applyOverlay(raw, decodeOverlay(encodeOverlay(o), Math.floor(NOW() / 1000)))),
+    );
+    expect(t.deposits.find((d: { brandId: string }) => d.brandId === "roborock").currency).toBe(
+      "USD",
+    );
+  });
+
   it("is invisible to every other visitor", async () => {
     const h = hosted();
     await h.post(TERMS);

@@ -5,10 +5,10 @@
  * (paid at the next payout) or void (cancelled for good).
  */
 import type { AgWidgetParams } from "ag-studio";
-import { useState } from "react";
+import { Fragment, useState } from "react";
 import type { StudioContext } from "../context";
 import { API, privateNote } from "../data";
-import { money, num, useRows } from "./useRows";
+import { currencyOf, money, num, useRows } from "./useRows";
 
 type P = AgWidgetParams<never, unknown, StudioContext>;
 
@@ -18,6 +18,7 @@ const FIELDS = [
   "brand",
   "orderId",
   "amount",
+  "currency",
   "status",
   "statusKey",
   "reason",
@@ -56,14 +57,46 @@ const codesOf = (r: Record<string, unknown>) =>
 
 function useTrust(p: P) {
   const rows = useRows(p.widgetApi, "trust", FIELDS);
-  const credits = useRows(p.widgetApi, "credits", ["id", "amount", "state"]);
+  const credits = useRows(p.widgetApi, "credits", ["id", "amount", "currency", "state"]);
   return { rows, credits };
 }
 
-/** Stopped money beside paid, and a count for each reason. */
+/** Stopped money beside paid, and a count for each reason. One summary per currency, never added together. */
 export function TrustSummary(p: P) {
   const { rows, credits } = useTrust(p);
   if (!rows || !credits) return <div className="cw-empty">Loading…</div>;
+  const seen = [...new Set([...rows, ...credits].map(currencyOf))].sort(
+    (a, b) => Number(b === "USD") - Number(a === "USD") || (a < b ? -1 : 1),
+  );
+  const currencies = seen.length ? seen : ["USD"];
+  return (
+    // biome-ignore lint/a11y/noNoninteractiveTabindex: the body scrolls when the widget is small; keyboard users must reach it (WCAG 2.1.1)
+    <div className="cw cw-trust-sum" tabIndex={0}>
+      {currencies.map((cur) => (
+        <Fragment key={cur}>
+          {currencies.length > 1 ? <p className="cw-tiles-currency">Credits in {cur}</p> : null}
+          <CurrencySummary
+            rows={rows.filter((r) => currencyOf(r) === cur)}
+            credits={credits.filter((c) => currencyOf(c) === cur)}
+            currency={cur}
+          />
+        </Fragment>
+      ))}
+      <p className="cw-note">
+        Every credit the abuse guard or PayPal stopped is listed below with its reason. Nothing here
+        is paid until a reviewer releases it or PayPal decides.
+      </p>
+    </div>
+  );
+}
+
+function CurrencySummary(props: {
+  rows: Record<string, unknown>[];
+  credits: Record<string, unknown>[];
+  currency: string;
+}) {
+  const { rows, credits, currency } = props;
+  const m = (n: number) => money(n, true, currency);
   const sum = (key: string) =>
     rows.filter((r) => r.statusKey === key).reduce((a, r) => a + num(r.amount), 0);
   const count = (key: string) => rows.filter((r) => r.statusKey === key).length;
@@ -74,31 +107,30 @@ export function TrustSummary(p: P) {
   const total = held + frozen + voided + paid;
   const seg = (v: number) => ({ flexGrow: total > 0 ? Math.max(v, 0) : 0, flexBasis: 0 });
   return (
-    // biome-ignore lint/a11y/noNoninteractiveTabindex: the body scrolls when the widget is small; keyboard users must reach it (WCAG 2.1.1)
-    <div className="cw cw-trust-sum" tabIndex={0}>
+    <>
       <dl className="cw-trust-figures">
         <div className="is-paid">
           <dt>Paid</dt>
-          <dd>{money(paid)}</dd>
+          <dd>{m(paid)}</dd>
           <dd className="cw-sub">sent through PayPal Payouts</dd>
         </div>
         <div className="is-held">
           <dt>Held for review</dt>
-          <dd>{money(held)}</dd>
+          <dd>{m(held)}</dd>
           <dd className="cw-sub">
             {count("held")} credit{count("held") === 1 ? "" : "s"}, never paid on their own
           </dd>
         </div>
         <div className="is-frozen">
           <dt>Frozen</dt>
-          <dd>{money(frozen)}</dd>
+          <dd>{m(frozen)}</dd>
           <dd className="cw-sub">
             {count("frozen")} credit{count("frozen") === 1 ? "" : "s"}, open PayPal dispute
           </dd>
         </div>
         <div className="is-voided">
           <dt>Voided</dt>
-          <dd>{money(voided)}</dd>
+          <dd>{m(voided)}</dd>
           <dd className="cw-sub">
             {count("voided")} credit{count("voided") === 1 ? "" : "s"}, never paid
           </dd>
@@ -107,18 +139,14 @@ export function TrustSummary(p: P) {
       <div
         className="cw-trust-bar"
         role="img"
-        aria-label={`Paid ${money(paid)}, held ${money(held)}, frozen ${money(frozen)}, voided ${money(voided)}`}
+        aria-label={`Paid ${m(paid)}, held ${m(held)}, frozen ${m(frozen)}, voided ${m(voided)}`}
       >
         <span className="is-paid" style={seg(paid)} />
         <span className="is-held" style={seg(held)} />
         <span className="is-frozen" style={seg(frozen)} />
         <span className="is-voided" style={seg(voided)} />
       </div>
-      <p className="cw-note">
-        Every credit the abuse guard or PayPal stopped is listed below with its reason. Nothing here
-        is paid until a reviewer releases it or PayPal decides.
-      </p>
-    </div>
+    </>
   );
 }
 
@@ -210,7 +238,7 @@ export function TrustList(p: P) {
           return (
             <li key={id} className={`cw-trust-row is-${key}`}>
               <div className="cw-trust-main">
-                <span className="cw-trust-amount">{money(num(r.amount))}</span>
+                <span className="cw-trust-amount">{money(num(r.amount), true, currencyOf(r))}</span>
                 <span className={`cw-pill is-${key === "released" ? "paid" : key}`}>
                   {WORDS[key] ?? String(r.status)}
                 </span>
@@ -241,7 +269,7 @@ export function TrustList(p: P) {
                         onClick={() => decide(id, flagIds, "void")}
                         disabled={busy !== null}
                       >
-                        Void {money(num(r.amount))} for good
+                        Void {money(num(r.amount), true, currencyOf(r))} for good
                       </button>
                       <button
                         type="button"

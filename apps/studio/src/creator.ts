@@ -60,13 +60,20 @@ export function creatorAnswer(
   topic: CreatorTopic = "overview",
 ): CreatorAnswer | null {
   const t: StudioTables["tables"] = buildTables(raw).tables;
+  // The creator's own row is in their first currency (USD when they have any). The answer speaks
+  // in that one currency and never adds money in another to it.
   const me = (t.creators ?? []).find((c) => c.creatorId === creatorId);
   if (!me) return null;
   const name = str(me, "creator");
-  const credits = (t.credits ?? []).filter((c) => c.creatorId === creatorId);
-  const trust = (t.trust ?? []).filter((c) => c.creatorId === creatorId);
-  const payouts = (t.payouts ?? []).filter((p) => p.creatorId === creatorId);
-  const shares = (t.shares ?? []).filter((s) => s.creatorId === creatorId && num(s, "splitOf") > 1);
+  const currency = str(me, "currency") || "USD";
+  const inCurrency = (r: Row) => (str(r, "currency") || "USD") === currency;
+  const d = (dollars: number) => usd(Math.round(dollars * 100), currency);
+  const credits = (t.credits ?? []).filter((c) => c.creatorId === creatorId && inCurrency(c));
+  const trust = (t.trust ?? []).filter((c) => c.creatorId === creatorId && inCurrency(c));
+  const payouts = (t.payouts ?? []).filter((p) => p.creatorId === creatorId && inCurrency(p));
+  const shares = (t.shares ?? []).filter(
+    (s) => s.creatorId === creatorId && num(s, "splitOf") > 1 && inCurrency(s),
+  );
   const base = { creatorId, creator: name, topic, guard: CREATOR_GUARD };
   const byState = (s: string) => credits.filter((c) => c.state === s);
   const paid = byState("paid");
