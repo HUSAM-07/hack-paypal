@@ -1,6 +1,6 @@
 # Devpost submission draft
 
-Paste each section into the matching Devpost field. Numbers come from `npm run demo:cited`, `packages/evals/results/cited*` and [spec/CITED-card.md](spec/CITED-card.md); see the provenance table in [spec/CITED-packet.md](spec/CITED-packet.md). Be precise about money: one Payouts batch and one Invoicing statement ran on the real PayPal sandbox with the demo's numbers, and the agent checkout ran end to end on the sandbox with small amounts (HUSAM-07/hack-paypal#84, [SANDBOX-EVIDENCE.md](SANDBOX-EVIDENCE.md)); the hosted demo runs on simulated PayPal.
+Paste each section into the matching Devpost field. Numbers come from `npm run demo:cited`, `packages/evals/results/cited*` and [spec/CITED-card.md](https://github.com/HUSAM-07/hack-paypal/blob/main/cited/spec/CITED-card.md); see the provenance table in [spec/CITED-packet.md](https://github.com/HUSAM-07/hack-paypal/blob/main/cited/spec/CITED-packet.md). Be precise about money: one Payouts batch and one Invoicing statement ran on the real PayPal sandbox with the demo's numbers, and the agent checkout ran end to end on the sandbox with small amounts (HUSAM-07/hack-paypal#84, [SANDBOX-EVIDENCE.md](https://github.com/HUSAM-07/hack-paypal/blob/main/cited/SANDBOX-EVIDENCE.md)); the hosted demo runs on simulated PayPal.
 
 ## Before submitting (requirements from the hackathon rules)
 
@@ -27,7 +27,7 @@ Paste each section into the matching Devpost field. Numbers come from `npm run d
 | Captures refund (Agent Toolkit `create_refund`) | Refund `81C245246C527113H`; its `PAYMENT.CAPTURE.REFUNDED` webhook voided that sale's credit in the engine | simulated |
 | Webhooks | PayPal-signed captures, refund and payout-batch events delivered to subscription `8042373202922840X` and verified on the hosted engine (`signedFor=subscription`); a local engine received the same events by replay, since PayPal cannot reach it | simulated |
 | Payouts (agent checkout run) | The engine's `runPayouts` sent batch `GB9U5DYBGHLY4`: $0.16 for the one credit left after the refund, SUCCESS | simulated |
-| Log in with PayPal | A sandbox personal account signed in; the worker's identity code exchanged the code and read a payer id, name and email from `userinfo` ([SANDBOX-EVIDENCE.md](SANDBOX-EVIDENCE.md)) | simulated |
+| Log in with PayPal | A sandbox personal account signed in; the worker's identity code exchanged the code and read a payer id, name and email from `userinfo` ([SANDBOX-EVIDENCE.md](https://github.com/HUSAM-07/hack-paypal/blob/main/cited/SANDBOX-EVIDENCE.md)) | simulated |
 | Disputes | Code paths built against the sandbox APIs | simulated |
 
 The simulated PayPal mirrors the REST shapes and signs webhooks like PayPal, so the same client code runs in both modes (`PAYPAL_MODE=sandbox` switches it; on the worker, `CITED_PAYPAL_MODE`).
@@ -128,7 +128,7 @@ Judges can check it four ways: read the pre-registration and per-model results a
 
 ## What's next for CITED
 
-- Run the agent checkout on the PayPal sandbox with three separate seller accounts (it already ran end to end there with one, with PayPal-signed webhooks: [SANDBOX-EVIDENCE.md](SANDBOX-EVIDENCE.md)).
+- Run the agent checkout on the PayPal sandbox with three separate seller accounts (it already ran end to end there with one, with PayPal-signed webhooks: [SANDBOX-EVIDENCE.md](https://github.com/HUSAM-07/hack-paypal/blob/main/cited/SANDBOX-EVIDENCE.md)).
 - Feed tests published at `/creators` into the live catalogue's holdout.
 - More categories and creators, so tests compete and Shapley splits get richer.
 - Venmo payouts for creators and a brand self-serve programme flow in AG Studio.

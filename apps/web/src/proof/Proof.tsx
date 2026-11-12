@@ -403,7 +403,7 @@ const FIXED: { term: string; value: ReactNode }[] = [
   },
   {
     term: "Sample",
-    value: "Per model 19 test, 18 placebo, 12 nothing: 147 sessions per study condition.",
+    value: "Per model 19 test, 18 placebo, 12 nothing: 147 sessions per price condition.",
   },
   {
     term: "Models",
@@ -663,7 +663,10 @@ export function Proof() {
                   return (
                     <tr key={m.model}>
                       <th scope="row">
-                        {MODEL_NAMES[m.model]} <span className="model-id">{m.model}</span>
+                        {MODEL_NAMES[m.model] ?? m.model}
+                        {MODEL_NAMES[m.model] && MODEL_NAMES[m.model] !== m.model ? (
+                          <span className="model-id"> {m.model}</span>
+                        ) : null}
                       </th>
                       <td>
                         {m.test.target}/{m.test.sessions}
@@ -815,8 +818,7 @@ export function Proof() {
                 <Src path={PATHS.lift}>lift.ts</Src> and the ledger's batch rounding (
                 <Src path={PATHS.ledger}>ledger.ts</Src>). The refund, the $95.99 price and the
                 $1,000 deposit are scripted for the demo (<Src path={PATHS.card}>CITED-card.md</Src>
-                ). The summary's own derived line assumes a nominal 50 sales; the demo uses one per
-                exposed agent.
+                ).
               </figcaption>
             </figure>
             <div className="prose">
