@@ -10,10 +10,10 @@ export const usd = (amountMinor: number): Money => ({ amountMinor, currency: "US
 
 const svg = (body: string) =>
   `data:image/svg+xml;utf8,${encodeURIComponent(
-    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 90" fill="none" stroke-linecap="round" stroke-linejoin="round">${body}</svg>`,
+    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 90" fill="none" stroke-linecap="round" stroke-linejoin="round"><rect width="120" height="90" fill="#f5f5f6"/>${body}</svg>`,
   )}`;
 
-/** Simple product drawings in neutral greys that sit on light and dark surfaces. */
+/** Simple product drawings on a light studio backdrop, like merchant photos (readable in dark mode). */
 export const ART = {
   headphones: svg(
     `<path d="M34 56V46a26 26 0 0 1 52 0v10" stroke="#5b5f66" stroke-width="5"/><rect x="26" y="50" width="16" height="26" rx="7" fill="#2b2e33"/><rect x="78" y="50" width="16" height="26" rx="7" fill="#2b2e33"/><rect x="30" y="55" width="8" height="16" rx="4" fill="#4a4e55"/><rect x="82" y="55" width="8" height="16" rx="4" fill="#4a4e55"/>`,

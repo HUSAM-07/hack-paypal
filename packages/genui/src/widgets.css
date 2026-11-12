@@ -3,6 +3,10 @@
  * `--font-serif` and `--font-mono`. No colour literals: dark mode is the host's token swap.
  */
 
+/* Rows like WatchRow also render outside a .genui root (host sidebars). */
+:where([class^="g-"], [class*=" g-"]) {
+  box-sizing: border-box;
+}
 .genui {
   box-sizing: border-box;
   font-family: var(--aui-font);
@@ -259,7 +263,6 @@
   width: 100%;
   height: 100%;
   object-fit: contain;
-  padding: 8%;
   mix-blend-mode: multiply;
 }
 :root.dark .g-thumb img {
@@ -379,6 +382,7 @@
 /* ---------- cards and blocks ---------- */
 .g-block {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 10px;
 }
 .g-card {
@@ -569,6 +573,7 @@
 /* ---------- products ---------- */
 .g-carousel {
   position: relative;
+  min-width: 0;
   margin: 0 -4px;
 }
 .g-carousel__track {
@@ -623,7 +628,7 @@
     display: none;
   }
   .g-carousel__track {
-    grid-auto-columns: minmax(0, 78%);
+    grid-auto-columns: 78%;
   }
 }
 
@@ -1362,6 +1367,31 @@ button.g-watchrow:hover {
 }
 .g-cites {
   margin-top: 10px;
+}
+.g-cite {
+  display: inline-grid;
+  place-items: center;
+  min-width: 17px;
+  height: 17px;
+  margin: 0 1px;
+  padding: 0 4px;
+  border-radius: 10px;
+  background: var(--fill-strong);
+  color: var(--foreground);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 500;
+  line-height: 1;
+  text-decoration: none;
+  vertical-align: 0.15em;
+}
+.g-md a.g-cite {
+  color: var(--foreground);
+  text-decoration: none;
+}
+.g-cite:hover {
+  background: var(--primary-soft);
+  color: var(--primary);
 }
 .g-reasoning__toggle {
   display: inline-flex;

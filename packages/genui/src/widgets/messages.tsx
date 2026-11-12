@@ -19,20 +19,55 @@ export function UserMessage({ item }: { item: ItemOf<"userMessage"> }) {
   );
 }
 
+type Citation = { n: number; url: string; title: string };
+
+/** Turn "[2]" markers into links to the cited source, so they render as citation chips. */
+export function linkCitations(text: string, citations: Citation[] | undefined): string {
+  if (!citations?.length) return text;
+  const byN = new Map(citations.map((c) => [String(c.n), c.url]));
+  return text.replace(/\[(\d{1,2})\](?!\()/g, (m, n: string) => {
+    const url = byN.get(n);
+    return url ? `[${n}](${url})` : m;
+  });
+}
+
 /** Markdown is sanitized and links open outside the app; no raw HTML from the model. */
-const MarkdownBody = memo(function MarkdownBody({ text }: { text: string }) {
+const MarkdownBody = memo(function MarkdownBody({
+  text,
+  citations,
+}: {
+  text: string;
+  citations?: Citation[] | undefined;
+}) {
   return (
     <Markdown
       rehypePlugins={[rehypeSanitize]}
       components={{
-        a: ({ href, children }) => (
-          <a href={href} target="_blank" rel="noopener noreferrer nofollow">
-            {children}
-          </a>
-        ),
+        a: ({ href, children }) => {
+          const cite =
+            typeof children === "string" && /^\d{1,2}$/.test(children)
+              ? citations?.find((c) => String(c.n) === children && c.url === href)
+              : undefined;
+          return (
+            <a
+              href={href}
+              target="_blank"
+              rel="noopener noreferrer nofollow"
+              {...(cite
+                ? {
+                    className: "g-cite",
+                    title: cite.title,
+                    "aria-label": `Source ${cite.n}: ${cite.title}`,
+                  }
+                : {})}
+            >
+              {children}
+            </a>
+          );
+        },
       }}
     >
-      {text}
+      {linkCitations(text, citations)}
     </Markdown>
   );
 });
@@ -43,7 +78,7 @@ export function AgentMessage({ item }: { item: ItemOf<"agentMessage"> }) {
     <div className="genui g-agent" data-streaming={streaming ? "" : undefined}>
       <div className="g-md" dir="auto">
         {item.text ? (
-          <MarkdownBody text={item.text} />
+          <MarkdownBody text={item.text} citations={streaming ? undefined : item.citations} />
         ) : streaming ? (
           <ThinkingLoader variant="plain" size="sm" phases={["Writing"]} />
         ) : null}
@@ -168,7 +203,7 @@ export function InboxSummary({
   onDismiss,
 }: {
   entries: InboxEntry[];
-  since?: string;
+  since?: string | undefined;
   onOpen?: (entry: InboxEntry) => void;
   onDismiss?: () => void;
 }) {
