@@ -109,6 +109,7 @@ Judges can check it four ways: read the pre-registration and per-model results a
 
 ## Challenges we ran into
 
+- **One vaulted wallet, many sellers.** We added two more sandbox seller accounts to pay each seller separately. PayPal refused every vaulted charge to them (`BILLING_AGREEMENT_NOT_FOUND`) and accepted it only for the merchant that vaulted the wallet. A real agent platform needs PayPal's multiparty partner onboarding for this; we recorded the test instead of faking it.
 - **Proving cause, not correlation.** Last-click credit rewards whoever touched the sale last. We needed a placebo arm (other content from the same creator) so reputation is stripped out, and a lower bound so creators are paid a defensible floor rather than a point estimate.
 - **Keeping money out of rank.** Every arm must see the same offers in the same order. We enforce it with a test and never let a deposit touch ranking or verdicts.
 - **Joining a sale back to its arm without the merchant's help.** The signed passport has to fit PayPal's 127-character `custom_id` and survive the agent paying a different seller than the one whose offer it read.
@@ -134,7 +135,7 @@ Judges can check it four ways: read the pre-registration and per-model results a
 
 ## What's next for CITED
 
-- Run the agent checkout on the PayPal sandbox with three separate seller accounts (it already ran end to end there with one, with PayPal-signed webhooks: [SANDBOX-EVIDENCE.md](https://github.com/HUSAM-07/hack-paypal/blob/main/cited/SANDBOX-EVIDENCE.md)).
+- Become a PayPal multiparty partner so one agent platform can charge the buyer's vaulted wallet for many sellers. We tested it: the sandbox refuses a vaulted charge to any seller but the merchant that vaulted the wallet (`BILLING_AGREEMENT_NOT_FOUND`), so today's sandbox runs pay one seller account ([SANDBOX-EVIDENCE.md](https://github.com/HUSAM-07/hack-paypal/blob/main/cited/SANDBOX-EVIDENCE.md)).
 - More categories and creators beyond purifiers, robot vacuums and headphones, so tests compete and Shapley splits get richer.
 - Run a Venmo payout on a real PayPal account (creators can already choose Venmo, built and tested against the simulated PayPal) and let self-serve programmes fund through real PayPal on the hosted site (today a visitor's new programme stays in their own browser there).
 - Integrate with PayPal's real agent catalogue and Honey's affiliate contracts.
