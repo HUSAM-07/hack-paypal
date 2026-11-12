@@ -10,6 +10,7 @@ import {
   statefulDemoHandler,
   studioHandler,
 } from "./cited-apps";
+import { profiles } from "./creators/profile";
 import { CREATORS_PREFIX, creators } from "./creators/routes";
 import { allowedOrigins, type Env } from "./env";
 import { newId } from "./ids";
@@ -17,6 +18,7 @@ import { LEDGER_PATH, ledger } from "./ledger";
 import { previewFor, withLinkPreview } from "./link-preview";
 import { live, TRY_PREFIX } from "./live/routes";
 import { PUBLIC_MCP_PATH, publicMcpHandler } from "./mcp";
+import { notFoundPage, wantsHtml } from "./not-found";
 import { payments } from "./payments/routes";
 import { webhooks } from "./payments/webhooks";
 import { clearReadCache } from "./read-cache";
@@ -92,6 +94,8 @@ for (const [prefix, handler] of [
 app.all(PUBLIC_MCP_PATH, publicMcpHandler);
 app.route(TRY_PREFIX, live);
 app.route(CREATORS_PREFIX, creators);
+// After `creators`: its fixed paths (/connect, /callback, ...) match first; this is only /:creatorId.
+app.route(CREATORS_PREFIX, profiles);
 
 app.use("*", securityHeaders);
 app.use("/api/auth/*", ipRateLimit);
@@ -131,7 +135,11 @@ app.get("/ws", ipRateLimit, async (c) => {
   return stub.fetch(new Request(c.req.raw.url, { headers }));
 });
 
-app.notFound((c) => c.json({ error: "not_found" }, 404));
+app.notFound((c) =>
+  wantsHtml(c.req.path, c.req.header("accept"))
+    ? c.html(notFoundPage(), 404)
+    : c.json({ error: "not_found" }, 404),
+);
 app.onError((err, c) => {
   console.error("unhandled", err.name);
   return c.json({ error: "internal" }, 500);
