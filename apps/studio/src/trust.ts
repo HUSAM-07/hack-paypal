@@ -139,6 +139,7 @@ export function trustRows(raw: RawEngine, ctx: TrustContext): Row[] {
         brand: ctx.brandOf(x.brandId),
         orderId,
         amount: usd(x.amountMinor),
+        currency: x.currency ?? "USD",
         status: TRUST_STATUS_LABEL[status],
         statusKey: status,
         reason: codes.map((k) => TRUST_REASON[k] ?? k).join("; "),

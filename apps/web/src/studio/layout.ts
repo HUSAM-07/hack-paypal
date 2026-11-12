@@ -3,13 +3,40 @@ import type { StudioConfig } from "./data";
 import { programmesPage } from "./programmesPage";
 import { trustPage } from "./trustPage";
 
-const USD = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" });
+const formatFor = (currency: string) =>
+  new Intl.NumberFormat("en-US", { style: "currency", currency });
+/** Money in two currencies in one column: plain figures, with the Currency column beside them. */
+const PLAIN = new Intl.NumberFormat("en-US", {
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
+});
 
-/** Studio's data sources: our tables, live (transactions on), keyed by row id. */
+/** The distinct currencies in some rows; none (an older table, no rows) reads as dollars. */
+export function currenciesIn(rows: readonly Record<string, unknown>[]): string[] {
+  const seen = new Set(rows.map((r) => (typeof r.currency === "string" ? r.currency : "USD")));
+  return seen.size ? [...seen].sort() : ["USD"];
+}
+
+/**
+ * A money column has one number format, so each table is formatted in the one currency its rows
+ * share ($, £ or €). The creator's view looks only at that creator's rows, so a dollar creator
+ * keeps their dollars even while a pound programme runs beside them. Two currencies in the rows
+ * that are shown: plain figures, and the grids add a Currency column. Never a conversion.
+ */
 export function sourcesFor(
   config: StudioConfig,
   tables: Record<string, Record<string, unknown>[]>,
+  creatorName?: string,
 ) {
+  const formatOf = (tableId: string) => {
+    const rows = tables[tableId] ?? [];
+    const mine =
+      creatorName && rows.some((r) => "creator" in r)
+        ? rows.filter((r) => r.creator === creatorName)
+        : rows;
+    const cs = currenciesIn(mine.length ? mine : rows);
+    return cs.length === 1 ? formatFor(cs[0] as string) : PLAIN;
+  };
   return {
     sources: config.tables.map((t) => ({
       id: t.id,
@@ -22,7 +49,7 @@ export function sourcesFor(
         id: f.id,
         name: f.name,
         format: f.format,
-        ...(f.format === "currencyFormat" ? { formatOptions: { format: USD } } : {}),
+        ...(f.format === "currencyFormat" ? { formatOptions: { format: formatOf(t.id) } } : {}),
         ...(f.description ? { description: f.description } : {}),
       })),
     })),
@@ -44,7 +71,10 @@ export function initialState(
   view: "brand" | "creator" | "trust" | "programmes",
   creatorName: string,
   viewportWidth = AI_PANEL_MIN_WIDTH,
+  /** The creator has credits in more than one currency: their grids show a Currency column. */
+  currencyColumn = false,
 ): AgReportState {
+  const cur = (table: string) => (currencyColumn ? [{ id: `${table}.currency` }] : []);
   return {
     pages: [
       {
@@ -102,6 +132,7 @@ export function initialState(
                 { id: "credits.orderId" },
                 { id: "credits.brand" },
                 { id: "credits.amount" },
+                ...cur("credits"),
                 { id: "credits.state" },
                 { id: "credits.voidReason" },
                 { id: "credits.holdReason" },
@@ -118,6 +149,7 @@ export function initialState(
               cols: [
                 { id: "flags.creator" },
                 { id: "flags.amount" },
+                ...cur("flags"),
                 { id: "flags.reason" },
                 { id: "flags.detail" },
                 { id: "flags.status" },

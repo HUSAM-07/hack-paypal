@@ -15,6 +15,8 @@ export interface RawLift {
   name: string;
   category: string;
   upc: string;
+  /** The programme's currency. Absent from an engine older than international programmes: USD. */
+  currency?: string;
   /** The programme's commission rate in basis points. Absent from an engine older than self-serve. */
   commissionBps?: number;
   arms: Record<ArmName, ArmCount>;
@@ -430,6 +432,8 @@ export interface StartProgrammeInput {
   upc: string;
   depositMinor: number;
   commissionBps: number;
+  /** USD, GBP or EUR; absent means USD. */
+  currency?: string | undefined;
 }
 
 /** A brand's "Start a programme": creates the programme and captures its deposit in the engine. */
@@ -464,8 +468,19 @@ export function createEngineProgrammeStarter(opts: {
     }
     if (!res.ok) throw new EngineUnavailable(`Engine answered ${res.status} for the programme`);
     return (await res.json()) as {
-      brand: { brandId: string; name: string; category: string; commissionBps: number };
-      deposit: { status: string; amountMinor: number; captureId: string | null };
+      brand: {
+        brandId: string;
+        name: string;
+        category: string;
+        commissionBps: number;
+        currency?: string;
+      };
+      deposit: {
+        status: string;
+        amountMinor: number;
+        captureId: string | null;
+        currency?: string;
+      };
     };
   };
 }

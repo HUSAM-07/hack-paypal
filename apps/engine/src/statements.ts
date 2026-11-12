@@ -15,7 +15,9 @@
  * close's refunds. Its id, invoice number and every `PayPal-Request-Id` derive from those, so a
  * retried close repeats the same calls and never issues a second invoice.
  */
+
 import { type CreateInvoiceInput, invoicePayerUrl, type PayPalClient } from "@pact/paypal";
+import { currencySymbol } from "@pact/protocol";
 import { nowOf } from "./clock";
 import { loadStoredCredits, type StoredCredit } from "./credits";
 import type { CycleBrandResult } from "./cycle";
@@ -72,8 +74,9 @@ async function sha256Hex(s: string): Promise<string> {
   return [...new Uint8Array(d)].map((b) => b.toString(16).padStart(2, "0")).join("");
 }
 
+/** "$12.00", "£12.00", "€12.00": the statement's own currency, never converted. */
 const usd = (minor: number, currency: string) =>
-  `${currency === "USD" ? "$" : `${currency} `}${(minor / 100).toFixed(2)}`;
+  `${currencySymbol(currency)}${(minor / 100).toFixed(2)}`;
 
 /** Per-creator lines from the credits a statement covers. Pure: the tests pin it. */
 export function statementLines(

@@ -151,3 +151,63 @@ describe("the words before confirming", () => {
     expect(real).toMatch(/\$500\.00 deposit captured through PayPal/);
   });
 });
+
+describe("a programme in pounds or euros", () => {
+  const gbp = (deposit = "500") =>
+    run(
+      initialForm(DEMO),
+      DEMO,
+      { type: "currency", currency: "GBP" },
+      { type: "deposit", value: deposit },
+    );
+  it("starts in dollars, as it always did", () => {
+    expect(initialForm(DEMO).currency).toBe("USD");
+  });
+  it("reads the currency symbol and states the limits in that currency", () => {
+    expect(parseDollars("£1,250.50")).toBe(125_050);
+    expect(parseDollars("€500")).toBe(50_000);
+    expect(termsProblems({ deposit: "99", commission: "8", currency: "GBP" }).deposit).toMatch(
+      /between £100\.00 and £10,000\.00/,
+    );
+    expect(termsProblems({ deposit: "x", commission: "8", currency: "EUR" }).deposit).toMatch(
+      /in euros/,
+    );
+  });
+  it("names the currency in the request only when it is not dollars", () => {
+    expect(requestOf(gbp("750"))).toEqual({
+      category: "robot-vacuum",
+      upc: "100000000006",
+      depositMinor: 75_000,
+      commissionBps: 800,
+      currency: "GBP",
+    });
+    expect(requestOf(run(gbp(), DEMO, { type: "currency", currency: "USD" }))).not.toHaveProperty(
+      "currency",
+    );
+  });
+  it("shows the deposit in the programme's own currency, with a Currency row", () => {
+    expect(reviewOf(gbp())?.rows).toEqual([
+      { label: "Category", value: "Robot vacuums" },
+      { label: "Product", value: "Roborock Q7 Max" },
+      { label: "Currency", value: "British pounds (GBP)" },
+      { label: "Deposit", value: "£500.00" },
+      { label: "Commission rate", value: "8%" },
+    ]);
+  });
+  it("gives a round example and no converted price", () => {
+    expect(exampleLine("100000000006", 1_200, "GBP")).toBe(
+      "A £100.00 sale that a creator's test caused pays creators £12.00.",
+    );
+    expect(exampleLine("100000000006", 800, "EUR")).toBe(
+      "A €100.00 sale that a creator's test caused pays creators €8.00.",
+    );
+  });
+  it("says the deposit was captured in pounds", () => {
+    expect(outcomeMessage({ depositMinor: 50_000, brand: "Roborock", currency: "GBP" })).toMatch(
+      /£500\.00 deposit captured through PayPal/,
+    );
+    expect(
+      outcomeMessage({ private: true, depositMinor: 50_000, brand: "Roborock", currency: "EUR" }),
+    ).toMatch(/€500\.00 programme is started in this browser only/);
+  });
+});

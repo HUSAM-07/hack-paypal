@@ -214,7 +214,7 @@ export async function whatIfInputs(env: Env): Promise<{
   const selfDealt = await selfDealtSessions(env);
   const out: WhatIfBrand[] = [];
   for (const brand of brands) {
-    const mine = all.filter((s) => s.upc === brand.upc);
+    const mine = all.filter((s) => s.upc === brand.upc && s.amount.currency === brand.currency);
     const value = await coalitionValueFor(env, brand);
     const coalitions: Record<string, number> = {};
     for (const sale of mine) {
@@ -277,7 +277,9 @@ export async function recomputeCredits(env: Env, now: string): Promise<Recompute
     const deposit = aggregateDeposit(brand, await listDeposits(env, brand.brandId));
     const value = await coalitionValueFor(env, brand);
     const fresh = createCredits({
-      sales: sales.filter((s) => s.upc === brand.upc),
+      // A programme lives in one currency: a sale of its product in another is never credited,
+      // and never converted.
+      sales: sales.filter((s) => s.upc === brand.upc && s.amount.currency === brand.currency),
       brands: [
         {
           brandId: brand.brandId,
@@ -292,7 +294,9 @@ export async function recomputeCredits(env: Env, now: string): Promise<Recompute
     });
     ledger = [...ledger, ...fresh];
     summary.created += fresh.length;
-    const own = dealt.filter((s) => s.upc === brand.upc && s.arm === "test");
+    const own = dealt.filter(
+      (s) => s.upc === brand.upc && s.arm === "test" && s.amount.currency === brand.currency,
+    );
     if (own.length) {
       const held = createCredits({
         sales: own,

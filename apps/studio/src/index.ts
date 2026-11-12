@@ -217,6 +217,7 @@ export function createStudioApp(deps: StudioDeps = depsFromEnv(process.env)) {
       upc: String(input.upc ?? ""),
       depositMinor: Number(input.depositMinor),
       commissionBps: Number(input.commissionBps),
+      ...(input.currency === undefined ? {} : { currency: String(input.currency) }),
     };
     try {
       if (priv) {
@@ -242,7 +243,8 @@ export function createStudioApp(deps: StudioDeps = depsFromEnv(process.env)) {
             started: true,
             brandId: check.terms.brandId,
             depositMinor: check.terms.depositMinor,
-            deposit: { status: "captured" },
+            currency: check.terms.currency,
+            deposit: { status: "captured", currency: check.terms.currency },
             ...keep(c, o),
           },
           201,
@@ -254,6 +256,7 @@ export function createStudioApp(deps: StudioDeps = depsFromEnv(process.env)) {
           started: true,
           brandId: out.brand.brandId,
           depositMinor: out.deposit.amountMinor,
+          currency: out.deposit.currency ?? out.brand.currency ?? "USD",
           deposit: out.deposit,
         },
         201,

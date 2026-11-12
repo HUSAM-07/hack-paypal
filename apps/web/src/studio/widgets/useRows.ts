@@ -72,14 +72,22 @@ export function useRows(widgetApi: AgWidgetApi, tableId: string, fieldIds: strin
   return rows;
 }
 
-export const money = (n: number | null | undefined, cents = true) =>
+/**
+ * Table money is the programme's own currency in major units ($, £ or €), never converted. USD
+ * unless the row names another (`currency`), so the dollar demo reads exactly as it always did.
+ */
+export const money = (n: number | null | undefined, cents = true, currency = "USD") =>
   n === null || n === undefined
     ? "–"
     : n.toLocaleString("en-US", {
         style: "currency",
-        currency: "USD",
+        currency,
         minimumFractionDigits: cents ? 2 : 0,
         maximumFractionDigits: cents ? 2 : 0,
       });
+
+/** A row's currency, USD when the table predates currencies or the row names none. */
+export const currencyOf = (row: Record<string, unknown> | null | undefined): string =>
+  typeof row?.currency === "string" && row.currency ? row.currency : "USD";
 
 export const num = (n: unknown) => (typeof n === "number" ? n : 0);
