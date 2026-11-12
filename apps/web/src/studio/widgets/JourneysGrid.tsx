@@ -32,6 +32,7 @@ const JOURNEY_FIELDS = [
   "model",
   "arm",
   "product",
+  "category",
   "firstStore",
   "firstPrice",
   "storeChosen",
@@ -141,7 +142,15 @@ function Detail(p: IDetailCellRendererParams<Journey>) {
 }
 
 export function JourneysGrid(p: P) {
-  const journeys = useRows(p.widgetApi, "journeys", JOURNEY_FIELDS);
+  const allJourneys = useRows(p.widgetApi, "journeys", JOURNEY_FIELDS);
+  const brands = useRows(p.widgetApi, "brands", ["brandId", "category"]);
+  // The orders of the picked brand's category: a vacuum programme shows vacuum sales, not purifiers.
+  const category = brands?.find((b) => b.brandId === (p.context?.brandId ?? "winix"))?.category;
+  const journeys = useMemo(
+    () =>
+      allJourneys && category ? allJourneys.filter((j) => j.category === category) : allJourneys,
+    [allJourneys, category],
+  );
   const shares = useRows(p.widgetApi, "shares", SHARE_FIELDS);
   // "First payout" shows only the orders its cycle covered, like the tiles and arm strip.
   const scope = useSyncExternalStore(scopeStore.subscribe, scopeStore.get);

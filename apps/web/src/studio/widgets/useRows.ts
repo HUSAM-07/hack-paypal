@@ -1,5 +1,5 @@
 import type { AgDataHandle, AgWidgetApi, AgWidgetField } from "ag-studio";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { Row } from "../data";
 
 /**
@@ -91,3 +91,11 @@ export const currencyOf = (row: Record<string, unknown> | null | undefined): str
   typeof row?.currency === "string" && row.currency ? row.currency : "USD";
 
 export const num = (n: unknown) => (typeof n === "number" ? n : 0);
+
+/** The rows of one brand's programme. No brand given (or rows not loaded yet): the rows as they are. */
+export function useOfBrand(rows: Row[] | null, brandId: string | undefined): Row[] | null {
+  return useMemo(
+    () => (rows && brandId ? rows.filter((r) => r.brandId === brandId) : rows),
+    [rows, brandId],
+  );
+}

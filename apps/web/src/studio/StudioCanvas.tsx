@@ -182,8 +182,8 @@ export function StudioCanvas(p: StudioCanvasProps) {
     [tables, creatorName],
   );
   const state = useMemo(
-    () => initialState(initialView, creatorName, window.innerWidth, mixed),
-    [initialView, creatorName, mixed],
+    () => initialState(initialView, creatorName, window.innerWidth, mixed, p.context.brandName),
+    [initialView, creatorName, mixed, p.context.brandName],
   );
   // The harness reads the view the page opened on; `context` is one object for Studio's lifetime.
   const ai = useMemo(() => analyst.citedHarness(config, p.context), [analyst, config, p.context]);

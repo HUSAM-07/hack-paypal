@@ -10,13 +10,14 @@ import { asOfStore, type StudioContext } from "../context";
 import { csvFileName, downloadCsv, trustCsv } from "../csvExport";
 import { API, privateNote } from "../data";
 import { ExportButton } from "./ExportButton";
-import { currencyOf, money, num, useRows } from "./useRows";
+import { currencyOf, money, num, useOfBrand, useRows } from "./useRows";
 
 type P = AgWidgetParams<never, unknown, StudioContext>;
 
 const FIELDS = [
   "id",
   "creator",
+  "brandId",
   "brand",
   "orderId",
   "amount",
@@ -58,8 +59,13 @@ const codesOf = (r: Record<string, unknown>) =>
     .filter(Boolean);
 
 function useTrust(p: P) {
-  const rows = useRows(p.widgetApi, "trust", FIELDS);
-  const credits = useRows(p.widgetApi, "credits", ["id", "amount", "currency", "state"]);
+  // Trust follows the brand picked in the header, like every other brand view.
+  const brandId = p.context?.brandId;
+  const rows = useOfBrand(useRows(p.widgetApi, "trust", FIELDS), brandId);
+  const credits = useOfBrand(
+    useRows(p.widgetApi, "credits", ["id", "brandId", "amount", "currency", "state"]),
+    brandId,
+  );
   return { rows, credits };
 }
 

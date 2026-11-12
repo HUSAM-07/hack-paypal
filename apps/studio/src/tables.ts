@@ -148,6 +148,7 @@ export function buildTables(raw: RawEngine): StudioTables {
   for (const j of raw.journeys)
     for (const s of j.shapley) orderOfCapture.set(s.captureId, j.orderId);
   const productOf = new Map(raw.lift.map((b) => [b.upc, b.name]));
+  const categoryOf = new Map(raw.lift.map((b) => [b.upc, b.category]));
   // Every programme lives in one currency; its rows are shown in it, never converted.
   const currencyOf = new Map<string, string>([
     ...raw.deposits.map((d) => [d.brandId, d.currency] as const),
@@ -268,6 +269,7 @@ export function buildTables(raw: RawEngine): StudioTables {
       id: x.id,
       creatorId: x.creatorId,
       creator: nameOf(x.creatorId),
+      brandId: x.brandId,
       brand: raw.lift.find((b) => b.brandId === x.brandId)?.name ?? x.brandId,
       captureId: x.captureId,
       orderId: orderOfCapture.get(x.captureId) ?? null,
@@ -346,6 +348,7 @@ export function buildTables(raw: RawEngine): StudioTables {
       model: agentLabel(j.model),
       arm: ARM_LABEL[j.arm as ArmName] ?? j.arm,
       product: j.items.map((i) => productOf.get(i.upc) ?? i.upc).join(", "),
+      category: categoryOf.get(j.items[0]?.upc ?? "") ?? "–",
       currency: j.items[0]?.currency ?? "USD",
       firstStore,
       firstPrice:
@@ -425,6 +428,7 @@ export function buildTables(raw: RawEngine): StudioTables {
     creditId: f.creditId,
     creatorId: f.credit?.creatorId ?? null,
     creator: f.credit ? nameOf(f.credit.creatorId) : "–",
+    brandId: f.credit?.brandId ?? null,
     brand: f.credit ? (brandOf.get(f.credit.brandId) ?? f.credit.brandId) : "–",
     captureId: f.captureId,
     orderId: orderOfCapture.get(f.captureId) ?? null,
@@ -626,6 +630,7 @@ export const TABLES: TableMeta[] = [
         "Currency",
         "The programme's currency: USD, GBP or EUR. Every amount in the row is in it, never converted.",
       ),
+      t("brandId", "Brand id"),
       t("brand", "Brand"),
       t("captureId", "PayPal capture"),
       t("orderId", "PayPal order"),
@@ -651,6 +656,7 @@ export const TABLES: TableMeta[] = [
       t("model", "Agent model"),
       t("arm", "Group"),
       t("product", "Product"),
+      t("category", "Category"),
       t(
         "currency",
         "Currency",
@@ -750,6 +756,7 @@ export const TABLES: TableMeta[] = [
         "Currency",
         "The programme's currency: USD, GBP or EUR. Every amount in the row is in it, never converted.",
       ),
+      t("brandId", "Brand id"),
       t("brand", "Brand"),
       t("captureId", "PayPal capture"),
       t("orderId", "PayPal order"),
@@ -776,6 +783,7 @@ export const TABLES: TableMeta[] = [
         "Currency",
         "The programme's currency: USD, GBP or EUR. Every amount in the row is in it, never converted.",
       ),
+      t("brandId", "Brand id"),
       t("brand", "Brand"),
       t("orderId", "PayPal order"),
       m("amount", "Amount at stake"),

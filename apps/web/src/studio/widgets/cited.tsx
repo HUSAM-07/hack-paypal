@@ -7,7 +7,7 @@ import type { AgWidgetParams } from "ag-studio";
 import { useState, useSyncExternalStore } from "react";
 import { type StudioContext, scopeStore } from "../context";
 import { API, privateNote } from "../data";
-import { currencyOf, money, num, useRows } from "./useRows";
+import { currencyOf, money, num, useOfBrand, useRows } from "./useRows";
 
 type P = AgWidgetParams<never, unknown, StudioContext>;
 
@@ -217,7 +217,7 @@ export function DepositMeter(p: P) {
         <span className="cw-muted">
           {scope === "todate" && num(row.topUps) > 0
             ? `deposited: ${m(num(row.initialDeposit))} + ${m(num(row.topUps))} approved top-up`
-            : "deposited into the purifier programme"}
+            : `deposited into the ${String(row.category).replace("-", " ")} programme`}
         </span>
       </div>
       <div className="cw-meter" role="img" aria-label="Deposit breakdown">
@@ -335,6 +335,7 @@ function TileGroup({ row, labelled }: { row: Record<string, unknown>; labelled: 
 }
 
 const FLAG_FIELDS = [
+  "brandId",
   "id",
   "creator",
   "amount",
@@ -353,7 +354,7 @@ const WAITING = "Waiting for a reviewer";
  * the next payout. Void: it is voided for good, so it asks once more before it goes.
  */
 export function ReviewFlags(p: P) {
-  const rows = useRows(p.widgetApi, "flags", FLAG_FIELDS);
+  const rows = useOfBrand(useRows(p.widgetApi, "flags", FLAG_FIELDS), p.context?.brandId);
   const [busy, setBusy] = useState<string | null>(null);
   const [confirming, setConfirming] = useState<string | null>(null);
   const [note, setNote] = useState<{ id: string; text: string; error?: boolean } | null>(null);

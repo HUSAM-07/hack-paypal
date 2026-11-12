@@ -201,6 +201,8 @@ export interface CategoryStudy {
   prices: Record<string, Record<string, number>>;
   /** Suffix of the probed session ids, so the two categories never share one. */
   tag: string;
+  /** The brand's deposit into its programme (minor units). */
+  depositMinor: number;
 }
 
 export const CATEGORY_STUDIES: CategoryStudy[] = [
@@ -215,6 +217,11 @@ export const CATEGORY_STUDIES: CategoryStudy[] = [
     creator: { creatorId: "crumblab", name: "CrumbLab", paypalId: "CRUMBLAB-PP" },
     prices: VACUUM_SHOP_PRICES,
     tag: "v",
+    // The smallest programme (PROGRAMME_LIMITS.minDepositMinor). After its small study the credits
+    // reserve $71.04 of it, so the $28.96 left cannot fund another payout cycle ($35.52): the
+    // Analyst, asked about the cap on ?brand=roborock, drafts a $500 top-up Maya can approve. A
+    // /try purchase is still credited while the $28.96 lasts (Roborock's trade-off: a small deposit).
+    depositMinor: 10_000,
   },
   {
     category: "headphones",
@@ -227,6 +234,7 @@ export const CATEGORY_STUDIES: CategoryStudy[] = [
     creator: { creatorId: "quietbench", name: "QuietBench", paypalId: "QUIETBENCH-PP" },
     prices: HEADPHONE_SHOP_PRICES,
     tag: "h",
+    depositMinor: 100_000,
   },
 ];
 
@@ -1095,12 +1103,12 @@ export async function runDemo(o: DemoOptions): Promise<DemoResult> {
       });
       for (const st of CATEGORY_STUDIES) {
         const d = await eng("POST", `/brands/${st.brandId}/deposits`, {
-          amountMinor: CARD.deposit,
+          amountMinor: st.depositMinor,
         });
         await line(
           "categories",
-          `${st.brand} deposits ${usd(CARD.deposit)} into the ${st.category.replace("-", " ")} programme (Orders v2 capture ${d.captureId}), and ${st.creator.name} registers. Until now a /try purchase of the ${st.brand} was never credited: no brand funded it.`,
-          { brandId: st.brandId, amountMinor: CARD.deposit, captureId: d.captureId },
+          `${st.brand} deposits ${usd(st.depositMinor)} into the ${st.category.replace("-", " ")} programme (Orders v2 capture ${d.captureId}), and ${st.creator.name} registers. Until now a /try purchase of the ${st.brand} was never credited: no brand funded it.`,
+          { brandId: st.brandId, amountMinor: st.depositMinor, captureId: d.captureId },
         );
       }
 
@@ -1218,7 +1226,7 @@ export async function runDemo(o: DemoOptions): Promise<DemoResult> {
           exposedSales: 0,
           causedUnits: 0,
           liftPoints: 0,
-          depositMinor: CARD.deposit,
+          depositMinor: st.depositMinor,
           pendingMinor: 0,
         });
       }
@@ -1471,7 +1479,7 @@ export async function runDemo(o: DemoOptions): Promise<DemoResult> {
         const brand = (deposits.brands as Json[]).find((b) => b.brandId === st.brandId);
         check(
           `${st.brand}: funded, and the test caused units, so a test-arm sale is credited`,
-          (cn?.causedUnits ?? 0) > 0 && (brand?.deposited ?? 0) === CARD.deposit,
+          (cn?.causedUnits ?? 0) > 0 && (brand?.deposited ?? 0) === st.depositMinor,
           `${usd(brand?.deposited ?? 0)} deposited, ${cn?.exposedSales} exposed sales → ${cn?.causedUnits} caused units`,
         );
         check(

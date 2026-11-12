@@ -73,6 +73,8 @@ export function initialState(
   viewportWidth = AI_PANEL_MIN_WIDTH,
   /** The creator has credits in more than one currency: their grids show a Currency column. */
   currencyColumn = false,
+  /** The brand view's brand; its arm strip is titled for it. */
+  brandName = "Winix",
 ): AgReportState {
   const cur = (table: string) => (currencyColumn ? [{ id: `${table}.currency` }] : []);
   return {
@@ -86,7 +88,7 @@ export function initialState(
           },
           arms: {
             type: "cited-arms",
-            format: { title: { enabled: true, text: "Winix share by group" } },
+            format: { title: { enabled: true, text: `${brandName} share by group` } },
           },
           deposit: {
             type: "cited-deposit",
