@@ -9,7 +9,13 @@ import { Hono } from "hono";
 import { z } from "zod";
 import { advanceClock, nowOf } from "./clock";
 import { listCreatorTests, PublishTestInput, publishTest } from "./creator-tests";
-import { brandBalances, frozenCaptures, loadStoredCredits, recomputeCredits } from "./credits";
+import {
+  brandBalances,
+  frozenCaptures,
+  loadStoredCredits,
+  recomputeCredits,
+  whatIfInputs,
+} from "./credits";
 import { closeCycle } from "./cycle";
 import type { Env } from "./env";
 import { heldCredits, listFlags, resolveHold } from "./guard";
@@ -333,6 +339,9 @@ api.get("/lift/:brandId", async (c) => {
   return one ? c.json(one) : c.json({ error: "unknown_brand" }, 404);
 });
 
+/** The recorded sales the Studio what-if re-prices in the browser. Read-only. */
+api.get("/what-if", async (c) => c.json(await whatIfInputs(c.env)));
+
 api.get("/caused-units", async (c) =>
   c.json({
     skus: (await liftView(c.env)).map((b) => ({
@@ -552,6 +561,8 @@ async function journeys(env: Env, limit: number, source: "agent" | "mcp" = "agen
       ...(source === "mcp"
         ? {
             source,
+            /** Which creators' content this session was shown (their test, or the placebo). */
+            creatorsSeen: JSON.parse(first.creators_seen as string) as string[],
             verdict: mcpVerdict(first.arm, JSON.parse(first.creators_seen as string) as string[]),
           }
         : {}),

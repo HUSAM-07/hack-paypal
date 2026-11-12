@@ -6,8 +6,10 @@
  * end, because Studio formats and aggregates plain numbers (display values, never re-summed
  * into a payout). Pure, so every number on screen is testable without a browser.
  */
-import type { ArmName, RawCredit, RawEngine, RawPayoutBatch } from "./dashboard";
+import type { ArmName, RawCredit, RawEngine, RawPayoutBatch, RawWhatIf } from "./dashboard";
 import { trustRows } from "./trust";
+
+export type { RawWhatIf };
 
 /** Seeded demo runs use a stand-in model (`scripted-<family>`, `fake-<family>` in older data); say so plainly rather than show the id. */
 export const agentLabel = (model: string): string =>
@@ -29,6 +31,8 @@ export interface StudioTables {
   /** The day-30 batch the "first payout" scope is anchored on; null before any payout. */
   firstBatch: { senderBatchId: string; createdAt: string; label: string } | null;
   tables: Record<TableId, Row[]>;
+  /** The recorded sales the commission what-if re-prices in the browser; not a table. */
+  whatIf: RawWhatIf | null;
 }
 
 export type TableId =
@@ -434,6 +438,7 @@ export function buildTables(raw: RawEngine): StudioTables {
   return {
     asOf: raw.now,
     version: fingerprint(JSON.stringify(tables)),
+    whatIf: raw.whatIf ?? null,
     firstBatch: first
       ? {
           senderBatchId: first.senderBatchId,

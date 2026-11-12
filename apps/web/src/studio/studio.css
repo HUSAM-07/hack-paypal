@@ -699,6 +699,113 @@ body {
   clip-path: inset(50%);
 }
 
+/* Commission what-if */
+.cw-wi-flag {
+  margin: 0;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: var(--amber-tint, #f5ead6);
+  color: var(--ink);
+  font-size: 13px;
+  line-height: 1.45;
+}
+.cw-wi-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 12px 24px;
+}
+.cw-wi-controls label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12.5px;
+  color: var(--muted);
+}
+.cw-wi-rate {
+  flex: 1 1 240px;
+  min-width: 0;
+}
+.cw-wi-rate output {
+  margin-left: 6px;
+  color: var(--ink);
+  font: 400 20px / 1 var(--serif);
+}
+.cw-wi-rate input {
+  width: 100%;
+  accent-color: var(--proof);
+}
+.cw-wi-deposit input {
+  width: 130px;
+  padding: 6px 8px;
+  border: 1px solid var(--hair);
+  border-radius: 6px;
+  background: var(--paper);
+  color: var(--ink);
+  font: inherit;
+}
+.cw-wi-reset {
+  padding: 7px 12px;
+  border: 1px solid var(--hair);
+  border-radius: 6px;
+  background: var(--paper);
+  color: var(--ink);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+.cw-wi-reset:disabled {
+  color: var(--muted);
+  cursor: default;
+}
+.cw-wi input:focus-visible,
+.cw-wi-reset:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+.cw-wi-tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 12px;
+  margin: 0;
+}
+.cw-wi-tile {
+  padding: 10px 14px;
+  border-radius: 8px;
+  border: 1px solid var(--hair);
+  background: var(--paper);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.cw-wi-tile dt {
+  font-size: 12px;
+  color: var(--muted);
+}
+.cw-wi-tile dd {
+  margin: 0;
+  font: 400 30px / 1.05 var(--serif);
+  letter-spacing: -0.02em;
+}
+.cw-wi-tile.is-paid dd {
+  color: var(--proof);
+}
+.cw-wi-tile small {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.4;
+}
+.cw-wi-grid {
+  flex: none;
+}
+.cw-wi-what {
+  font-weight: 600;
+}
+.cw-wi-total {
+  font-weight: 600;
+  border-top: 1px solid var(--hair);
+}
+
 @media (max-width: 760px) {
   .st-head {
     padding: 14px 16px 12px;

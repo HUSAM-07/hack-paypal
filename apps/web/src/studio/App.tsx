@@ -2,7 +2,7 @@ import type { Scope } from "@cited/studio/tables";
 import type { AgStudioApi, AgStudioApiReadyEvent } from "ag-studio";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { SiteHeader } from "../landing/SiteHeader";
-import { type StudioContext, scopeStore } from "./context";
+import { type StudioContext, scopeStore, whatIfStore } from "./context";
 import { diffTables, getJson, POLL_MS, type StudioConfig, type StudioTables } from "./data";
 import { startPolling } from "./poll";
 import { scopeFromParams, searchWithScope } from "./scope";
@@ -89,6 +89,7 @@ export function App() {
     Promise.all([getJson<StudioConfig>("/config"), getJson<StudioTables>("/data")])
       .then(([c, d]) => {
         last.current = d;
+        whatIfStore.set(d.whatIf ?? null);
         setConfig(c);
         setFirst(d);
         setAsOf(d.asOf);
@@ -105,6 +106,7 @@ export function App() {
       try {
         const next = await getJson<StudioTables>("/data");
         setLive(true);
+        whatIfStore.set(next.whatIf ?? null);
         setAsOf(next.asOf);
         setFirstBatch(next.firstBatch?.label ?? null);
         const engine = api.current?.getDataEngine();

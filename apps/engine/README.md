@@ -79,6 +79,7 @@ catalogue reports every session it assigns an arm; lift needs the non-buyers).
 | `GET /api/journeys?limit=` | `{journeys: Journey[]}` |
 | `GET /api/journeys?source=mcp` | Sales made through the public `/mcp` endpoint, each with `verdict: {creditable, reason}`. They are kept out of lift, credits and every other number. |
 | `GET /api/shapley` | `{sales: [{captureId, brandId, upc, totalMinor, shares:[{creatorId, amountMinor, state, payoutBatchId}]}]}` |
+| `GET /api/what-if` | `{truncated, brands: [{brandId, upc, currency, causedUnits, sales: AttributedSale[], selfDealtSales: AttributedSale[], coalitions: {"a+b": lift}}]}`: the recorded exposed-arm sales AG Studio's commission what-if re-prices in the browser. Read-only; `truncated` (and no brands) past 5,000 sales |
 | `GET /api/invoices?brandId=` | `{statements: [{id, brandId, invoiceNumber, invoiceId, status, currency, creditedMinor, voidedMinor, paidMinor, returnedMinor, depositedMinor, reservedMinor, invoiceTotalMinor, invoicePaidMinor, invoiceDueMinor, lines[], payoutBatchIds[], refundIds[], creditIds[], recipientViewUrl, invoicerViewUrl, error, createdAt}]}` |
 | `GET /api/webhook-proof` | `{subscriptionId, paypalMode, proofs: [{transmissionId, eventId, eventType, source, signedFor: subscription\|simulator, verified, transmissionTime, certUrl, resourceId, dispatched, receivedAt}]}` |
 | `GET /api/payouts` | `{batches: [{senderBatchId, paypalBatchId, status, items[], createdAt}]}` |
