@@ -1,7 +1,16 @@
 import { SELF } from "cloudflare:test";
 import { env as rawEnv } from "cloudflare:workers";
-import { UPC_LEVOIT_CORE300, UPC_WINIX_A230 } from "@pact/protocol";
+import { categoryOfQuery } from "@cited/catalogue-mcp";
+import {
+  UPC_BOSE_QC,
+  UPC_LEVOIT_CORE300,
+  UPC_ROBOROCK_Q7MAX,
+  UPC_ROOMBA_J5,
+  UPC_SONY_XM5,
+  UPC_WINIX_A230,
+} from "@pact/protocol";
 import { describe, expect, it } from "vitest";
+import { CREATOR_CATEGORIES } from "../src/creators/categories";
 import { buildTests, parsePayoutForm, type TestForm } from "../src/creators/routes";
 import { creatorIdFor } from "../src/creators/session";
 
@@ -185,6 +194,84 @@ describe("buildTests", () => {
     const r = buildTests({ ...base, skus: [UPC_WINIX_A230, "100000000006"] }, "c-1", "abc");
     expect(r.ok).toBe(false);
     expect(!r.ok && r.errors.join(" ")).toMatch(/at least two products/);
+  });
+});
+
+describe("buildTests per category", () => {
+  const base: TestForm = {
+    name: "Quiet Rooms",
+    skus: [],
+    verdict: "close",
+    summary: "x".repeat(80),
+    disclosure: "May earn a commission.",
+    placeboTopic: "Desk lamps",
+    placeboSummary: "y".repeat(50),
+  };
+  const vac = [UPC_ROBOROCK_Q7MAX, UPC_ROOMBA_J5];
+  const hp = [UPC_SONY_XM5, UPC_BOSE_QC];
+
+  it("builds a test in each category with that category on it", () => {
+    for (const [category, skus] of [
+      ["robot-vacuum", vac],
+      ["headphones", hp],
+      ["air-purifier", [UPC_WINIX_A230, UPC_LEVOIT_CORE300]],
+    ] as const) {
+      const r = buildTests({ ...base, category, skus: [...skus], verdict: skus[1] }, "c-1", "abc");
+      expect(r.ok && r.test).toMatchObject({ kind: "test", category, verdictUpc: skus[1] });
+      expect(r.ok && r.test.skus.map((s) => s.upc)).toEqual(skus);
+    }
+  });
+
+  it("with no category it is the air purifier form it always was", () => {
+    const r = buildTests({ ...base, skus: [UPC_WINIX_A230, UPC_LEVOIT_CORE300] }, "c-1", "abc");
+    expect(r.ok && r.test.category).toBe("air-purifier");
+  });
+
+  it("products must be from the category picked, and each one that is not is named", () => {
+    const r = buildTests(
+      { ...base, category: "headphones", skus: [UPC_SONY_XM5, ...vac] },
+      "c-1",
+      "abc",
+    );
+    expect(r.ok).toBe(false);
+    expect(!r.ok && r.errors.join(" ")).toMatch(
+      /noise-cancelling headphones only: Roborock Q7 Max, iRobot Roomba Combo j5 aren't.*at least two products/,
+    );
+    const all = buildTests({ ...base, category: "robot-vacuum", skus: hp }, "c-1", "abc");
+    expect(all.ok).toBe(false);
+  });
+
+  it("a verdict must be one of the products of the category", () => {
+    const r = buildTests(
+      { ...base, category: "robot-vacuum", skus: vac, verdict: UPC_SONY_XM5 },
+      "c-1",
+      "abc",
+    );
+    expect(!r.ok && r.errors.join(" ")).toMatch(/verdict must be one of the products/);
+  });
+
+  it("rejects a category the catalogue does not sell", () => {
+    const r = buildTests({ ...base, category: "toasters", skus: hp }, "c-1", "abc");
+    expect(!r.ok && r.errors.join(" ")).toMatch(/Pick a category/);
+  });
+
+  it("keeps the placebo off the category's own topic", () => {
+    const r = buildTests(
+      { ...base, category: "headphones", skus: hp, placeboTopic: "Wireless earbuds" },
+      "c-1",
+      "abc",
+    );
+    expect(!r.ok && r.errors.join(" ")).toMatch(/other than noise-cancelling headphones/);
+    const v = buildTests(
+      { ...base, category: "robot-vacuum", skus: vac, placeboTopic: "Cordless vacuums" },
+      "c-1",
+      "abc",
+    );
+    expect(!v.ok && v.errors.join(" ")).toMatch(/other than robot vacuums/);
+  });
+
+  it("what the success text tells a creator to search for lands in that category", () => {
+    for (const c of CREATOR_CATEGORIES) expect(categoryOfQuery(c.searchFor)).toBe(c.id);
   });
 });
 

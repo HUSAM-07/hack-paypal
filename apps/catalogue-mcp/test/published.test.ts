@@ -1,7 +1,11 @@
 import {
   decodePassportBody,
   signPassport,
+  UPC_BOSE_QC,
   UPC_LEVOIT_CORE300,
+  UPC_ROBOROCK_Q7MAX,
+  UPC_ROOMBA_J5,
+  UPC_SONY_XM5,
   UPC_WINIX_A230,
   type VerifiedTest,
 } from "@pact/protocol";
@@ -342,5 +346,138 @@ describe("the catalogue and published tests", () => {
     const body = decodePassportBody(second.passport.split(".")[0] as string);
     expect(body.creatorsSeen.length).toBeLessThanOrEqual(4);
     for (const t of second.creatorContent) expect(body.creatorsSeen).toContain(t.creatorId);
+  });
+});
+
+describe("published tests in every category", () => {
+  const vacuum = (id: string, at: string, over: Partial<VerifiedTest> = {}) =>
+    pair(id, at, {
+      test: {
+        category: "robot-vacuum",
+        skus: [sku(UPC_ROBOROCK_Q7MAX), sku(UPC_ROOMBA_J5)],
+        verdictUpc: UPC_ROOMBA_J5,
+        ...over,
+      },
+    });
+  const headphones = (id: string, at: string, over: Partial<VerifiedTest> = {}) =>
+    pair(id, at, {
+      test: {
+        category: "headphones",
+        skus: [sku(UPC_SONY_XM5), sku(UPC_BOSE_QC)],
+        verdictUpc: UPC_BOSE_QC,
+        ...over,
+      },
+    });
+
+  it("serves vacuum and headphone tests with products from our catalogue", () => {
+    const live = liveFromRows([
+      ...vacuum("c-v", "2026-11-12T01:00:00.000Z"),
+      ...headphones("c-h", "2026-11-12T02:00:00.000Z"),
+    ]);
+    expect(live.map((l) => [l.creatorId, l.category])).toEqual([
+      ["c-h", "headphones"],
+      ["c-v", "robot-vacuum"],
+    ]);
+    expect(live[1]?.test.skus).toEqual([
+      { upc: UPC_ROBOROCK_Q7MAX, brand: "Roborock", name: "Q7 Max" },
+      { upc: UPC_ROOMBA_J5, brand: "iRobot", name: "Roomba Combo j5" },
+    ]);
+  });
+
+  it("skips a test whose declared category is not the category of its products", () => {
+    const at = "2026-11-12T01:00:00.000Z";
+    expect(liveFromRows(vacuum("c-x", at, { category: "headphones" }))).toEqual([]);
+    expect(
+      liveFromRows(vacuum("c-y", at, { skus: [sku(UPC_ROBOROCK_Q7MAX), sku(UPC_SONY_XM5)] })),
+    ).toEqual([]);
+    expect(liveFromRows(headphones("c-z", at, { verdictUpc: UPC_WINIX_A230 }))).toEqual([]);
+  });
+
+  it("caps the newest three creators per category, not across them", () => {
+    const rows = [
+      ...["1", "2", "3", "4"].flatMap((n) => vacuum(`c-v${n}`, `2026-11-12T0${n}:00:00.000Z`)),
+      ...["1", "2", "3", "4"].flatMap((n) => headphones(`c-h${n}`, `2026-11-12T0${n}:30:00.000Z`)),
+      ...pair("c-p1", "2026-11-12T00:10:00.000Z"),
+    ];
+    const live = liveFromRows(rows);
+    const by = (c: string) => live.filter((l) => l.category === c).map((l) => l.creatorId);
+    expect(by("robot-vacuum")).toEqual(["c-v4", "c-v3", "c-v2"]);
+    expect(by("headphones")).toEqual(["c-h4", "c-h3", "c-h2"]);
+    expect(by("air-purifier")).toEqual(["c-p1"]);
+  });
+
+  describe("in a public session", () => {
+    const published = () =>
+      createPublishedTests(async () => [
+        ...pair("c-p", "2026-11-12T01:00:00.000Z"),
+        ...vacuum("c-v", "2026-11-12T02:00:00.000Z"),
+        ...headphones("c-h", "2026-11-12T03:00:00.000Z"),
+      ]);
+    const searchIn = async (cat: ReturnType<typeof createCatalogue>, id: string, query: string) =>
+      cat.search({
+        query,
+        passport: await signPassport(cat.newSession(id, false), DEV_PASSPORT_KEY),
+      });
+    const armId = (cat: ReturnType<typeof createCatalogue>, arm: string) => {
+      for (let i = 0; i < 5000; i++)
+        if (cat.newSession(`mcp_${i}`, false).arm === arm) return `mcp_${i}`;
+      throw new Error("no session");
+    };
+
+    it("each category's search shows that category's built-in test and published tests only", async () => {
+      const cat = createCatalogue({
+        seed: "t",
+        passportKey: DEV_PASSPORT_KEY,
+        published: published(),
+      });
+      const id = armId(cat, "test");
+      const ids = async (q: string) =>
+        (await searchIn(cat, id, q)).creatorContent.map((t) => [t.creatorId, t.kind]);
+      expect(await ids("robot vacuum")).toEqual([
+        ["crumblab", "test"],
+        ["c-v", "test"],
+      ]);
+      expect(await ids("noise-cancelling headphones")).toEqual([
+        ["quietbench", "test"],
+        ["c-h", "test"],
+      ]);
+      expect(await ids("air purifier")).toEqual([
+        ["housefresh", "test"],
+        ["c-p", "test"],
+      ]);
+    });
+
+    it("the placebo group gets their placebo, the held-out group nothing, in a vacuum search", async () => {
+      const cat = createCatalogue({
+        seed: "t",
+        passportKey: DEV_PASSPORT_KEY,
+        published: published(),
+      });
+      const placebo = await searchIn(cat, armId(cat, "placebo"), "robot vacuum");
+      expect(placebo.creatorContent.map((t) => [t.creatorId, t.kind])).toEqual([
+        ["crumblab", "placebo"],
+        ["c-v", "placebo"],
+      ]);
+      expect((await searchIn(cat, armId(cat, "none"), "robot vacuum")).creatorContent).toEqual([]);
+    });
+
+    it("ranking is identical with or without published tests, per category; the demo never sees them", async () => {
+      const withPub = createCatalogue({
+        seed: "t",
+        passportKey: DEV_PASSPORT_KEY,
+        published: published(),
+      });
+      const without = createCatalogue({ seed: "t", passportKey: DEV_PASSPORT_KEY });
+      for (const q of ["robot vacuum", "noise-cancelling headphones", "air purifier"]) {
+        const id = armId(withPub, "test");
+        expect((await searchIn(withPub, id, q)).offers).toEqual(
+          (await searchIn(without, id, q)).offers,
+        );
+        // Not a public session (no `mcp_` prefix): the stateless demo path.
+        const demo = await searchIn(withPub, "demo-1", q);
+        expect(demo.creatorContent.map((t) => t.creatorId)).not.toContain("c-v");
+        expect(demo.creatorContent.map((t) => t.creatorId)).not.toContain("c-h");
+      }
+    });
   });
 });

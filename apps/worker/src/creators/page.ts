@@ -11,10 +11,12 @@ import {
   SITE_THEME_CSS,
   siteHeader,
 } from "@pact/protocol";
+import { CREATOR_CATEGORIES, type CreatorCategory, creatorCategory } from "./categories";
 
 const esc = (s: string) => s.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
 
 export interface Product {
+  category: string;
   upc: string;
   brand: string;
   name: string;
@@ -98,6 +100,8 @@ textarea{resize:vertical;line-height:1.45}
 textarea.long{min-height:7.5rem;font-family:var(--serif);font-size:1.02rem}
 input:focus,textarea:focus{outline:none;border-color:var(--ink);box-shadow:0 0 0 1px var(--ink)}
 .opts{display:grid;gap:.5rem}
+[hidden]{display:none!important}
+.opts.cols{grid-template-columns:repeat(3,minmax(0,1fr))}
 .opt{display:grid;grid-template-columns:auto minmax(0,1fr);gap:.7rem;align-items:start;padding:.65rem .8rem;border:1px solid var(--line);border-radius:8px;background:var(--paper);cursor:pointer;min-height:44px}
 .opt:has(input:checked){border-color:var(--ink)}
 .opt input{margin:.2rem 0 0;width:18px;height:18px;accent-color:var(--ink)}
@@ -173,6 +177,7 @@ main.bare{max-width:none;padding:0}
   h1{font-size:2.1rem}
   .how{grid-template-columns:1fr;gap:1rem}
   .work{grid-template-columns:1fr;gap:2rem}
+  .opts.cols{grid-template-columns:1fr}
   aside{position:static}
   .rail{font-size:.7rem}
   .who form{margin-left:0}
@@ -245,16 +250,18 @@ export interface PublishView {
   creatorId: string;
   simulated: boolean;
   csrf: string;
+  /** Every product in the catalogue; the form shows the selected category's. */
   products: Product[];
+  /** The selected category id. */
   category: string;
   defaultDisclosure: string;
   /** Values to put back after a failed submit. */
   values?: Record<string, string | string[]>;
   errors?: string[];
-  published?: { testId: string; studioUrl: string };
+  published?: { testId: string; studioUrl: string; category: string };
   /** The creator's AG Studio view. */
   dashboardUrl: string;
-  tests: { id: string; kind: string; verdict: string; publishedAt: string }[];
+  tests: { id: string; kind: string; verdict: string; category?: string; publishedAt: string }[];
   /** Where CITED pays this creator. `label` is masked (`Venmo ···0123`); never the full receiver. */
   payout: {
     method: "PAYPAL" | "VENMO";
@@ -290,7 +297,8 @@ ${p.error ? `<div class="err" role="alert" id="venmo-err">${esc(p.error)}</div>`
 </section>`;
 }
 
-function scheduleBlock(studioUrl: string): string {
+function scheduleBlock(studioUrl: string, categoryId: string): string {
+  const cat = creatorCategory(categoryId) ?? CREATOR_CATEGORIES[0];
   const s = DEFAULT_SCHEDULE;
   const pct = (n: number) => `${Math.round(n * 100)}%`;
   const horizon = 30;
@@ -311,8 +319,8 @@ function scheduleBlock(studioUrl: string): string {
 </div>
 <div class="key"><span>Shown your test</span><span class="h">Held out</span></div>
 <div class="live" id="see-it"><h3>See it in front of an agent</h3>
-<p>Point an agent at <a href="/mcp"><code>/mcp</code></a> and search for <b>air purifiers</b>. Within a few seconds, each new session is randomly shown your test, your placebo article, or nothing. Try a few sessions to see each one.</p>
-<p>If your agent buys, the sale appears on the <a href="/mcp#feed">live feed at /mcp</a> under your name, with the credit CITED would hold for you. It is never paid out, and it stays out of the study numbers. CITED keeps the newest three creators' tests live at once.</p></div>
+<p>Point an agent at <a href="/mcp"><code>/mcp</code></a> and search for <b>${esc(cat?.searchFor ?? "air purifiers")}</b>. Within a few seconds, each new session is randomly shown your test, your placebo article, or nothing. Try a few sessions to see each one.</p>
+<p>If your agent buys, the sale appears on the <a href="/mcp#feed">live feed at /mcp</a> under your name, with the credit CITED would hold for you. It is never paid out, and it stays out of the study numbers. In each category, CITED keeps the newest three creators' tests live at once.</p></div>
 <a class="btn" href="${esc(studioUrl)}">Open your creator dashboard</a>
 </section>`;
 }
@@ -326,27 +334,48 @@ export function publishPage(v: PublishView): string {
     const x = v.values?.skus;
     return x === undefined ? true : Array.isArray(x) ? x.includes(upc) : x === upc;
   };
-  const verdict =
-    typeof v.values?.verdict === "string" ? v.values.verdict : (v.products[0]?.upc ?? "close");
-  const skuOpts = v.products
-    .map(
-      (
-        p,
-      ) => `<label class="opt"><input type="checkbox" name="skus" value="${p.upc}"${picked(p.upc) ? " checked" : ""} data-name="${esc(`${p.brand} ${p.name}`)}">
-<span><b>${esc(p.brand)} ${esc(p.name)}</b><small>${esc(p.specs)} · UPC <code>${p.upc}</code></small></span></label>`,
-    )
-    .join("");
-  const verdictOpts =
-    v.products
+  const selected = creatorCategory(v.category) ?? (CREATOR_CATEGORIES[0] as CreatorCategory);
+  const catOpts = CREATOR_CATEGORIES.map((c) => {
+    const names = v.products
+      .filter((p) => p.category === c.id)
+      .map((p) => `${p.brand} ${p.name}`)
+      .join(", ");
+    return `<label class="opt"><input type="radio" name="category" value="${c.id}"${c.id === selected.id ? " checked" : ""} data-noun="${esc(c.noun)}">
+<span><b>${esc(c.label)}</b><small>${esc(names)}</small></span></label>`;
+  }).join("");
+  // One group of products and verdicts per category; only the selected one is shown and sent.
+  const groups = CREATOR_CATEGORIES.map((c) => {
+    const on = c.id === selected.id;
+    const prods = v.products.filter((p) => p.category === c.id);
+    const verdict =
+      on && typeof v.values?.verdict === "string" ? v.values.verdict : (prods[0]?.upc ?? "close");
+    const off = on ? "" : " disabled";
+    const skuOpts = prods
       .map(
         (
           p,
-        ) => `<label class="opt"><input type="radio" name="verdict" value="${p.upc}"${verdict === p.upc ? " checked" : ""}>
-<span><b>${esc(p.brand)} ${esc(p.name)}</b><small>Recommend it. Agents get this as the verdict.</small></span></label>`,
+        ) => `<label class="opt"><input type="checkbox" name="skus" value="${p.upc}"${on && picked(p.upc) ? " checked" : ""}${off} data-name="${esc(`${p.brand} ${p.name}`)}">
+<span><b>${esc(p.brand)} ${esc(p.name)}</b><small>${esc(p.specs)} · UPC <code>${p.upc}</code></small></span></label>`,
       )
-      .join("") +
-    `<label class="opt close"><input type="radio" name="verdict" value="close"${verdict === "close" ? " checked" : ""}>
+      .join("");
+    const verdictOpts =
+      prods
+        .map(
+          (
+            p,
+          ) => `<label class="opt"><input type="radio" name="verdict" value="${p.upc}"${on && verdict === p.upc ? " checked" : ""}${off}>
+<span><b>${esc(p.brand)} ${esc(p.name)}</b><small>Recommend it. Agents get this as the verdict.</small></span></label>`,
+        )
+        .join("") +
+      `<label class="opt close"><input type="radio" name="verdict" value="close"${on && verdict === "close" ? " checked" : ""}${off}>
 <span><b>Close call</b><small>No single winner. Agents get your summary with no verdict.</small></span></label>`;
+    return `<div class="cat-group" data-cat="${c.id}"${on ? "" : " hidden"}>
+<fieldset><legend>Products you tested</legend>
+<p class="hint">From the PayPal catalogue, matched by UPC: sales join to your test on these codes. Pick at least two.</p>
+<div class="opts">${skuOpts}</div></fieldset>
+<fieldset class="verdicts"><legend>Your verdict</legend><div class="opts">${verdictOpts}</div></fieldset>
+</div>`;
+  }).join("");
   const errs = v.errors?.length
     ? `<div class="err" role="alert" id="pub-errors" tabindex="-1"><b>Fix these before publishing:</b><ul>${v.errors.map((e) => `<li>${esc(e)}</li>`).join("")}</ul></div>`
     : "";
@@ -369,22 +398,22 @@ export function publishPage(v: PublishView): string {
 ${v.simulated ? `<span class="sim">Simulated PayPal</span>` : ""}
 <form method="post" action="/creators/disconnect"><input type="hidden" name="csrf" value="${esc(v.csrf)}"><button class="linkish" type="submit">Disconnect</button></form></div>
 ${payoutSection(v)}
-${v.published ? scheduleBlock(v.published.studioUrl) : ""}
+${v.published ? scheduleBlock(v.published.studioUrl, v.published.category) : ""}
 ${list}
 <div class="work">
 <form id="pub" method="post" action="/creators/tests" novalidate>
 <input type="hidden" name="csrf" value="${esc(v.csrf)}">
 <h1 class="h-form">${v.published ? "Publish another test" : "Publish your test"}</h1>
-<p class="lede">Agents shopping for ${esc(v.category.replace(/-/g, " "))}s get this as a structured test. Write it the way you'd brief a buyer.</p>
+<p class="lede">Agents shopping for <span class="c-noun">${esc(selected.noun)}</span> get this as a structured test. Write it the way you'd brief a buyer.</p>
 ${errs}
 <fieldset><legend>Byline</legend>
 <label class="f" for="name">Publish as</label>
 <input type="text" id="name" name="name" maxlength="80" required value="${val("name", v.name)}" autocomplete="organization">
 </fieldset>
-<fieldset><legend>Products you tested</legend>
-<p class="hint">From the PayPal catalogue, matched by UPC: sales join to your test on these codes. Pick at least two.</p>
-<div class="opts">${skuOpts}</div></fieldset>
-<fieldset class="verdicts"><legend>Your verdict</legend><div class="opts">${verdictOpts}</div></fieldset>
+<fieldset class="cats"><legend>Category</legend>
+<p class="hint">Agents are shown your test when they search this category. Your products and verdict come from it.</p>
+<div class="opts cols">${catOpts}</div></fieldset>
+${groups}
 <fieldset><legend>What you measured</legend>
 <p class="hint">Method and result, in your words. 60 to 1,200 characters.</p>
 <label class="sr" for="summary">What you measured</label>
@@ -396,7 +425,7 @@ ${errs}
 <textarea id="disclosure" name="disclosure" rows="3" maxlength="400" required>${val("disclosure", v.defaultDisclosure)}</textarea>
 </fieldset>
 <fieldset><legend>Placebo article</legend>
-<p class="hint">Something else you wrote, on another topic, with no purifier verdict. Some agents are shown this instead of your test, so CITED pays for what your test says, not for your name.</p>
+<p class="hint">Something else you wrote, on another topic, with no verdict on <span class="c-noun">${esc(selected.noun)}</span>. Some agents are shown this instead of your test, so CITED pays for what your test says, not for your name.</p>
 <label class="f" for="placeboTopic">Topic</label>
 <input type="text" id="placeboTopic" name="placeboTopic" maxlength="40" required placeholder="desk lamps" value="${val("placeboTopic")}">
 <label class="f" for="placeboSummary">What it says</label>
@@ -406,9 +435,14 @@ ${errs}
 <span class="small">You can publish again later; earlier tests stay as they are.</span></div>
 </form>
 <aside aria-labelledby="spec-k"><p class="spec-k" id="spec-k">What an agent is handed</p>
-<div class="spec" id="spec"><div class="cat">${esc(v.category)} · ${esc(v.creatorId)}</div>
+<div class="spec" id="spec"><div class="cat"><span id="s-cat">${esc(selected.id)}</span> · ${esc(v.creatorId)}</div>
 <div class="by" id="s-by">${val("name", v.name)}</div>
-<p class="vs" id="s-vs">${esc(v.products.map((p) => `${p.brand} ${p.name}`).join(" vs "))}</p>
+<p class="vs" id="s-vs">${esc(
+      v.products
+        .filter((p) => p.category === selected.id)
+        .map((p) => `${p.brand} ${p.name}`)
+        .join(" vs "),
+    )}</p>
 <div class="vd" id="s-vd">Verdict</div>
 <p class="sum" id="s-sum">${val("summary")}</p>
 <p class="disc"><b>Disclosure.</b> <span id="s-disc">${val("disclosure", v.defaultDisclosure)}</span></p></div>
@@ -439,6 +473,23 @@ function sync() {
   $("s-sum").textContent = f.summary.value.trim();
   $("s-disc").textContent = f.disclosure.value.trim();
 }
+const nouns = document.querySelectorAll(".c-noun");
+f.addEventListener("change", (e) => {
+  const r = e.target;
+  if (r.name !== "category") return;
+  for (const g of f.querySelectorAll(".cat-group")) {
+    const on = g.dataset.cat === r.value;
+    g.hidden = !on;
+    for (const i of g.querySelectorAll("input")) { i.disabled = !on; if (!on) i.checked = false; }
+    if (on) {
+      for (const i of g.querySelectorAll("input[name=skus]")) i.checked = true;
+      const first = g.querySelector("input[name=verdict]");
+      if (first) first.checked = true;
+    }
+  }
+  for (const n of nouns) n.textContent = r.dataset.noun;
+  $("s-cat").textContent = r.value;
+});
 f.addEventListener("input", sync); f.addEventListener("change", sync); sync();
 `;
 
