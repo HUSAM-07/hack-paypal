@@ -78,3 +78,9 @@ export function siteHeader(
 ): string {
   return `<header class="site-top"><div class="site-bar"><a class="site-mark" href="${href("/")}">CITED</a><nav class="site-nav" aria-label="CITED">${siteNavLinks(current, href)}</nav></div></header>`;
 }
+
+/**
+ * The judge tour's script (apps/web/src/tour). Every public page loads it; it draws nothing
+ * unless the tour was started with `?tour=N`. A module script, so it runs after the page parses.
+ */
+export const TOUR_SCRIPT = '<script type="module" src="/fx/tour.js"></script>';

@@ -12,6 +12,9 @@ function appEntryRewrite(): Plugin {
         const path = req.url?.split("?")[0] ?? "";
         if (path === "/app" || path.startsWith("/app/")) {
           req.url = `/app.html${req.url?.slice(path.length) ?? ""}`;
+        } else if (path === "/fx/tour.js") {
+          // Production serves the built tour at this fixed URL (the server-rendered pages load it).
+          req.url = `/src/tour/main.ts${req.url?.slice(path.length) ?? ""}`;
         } else if (path === "/proof") {
           req.url = `/proof.html${req.url?.slice(path.length) ?? ""}`;
         } else if (path === "/studio" || path === "/studio/" || path === "/studio/creator") {
@@ -66,6 +69,8 @@ export default defineConfig(({ isSsrBuild }) => ({
             proof: new URL("./proof.html", import.meta.url).pathname,
             // The console is server-rendered by the worker, so its scene script needs a fixed URL.
             "console-scene": new URL("./src/console-scene/main.ts", import.meta.url).pathname,
+            // The judge tour's bar, loaded by every public page, the server-rendered ones too.
+            tour: new URL("./src/tour/main.ts", import.meta.url).pathname,
           },
           // /studio loads AG Studio lazily (src/studio/App.tsx). Its vendors get chunks of their
           // own: they download in parallel, and each keeps its hashed URL (cached for a year by
@@ -74,7 +79,9 @@ export default defineConfig(({ isSsrBuild }) => ({
           output: {
             codeSplitting: { includeDependenciesRecursively: false, groups: VENDOR_CHUNKS },
             entryFileNames: (chunk) =>
-              chunk.name === "console-scene" ? "fx/console-scene.js" : "assets/[name]-[hash].js",
+              chunk.name === "console-scene" || chunk.name === "tour"
+                ? `fx/${chunk.name}.js`
+                : "assets/[name]-[hash].js",
           },
         },
   },

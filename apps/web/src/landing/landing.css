@@ -1088,3 +1088,13 @@ em {
     display: none;
   }
 }
+
+/* The judge tour's entry (see src/tour): quiet like "See the payout", with the proof green. */
+.btn-tour {
+  color: var(--proof);
+  border-color: var(--proof);
+  background: var(--proof-tint);
+}
+.btn-tour:hover {
+  background: #d9eadf;
+}
