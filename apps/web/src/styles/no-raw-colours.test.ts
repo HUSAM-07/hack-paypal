@@ -1,5 +1,5 @@
 // @vitest-environment node
-import { readdirSync, readFileSync, statSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
@@ -22,6 +22,9 @@ const ROOTS = [
   "apps/worker/src",
   "apps/console/src",
   "packages/protocol/src",
+  // The shop (genui widget kit and shop web app); skipped until those packages land on this branch.
+  "packages/genui/src",
+  "apps/shop-web/src",
 ];
 
 /** The palette itself, and generated copies of it. */
@@ -51,6 +54,7 @@ const COLOUR = new RegExp(
 
 function files(path: string): string[] {
   const abs = join(repo, path);
+  if (!existsSync(abs)) return [];
   if (statSync(abs).isFile()) return [abs];
   return readdirSync(abs, { recursive: true, encoding: "utf8" })
     .map((f) => join(abs, f))
