@@ -6,6 +6,7 @@ describe("site nav", () => {
     expect(SITE_NAV.map((l) => l.href)).toEqual([
       "/console",
       "/console/payout",
+      "/console/ledger",
       "/try",
       "/mcp",
       "/proof",

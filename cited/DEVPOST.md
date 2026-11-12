@@ -46,6 +46,7 @@ No login, no keys. Short on time? The landing page has a **Take the 2-minute tou
 6. <https://pact-worker.vincent-wesley-liem.workers.dev/try>: run a shopping agent yourself.
 7. Your own agent: `claude mcp add --transport http cited https://pact-worker.vincent-wesley-liem.workers.dev/mcp`, then ask it to buy an air purifier. Open the same URL in a browser: the page has copy buttons for Claude Code, Claude Desktop and Cursor, and a live list of your agent's sale (which creator test it was shown, the disclosure, and the credit CITED would give), kept out of the study numbers.
 8. <https://pact-worker.vincent-wesley-liem.workers.dev/creators>: onboard as a creator (simulated Log in with PayPal) and publish a test.
+9. <https://pact-worker.vincent-wesley-liem.workers.dev/console/ledger>: does the ledger match PayPal? Live checks on the engine's public data, each with a pass/fail mark and the two numbers compared (every paid credit has a payout batch, paid equals the PayPal batches, each brand's deposit adds up, Levoit pays $0). PayPal is simulated on the hosted demo; the page only reads.
 
 Fallback, locally with Node 22+ (no keys; simulated PayPal, scripted agents):
 
