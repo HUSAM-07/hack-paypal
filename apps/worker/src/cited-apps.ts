@@ -13,6 +13,7 @@ import {
 import { app as engine } from "@cited/engine";
 import {
   createEngineApprover,
+  createEngineProgrammeStarter,
   createEngineReader,
   createEngineReviewer,
   createStudioApp,
@@ -255,6 +256,10 @@ export async function studioHandler(c: Ctx): Promise<Response> {
     }),
     approve: createEngineApprover({ baseUrl: "https://engine.internal", fetch: engineWrite }),
     review: createEngineReviewer({ baseUrl: "https://engine.internal", fetch: engineWrite }),
+    startProgramme: createEngineProgrammeStarter({
+      baseUrl: "https://engine.internal",
+      fetch: engineWrite,
+    }),
     privateWrites,
     llm: studioLlmChoice(env),
     limit: async (req) => {

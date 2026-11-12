@@ -1,6 +1,6 @@
 # CITED Studio: the AG Studio dashboards and the Analyst
 
-`/studio` (Maya, Winix's brand manager) and `/studio/creator` (HouseFresh; `?creator=airlab` for AirLab) are one AG Studio app (`ag-studio` + `ag-studio-react`), served by `pact-worker`.
+`/studio` (Maya, Winix's brand manager; its Programmes page is `/studio?page=programmes`) and `/studio/creator` (HouseFresh; `?creator=airlab` for AirLab) are one AG Studio app (`ag-studio` + `ag-studio-react`), served by `pact-worker`.
 
 - **Page:** `apps/web/studio.html` → `apps/web/src/studio/`. Built with the web app; the worker serves it from its assets under a strict CSP (no inline script, no CDN).
 - **API:** `apps/studio` (`createStudioApp`), mounted by the worker at `/studio/api`:
@@ -9,11 +9,14 @@
   - `GET /analyst?brand=winix`: the cap recommendation, computed from engine numbers (no model).
   - `GET /creator-analyst?creator=housefresh&topic=earned|voided|held|shared|earn_more|overview`: the Creator Analyst's figures from the same tables, each with its source (no model). Read only: it has no write counterpart.
   - `POST /analyst/approve`: Maya's Approve button. The amount comes from a fresh recommendation, never from the request, and the approval id must match the card she saw. Calls the engine's `POST /api/approvals/:approvalId/approve`.
+  - `POST /programmes`: a brand's "Start a programme" (needs the `x-studio: programme` header). The terms (a catalogue product, a deposit in cents, a commission rate in basis points) are checked with the engine's own rules (`checkProgrammeTerms` in `@pact/protocol`). Locally (`CITED_OPEN_API=1`) it calls the engine's `POST /api/programmes`, which creates the programme and captures its Orders v2 deposit. On the hosted worker, where engine writes are locked behind the CITED token, it does what Approve does: the programme is kept in the visitor's own cookie and replayed over the engine's reads for 30 minutes. No PayPal order is made and the shared ledger does not change.
   - `POST /llm`: one model turn for the Studio agents, streamed. Same-origin only, rate-limited per IP and overall, request and output capped. Keys never reach the browser.
 
 ## What each view shows
 
 **Brand** (`/studio`): the "+N extra Winix sales" tile at the 80% lower bound (N from the engine), Levoit's $0 beside it; Winix share by arm (test / same-creator placebo / held out); the programme deposit (paid, reserved, left, returned, approved top-ups); cross-store journeys with the Shapley split (master-detail AG Grid: expand a row for the store hop and each creator's share); and the credits held for review by the abuse guard (after the guard beat: HouseFresh's $7.68 self-purchase, waiting for a reviewer), with **Release** (paid at the next payout run) and **Void** (asks once more; voided for good) buttons. The header toggle switches money between **First payout** (beat 8: 51 caused of 57 exposed, $391.64 credited − $7.68 voided = $383.96 paid, $616.04 returned) and **Programme to date** (62 of 69, $468.43 paid). The URL carries the toggle: `/studio?view=first` or `?view=total` opens on that view, and `?clean=1` alone opens on First payout.
+
+**Programmes** (`/studio?page=programmes`, or the Programmes button in the header): every programme with its deposit meter (paid, reserved, left, returned), its commission rate and how many sales its test caused, and **Start a programme** beside it. A brand picks a category the catalogue can test (air purifiers or robot vacuums) and one of its products, sets a deposit ($100 to $10,000) and a commission rate (1% to 20%), reads a plain summary and confirms. The summary says: you fund the category, never a verdict; you pay only for sales a creator's test caused, at the 80% lower bound; unspent money comes back through a PayPal refund. Each product has one programme, so a product that already has one cannot be started again and no sale is ever paid for twice. The new programme shows up at once, empty until sales arrive. On the hosted demo the page says so before you confirm ("Demo mode") and after: the programme stays in your browser. On a phone the two widgets stack and the Filters tab is hidden. State logic: `apps/web/src/studio/programmeForm.ts`.
 
 **Creator** (`/studio/creator`): pending, frozen, held-for-review, voided and paid tiles; every credit with its void reason, why it is held, hold date, payout batch and the co-exposure split (AirLab + HouseFresh); paid per PayPal Payouts batch; the review flags on the creator's credits.
 

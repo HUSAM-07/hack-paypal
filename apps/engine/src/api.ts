@@ -24,7 +24,14 @@ import { PayoutMethodInput } from "./payout-method";
 import { getPayoutMethod, setPayoutMethod } from "./payout-wallet";
 import { payoutItemIds, refreshPayouts, runPayouts, senderItemId } from "./payouts";
 import { getPayPal } from "./paypal";
-import { captureDeposit, getBrand, listBrands, requestDeposit, upsertBrand } from "./programme";
+import {
+  captureDeposit,
+  getBrand,
+  listBrands,
+  requestDeposit,
+  startProgramme,
+  upsertBrand,
+} from "./programme";
 import { issueStatements, listStatements } from "./statements";
 import { listProofs } from "./webhooks/proof";
 
@@ -97,11 +104,40 @@ api.post("/brands", async (c) => {
       category: z.string().min(1).max(40),
       upc: Upc,
       currency: Cur.default("USD"),
+      commissionBps: z.number().int().min(0).max(10_000).optional(),
     }),
   );
   if ("error" in r) return c.json(r, 400);
   await upsertBrand(c.env, r.data);
   return c.json(r.data, 201);
+});
+
+/**
+ * A brand starts a programme from AG Studio: a catalogue product, a deposit and a commission
+ * rate. Creates the programme and captures its deposit (Orders v2). A write, so it needs the
+ * token like every other; Studio's own guard decides who may reach it on the hosted demo.
+ */
+api.post("/programmes", async (c) => {
+  const r = await body(
+    c,
+    z.object({
+      category: z.string().min(1).max(40),
+      upc: Upc,
+      depositMinor: z.number(),
+      commissionBps: z.number(),
+    }),
+  );
+  if ("error" in r) return c.json(r, 400);
+  try {
+    const out = await startProgramme(c.env, r.data);
+    if (!out.ok) return c.json({ error: out.error, message: out.message }, out.status);
+    return c.json(
+      { brand: out.brand, deposit: out.deposit },
+      out.deposit.status === "captured" ? 201 : 202,
+    );
+  } catch (e) {
+    return c.json({ error: (e as Error).message }, 422);
+  }
 });
 
 api.post("/creators", async (c) => {
@@ -327,6 +363,7 @@ async function liftView(env: Env, brandId?: string) {
       name: brand.name,
       category: brand.category,
       upc: brand.upc,
+      commissionBps: brand.commissionBps,
       arms: data.arms,
       exposedRate: r.exposedRate,
       placeboRate: r.placeboRate,

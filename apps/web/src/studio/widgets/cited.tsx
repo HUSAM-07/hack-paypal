@@ -18,6 +18,7 @@ const pct = (x: unknown) => (typeof x === "number" ? `${Math.round(x * 100)}%` :
 const BRAND_FIELDS = [
   "brandId",
   "brand",
+  "category",
   "scopeKey",
   "exposedSales",
   "causedUnits",
@@ -41,12 +42,13 @@ const BRAND_FIELDS = [
 function useBrand(p: P, brandId: string) {
   const rows = useRows(p.widgetApi, "brands", BRAND_FIELDS);
   const scope = useSyncExternalStore(scopeStore.subscribe, scopeStore.get);
-  return {
-    rows,
-    scope,
-    row: rows?.find((r) => r.brandId === brandId && r.scopeKey === scope) ?? null,
-    rival: rows?.find((r) => r.brandId !== brandId && r.scopeKey === scope) ?? null,
-  };
+  const row = rows?.find((r) => r.brandId === brandId && r.scopeKey === scope) ?? null;
+  // The rival is the other brand in the same category: a programme started elsewhere is not one.
+  const rival =
+    rows?.find(
+      (r) => r.brandId !== brandId && r.scopeKey === scope && r.category === row?.category,
+    ) ?? null;
+  return { rows, scope, row, rival };
 }
 
 /** The signature tile: only the sales the test caused, as a lower bound, beside Levoit's $0. */

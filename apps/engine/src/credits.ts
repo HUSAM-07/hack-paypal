@@ -278,7 +278,15 @@ export async function recomputeCredits(env: Env, now: string): Promise<Recompute
     const value = await coalitionValueFor(env, brand);
     const fresh = createCredits({
       sales: sales.filter((s) => s.upc === brand.upc),
-      brands: [{ brandId: brand.brandId, upc: brand.upc, units: lift.units, deposit }],
+      brands: [
+        {
+          brandId: brand.brandId,
+          upc: brand.upc,
+          units: lift.units,
+          deposit,
+          commissionBps: brand.commissionBps,
+        },
+      ],
       coalitionValue: () => value,
       existing: ledger,
     });
@@ -288,7 +296,15 @@ export async function recomputeCredits(env: Env, now: string): Promise<Recompute
     if (own.length) {
       const held = createCredits({
         sales: own,
-        brands: [{ brandId: brand.brandId, upc: brand.upc, units: own.length, deposit }],
+        brands: [
+          {
+            brandId: brand.brandId,
+            upc: brand.upc,
+            units: own.length,
+            deposit,
+            commissionBps: brand.commissionBps,
+          },
+        ],
         coalitionValue: () => value,
         existing: ledger,
       });

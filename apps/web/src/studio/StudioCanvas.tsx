@@ -21,6 +21,7 @@ import { initialState, sourcesFor } from "./layout";
 import { citedTheme } from "./theme";
 import { ArmStrip, CausedTile, CreatorTiles, DepositMeter, ReviewFlags } from "./widgets/cited";
 import { JourneysGrid } from "./widgets/JourneysGrid";
+import { ProgrammesList, StartProgramme } from "./widgets/programmes";
 import { TrustList, TrustSummary } from "./widgets/trust";
 import { WhatIfPanel } from "./widgets/WhatIf";
 
@@ -95,6 +96,22 @@ const widgets = (defaults: AgWidgetsConfig<AgCoreDefaultRegistry>) =>
         minSize: { width: 320, height: 200 },
       },
       {
+        id: "cited-start-programme",
+        label: "Start a programme",
+        comp: StartProgramme,
+        form,
+        defaultSize: { width: 420, height: 520 },
+        minSize: { width: 300, height: 360 },
+      },
+      {
+        id: "cited-programmes",
+        label: "Programmes",
+        comp: ProgrammesList,
+        form,
+        defaultSize: { width: 620, height: 520 },
+        minSize: { width: 320, height: 240 },
+      },
+      {
         id: "cited-journeys",
         label: "Journeys & creator split (Shapley)",
         comp: JourneysGrid,
@@ -117,6 +134,8 @@ const widgets = (defaults: AgWidgetsConfig<AgCoreDefaultRegistry>) =>
           "cited-flags",
           "cited-trust-summary",
           "cited-trust-list",
+          "cited-start-programme",
+          "cited-programmes",
         ],
       },
     ],
@@ -124,6 +143,9 @@ const widgets = (defaults: AgWidgetsConfig<AgCoreDefaultRegistry>) =>
 
 /** The Analyst's chat on the right of the brand view; filters beside it. No builder chrome by default. */
 const PANELS: AgPanelConfig = { edit: { right: ["ai", "filters"] }, view: { right: ["filters"] } };
+/** The Programmes page has no filters, and on a phone their tab would sit over the form. */
+const PHONE_PANELS: AgPanelConfig = { edit: { right: [] }, view: { right: [] } };
+const PHONE_MAX_WIDTH = 760;
 
 export interface StudioCanvasProps {
   config: StudioConfig;
@@ -148,18 +170,23 @@ export function StudioCanvas(p: StudioCanvasProps) {
   // The harness reads the view the page opened on; `context` is one object for Studio's lifetime.
   const ai = useMemo(() => analyst.citedHarness(config, p.context), [analyst, config, p.context]);
   // Before the journeys grid first renders; setting the same key again is harmless.
+  const phoneProgrammes = initialView === "programmes" && window.innerWidth < PHONE_MAX_WIDTH;
   if (config.gridLicenseKey) LicenseManager.setLicenseKey(config.gridLicenseKey);
   return (
     <AgStudioProvider
       {...(config.licenseKey ? { licenseKey: config.licenseKey } : {})}
       modules={[AgStudioAiModule]}
     >
-      <div className="st-studio">
+      <div className={`st-studio${phoneProgrammes ? " is-phone-programmes" : ""}`}>
         <AgStudio
           data={data}
           initialState={state}
           mode={p.mode}
-          panels={PANELS}
+          panels={
+            initialView === "programmes" && window.innerWidth < PHONE_MAX_WIDTH
+              ? PHONE_PANELS
+              : PANELS
+          }
           theme={citedTheme}
           context={p.context}
           widgets={widgets}
