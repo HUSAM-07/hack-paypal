@@ -69,12 +69,18 @@ export const SITE_HEADER_CSS = [
   "@media (max-width:760px){.site-bar{height:auto;flex-wrap:wrap;padding-top:14px;padding-bottom:4px;row-gap:4px}.site-nav{flex-basis:100%;gap:18px}}",
   "@media (pointer:coarse){.site-nav a{display:inline-flex;align-items:center;min-height:44px}}",
   ".clean .site-top{display:none}",
+  ".site-skip{position:absolute;left:12px;top:-64px;z-index:60;background:#16181D;color:#FAF8F4;font:500 13px/1 system-ui,sans-serif;padding:12px 16px;border-radius:4px;text-decoration:none}",
+  ".site-skip:focus{top:12px;outline:2px solid #1F7A55;outline-offset:2px}",
+  ".clean .site-skip{display:none}",
 ].join("");
+
+/** The skip link, first in the tab order; the page's `<main>` carries `id="main"`. */
+export const SITE_SKIP_HTML = `<a class="site-skip" href="#main">Skip to content</a>`;
 
 /** The top bar as HTML, for the server-rendered pages (`href` as in `siteNavLinks`). */
 export function siteHeader(
   current?: SiteNavKey,
   href: (path: string) => string = (p) => p,
 ): string {
-  return `<header class="site-top"><div class="site-bar"><a class="site-mark" href="${href("/")}">CITED</a><nav class="site-nav" aria-label="CITED">${siteNavLinks(current, href)}</nav></div></header>`;
+  return `${SITE_SKIP_HTML}<header class="site-top"><div class="site-bar"><a class="site-mark" href="${href("/")}">CITED</a><nav class="site-nav" aria-label="CITED">${siteNavLinks(current, href)}</nav></div></header>`;
 }

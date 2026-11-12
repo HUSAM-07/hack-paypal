@@ -790,10 +790,10 @@ body {
 .cw-wi-tile.is-paid dd {
   color: var(--proof);
 }
-.cw-wi-tile small {
+.cw-wi-tile.cw-wi-tile dd.cw-sub {
   color: var(--muted);
-  font-size: 12px;
-  line-height: 1.4;
+  font: 400 12px / 1.4 var(--sans);
+  letter-spacing: normal;
 }
 .cw-wi-grid {
   flex: none;
@@ -881,12 +881,11 @@ body {
   letter-spacing: -0.01em;
   font-variant-numeric: tabular-nums;
 }
-.cw-trust-figures small {
-  display: block;
+.cw-trust-figures > div dd.cw-sub {
   margin-top: 2px;
   color: var(--muted);
-  font-size: 12px;
-  line-height: 1.35;
+  font: 400 12px / 1.35 var(--sans);
+  letter-spacing: normal;
 }
 .cw-trust-figures .is-paid {
   --c: var(--proof);

@@ -341,7 +341,7 @@ export function mcpPage(origin: string): string {
 <title>Run your own agent · CITED</title>
 <style>${CSS}${SITE_NAV_TOUCH_CSS}${SITE_THEME_CSS}${SITE_HEADER_CSS}</style></head><body>
 ${siteHeader("mcp")}
-<main>
+<main id="main">
 <h1>Point your own agent at CITED</h1>
 <p class="lede">This is a public shopping server for AI agents (an MCP server). Your agent searches air purifier offers synced to PayPal and buys one. Simulated PayPal: no real money moves, and there is nothing to sign in to. Below, you can watch what CITED recorded for the sale.</p>
 

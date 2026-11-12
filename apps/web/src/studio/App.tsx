@@ -156,6 +156,18 @@ export function App() {
   Object.assign(context, { view, scope, creatorId, demo: !!config?.privateWrites });
   useEffect(() => scopeStore.set(scope), [scope]);
   const [initialView] = useState(viewFromPath);
+  // One title per view, so a screen-reader user hears which dashboard they are on.
+  useEffect(() => {
+    const name =
+      view === "brand"
+        ? "Purifier programme"
+        : view === "trust"
+          ? "Trust review"
+          : view === "programmes"
+            ? "Programmes"
+            : `${creatorName} creator`;
+    document.title = `${name} · CITED AG Studio`;
+  }, [view, creatorName]);
   const Canvas = loaded?.[0].StudioCanvas;
   const analyst = loaded?.[1];
   const onApiReady = useCallback((e: AgStudioApiReadyEvent) => {
@@ -164,12 +176,12 @@ export function App() {
 
   return (
     <>
-      <SiteHeader current="studio" />
+      <SiteHeader current="studio" skip />
       <div className="st-page">
-        <header className="st-head">
+        <section className="st-head" aria-labelledby="st-h1">
           <div className="st-title">
             <span className="st-mark">AG Studio</span>
-            <h1>
+            <h1 id="st-h1">
               {view === "brand"
                 ? "Purifier programme · Winix"
                 : view === "trust"
@@ -236,8 +248,8 @@ export function App() {
               {asOf ? <small>simulated clock {asOf.slice(0, 10)}</small> : null}
             </span>
           </div>
-        </header>
-        <main className="st-main">
+        </section>
+        <main id="main" className="st-main">
           {error ? (
             <p className="st-error" role="alert">
               The programme figures could not load ({error}). Reload the page in a moment.

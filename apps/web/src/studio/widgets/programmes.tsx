@@ -107,7 +107,7 @@ export function ProgrammesList(p: P) {
         return (
           <article key={String(r.brandId)} className={`pg-card${isNew ? " is-new" : ""}`}>
             <header className="pg-card-head">
-              <h3>{productName(String(r.brandId), String(r.brand))}</h3>
+              <h2>{productName(String(r.brandId), String(r.brand))}</h2>
               <span className="pg-chip">{categoryLabel(String(r.category))}</span>
               {isNew ? <span className="pg-new">Just started</span> : null}
             </header>
@@ -441,7 +441,7 @@ function ReviewStep(props: {
   if (!review || !req) return <p className="pg-bad">Go back and fix the terms.</p>;
   return (
     <div className="pg-step">
-      <h3 className="pg-review-head">{review.heading}</h3>
+      <h2 className="pg-review-head">{review.heading}</h2>
       <dl className="pg-review">
         {review.rows.map((r) => (
           <div key={r.label}>

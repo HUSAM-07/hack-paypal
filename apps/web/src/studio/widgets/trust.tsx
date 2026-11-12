@@ -80,28 +80,28 @@ export function TrustSummary(p: P) {
         <div className="is-paid">
           <dt>Paid</dt>
           <dd>{money(paid)}</dd>
-          <small>sent through PayPal Payouts</small>
+          <dd className="cw-sub">sent through PayPal Payouts</dd>
         </div>
         <div className="is-held">
           <dt>Held for review</dt>
           <dd>{money(held)}</dd>
-          <small>
+          <dd className="cw-sub">
             {count("held")} credit{count("held") === 1 ? "" : "s"}, never paid on their own
-          </small>
+          </dd>
         </div>
         <div className="is-frozen">
           <dt>Frozen</dt>
           <dd>{money(frozen)}</dd>
-          <small>
+          <dd className="cw-sub">
             {count("frozen")} credit{count("frozen") === 1 ? "" : "s"}, open PayPal dispute
-          </small>
+          </dd>
         </div>
         <div className="is-voided">
           <dt>Voided</dt>
           <dd>{money(voided)}</dd>
-          <small>
+          <dd className="cw-sub">
             {count("voided")} credit{count("voided") === 1 ? "" : "s"}, never paid
-          </small>
+          </dd>
         </div>
       </dl>
       <div
