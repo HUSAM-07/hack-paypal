@@ -36,7 +36,7 @@ The simulated PayPal mirrors the REST shapes and signs webhooks like PayPal, so 
 
 ## Testing instructions
 
-No login, no keys. Open in this order:
+No login, no keys. Short on time? The landing page has a **Take the 2-minute tour** button: eight stops with a one-line caption each, Next / Back / Exit (Esc), and nothing is clicked for you. Otherwise open in this order:
 
 1. <https://pact-worker.vincent-wesley-liem.workers.dev/>: the problem and how it works.
 2. <https://pact-worker.vincent-wesley-liem.workers.dev/console?clean=1>: two agents, same request; one shown the test buys the Winix, one held out buys the Levoit.
