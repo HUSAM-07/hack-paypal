@@ -8,6 +8,7 @@ import {
   commissionOn,
   DEMO_SHOP_PRICES,
   formatCurrency,
+  HEADPHONE_SHOP_PRICES,
   PROGRAMME_CATEGORIES,
   PROGRAMME_CURRENCIES,
   PROGRAMME_LIMITS,
@@ -222,7 +223,11 @@ export function reduce(s: FormState, a: Action, running: Running): FormState {
 
 /** The lowest price any seller lists for a product, in cents: the sale the example uses. */
 export function lowestPriceMinor(upc: string): number | null {
-  const prices = [...Object.values(DEMO_SHOP_PRICES), ...Object.values(VACUUM_SHOP_PRICES)]
+  const prices = [
+    ...Object.values(DEMO_SHOP_PRICES),
+    ...Object.values(VACUUM_SHOP_PRICES),
+    ...Object.values(HEADPHONE_SHOP_PRICES),
+  ]
     .map((shop) => (shop as Record<string, number>)[upc])
     .filter((x): x is number => typeof x === "number");
   return prices.length ? Math.min(...prices) : null;

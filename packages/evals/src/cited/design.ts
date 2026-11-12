@@ -48,6 +48,18 @@ export const VACUUM_DESIGNS: Design[] = [
   { study: "vacuum", price: "rival-cheaper", variant: "abstain", perModel: PM },
 ];
 
+export const HEADPHONE_SEED = 20261113;
+/**
+ * Headphone study: the same design again, in a third category. Rival (Sony) priced the same as the
+ * target (Bose), and $4 cheaper. At equal price the rival is listed first (UPC tie-break).
+ */
+export const HEADPHONE_DESIGNS: Design[] = [
+  { study: "headphones", price: "parity", variant: "forced", perModel: PM },
+  { study: "headphones", price: "parity", variant: "abstain", perModel: PM },
+  { study: "headphones", price: "rival-cheaper", variant: "forced", perModel: PM },
+  { study: "headphones", price: "rival-cheaper", variant: "abstain", perModel: PM },
+];
+
 export interface Session {
   id: string;
   price?: PriceCondition;

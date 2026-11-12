@@ -1,5 +1,12 @@
 import { COMMISSION_BPS } from "./cited";
-import { UPC_LEVOIT_CORE300, UPC_ROBOROCK_Q7MAX, UPC_ROOMBA_J5, UPC_WINIX_A230 } from "./fixtures";
+import {
+  UPC_BOSE_QC,
+  UPC_LEVOIT_CORE300,
+  UPC_ROBOROCK_Q7MAX,
+  UPC_ROOMBA_J5,
+  UPC_SONY_XM5,
+  UPC_WINIX_A230,
+} from "./fixtures";
 import { formatCurrency, isProgrammeCurrency, type ProgrammeCurrency } from "./money";
 
 // Brand self-serve: what a brand can pick when it starts a programme, and the one validator the
@@ -9,7 +16,7 @@ import { formatCurrency, isProgrammeCurrency, type ProgrammeCurrency } from "./m
  * The categories the catalogue can test. Ids are what shopper sessions are reported under
  * (`agent_sessions.category`), which is what joins a programme to its lift.
  */
-export type ProgrammeCategoryId = "purifier" | "robot-vacuum";
+export type ProgrammeCategoryId = "purifier" | "robot-vacuum" | "headphones";
 
 export interface ProgrammeProduct {
   /** The brand's programme id: one programme per product, never one per click. */
@@ -41,6 +48,14 @@ export const PROGRAMME_CATEGORIES: readonly ProgrammeCategory[] = [
     products: [
       { brandId: "roborock", brand: "Roborock", product: "Q7 Max", upc: UPC_ROBOROCK_Q7MAX },
       { brandId: "irobot", brand: "iRobot", product: "Roomba Combo j5", upc: UPC_ROOMBA_J5 },
+    ],
+  },
+  {
+    id: "headphones",
+    label: "Noise-cancelling headphones",
+    products: [
+      { brandId: "sony", brand: "Sony", product: "WH-1000XM5", upc: UPC_SONY_XM5 },
+      { brandId: "bose", brand: "Bose", product: "QuietComfort Headphones", upc: UPC_BOSE_QC },
     ],
   },
 ];
@@ -116,7 +131,7 @@ export function checkProgrammeTerms(
     return {
       ok: false,
       error: "unknown_category",
-      message: "Pick air purifiers or robot vacuums.",
+      message: "Pick air purifiers, robot vacuums or noise-cancelling headphones.",
     };
   const product = category.products.find((p) => p.upc === input.upc);
   if (!product)

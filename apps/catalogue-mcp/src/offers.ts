@@ -5,6 +5,8 @@ import {
   housefreshPlacebo,
   housefreshWinixTest,
   type Money,
+  quietbenchBoseTest,
+  quietbenchPlacebo,
   type VerifiedTest,
 } from "@pact/protocol";
 import {
@@ -52,10 +54,18 @@ export function buildOffers(sellers: Record<SellerId, Seller>): Offer[] {
   );
 }
 
-/** Which category a query is about. Anything that does not ask for a robot vacuum is the purifier search it always was. */
+/**
+ * Which category a query is about. A query that asks for a robot vacuum or for headphones is
+ * answered from that category; anything else is the purifier search it always was.
+ */
 const VACUUM_QUERY = /\b(vacuums?|robots?|robotic|roomba|roborock|irobot|mops?|sweepers?)\b/;
-export const categoryOfQuery = (query: string): Category =>
-  VACUUM_QUERY.test(query.toLowerCase()) ? "robot-vacuum" : "air-purifier";
+const HEADPHONE_QUERY =
+  /\b(headphones?|earphones?|earbuds?|headsets?|noise[- ]?cancell?ing|anc|over-ear|sony|bose|wh-1000xm5|quietcomfort)\b/;
+export const categoryOfQuery = (query: string): Category => {
+  const q = query.toLowerCase();
+  if (VACUUM_QUERY.test(q)) return "robot-vacuum";
+  return HEADPHONE_QUERY.test(q) ? "headphones" : "air-purifier";
+};
 
 /**
  * Ranking depends only on the query and the offers (price, then seller, then UPC).
@@ -69,7 +79,9 @@ export function searchOffers(query: string, offers: Offer[]): Offer[] {
   const generic =
     category === "air-purifier"
       ? /purifier|air|clean|filter|hepa/.test(q)
-      : /\b(vacuums?|robots?|robotic|mops?|sweepers?)\b/.test(q);
+      : category === "robot-vacuum"
+        ? /\b(vacuums?|robots?|robotic|mops?|sweepers?)\b/.test(q)
+        : /\b(headphones?|earphones?|earbuds?|headsets?|noise|cancell?ing|anc|over-ear)\b/.test(q);
   const matches = offers.filter(
     (o) =>
       productByUpc(o.upc)?.category === category &&
@@ -116,6 +128,8 @@ export function creatorContent(
   if (arm === "none") return [];
   if (category === "robot-vacuum")
     return [arm === "placebo" ? crumblabPlacebo : crumblabRoborockTest];
+  if (category === "headphones")
+    return [arm === "placebo" ? quietbenchPlacebo : quietbenchBoseTest];
   if (arm === "placebo") return [housefreshPlacebo];
   return coExposed ? [housefreshWinixTest, airlabWinixTest] : [housefreshWinixTest];
 }

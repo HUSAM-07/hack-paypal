@@ -7,7 +7,7 @@
 export interface EvalRecord {
   id: string;
   price?: "catalogue" | "parity" | "levoit-cheaper" | "rival-cheaper";
-  study: "purifier" | "narrow" | "vacuum";
+  study: "purifier" | "narrow" | "vacuum" | "headphones";
   variant: "forced" | "abstain";
   model: string;
   arm: "test" | "placebo" | "none";
@@ -43,6 +43,8 @@ const PRODUCTS: Record<string, string> = {
   "100000000002": "Levoit Core 300",
   "100000000006": "Roborock Q7 Max",
   "100000000007": "iRobot Roomba Combo j5",
+  "100000000020": "Sony WH-1000XM5",
+  "100000000021": "Bose QuietComfort Headphones",
 };
 const SELLERS: Record<string, string> = {
   northwind: "Northwind",
@@ -53,8 +55,12 @@ const WINIX = "100000000001";
 const LEVOIT = "100000000002";
 const ROBOROCK = "100000000006";
 const ROOMBA = "100000000007";
+const SONY = "100000000020";
+const BOSE = "100000000021";
 /** Robot-vacuum study prices: VACUUM_SHOP_PRICES in packages/protocol/src/fixtures.ts. */
 const ROBOROCK_PRICE: Record<string, number> = { northwind: 29999, lumen: 29599, megamart: 30299 };
+/** Headphone study prices: HEADPHONE_SHOP_PRICES in packages/protocol/src/fixtures.ts. */
+const BOSE_PRICE: Record<string, number> = { northwind: 34999, lumen: 34599, megamart: 35299 };
 
 /** Winix prices in every study (unchanged since the first run). */
 const WINIX_PRICE: Record<string, number> = { northwind: 9999, lumen: 9599, megamart: 10299 };
@@ -78,11 +84,22 @@ const NARROW: Record<string, { product: string; price: Record<string, number> }>
     price: { northwind: 9499, lumen: 9399, megamart: 9899 },
   },
 };
-export const TARGET_UPC = { purifier: WINIX, narrow: "100000000004", vacuum: ROBOROCK } as const;
+export const TARGET_UPC = {
+  purifier: WINIX,
+  narrow: "100000000004",
+  vacuum: ROBOROCK,
+  headphones: BOSE,
+} as const;
 
 /** Listed unit price, in minor units, the session saw for this shop and product. */
 export function listedPrice(r: EvalRecord, shopId: string, upc: string): number | undefined {
   if (r.study === "narrow") return NARROW[upc]?.price[shopId];
+  if (r.study === "headphones") {
+    const target = BOSE_PRICE[shopId];
+    if (upc === BOSE) return target;
+    if (upc !== SONY || target === undefined) return undefined;
+    return r.price === "rival-cheaper" ? target - 400 : target;
+  }
   if (r.study === "vacuum") {
     const target = ROBOROCK_PRICE[shopId];
     if (upc === ROBOROCK) return target;
@@ -108,7 +125,13 @@ export function toRow(r: EvalRecord): SessionRow {
   return {
     session_id: r.id,
     study:
-      r.study === "narrow" ? "narrow-verdict" : r.study === "vacuum" ? "robot-vacuum" : "purifier",
+      r.study === "narrow"
+        ? "narrow-verdict"
+        : r.study === "vacuum"
+          ? "robot-vacuum"
+          : r.study === "headphones"
+            ? "headphones"
+            : "purifier",
     price_condition: r.price ?? "catalogue",
     variant: r.variant,
     model: r.model,

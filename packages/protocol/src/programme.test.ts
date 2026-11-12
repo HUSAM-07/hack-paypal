@@ -22,6 +22,27 @@ describe("checkProgrammeTerms", () => {
     });
   });
 
+  it("accepts the headphone category and refuses a product from another one", () => {
+    const h = {
+      category: "headphones",
+      upc: "100000000021",
+      depositMinor: 50_000,
+      commissionBps: 800,
+    };
+    expect(checkProgrammeTerms(h, new Set())).toEqual({
+      ok: true,
+      terms: expect.objectContaining({ brandId: "bose", category: "headphones", name: "Bose" }),
+    });
+    expect(checkProgrammeTerms({ ...h, upc: "100000000006" }, new Set())).toMatchObject({
+      error: "unknown_product",
+    });
+    expect(PROGRAMME_CATEGORIES.map((c) => c.id)).toEqual([
+      "purifier",
+      "robot-vacuum",
+      "headphones",
+    ]);
+  });
+
   it("refuses a product outside the category, an unknown category and a funded product", () => {
     expect(checkProgrammeTerms({ ...ok, upc: "100000000001" }, new Set())).toMatchObject({
       error: "unknown_product",

@@ -1,9 +1,12 @@
 import {
   DEMO_SHOP_PRICES,
+  HEADPHONE_SHOP_PRICES,
   type Money,
+  UPC_BOSE_QC,
   UPC_LEVOIT_CORE300,
   UPC_ROBOROCK_Q7MAX,
   UPC_ROOMBA_J5,
+  UPC_SONY_XM5,
   UPC_WINIX_A230,
   VACUUM_SHOP_PRICES,
 } from "@pact/protocol";
@@ -32,7 +35,7 @@ export interface Seller {
 }
 
 /** The catalogue's categories. A search is answered from one category, never a mix. */
-export type Category = "air-purifier" | "robot-vacuum";
+export type Category = "air-purifier" | "robot-vacuum" | "headphones";
 
 export interface Product {
   category: Category;
@@ -71,6 +74,24 @@ export const PRODUCTS: Product[] = [
     name: "Roomba Combo j5",
     specs: "Robot vacuum and mop with camera navigation, for hard floors and low-pile rugs",
   },
+  // Listed in this order on purpose: the rival has the lower UPC, so at equal price and seller it
+  // is listed first and the creator's tested pick (Bose) is not.
+  {
+    category: "headphones",
+    upc: UPC_SONY_XM5,
+    brand: "Sony",
+    name: "WH-1000XM5",
+    specs:
+      "Over-ear wireless headphones with active noise cancelling and a built-in microphone for calls",
+  },
+  {
+    category: "headphones",
+    upc: UPC_BOSE_QC,
+    brand: "Bose",
+    name: "QuietComfort Headphones",
+    specs:
+      "Over-ear wireless headphones with active noise cancelling and a built-in microphone for calls",
+  },
 ];
 
 const usd = (amountMinor: number): Money => ({ amountMinor, currency: "USD" });
@@ -100,9 +121,11 @@ export function sellersFromEnv(env: Env = {}): Record<SellerId, Seller> {
       platform: BASE[id].platform,
       payee: payeeFromEnv(id, env),
       prices: Object.fromEntries(
-        Object.entries({ ...DEMO_SHOP_PRICES[id], ...VACUUM_SHOP_PRICES[id] }).map(
-          ([upc, minor]) => [upc, usd(minor)],
-        ),
+        Object.entries({
+          ...DEMO_SHOP_PRICES[id],
+          ...VACUUM_SHOP_PRICES[id],
+          ...HEADPHONE_SHOP_PRICES[id],
+        }).map(([upc, minor]) => [upc, usd(minor)]),
       ),
     };
   }

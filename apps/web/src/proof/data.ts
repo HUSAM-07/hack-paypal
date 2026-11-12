@@ -10,6 +10,7 @@ import {
 } from "@pact/attribution";
 import { COMMISSION_BPS } from "@pact/protocol";
 import catalogueSummary from "../../../../packages/evals/results/cited/summary.json";
+import headphoneSummary from "../../../../packages/evals/results/cited-headphones/summary.json";
 import priceSummary from "../../../../packages/evals/results/cited-price-matched/summary.json";
 import vacuumSummary from "../../../../packages/evals/results/cited-robot-vacuum/summary.json";
 
@@ -35,6 +36,7 @@ interface BuyersOnly {
 const P = priceSummary as unknown as Record<string, StudyResult & BuyersOnly>;
 const C = catalogueSummary as unknown as Record<string, StudyResult & BuyersOnly>;
 const V = vacuumSummary as unknown as Record<string, StudyResult & BuyersOnly>;
+const N = headphoneSummary as unknown as Record<string, StudyResult & BuyersOnly>;
 
 function need<T>(v: T | undefined, key: string): T {
   if (!v) throw new Error(`summary.json has no ${key}`);
@@ -60,6 +62,12 @@ export const PATHS = {
   vacuumReg: "packages/evals/scenarios/cited/PREREGISTRATION-ROBOT-VACUUM.md",
   vacuumFixtureTest: "packages/protocol/fixtures/crumblab-roborock-vs-roomba.json",
   vacuumFixturePlacebo: "packages/protocol/fixtures/crumblab-placebo-steam-mop.json",
+  headphoneSummary: "packages/evals/results/cited-headphones/summary.md",
+  headphoneSummaryJson: "packages/evals/results/cited-headphones/summary.json",
+  headphoneResults: "packages/evals/results/cited-headphones/results.jsonl",
+  headphoneReg: "packages/evals/scenarios/cited/PREREGISTRATION-HEADPHONES.md",
+  headphoneFixtureTest: "packages/protocol/fixtures/quietbench-bose-vs-sony.json",
+  headphoneFixturePlacebo: "packages/protocol/fixtures/quietbench-placebo-bluetooth-speaker.json",
   card: "cited/spec/CITED-card.md",
   lift: "packages/attribution/src/lift.ts",
   ledger: "packages/attribution/src/ledger.ts",
@@ -97,6 +105,24 @@ export const studies = {
     V["vacuum-rival-cheaper-abstain-buyers-only"],
     "vacuum-rival-cheaper-abstain-buyers-only",
   ),
+  headphoneParityForced: need(N["headphones-parity-forced"], "headphones-parity-forced"),
+  headphoneParityAbstain: need(N["headphones-parity-abstain"], "headphones-parity-abstain"),
+  headphoneParityAbstainBuyers: need(
+    N["headphones-parity-abstain-buyers-only"],
+    "headphones-parity-abstain-buyers-only",
+  ),
+  headphoneCheaperForced: need(
+    N["headphones-rival-cheaper-forced"],
+    "headphones-rival-cheaper-forced",
+  ),
+  headphoneCheaperAbstain: need(
+    N["headphones-rival-cheaper-abstain"],
+    "headphones-rival-cheaper-abstain",
+  ),
+  headphoneCheaperAbstainBuyers: need(
+    N["headphones-rival-cheaper-abstain-buyers-only"],
+    "headphones-rival-cheaper-abstain-buyers-only",
+  ),
 };
 
 /** The robot-vacuum study's derived chain, as `summarize.ts` computed it (50 sales, $3,000 deposit). */
@@ -111,6 +137,20 @@ export const vacuumChain = need(
       }
     | undefined,
   "vacuum-parity-forced-derived",
+);
+
+/** The headphone study's derived chain, as `summarize.ts` computed it (50 sales, $3,000 deposit). */
+export const headphoneChain = need(
+  N["headphones-parity-forced-derived"] as unknown as
+    | {
+        exposedSales: number;
+        fraction: number;
+        units: number;
+        commission: { amountMinor: number };
+        refund: { amountMinor: number };
+      }
+    | undefined,
+  "headphones-parity-forced-derived",
 );
 
 /** Shown exactly as the results files record them, so every label greps back to the data. */
@@ -265,6 +305,43 @@ export function vacuumHypotheses() {
       verdict: v(
         s.vacuumParityAbstainBuyers.lift.lowerBound > 0 &&
           s.vacuumCheaperAbstainBuyers.lift.lowerBound > 0,
+      ),
+    },
+  ];
+}
+
+/** The headphone study's hypotheses, with the same thresholds as the other studies. */
+export function headphoneHypotheses() {
+  const s = studies;
+  const allModelsPositive = (r: StudyResult) => r.lift.perModel.every((m) => m.lift > 0);
+  const pVsN = (r: StudyResult) => Math.abs(r.placeboVsNone ?? Number.POSITIVE_INFINITY);
+  const v = (ok: boolean): Verdict => (ok ? "met" : "not met");
+  return [
+    {
+      id: "N1",
+      text: "Parity, forced: pooled lift ≥ +15pp, 80% lower bound > 0, test beats placebo in each model.",
+      verdict: v(
+        s.headphoneParityForced.lift.lift >= 0.15 &&
+          s.headphoneParityForced.lift.lowerBound > 0 &&
+          allModelsPositive(s.headphoneParityForced),
+      ),
+    },
+    {
+      id: "N2",
+      text: "Sony $4 cheaper, forced: 80% lower bound > 0.",
+      verdict: v(s.headphoneCheaperForced.lift.lowerBound > 0),
+    },
+    {
+      id: "N3",
+      text: "Placebo is neutral: |placebo − nothing| ≤ 20pp in each price condition.",
+      verdict: v(pVsN(s.headphoneParityForced) <= 0.2 && pVsN(s.headphoneCheaperForced) <= 0.2),
+    },
+    {
+      id: "N4",
+      text: "Abstain allowed: a lift is claimed only if the buyers-only 80% lower bound > 0.",
+      verdict: v(
+        s.headphoneParityAbstainBuyers.lift.lowerBound > 0 &&
+          s.headphoneCheaperAbstainBuyers.lift.lowerBound > 0,
       ),
     },
   ];

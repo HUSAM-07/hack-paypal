@@ -21,7 +21,7 @@ export const PUBLISHED_LIVE_PER_CATEGORY = 3;
 export const PUBLISHED_TTL_MS = 3000;
 
 /** The demo's own creators: a published test can never take their place. */
-const BUILT_IN_CREATORS = new Set(["housefresh", "airlab", "crumblab"]);
+const BUILT_IN_CREATORS = new Set(["housefresh", "airlab", "crumblab", "quietbench"]);
 
 /** A row of the engine's `GET /tests`. */
 export interface StoredTestRow {

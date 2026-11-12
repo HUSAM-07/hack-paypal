@@ -25,8 +25,8 @@ subscription are dispatched; simulator-signed ones are recorded only.
    brand approves at PayPal call `POST /api/deposits/:orderId/capture`.
    Idempotent on `key` (default `initial`).
    `POST /api/programmes {category, upc, depositMinor, commissionBps, currency?}` starts a whole
-   programme for a catalogue product (`purifier` or `robot-vacuum`): it creates the brand with
-   its own commission rate and captures the `initial` deposit, with `PayPal-Request-Id`
+   programme for a catalogue product (`purifier`, `robot-vacuum` or `headphones`): it creates the
+   brand with its own commission rate and captures the `initial` deposit, with `PayPal-Request-Id`
    `cited-dep:<brandId>:initial`. One programme per product (`409 programme_exists`), so a new
    programme never shares a sale with another. `currency` is `USD` (the default), `GBP` or
    `EUR` (`400 unsupported_currency` otherwise): the programme lives entirely in it. Its deposit
