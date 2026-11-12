@@ -1,3 +1,18 @@
+# CITED UI revamp v2: sticker column (branch `feat/ui-redesign`, 2026-11-12)
+
+Goal: every CITED page in the reference's style: a narrow bordered column, dashed section bands,
+die-cut sticker illustrations (generated with Codex image_gen), DM Sans text, Instrument Serif
+accents, Geist Mono labels, Caveat margin notes, cobalt accent, light-first with dark as a token swap.
+
+- [x] Merge origin/main (47 commits; resolved site.ts, SiteHeader, Landing, index.html)
+- [x] Fonts self-hosted (CSP font-src 'self'): DM Sans, Instrument Serif, Caveat in public/fonts
+- [ ] Stickers: 13 Codex PNGs -> trimmed WebP in public/art/stickers
+- [ ] Landing: sticker hero, section bands (problem, how, proof, payout, guardrails, try, real), sources
+- [ ] /proof keeps the old base CSS (moved to proof/base.css), retokened to the new fonts/colours
+- [ ] Shared header (SITE_HEADER_CSS) + SITE_THEME_CSS -> server pages (console, try, creators, mcp, ledger, 404)
+- [ ] Studio tokens
+- [ ] Verify: typecheck, lint, tests, build, screenshots light/dark/375px; tour anchors (#problem) intact
+
 # CITED UI redesign (branch `feat/ui-redesign`, 2026-11-12)
 
 Goal: one light, airy design system across every CITED page, with agentsUI blocks

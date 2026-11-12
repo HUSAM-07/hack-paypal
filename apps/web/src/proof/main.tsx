@@ -1,7 +1,7 @@
 import { StrictMode } from "react";
 import { createRoot, hydrateRoot } from "react-dom/client";
 import { Proof } from "./Proof";
-import "../landing/landing.css";
+import "./base.css";
 import "./proof.css";
 
 const root = document.getElementById("root");

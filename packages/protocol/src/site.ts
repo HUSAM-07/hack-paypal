@@ -78,23 +78,32 @@ export const SITE_CTA_KEY: SiteNavKey = "try";
  * Colours read the page's tokens, so a dark page gets a dark bar.
  */
 export const SITE_HEADER_CSS = [
-  ".site-top{position:sticky;top:0;z-index:50;background:color-mix(in srgb,var(--bg,#fff) 82%,transparent);-webkit-backdrop-filter:saturate(1.6) blur(12px);backdrop-filter:saturate(1.6) blur(12px);border-bottom:1px solid var(--line,#ECECEE)}",
-  ".site-bar{box-sizing:border-box;max-width:1200px;margin:0 auto;padding:0 clamp(16px,4vw,40px);height:60px;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:24px}",
-  '.site-mark{display:inline-flex;align-items:center;gap:9px;font:600 17px/1 "Geist",ui-sans-serif,system-ui,sans-serif;letter-spacing:-.01em;color:var(--ink,#0B0D10);text-decoration:none;justify-self:start}',
-  ".site-mark svg{width:24px;height:24px;flex:none}",
-  ".site-nav{display:flex;gap:28px;overflow-x:auto;scrollbar-width:none}",
+  '@font-face{font-family:"DM Sans";font-style:normal;font-weight:100 1000;font-display:swap;src:url("/fonts/dm-sans-latin-v1.woff2") format("woff2-variations")}',
+  ".site-top{position:sticky;top:0;z-index:50;background:color-mix(in srgb,var(--bg,#fff) 80%,transparent);-webkit-backdrop-filter:saturate(1.6) blur(12px);backdrop-filter:saturate(1.6) blur(12px);border-bottom:1px dashed var(--line,#E5E5E5)}",
+  ".site-bar{box-sizing:border-box;max-width:var(--site-col,1200px);margin:0 auto;padding:0 clamp(14px,3vw,24px);height:60px;display:flex;align-items:center;gap:6px}",
+  ".site-col .site-bar{border-inline:1px solid var(--line,#E5E5E5)}",
+  '.site-mark{display:inline-flex;align-items:center;gap:8px;margin-right:8px;font:650 16px/1 "DM Sans",ui-sans-serif,system-ui,sans-serif;letter-spacing:-.01em;color:var(--ink,#0A0A0A);text-decoration:none;flex:none}',
+  ".site-mark svg{width:24px;height:24px;flex:none;color:var(--accent,#2547D0);transition:transform .3s cubic-bezier(.34,1.56,.64,1)}",
+  ".site-mark:hover svg{transform:rotate(-14deg) scale(1.06)}",
+  ".site-nav{display:flex;gap:6px;min-width:0;overflow-x:auto;scrollbar-width:none}",
   ".site-nav::-webkit-scrollbar{display:none}",
-  '.site-nav a{font:450 14px/1 "Geist",ui-sans-serif,system-ui,sans-serif;color:var(--ink-2,#33363D);text-decoration:none;white-space:nowrap;padding:8px 0}',
-  ".site-nav a:hover,.site-nav a[aria-current]{color:var(--ink,#0B0D10)}",
-  ".site-nav a[aria-current]{box-shadow:inset 0 -1.5px 0 currentColor}",
-  '.site-cta{justify-self:end;display:inline-flex;align-items:center;gap:6px;height:34px;padding:0 14px;border-radius:999px;background:var(--ink,#0B0D10);color:var(--bg,#fff);font:500 13.5px/1 "Geist",ui-sans-serif,system-ui,sans-serif;text-decoration:none;white-space:nowrap;transition:transform .15s,opacity .15s}',
-  ".site-cta:hover{opacity:.86}.site-cta:active{transform:scale(.97)}",
-  ".site-mark:focus-visible,.site-nav a:focus-visible,.site-cta:focus-visible{outline:2px solid var(--link,#2E6BE6);outline-offset:3px;border-radius:6px}",
-  "@media (max-width:860px){.site-bar{height:auto;grid-template-columns:1fr auto;padding-top:12px;padding-bottom:2px;row-gap:2px}.site-nav{grid-column:1/-1;grid-row:2;gap:20px}}",
-  "@media (pointer:coarse){.site-nav a{display:inline-flex;align-items:center;min-height:44px}}",
+  '.site-nav a,.site-cta,.site-icon{box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;gap:6px;height:30px;border-radius:10px;font:500 13px/1 "DM Sans",ui-sans-serif,system-ui,sans-serif;text-decoration:none;white-space:nowrap;transition:background-color .15s,color .15s,transform .15s}',
+  ".site-nav a{padding:0 12px;background:color-mix(in srgb,var(--ink,#0A0A0A) 5%,transparent);color:var(--ink-2,#3F3F46)}",
+  ".site-nav a:hover{background:color-mix(in srgb,var(--ink,#0A0A0A) 9%,transparent);color:var(--ink,#0A0A0A)}",
+  ".site-nav a[aria-current]{background:color-mix(in srgb,var(--accent,#2547D0) 12%,transparent);color:var(--accent,#2547D0)}",
+  ".site-tools{margin-left:auto;display:flex;align-items:center;gap:6px;flex:none;padding-left:6px}",
+  ".site-icon{width:30px;padding:0;border:0;cursor:pointer;background:color-mix(in srgb,var(--ink,#0A0A0A) 5%,transparent);color:var(--ink-2,#3F3F46)}",
+  ".site-icon:hover{color:var(--ink,#0A0A0A);background:color-mix(in srgb,var(--ink,#0A0A0A) 9%,transparent)}",
+  ".site-icon svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}",
+  ".site-cta{padding:0 13px;background:var(--ink,#0A0A0A);color:var(--bg,#fff)}",
+  ".site-cta:hover{opacity:.86}.site-cta:active,.site-icon:active,.site-nav a:active{transform:scale(.96)}",
+  ".site-mark:focus-visible,.site-nav a:focus-visible,.site-cta:focus-visible,.site-icon:focus-visible{outline:2px solid var(--accent,#2547D0);outline-offset:2px}",
+  "@media (max-width:760px){.site-bar{height:auto;flex-wrap:wrap;padding-top:10px;padding-bottom:10px;row-gap:8px}.site-nav{order:3;flex-basis:100%}}",
+  "@media (pointer:coarse){.site-nav a,.site-cta,.site-icon{min-height:40px}.site-icon{min-width:40px}}",
+  ".site-sr{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}",
   ".clean .site-top{display:none}",
-  ".site-skip{position:absolute;left:12px;top:-64px;z-index:60;background:#16181D;color:#FAF8F4;font:500 13px/1 system-ui,sans-serif;padding:12px 16px;border-radius:4px;text-decoration:none}",
-  ".site-skip:focus{top:12px;outline:2px solid #1F7A55;outline-offset:2px}",
+  '.site-skip{position:absolute;left:12px;top:-64px;z-index:60;background:var(--ink,#0A0A0A);color:var(--bg,#fff);font:500 13px/1 "DM Sans",system-ui,sans-serif;padding:12px 16px;border-radius:8px;text-decoration:none}',
+  ".site-skip:focus{top:12px;outline:2px solid var(--accent,#2547D0);outline-offset:2px}",
   ".clean .site-skip{display:none}",
 ].join("");
 
@@ -118,7 +127,7 @@ export function siteHeader(
     )
     .join("");
   const ctaHtml = cta
-    ? `<a class="site-cta" href="${href(cta.href)}"${current === SITE_CTA_KEY ? ' aria-current="page"' : ""}>${cta.label}</a>`
+    ? `<div class="site-tools"><a class="site-cta" href="${href(cta.href)}"${current === SITE_CTA_KEY ? ' aria-current="page"' : ""}>${cta.label}</a></div>`
     : "";
   return `${SITE_SKIP_HTML}<header class="site-top"><div class="site-bar"><a class="site-mark" href="${href("/")}">${SITE_MARK_SVG}CITED</a><nav class="site-nav" aria-label="CITED">${links}</nav>${ctaHtml}</div></header>`;
 }
