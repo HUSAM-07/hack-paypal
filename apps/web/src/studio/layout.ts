@@ -1,5 +1,6 @@
 import type { AgReportState } from "ag-studio";
 import type { StudioConfig } from "./data";
+import { trustPage } from "./trustPage";
 
 const USD = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" });
 
@@ -37,7 +38,7 @@ const creatorFilter = (table: string, creator: string) => ({
 export const AI_PANEL_MIN_WIDTH = 1200;
 
 export function initialState(
-  view: "brand" | "creator",
+  view: "brand" | "creator" | "trust",
   creatorName: string,
   viewportWidth = AI_PANEL_MIN_WIDTH,
 ): AgReportState {
@@ -145,6 +146,7 @@ export function initialState(
           },
         },
       },
+      trustPage(),
     ],
     selectedPageId: view,
     panels: {

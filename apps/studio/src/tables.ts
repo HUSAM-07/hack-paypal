@@ -7,6 +7,7 @@
  * into a payout). Pure, so every number on screen is testable without a browser.
  */
 import type { ArmName, RawCredit, RawEngine, RawPayoutBatch } from "./dashboard";
+import { trustRows } from "./trust";
 
 /** Seeded demo runs use a stand-in model (`scripted-<family>`, `fake-<family>` in older data); say so plainly rather than show the id. */
 export const agentLabel = (model: string): string =>
@@ -39,7 +40,8 @@ export type TableId =
   | "shares"
   | "payouts"
   | "deposits"
-  | "flags";
+  | "flags"
+  | "trust";
 
 const usd = (minor: number) => Math.round(minor) / 100;
 const HOLD_DAYS = 30;
@@ -410,6 +412,13 @@ export function buildTables(raw: RawEngine): StudioTables {
     createdAt: f.createdAt ?? null,
   }));
 
+  const trust = trustRows(raw, {
+    nameOf,
+    brandOf: (id) => brandOf.get(id) ?? id,
+    orderOfCapture,
+    saleDateOfOrder: new Map(raw.journeys.map((j) => [j.orderId, j.capturedAt])),
+  });
+
   const tables: Record<TableId, Row[]> = {
     brands,
     arms,
@@ -420,6 +429,7 @@ export function buildTables(raw: RawEngine): StudioTables {
     payouts,
     deposits,
     flags,
+    trust,
   };
   return {
     asOf: raw.now,
@@ -672,6 +682,30 @@ export const TABLES: TableMeta[] = [
       t("status", "Status"),
       t("creditState", "Credit state"),
       t("createdAt", "Flagged at"),
+    ],
+  },
+  {
+    id: "trust",
+    name: "Trust review",
+    description:
+      "Every credit the guard or PayPal has stopped, with the reason in plain words: held for a reviewer (creator bought through their own PayPal, same buyer bought repeatedly, sudden spike in sales, buyer refunds often), frozen by an open dispute, voided (refund, lost dispute, or a reviewer's decision), or released by a reviewer. One row per credit.",
+    fields: [
+      t("id", "Credit id"),
+      t("creator", "Creator"),
+      t("brand", "Brand"),
+      t("orderId", "PayPal order"),
+      m("amount", "Amount at stake"),
+      t("status", "Status"),
+      t("statusKey", "Status code", "held, frozen, voided or released"),
+      t("reason", "Reason"),
+      t("reasonCodes", "Reason codes"),
+      t("why", "What the engine saw"),
+      t("date", "Sale date"),
+      t(
+        "flagIds",
+        "Open review ids",
+        "Ids the Release and Void buttons act on; empty when nothing is open",
+      ),
     ],
   },
 ];
