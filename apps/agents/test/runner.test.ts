@@ -293,3 +293,41 @@ describe("Anthropic Messages agent", () => {
     ]);
   });
 });
+
+describe("category-aware agents", () => {
+  it("the fake agent searches what it is told to, and the purifier search by default", async () => {
+    const { FakeAgent, ShopperSession } = await import("../src/index");
+    const queries: string[] = [];
+    for (const opts of [{}, { query: "robot vacuum" }]) {
+      const session = new ShopperSession(await ep(), `q-${queries.length}`);
+      const search = session.search.bind(session);
+      session.search = async (a) => {
+        queries.push(a.query);
+        return search(a);
+      };
+      await new FakeAgent(opts).run({ request: "under $300", session, rand: () => 0 });
+      await session.close();
+    }
+    expect(queries).toEqual(["air purifier", "robot vacuum"]);
+  });
+
+  it("the search tool names the product, defaulting to air purifiers", async () => {
+    const { LlmAgent, ShopperSession } = await import("../src/index");
+    const seen: Record<string, any>[] = [];
+    for (const noun of [undefined, "robot vacuum"]) {
+      const cfg = scriptedAnthropic({ bodies: seen, headers: [] });
+      const session = new ShopperSession(await ep(), `n-${noun}`);
+      await new LlmAgent(cfg, "claude-x", noun ? { productNoun: noun } : {}).run({
+        request: "x",
+        session,
+        rand: () => 0,
+      });
+      await session.close();
+    }
+    const desc = (b: Record<string, any>) =>
+      b.tools.find((t: { name: string }) => t.name === "search_product").description;
+    const first = seen.filter((b) => b.messages.length === 1);
+    expect(desc(first[0] as Record<string, any>)).toMatch(/^Search air purifier offers/);
+    expect(desc(first[1] as Record<string, any>)).toMatch(/^Search robot vacuum offers/);
+  });
+});

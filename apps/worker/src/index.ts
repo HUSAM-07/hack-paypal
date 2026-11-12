@@ -10,9 +10,11 @@ import {
   statefulDemoHandler,
   studioHandler,
 } from "./cited-apps";
+import { profiles } from "./creators/profile";
 import { CREATORS_PREFIX, creators } from "./creators/routes";
 import { allowedOrigins, type Env } from "./env";
 import { newId } from "./ids";
+import { LEDGER_PATH, ledger } from "./ledger";
 import { previewFor, withLinkPreview } from "./link-preview";
 import { live, TRY_PREFIX } from "./live/routes";
 import { PUBLIC_MCP_PATH, publicMcpHandler } from "./mcp";
@@ -76,6 +78,9 @@ const appPage = async (c: Context<{ Bindings: Env }>) => {
 app.get("/app", (c) => c.redirect("/", 302));
 app.get("/app/*", appPage);
 
+// The live reconciliation page sits under /console (so no new asset route), ahead of the console app.
+app.route(LEDGER_PATH, ledger);
+
 // CITED demo apps: their pages set their own headers (inline CSS and scripts).
 for (const [prefix, handler] of [
   [CONSOLE_PREFIX, consoleHandler],
@@ -89,6 +94,8 @@ for (const [prefix, handler] of [
 app.all(PUBLIC_MCP_PATH, publicMcpHandler);
 app.route(TRY_PREFIX, live);
 app.route(CREATORS_PREFIX, creators);
+// After `creators`: its fixed paths (/connect, /callback, ...) match first; this is only /:creatorId.
+app.route(CREATORS_PREFIX, profiles);
 
 app.use("*", securityHeaders);
 app.use("/api/auth/*", ipRateLimit);
