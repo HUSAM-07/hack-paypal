@@ -3,35 +3,15 @@ import {
   SITE_HEADER_CSS,
   SITE_MARK_SVG,
   SITE_NAV,
+  SITE_REPO_URL,
   type SiteNavKey,
 } from "@pact/protocol";
 
-const REPO = "https://github.com/HUSAM-07/hack-paypal";
 
-/**
- * Flips light/dark and remembers it (public/theme.js applies it before first paint). Both icons
- * are rendered and CSS shows the right one, so the prerendered HTML never disagrees with the client.
- */
+/** The light/dark toggle; public/theme.js handles the click on every page. */
 function ThemeToggle() {
   return (
-    <button
-      type="button"
-      className="site-icon theme-toggle"
-      aria-label="Toggle dark mode"
-      onClick={() => {
-        const root = document.documentElement;
-        const dark = root.classList.contains("dark")
-          ? true
-          : root.classList.contains("light")
-            ? false
-            : matchMedia("(prefers-color-scheme: dark)").matches;
-        root.classList.toggle("dark", !dark);
-        root.classList.toggle("light", dark);
-        try {
-          localStorage.setItem("pact-theme", dark ? "light" : "dark");
-        } catch (_) {}
-      }}
-    >
+    <button type="button" className="site-icon" data-theme-toggle aria-label="Toggle dark mode">
       <svg className="theme-moon" viewBox="0 0 16 16" aria-hidden="true">
         <path d="M13.5 9.6A5.75 5.75 0 0 1 6.4 2.5a5.75 5.75 0 1 0 7.1 7.1Z" />
       </svg>
@@ -91,7 +71,7 @@ export function SiteHeader({
             ))}
           </nav>
           <div className="site-tools">
-            <a className="site-icon" href={REPO}>
+            <a className="site-icon" href={SITE_REPO_URL}>
               <span className="site-sr">Source on GitHub</span>
               <svg viewBox="0 0 16 16" aria-hidden="true">
                 <path d="M6 13.2c-2.6.8-2.6-1.3-3.6-1.6m7.2 3v-2.2c0-.7.1-1-.3-1.4 1.9-.2 3.6-.9 3.6-4a3.1 3.1 0 0 0-.8-2.1 2.9 2.9 0 0 0-.1-2.1s-.7-.2-2.2.8a7.6 7.6 0 0 0-4 0C4.3 2.6 3.6 2.8 3.6 2.8a2.9 2.9 0 0 0-.1 2.1 3.1 3.1 0 0 0-.8 2.1c0 3.1 1.7 3.8 3.6 4-.4.4-.4.8-.3 1.4v2.2" />

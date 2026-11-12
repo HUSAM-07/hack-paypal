@@ -1,3 +1,5 @@
+import { SITE_STYLE_CSS } from "./theme";
+
 /**
  * The CITED site navigation, shared by every public page (landing, /proof, /try, /mcp,
  * /creators, the console) so the top nav is the same wherever a judge lands.
@@ -45,34 +47,25 @@ export const SITE_NAV_TOUCH_CSS =
   "@media (pointer:coarse){.nav a{display:inline-flex;align-items:center;justify-content:center;min-width:44px;min-height:44px}}";
 
 /**
- * The light palette every CITED page shares: near-black ink on white, hairline greys, one cobalt
- * accent (the landing's). `--serif` is Instrument Serif for display headings, `--sans` DM Sans.
+ * Everything a server-rendered page needs before its own CSS: fonts, the semantic colour tokens
+ * and the shared base and layout primitives (all from ./theme). Put it FIRST in the page's <style>;
+ * page CSS reads the tokens and never defines colours of its own.
  */
-export const SITE_PALETTE_CSS =
-  ':root{color-scheme:light;--bg:#FFFFFF;--paper:#FFFFFF;--raise:#FAFAFA;--ink:#0A0A0A;--ink-2:#3F3F46;--muted:#737373;--line:#E5E5E5;--line-strong:#D4D4D4;--accent:#2547D0;--test:#2547D0;--test-tint:#E9EDFB;--held:#B7791F;--held-ink:#8A5A12;--held-tint:#F7EEDD;--void:#B42318;--cream:#0A0A0A;--link:#2547D0;--pp-text:#003087;--serif:"Instrument Serif",ui-serif,Georgia,serif;--sans:"DM Sans",ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;--mono:"Geist Mono",ui-monospace,SFMono-Regular,Menlo,monospace}';
+export const SITE_THEME_CSS = SITE_STYLE_CSS;
 
 /**
- * The theme shared by the server-rendered pages (console, /try, /creators, /mcp, ledger, 404).
- * Pages append it after their own CSS: it redefines the tokens they already use and restyles the
- * shared pieces (buttons, headings, code) to match the landing: DM Sans text, Instrument Serif
- * display headings, dashed hairlines and 10px-radius buttons.
+ * Goes in every page's <head>: applies the saved light/dark choice before first paint and wires
+ * every `[data-theme-toggle]` button (public/theme.js; external, so script-src 'self' allows it).
  */
-export const SITE_THEME_CSS = [
-  '@font-face{font-family:"Instrument Serif";font-style:normal;font-weight:400;font-display:swap;src:url("/fonts/instrument-serif-latin-v1.woff2") format("woff2")}',
-  '@font-face{font-family:"Instrument Serif";font-style:italic;font-weight:400;font-display:swap;src:url("/fonts/instrument-serif-latin-italic-v1.woff2") format("woff2")}',
-  SITE_PALETTE_CSS,
-  "body{background:var(--bg);font-family:var(--sans);font-synthesis-weight:none;-webkit-font-smoothing:antialiased}",
-  "::selection{background:var(--test-tint);color:var(--ink)}",
-  ":focus-visible{outline-color:var(--accent)}",
-  "h1,h2{font-family:var(--serif);font-weight:400;letter-spacing:-.015em}",
-  "h1{line-height:1.05}",
-  "hr{border:0;border-top:1px dashed var(--line)}",
-  ".btn{background:var(--cream);color:var(--bg);font-family:var(--sans);font-weight:500;letter-spacing:0;text-transform:none;font-size:.9rem;border-radius:10px;padding:.6rem 1rem}",
-  ".btn:hover{background:#27272A}",
-  ".btn.ghost{background:color-mix(in srgb,var(--ink) 5%,transparent);color:var(--ink);box-shadow:none}",
-  ".btn.ghost:hover{background:color-mix(in srgb,var(--ink) 9%,transparent)}",
-  "code{font-family:var(--mono);background:var(--raise);box-shadow:inset 0 0 0 1px var(--line);border-radius:5px}",
-].join("");
+export const SITE_HEAD_HTML = '<script src="/theme.js"></script>';
+
+/** The light/dark toggle in the top bar. Both icons render; CSS shows the right one. */
+export const SITE_THEME_TOGGLE_HTML =
+  '<button type="button" class="site-icon" data-theme-toggle aria-label="Toggle dark mode"><svg class="theme-moon" viewBox="0 0 16 16" aria-hidden="true"><path d="M13.5 9.6A5.75 5.75 0 0 1 6.4 2.5a5.75 5.75 0 1 0 7.1 7.1Z"/></svg><svg class="theme-sun" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="3"/><path d="M8 1.5v1.2M8 13.3v1.2M1.5 8h1.2M13.3 8h1.2M3.4 3.4l.85.85M11.75 11.75l.85.85M3.4 12.6l.85-.85M11.75 4.25l.85-.85"/></svg></button>';
+
+/** GitHub link for the top bar. */
+export const SITE_REPO_URL = "https://github.com/HUSAM-07/hack-paypal";
+export const SITE_GITHUB_HTML = `<a class="site-icon" href="${SITE_REPO_URL}"><span class="site-sr">Source on GitHub</span><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M6 13.2c-2.6.8-2.6-1.3-3.6-1.6m7.2 3v-2.2c0-.7.1-1-.3-1.4 1.9-.2 3.6-.9 3.6-4a3.1 3.1 0 0 0-.8-2.1 2.9 2.9 0 0 0-.1-2.1s-.7-.2-2.2.8a7.6 7.6 0 0 0-4 0C4.3 2.6 3.6 2.8 3.6 2.8a2.9 2.9 0 0 0-.1 2.1 3.1 3.1 0 0 0-.8 2.1c0 3.1 1.7 3.8 3.6 4-.4.4-.4.8-.3 1.4v2.2"/></svg></a>`;
 
 /** The nav entry the top bar shows as its call-to-action pill instead of a plain link. */
 export const SITE_CTA_KEY: SiteNavKey = "try";
@@ -83,38 +76,37 @@ export const SITE_CTA_KEY: SiteNavKey = "try";
  * Colours read the page's tokens, so a dark page gets a dark bar.
  */
 export const SITE_HEADER_CSS = [
-  '@font-face{font-family:"DM Sans";font-style:normal;font-weight:100 1000;font-display:swap;src:url("/fonts/dm-sans-latin-v1.woff2") format("woff2-variations")}',
-  ".site-top{position:sticky;top:0;z-index:50;background:color-mix(in srgb,var(--bg,#fff) 80%,transparent);-webkit-backdrop-filter:saturate(1.6) blur(12px);backdrop-filter:saturate(1.6) blur(12px);border-bottom:1px dashed var(--line,#E5E5E5)}",
-  ".site-bar{box-sizing:border-box;max-width:var(--site-col,1200px);margin:0 auto;padding:0 clamp(14px,3vw,24px);height:60px;display:flex;align-items:center;gap:6px}",
-  ".site-col .site-bar{border-inline:1px solid var(--line,#E5E5E5)}",
-  '.site-mark{display:inline-flex;align-items:center;gap:8px;margin-right:8px;font:650 16px/1 "DM Sans",ui-sans-serif,system-ui,sans-serif;letter-spacing:-.01em;color:var(--ink,#0A0A0A);text-decoration:none;flex:none}',
-  ".site-mark svg{width:24px;height:24px;flex:none;color:var(--accent,#2547D0);transition:transform .3s cubic-bezier(.34,1.56,.64,1)}",
+  ".site-top{position:sticky;top:0;z-index:50;background:color-mix(in oklab,var(--background) 80%,transparent);-webkit-backdrop-filter:saturate(1.6) blur(12px);backdrop-filter:saturate(1.6) blur(12px);border-bottom:1px dashed var(--border)}",
+  ".site-bar{box-sizing:border-box;max-width:var(--site-col,var(--frame-wide));margin:0 auto;padding:0 clamp(14px,3vw,24px);height:60px;display:flex;align-items:center;gap:6px;border-inline:1px solid var(--border)}",
+  ".site-col .site-bar{--site-col:var(--frame)}",
+  ".site-mark{display:inline-flex;align-items:center;gap:8px;margin-right:8px;font:650 16px/1 var(--font-sans);letter-spacing:-.01em;color:var(--foreground);text-decoration:none;flex:none}",
+  ".site-mark svg{width:24px;height:24px;flex:none;color:var(--primary);transition:transform .3s cubic-bezier(.34,1.56,.64,1)}",
   ".site-mark:hover svg{transform:rotate(-14deg) scale(1.06)}",
   ".site-nav{display:flex;gap:6px;min-width:0;overflow-x:auto;scrollbar-width:none}",
   ".site-nav::-webkit-scrollbar{display:none}",
-  '.site-nav a,.site-cta,.site-icon{box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;gap:6px;height:30px;border-radius:10px;font:500 13px/1 "DM Sans",ui-sans-serif,system-ui,sans-serif;text-decoration:none;white-space:nowrap;transition:background-color .15s,color .15s,transform .15s}',
-  ".site-nav a{padding:0 12px;background:color-mix(in srgb,var(--ink,#0A0A0A) 5%,transparent);color:var(--ink-2,#3F3F46)}",
-  ".site-nav a:hover{background:color-mix(in srgb,var(--ink,#0A0A0A) 9%,transparent);color:var(--ink,#0A0A0A)}",
-  ".site-nav a[aria-current]{background:color-mix(in srgb,var(--accent,#2547D0) 12%,transparent);color:var(--accent,#2547D0)}",
+  ".site-nav a,.site-cta,.site-icon{box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;gap:6px;height:30px;border-radius:10px;font:500 13px/1 var(--font-sans);text-decoration:none;white-space:nowrap;transition:background-color .15s,color .15s,transform .15s}",
+  ".site-nav a{padding:0 12px;background:var(--fill);color:var(--muted-foreground)}",
+  ".site-nav a:hover{background:var(--fill-strong);color:var(--foreground)}",
+  ".site-nav a[aria-current]{background:var(--primary-soft);color:var(--primary)}",
   ".site-tools{margin-left:auto;display:flex;align-items:center;gap:6px;flex:none;padding-left:6px}",
-  ".site-icon{width:30px;padding:0;border:0;cursor:pointer;background:color-mix(in srgb,var(--ink,#0A0A0A) 5%,transparent);color:var(--ink-2,#3F3F46)}",
-  ".site-icon:hover{color:var(--ink,#0A0A0A);background:color-mix(in srgb,var(--ink,#0A0A0A) 9%,transparent)}",
+  ".site-icon{width:30px;padding:0;border:0;cursor:pointer;background:var(--fill);color:var(--muted-foreground)}",
+  ".site-icon:hover{color:var(--foreground);background:var(--fill-strong)}",
   ".site-icon svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}",
-  ".site-cta{padding:0 13px;background:var(--ink,#0A0A0A);color:var(--bg,#fff)}",
+  ".site-cta{padding:0 13px;background:var(--foreground);color:var(--background)}",
   ".site-cta:hover{opacity:.86}.site-cta:active,.site-icon:active,.site-nav a:active{transform:scale(.96)}",
-  ".site-mark:focus-visible,.site-nav a:focus-visible,.site-cta:focus-visible,.site-icon:focus-visible{outline:2px solid var(--accent,#2547D0);outline-offset:2px}",
+  ".site-mark:focus-visible,.site-nav a:focus-visible,.site-cta:focus-visible,.site-icon:focus-visible{outline:2px solid var(--primary);outline-offset:2px}",
   "@media (max-width:760px){.site-bar{height:auto;flex-wrap:wrap;padding-top:10px;padding-bottom:10px;row-gap:8px}.site-nav{order:3;flex-basis:100%}}",
   "@media (pointer:coarse){.site-nav a,.site-cta,.site-icon{min-height:40px}.site-icon{min-width:40px}}",
   ".site-sr{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}",
   ".clean .site-top{display:none}",
-  '.site-skip{position:absolute;left:12px;top:-64px;z-index:60;background:var(--ink,#0A0A0A);color:var(--bg,#fff);font:500 13px/1 "DM Sans",system-ui,sans-serif;padding:12px 16px;border-radius:8px;text-decoration:none}',
-  ".site-skip:focus{top:12px;outline:2px solid var(--accent,#2547D0);outline-offset:2px}",
+  ".site-skip{position:absolute;left:12px;top:-64px;z-index:60;background:var(--foreground);color:var(--background);font:500 13px/1 var(--font-sans);padding:12px 16px;border-radius:8px;text-decoration:none}",
+  ".site-skip:focus{top:12px;outline:2px solid var(--primary);outline-offset:2px}",
   ".clean .site-skip{display:none}",
 ].join("");
 
 /** CITED's mark: a ring with an arc cut out (a holdout) and a dot (the credited sale). */
 export const SITE_MARK_SVG =
-  '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="11" fill="currentColor"/><path d="M16.6 8.2A6 6 0 1 0 17.6 14" fill="none" stroke="var(--bg,#fff)" stroke-width="2.2" stroke-linecap="round"/><circle cx="17.4" cy="10.9" r="1.5" fill="var(--bg,#fff)"/></svg>';
+  '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="11" fill="currentColor"/><path d="M16.6 8.2A6 6 0 1 0 17.6 14" fill="none" stroke="var(--background)" stroke-width="2.2" stroke-linecap="round"/><circle cx="17.4" cy="10.9" r="1.5" fill="var(--background)"/></svg>';
 
 /** The skip link, first in the tab order; the page's `<main>` carries `id="main"`. */
 export const SITE_SKIP_HTML = `<a class="site-skip" href="#main">Skip to content</a>`;
@@ -132,9 +124,10 @@ export function siteHeader(
     )
     .join("");
   const ctaHtml = cta
-    ? `<div class="site-tools"><a class="site-cta" href="${href(cta.href)}"${current === SITE_CTA_KEY ? ' aria-current="page"' : ""}>${cta.label}</a></div>`
+    ? `<a class="site-cta" href="${href(cta.href)}"${current === SITE_CTA_KEY ? ' aria-current="page"' : ""}>${cta.label}</a>`
     : "";
-  return `${SITE_SKIP_HTML}<header class="site-top"><div class="site-bar"><a class="site-mark" href="${href("/")}">${SITE_MARK_SVG}CITED</a><nav class="site-nav" aria-label="CITED">${links}</nav>${ctaHtml}</div></header>`;
+  const tools = `<div class="site-tools">${SITE_GITHUB_HTML}${SITE_THEME_TOGGLE_HTML}${ctaHtml}</div>`;
+  return `${SITE_SKIP_HTML}<header class="site-top"><div class="site-bar"><a class="site-mark" href="${href("/")}">${SITE_MARK_SVG}CITED</a><nav class="site-nav" aria-label="CITED">${links}</nav>${tools}</div></header>`;
 }
 
 /**

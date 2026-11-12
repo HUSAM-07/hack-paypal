@@ -8,3 +8,4 @@ export * from "./passport";
 export * from "./programme";
 export * from "./rpc";
 export * from "./site";
+export * from "./theme";
