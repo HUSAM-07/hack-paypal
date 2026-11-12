@@ -1,0 +1,13 @@
+{
+  "id": "cl-roborock-q7max-vs-roomba-j5",
+  "kind": "test",
+  "creatorId": "crumblab",
+  "category": "robot-vacuum",
+  "skus": [
+    { "upc": "100000000006", "brand": "Roborock", "name": "Q7 Max" },
+    { "upc": "100000000007", "brand": "iRobot", "name": "Roomba Combo j5" }
+  ],
+  "verdictUpc": "100000000006",
+  "summary": "Both robot vacuums ran the same marked-out floor: hardwood, tile, a low-pile rug, scattered cereal and a patch of pet hair. The Roborock Q7 Max picked up more of the mess per pass, kept its lines along the rug edges and needed rescuing less often. The Roomba Combo j5 missed more along edges and got caught on the rug fringe more often. Recommendation: Roborock Q7 Max.",
+  "disclosure": "Illustrative sample test content for the CITED demo; CrumbLab is a fictional creator. CrumbLab may earn a commission from CITED when an agent purchase follows this test; the commission never affects the verdict."
+}

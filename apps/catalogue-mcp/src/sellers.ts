@@ -1,4 +1,12 @@
-import { DEMO_SHOP_PRICES, type Money, UPC_LEVOIT_CORE300, UPC_WINIX_A230 } from "@pact/protocol";
+import {
+  DEMO_SHOP_PRICES,
+  type Money,
+  UPC_LEVOIT_CORE300,
+  UPC_ROBOROCK_Q7MAX,
+  UPC_ROOMBA_J5,
+  UPC_WINIX_A230,
+  VACUUM_SHOP_PRICES,
+} from "@pact/protocol";
 
 /**
  * The merchants whose catalogues are synced to PayPal (our mock of Store Sync). Agents never
@@ -19,11 +27,15 @@ export interface Seller {
   /** The commerce platform the merchant syncs its catalogue from. */
   platform: string;
   payee: Payee;
-  /** Price per UPC. Both purifiers cost the same at a given seller (price-matched study). */
+  /** Price per UPC. The two products of a category cost the same at a given seller (price-matched studies). */
   prices: Record<string, Money>;
 }
 
+/** The catalogue's categories. A search is answered from one category, never a mix. */
+export type Category = "air-purifier" | "robot-vacuum";
+
 export interface Product {
+  category: Category;
   upc: string;
   brand: string;
   name: string;
@@ -32,16 +44,32 @@ export interface Product {
 
 export const PRODUCTS: Product[] = [
   {
+    category: "air-purifier",
     upc: UPC_WINIX_A230,
     brand: "Winix",
     name: "A230",
     specs: "True HEPA with PlasmaWave, rated for rooms up to 360 sq ft",
   },
   {
+    category: "air-purifier",
     upc: UPC_LEVOIT_CORE300,
     brand: "Levoit",
     name: "Core 300",
     specs: "Compact HEPA purifier for bedrooms and small offices",
+  },
+  {
+    category: "robot-vacuum",
+    upc: UPC_ROBOROCK_Q7MAX,
+    brand: "Roborock",
+    name: "Q7 Max",
+    specs: "Robot vacuum and mop with laser navigation, for hard floors and low-pile rugs",
+  },
+  {
+    category: "robot-vacuum",
+    upc: UPC_ROOMBA_J5,
+    brand: "iRobot",
+    name: "Roomba Combo j5",
+    specs: "Robot vacuum and mop with camera navigation, for hard floors and low-pile rugs",
   },
 ];
 
@@ -72,7 +100,9 @@ export function sellersFromEnv(env: Env = {}): Record<SellerId, Seller> {
       platform: BASE[id].platform,
       payee: payeeFromEnv(id, env),
       prices: Object.fromEntries(
-        Object.entries(DEMO_SHOP_PRICES[id]).map(([upc, minor]) => [upc, usd(minor)]),
+        Object.entries({ ...DEMO_SHOP_PRICES[id], ...VACUUM_SHOP_PRICES[id] }).map(
+          ([upc, minor]) => [upc, usd(minor)],
+        ),
       ),
     };
   }

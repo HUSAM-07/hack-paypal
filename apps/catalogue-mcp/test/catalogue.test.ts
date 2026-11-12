@@ -151,6 +151,102 @@ describe("search_product", () => {
   });
 });
 
+describe("robot vacuums, the second category", () => {
+  const run = async (arm: Arm, query = "robot vacuum") => {
+    const cat = make();
+    const { signPassport } = await import("@pact/protocol");
+    const body = cat.newSession(sessionFor(arm), false, "robot-vacuum");
+    return {
+      cat,
+      body,
+      res: await cat.search({ query, passport: await signPassport(body, KEY) }),
+    };
+  };
+
+  it("offers both vacuums from all three sellers, price-matched, Lumen $4 under Northwind", async () => {
+    const { offers } = await make().search({ query: "robot vacuum" });
+    expect(offers).toHaveLength(6);
+    expect(new Set(offers.map((o) => o.brand))).toEqual(new Set(["Roborock", "iRobot"]));
+    const price = (seller: string, brand: string) =>
+      offers.find((o) => o.seller.id === seller && o.brand === brand)?.price.amountMinor;
+    expect(price("northwind", "Roborock")).toBe(29999);
+    expect(price("lumen", "Roborock")).toBe(29599);
+    expect(price("lumen", "iRobot")).toBe(price("lumen", "Roborock"));
+    expect(price("megamart", "iRobot")).toBe(30299);
+    expect(new Set(offers.map((o) => o.offerId)).size).toBe(6);
+  });
+
+  it("a search is answered from one category: purifier results are unchanged, vacuums never leak in", async () => {
+    const cat = make();
+    for (const q of ["air purifier", "small bedroom air purifier", "winix", "purifier"]) {
+      const { offers } = await cat.search({ query: q });
+      expect(offers.length).toBeGreaterThan(0);
+      expect(offers.every((o) => ["Winix", "Levoit"].includes(o.brand))).toBe(true);
+    }
+    const { offers } = await cat.search({ query: "air purifier" });
+    expect(offers.map((o) => o.offerId)).toEqual([
+      "lumen-100000000001",
+      "lumen-100000000002",
+      "northwind-100000000001",
+      "northwind-100000000002",
+      "megamart-100000000001",
+      "megamart-100000000002",
+    ]);
+    for (const q of ["robot vacuum cleaner", "roomba", "Roborock", "mop"]) {
+      const r = await cat.search({ query: q });
+      expect(r.offers.length).toBeGreaterThan(0);
+      expect(r.offers.every((o) => ["Roborock", "iRobot"].includes(o.brand))).toBe(true);
+    }
+  });
+
+  it("attaches the creator's content per arm: test, placebo, nothing", async () => {
+    expect((await run("test")).res.creatorContent.map((t) => t.id)).toEqual([
+      "cl-roborock-q7max-vs-roomba-j5",
+    ]);
+    expect((await run("placebo")).res.creatorContent.map((t) => t.kind)).toEqual(["placebo"]);
+    expect((await run("none")).res.creatorContent).toEqual([]);
+  });
+
+  it("ranking is byte-identical across arms", async () => {
+    const orders: string[] = [];
+    for (const arm of ["test", "placebo", "none"] as const) {
+      const { body, res } = await run(arm);
+      expect(body.arm).toBe(arm);
+      orders.push(JSON.stringify(res.offers));
+    }
+    expect(orders[0]).toBe(orders[1]);
+    expect(orders[1]).toBe(orders[2]);
+  });
+
+  it("the passport names the vacuum creator, so its test can be credited", async () => {
+    for (const arm of ["test", "placebo"] as const) {
+      const { body } = await run(arm);
+      expect(body.creatorsSeen).toEqual(["crumblab"]);
+    }
+    expect((await run("none")).body.creatorsSeen).toEqual([]);
+  });
+
+  it("a session that starts with purifiers and then asks for vacuums keeps its arm and adds the vacuum creator", async () => {
+    const cat = make();
+    const { signPassport } = await import("@pact/protocol");
+    const body = cat.newSession(sessionFor("test"), false);
+    expect(body.creatorsSeen).toEqual(["housefresh"]);
+    const out = await cat.search({
+      query: "robot vacuum",
+      passport: await signPassport(body, KEY),
+    });
+    const v = await verifyPassport(out.passport, KEY);
+    expect(v.ok && v.body.arm).toBe("test");
+    expect(v.ok && v.body.creatorsSeen).toEqual(["housefresh", "crumblab"]);
+    expect(out.creatorContent.map((t) => t.creatorId)).toEqual(["crumblab"]);
+    // Back to purifiers: same passport body, nothing added.
+    const back = await cat.search({ query: "air purifier", passport: out.passport });
+    const v2 = await verifyPassport(back.passport, KEY);
+    expect(v2.ok && v2.body.creatorsSeen).toEqual(["housefresh", "crumblab"]);
+    expect(back.creatorContent.map((t) => t.creatorId)).toEqual(["housefresh"]);
+  });
+});
+
 describe("demo session ids", () => {
   it("honours a caller-chosen session id only when allowed", async () => {
     const open = createCatalogue({ seed: "s", passportKey: "k", allowSessionId: true });

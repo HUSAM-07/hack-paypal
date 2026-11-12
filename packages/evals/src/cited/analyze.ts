@@ -1,7 +1,7 @@
 import { type ArmCounts, computeLift, creditBrand, type LiftResult } from "@pact/attribution";
 import type { Money } from "@pact/protocol";
 import type { Variant } from "./design";
-import type { EvalArm, StudyId } from "./world";
+import type { EvalArm, PriceCondition, StudyId } from "./world";
 
 export interface Outcome {
   action: "buy" | "decline" | "invalid";
@@ -15,7 +15,7 @@ export interface Outcome {
 
 export interface SessionRecord {
   id: string;
-  price?: "catalogue" | "parity" | "levoit-cheaper";
+  price?: PriceCondition;
   study: StudyId;
   variant: Variant;
   model: string;

@@ -2,10 +2,11 @@
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { type Analysis, analyze, derive, type SessionRecord } from "./analyze";
-import { DESIGNS, MODELS, PRICE_DESIGNS } from "./design";
+import { DESIGNS, MODELS, PRICE_DESIGNS, VACUUM_DESIGNS } from "./design";
 import { TARGET_UPC } from "./world";
 
 const priceSet = process.argv[3] === "price-matched";
+const vacuumSet = process.argv[3] === "robot-vacuum";
 const dir = process.argv[2] ?? "results/cited";
 const records = readFileSync(join(dir, "results.jsonl"), "utf8")
   .split("\n")
@@ -19,7 +20,7 @@ const money = (m: { amountMinor: number }) => `$${(m.amountMinor / 100).toFixed(
 const lines: string[] = [
   "# CITED eval summary",
   "",
-  `Generated from \`results.jsonl\` by \`src/cited/summarize.ts\`. Pre-registration: \`scenarios/cited/PREREGISTRATION${priceSet ? "-PRICE-MATCHED" : ""}.md\`.`,
+  `Generated from \`results.jsonl\` by \`src/cited/summarize.ts\`. Pre-registration: \`scenarios/cited/PREREGISTRATION${priceSet ? "-PRICE-MATCHED" : vacuumSet ? "-ROBOT-VACUUM" : ""}.md\`.`,
   "",
 ];
 const json: { [k: string]: unknown } = {};
@@ -51,7 +52,7 @@ function section(title: string, a: Analysis, basis: string, buyersOnly = false) 
   );
 }
 
-for (const d of priceSet ? PRICE_DESIGNS : DESIGNS) {
+for (const d of vacuumSet ? VACUUM_DESIGNS : priceSet ? PRICE_DESIGNS : DESIGNS) {
   const recs = records.filter(
     (r) => r.study === d.study && r.variant === d.variant && r.price === d.price,
   );
@@ -85,17 +86,19 @@ for (const d of priceSet ? PRICE_DESIGNS : DESIGNS) {
     lines.push(`- Declines: ${decl.length}/${recs.length} (${per}).`, "");
     json[`${key}-buyers-only`] = { lift: b.lift, pooled: b.pooled };
   }
+  // Lumen's price for the target in each study.
   const unit =
-    d.study === "purifier"
-      ? { amountMinor: 9599, currency: "USD" as const }
-      : { amountMinor: 9299, currency: "USD" as const };
-  const exposedSales = priceSet ? 50 : 200;
-  const dv = derive(recs, target, MODELS, unit, exposedSales, {
-    amountMinor: 100000,
-    currency: "USD",
-  });
+    d.study === "vacuum"
+      ? { amountMinor: 29599, currency: "USD" as const }
+      : d.study === "purifier"
+        ? { amountMinor: 9599, currency: "USD" as const }
+        : { amountMinor: 9299, currency: "USD" as const };
+  const exposedSales = priceSet || vacuumSet ? 50 : 200;
+  // A $296 product needs a bigger deposit than the purifiers' $1,000 to cover 50 sales' commission.
+  const deposit = { amountMinor: d.study === "vacuum" ? 300000 : 100000, currency: "USD" as const };
+  const dv = derive(recs, target, MODELS, unit, exposedSales, deposit);
   lines.push(
-    `Derived chain (${exposedSales} exposed sales at ${money(unit)}, $1,000 deposit): attributable fraction ${pct(dv.fraction, 1)} (lower bound ${pp(a.lift.lowerBound)} / exposed rate ${pct(a.lift.exposedRate, 1)}), credited units **${dv.units}**, commission **${money(dv.commission)}**, refund **${money(dv.refund)}**.`,
+    `Derived chain (${exposedSales} exposed sales at ${money(unit)}, ${d.study === "vacuum" ? "$3,000" : "$1,000"} deposit): attributable fraction ${pct(dv.fraction, 1)} (lower bound ${pp(a.lift.lowerBound)} / exposed rate ${pct(a.lift.exposedRate, 1)}), credited units **${dv.units}**, commission **${money(dv.commission)}**, refund **${money(dv.refund)}**.`,
     "",
   );
   json[`${key}-derived`] = dv;
