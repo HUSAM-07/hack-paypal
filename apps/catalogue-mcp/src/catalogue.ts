@@ -4,6 +4,7 @@ import {
   DEFAULT_SCHEDULE,
   type HoldoutSchedule,
   type PassportBody,
+  PUBLIC_MCP_SESSION_PREFIX,
   signPassport,
   type VerifiedTest,
   verifyPassport,
@@ -11,6 +12,7 @@ import {
 import { assignArm } from "./arms";
 import { DemoClock, testDay } from "./clock";
 import { buildOffers, categoryOfQuery, creatorContent, type Offer, searchOffers } from "./offers";
+import type { PublishedTests } from "./published";
 import { type Category, isSellerId, type Seller, type SellerId, sellersFromEnv } from "./sellers";
 
 export interface CatalogueOptions {
@@ -24,7 +26,15 @@ export interface CatalogueOptions {
   testPublishedAt?: Date;
   /** The synced merchants and their PayPal payees. Default: the demo sellers with mock payees. */
   sellers?: Record<SellerId, Seller>;
+  /**
+   * Tests creators published at /creators. Served only to public MCP sessions (`mcp_…`): the
+   * study, the demo run and the replay never see them.
+   */
+  published?: PublishedTests;
 }
+
+/** A passport records at most this many creators (see PassportBody). */
+const MAX_CREATORS_SEEN = 4;
 
 export interface SearchInput {
   query: string;
@@ -66,12 +76,31 @@ export function createCatalogue(opts: CatalogueOptions) {
             category,
           );
     if (input.sellerId && isSellerId(input.sellerId)) body = addStoreViewed(body, input.sellerId);
-    const shown = creatorContent(body.arm, body.creatorsSeen.includes("airlab"), category);
-    // A session keeps its arm across categories; the passport must also name the creator it was
-    // shown in this one, or that creator's test could not be credited. Nothing changes when the
-    // creators are already recorded (every purifier search).
-    const creatorsSeen = [...new Set([...body.creatorsSeen, ...shown.map((t) => t.creatorId)])];
-    if (creatorsSeen.length !== body.creatorsSeen.length) body = { ...body, creatorsSeen };
+    const builtIn = creatorContent(body.arm, body.creatorsSeen.includes("airlab"), category);
+    // Creator-published tests go only to public MCP sessions, in the same group as the built-in
+    // test: the test arm gets each creator's test, the placebo arm their placebo (none if they
+    // have none), the held-out arm nothing. Ranking never sees any of it.
+    const live =
+      opts.published && body.sessionId.startsWith(PUBLIC_MCP_SESSION_PREFIX)
+        ? await opts.published.live(category)
+        : [];
+    const published =
+      body.arm === "test"
+        ? live.map((l) => l.test)
+        : body.arm === "placebo"
+          ? live.flatMap((l) => (l.placebo ? [l.placebo] : []))
+          : [];
+    // A session keeps its arm across categories; the passport must also name every creator it was
+    // shown, or that creator's test could not be credited. It has room for four, so content from
+    // a creator that no longer fits is left out rather than shown unrecorded.
+    const seen = new Set(body.creatorsSeen);
+    const shown = [...builtIn, ...published].filter((t) => {
+      if (seen.has(t.creatorId)) return true;
+      if (seen.size >= MAX_CREATORS_SEEN) return false;
+      seen.add(t.creatorId);
+      return true;
+    });
+    if (seen.size !== body.creatorsSeen.length) body = { ...body, creatorsSeen: [...seen] };
     return {
       offers: searchOffers(input.query, offers),
       creatorContent: shown,

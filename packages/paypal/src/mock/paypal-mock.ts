@@ -924,10 +924,43 @@ export function createMockPayPal(opts: MockPayPalOptions = {}) {
           }
           const amount = parseAmount(it.amount, "currency", "items[].amount");
           const { amount: _a, ...req } = it;
+          const type = it.recipient_type ?? hdr?.recipient_type ?? "EMAIL";
+          const wallet = it.recipient_wallet ?? "PAYPAL";
+          if (wallet !== "PAYPAL" && wallet !== "VENMO")
+            throw fail(
+              400,
+              "INVALID_REQUEST",
+              "items[].recipient_wallet must be PAYPAL or VENMO.",
+              "INVALID_STRING_LENGTH",
+            );
+          if (wallet === "VENMO") {
+            // PayPal's "Payouts to Venmo": US dollars, a note, and a phone, email or Venmo handle.
+            if (!["PHONE", "EMAIL", "USER_HANDLE"].includes(String(type)))
+              throw fail(
+                400,
+                "INVALID_REQUEST",
+                "Venmo payouts need recipient_type PHONE, EMAIL or USER_HANDLE.",
+                "INVALID_PARAMETER_VALUE",
+              );
+            if (amount.currency !== "USD")
+              throw fail(
+                400,
+                "INVALID_REQUEST",
+                "Venmo payouts are in USD only.",
+                "CURRENCY_NOT_SUPPORTED",
+              );
+            if (typeof it.note !== "string" || it.note.length === 0)
+              throw fail(
+                400,
+                "INVALID_REQUEST",
+                "Venmo payouts need a note.",
+                "MISSING_REQUIRED_PARAMETER",
+              );
+          }
           return {
             id: id("", 13),
             txId: id("0C"),
-            req: { recipient_type: hdr?.recipient_type ?? "EMAIL", ...req },
+            req: { recipient_type: type, recipient_wallet: wallet, ...req },
             amount,
             fee: {
               amountMinor: Math.max(25, Math.round(amount.amountMinor / 100)),

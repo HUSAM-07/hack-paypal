@@ -405,7 +405,7 @@ export async function voidAll(
 
 export interface SendP2PInput {
   receiver: string;
-  recipientType?: "EMAIL" | "PHONE" | "PAYPAL_ID";
+  recipientType?: "EMAIL" | "PHONE" | "PAYPAL_ID" | "USER_HANDLE";
   wallet?: "PAYPAL" | "VENMO";
   amount: Money;
   /** Unique for 30 days. Derive it from the pact/run so a replay is rejected, not re-paid. */

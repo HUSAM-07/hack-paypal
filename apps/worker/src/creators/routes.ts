@@ -5,7 +5,13 @@
  * a session-bound form token and a per-IP limit, then writes server-side (internal caller).
  */
 import { PRODUCTS } from "@cited/catalogue-mcp";
-import { VerifiedTest } from "@pact/protocol";
+import { parseVenmoReceiver } from "@cited/engine/payout-method";
+import {
+  CREATOR_TEXT_LIMITS,
+  cleanCreatorText,
+  DEFAULT_CREATOR_DISCLOSURE,
+  VerifiedTest,
+} from "@pact/protocol";
 import { type Context, Hono } from "hono";
 import { deleteCookie, getCookie, setCookie } from "hono/cookie";
 import { CITED_PREFIX, internalEngineFetch } from "../cited";
@@ -28,11 +34,12 @@ import {
   verify,
 } from "./session";
 
+/** Mirrors the engine's per-creator cap, for the message. */
+const MAX_PUBLISHED_PER_CREATOR = 10;
 export const CREATORS_PREFIX = "/creators";
 /** The one category the catalogue sells; tests outside it would never be shown. */
 export const CREATOR_CATEGORY = "air-purifier";
-export const DEFAULT_DISCLOSURE =
-  "I may earn a commission from CITED when an AI agent buys after reading this test. The commission never affects my verdict.";
+export const DEFAULT_DISCLOSURE = DEFAULT_CREATOR_DISCLOSURE;
 
 type C = Context<{ Bindings: Env }>;
 
@@ -102,6 +109,43 @@ async function publishedTests(c: C, creatorId: string) {
   }
 }
 
+type PayoutView = {
+  method: "PAYPAL" | "VENMO";
+  label: string | null;
+  typed?: string;
+  error?: string;
+  saved?: boolean;
+};
+
+/** The creator's saved payout choice (PayPal when none, or if the engine can't be reached). */
+async function payoutChoice(c: C, creatorId: string): Promise<PayoutView> {
+  try {
+    const res = await internalEngineFetch(
+      c.env,
+      c.executionCtx,
+    )(engineUrl(`/payout-method?creatorId=${encodeURIComponent(creatorId)}`));
+    if (!res.ok) return { method: "PAYPAL", label: null };
+    const out = (await res.json()) as { method?: string; label?: string | null };
+    return out.method === "VENMO"
+      ? { method: "VENMO", label: out.label ?? null }
+      : { method: "PAYPAL", label: null };
+  } catch {
+    return { method: "PAYPAL", label: null };
+  }
+}
+
+/** The form's payout fields, checked before anything is sent: one message, worded for the creator. */
+export function parsePayoutForm(
+  method: unknown,
+  venmo: unknown,
+): { ok: true; method: "PAYPAL" | "VENMO"; venmo?: string } | { ok: false; error: string } {
+  if (method === "PAYPAL") return { ok: true, method: "PAYPAL" };
+  if (method !== "VENMO") return { ok: false, error: "Pick PayPal or Venmo." };
+  const parsed = parseVenmoReceiver(clean(venmo, 40));
+  if (!parsed.ok) return { ok: false, error: parsed.error };
+  return { ok: true, method: "VENMO", venmo: clean(venmo, 40) };
+}
+
 /** Plain text: control characters out (newlines kept for summaries), trimmed, capped. */
 function clean(raw: unknown, max: number, multiline = false): string {
   if (typeof raw !== "string") return "";
@@ -137,7 +181,7 @@ export function buildTests(
 ): { ok: true; test: VerifiedTest; placebo: VerifiedTest } | { ok: false; errors: string[] } {
   const errors: string[] = [];
   const skus = [...new Set(form.skus)]
-    .map((upc) => PRODUCTS.find((p) => p.upc === upc))
+    .map((upc) => PRODUCTS.find((p) => p.upc === upc && p.category === CREATOR_CATEGORY))
     .filter((p) => p !== undefined)
     .map((p) => ({ upc: p.upc, brand: p.brand, name: p.name }));
   if (!form.name) errors.push("Add the name you publish under.");
@@ -212,11 +256,15 @@ creators.get("/", async (c) => {
       creatorId,
       simulated: s.mode === "simulated",
       csrf: await csrfToken(c.env.SESSION_SECRET, s),
-      products: PRODUCTS,
+      products: PRODUCTS.filter((p) => p.category === CREATOR_CATEGORY),
       category: CREATOR_CATEGORY,
       defaultDisclosure: DEFAULT_DISCLOSURE,
       dashboardUrl: studioUrl(creatorId, c.req.query("as") ?? s.name),
       tests,
+      payout: {
+        ...(await payoutChoice(c, creatorId)),
+        ...(c.req.query("payout") === "saved" ? { saved: true } : {}),
+      },
       ...(publishedId && tests.some((t) => t.id === publishedId)
         ? {
             published: {
@@ -330,15 +378,15 @@ creators.post("/tests", async (c) => {
     return page(messagePage("Form expired", "Reload the creators page and publish again."), 403);
   const rawSkus = body.skus;
   const form: TestForm = {
-    name: clean(body.name, 80),
+    name: cleanCreatorText(body.name, CREATOR_TEXT_LIMITS.name),
     skus: (Array.isArray(rawSkus) ? rawSkus : rawSkus === undefined ? [] : [rawSkus])
       .filter((x): x is string => typeof x === "string")
       .slice(0, 8),
-    verdict: clean(body.verdict, 16),
-    summary: clean(body.summary, 1200, true),
-    disclosure: clean(body.disclosure, 400),
-    placeboTopic: clean(body.placeboTopic, 40),
-    placeboSummary: clean(body.placeboSummary, 1200, true),
+    verdict: cleanCreatorText(body.verdict, 16),
+    summary: cleanCreatorText(body.summary, CREATOR_TEXT_LIMITS.summary, true),
+    disclosure: cleanCreatorText(body.disclosure, CREATOR_TEXT_LIMITS.disclosure),
+    placeboTopic: cleanCreatorText(body.placeboTopic, CREATOR_TEXT_LIMITS.topic),
+    placeboSummary: cleanCreatorText(body.placeboSummary, CREATOR_TEXT_LIMITS.placeboSummary, true),
   };
   const creatorId = await creatorIdFor(s.payerId);
   const built = buildTests(form, creatorId, randomToken(6).replace(/[^A-Za-z0-9]/g, "x"));
@@ -350,13 +398,14 @@ creators.post("/tests", async (c) => {
         creatorId,
         simulated: s.mode === "simulated",
         csrf: await csrfToken(c.env.SESSION_SECRET, s),
-        products: PRODUCTS,
+        products: PRODUCTS.filter((p) => p.category === CREATOR_CATEGORY),
         category: CREATOR_CATEGORY,
         defaultDisclosure: DEFAULT_DISCLOSURE,
         dashboardUrl: studioUrl(creatorId, form.name || s.name),
         values: { ...form, skus: form.skus },
         errors,
         tests: await publishedTests(c, creatorId),
+        payout: await payoutChoice(c, creatorId),
       }),
       status,
     );
@@ -370,12 +419,73 @@ creators.post("/tests", async (c) => {
       placebo: built.placebo,
     }),
   });
+  if (res.status === 429)
+    return rerender(
+      [`You already have ${MAX_PUBLISHED_PER_CREATOR} published tests, the most CITED keeps.`],
+      422,
+    );
   if (!res.ok) {
     console.error("creator publish rejected", res.status);
     return rerender(["CITED couldn't store the test. Try publishing again."], 502);
   }
   const q = new URLSearchParams({ published: built.test.id, as: form.name });
   return c.redirect(`/creators?${q}`, 303);
+});
+
+creators.post("/payout", async (c) => {
+  if (!sameOrigin(c))
+    return page(
+      messagePage("Not allowed", "Save your payout choice from the CITED creators page."),
+      403,
+    );
+  if (await limited(c, "write"))
+    return page(
+      messagePage("Slow down", "Too many requests from here. Try again in a minute."),
+      429,
+    );
+  const s = await session(c);
+  if (!s) return c.redirect("/creators", 303);
+  const body = await c.req.parseBody();
+  if (!(await csrfOk(c.env.SESSION_SECRET, s, body.csrf)))
+    return page(messagePage("Form expired", "Reload the creators page and save again."), 403);
+  const creatorId = await creatorIdFor(s.payerId);
+  const choice = parsePayoutForm(body.method, body.venmo);
+  const rerender = async (error: string, status: number) =>
+    page(
+      publishPage({
+        name: s.name,
+        payerId: s.payerId,
+        creatorId,
+        simulated: s.mode === "simulated",
+        csrf: await csrfToken(c.env.SESSION_SECRET, s),
+        products: PRODUCTS,
+        category: CREATOR_CATEGORY,
+        defaultDisclosure: DEFAULT_DISCLOSURE,
+        dashboardUrl: studioUrl(creatorId, s.name),
+        tests: await publishedTests(c, creatorId),
+        payout: {
+          ...(await payoutChoice(c, creatorId)),
+          typed: clean(body.venmo, 40),
+          error,
+        },
+      }),
+      status,
+    );
+  if (!choice.ok) return rerender(choice.error, 422);
+  const res = await internalEngineFetch(c.env, c.executionCtx)(engineUrl("/payout-method"), {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({
+      creator: { creatorId, name: s.name, paypalId: s.payerId },
+      method: choice.method,
+      ...(choice.venmo ? { venmo: choice.venmo } : {}),
+    }),
+  });
+  if (!res.ok) {
+    console.error("creator payout choice rejected", res.status);
+    return rerender("CITED couldn't save that. Try again.", 502);
+  }
+  return c.redirect("/creators?payout=saved", 303);
 });
 
 creators.post("/disconnect", async (c) => {

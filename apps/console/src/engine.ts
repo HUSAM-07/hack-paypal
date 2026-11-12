@@ -22,6 +22,8 @@ export interface EnginePayoutBatch {
   items: {
     creatorId: string;
     receiver: string;
+    /** "VENMO" when the creator is paid to Venmo; absent means PayPal. */
+    wallet?: "VENMO";
     amountMinor: number;
     currency: string;
     creditIds: string[];

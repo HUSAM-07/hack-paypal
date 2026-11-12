@@ -4,6 +4,8 @@ import { nowOf } from "./clock";
 import { frozenCaptures, loadCredits, persistCredits } from "./credits";
 import type { Env } from "./env";
 import { applyGuard, heldCredits } from "./guard";
+import { VENMO_CURRENCY, VENMO_NOTE, type VenmoReceiver, venmoLabel } from "./payout-method";
+import { loadWallets } from "./payout-wallet";
 import { getPayPal } from "./paypal";
 
 type Row = Record<string, unknown>;
@@ -21,7 +23,10 @@ export interface PayoutRun {
   batchStatus?: string;
   items: {
     creatorId: string;
+    /** The PayPal payer id, or for a Venmo item a masked label (`Venmo ···0123`). */
     receiver: string;
+    /** Where this item was sent. Absent means PayPal, as every item was before Venmo. */
+    wallet?: "VENMO";
     amountMinor: number;
     currency: string;
     creditIds: string[];
@@ -77,14 +82,13 @@ export async function runPayouts(env: Env, maxItems = PAYOUT_BATCH_MAX_ITEMS): P
   };
 
   // One read for every receiver, not one per creator.
-  const receivers = new Map(
-    (await env.DB.prepare("SELECT creator_id, paypal_id FROM creators").all<Row>()).results.map(
-      (r) => [r.creator_id as string, (r.paypal_id as string | null) ?? null],
-    ),
-  );
-  const payable = [];
+  const wallets = await loadWallets(env);
+  const payable: Payable[] = [];
   for (const line of lines) {
-    const receiver = receivers.get(line.creatorId);
+    const w = wallets.get(line.creatorId);
+    const receiver = w?.paypalId;
+    // Venmo takes US dollars only: any other currency goes to the creator's PayPal account.
+    const venmo = w?.venmo && line.currency === VENMO_CURRENCY ? w.venmo : undefined;
     if (!receiver) {
       run.skipped.push({
         creatorId: line.creatorId,
@@ -93,13 +97,14 @@ export async function runPayouts(env: Env, maxItems = PAYOUT_BATCH_MAX_ITEMS): P
       });
       continue;
     }
-    payable.push({ line, receiver });
+    payable.push({ line, receiver, ...(venmo ? { venmo } : {}) });
   }
   if (payable.length === 0) return run;
 
   run.items = payable.map((p) => ({
     creatorId: p.line.creatorId,
-    receiver: p.receiver,
+    receiver: p.venmo ? venmoLabel(p.venmo) : p.receiver,
+    ...(p.venmo ? { wallet: "VENMO" as const } : {}),
     amountMinor: p.line.gross.amountMinor,
     currency: p.line.currency,
     creditIds: p.line.creditIds,
@@ -134,24 +139,48 @@ export async function runPayouts(env: Env, maxItems = PAYOUT_BATCH_MAX_ITEMS): P
   return run;
 }
 
+interface Payable {
+  line: ReturnType<typeof releasePayable>[number];
+  /** The creator's PayPal payer id: the default destination and the fallback. */
+  receiver: string;
+  venmo?: VenmoReceiver;
+}
+
+/**
+ * One payout item. PayPal creators get `PAYPAL_ID` as always; a Venmo creator gets the item PayPal's
+ * "Payouts to Venmo" guide describes (`recipient_wallet: VENMO`, PHONE or USER_HANDLE, a note).
+ * Both kinds ride in one batch: each item carries its own `recipient_type`, which overrides the header.
+ */
+export function payoutItem(p: Payable, senderBatchId: string) {
+  const base = {
+    amount: p.line.gross,
+    sender_item_id: senderItemId(p.line.creatorId, senderBatchId),
+    note: VENMO_NOTE,
+  };
+  return p.venmo
+    ? {
+        recipient_type: p.venmo.type,
+        receiver: p.venmo.receiver,
+        recipient_wallet: "VENMO" as const,
+        ...base,
+      }
+    : { recipient_type: "PAYPAL_ID" as const, receiver: p.receiver, ...base };
+}
+
 /** Create (or find, on a retry) one Payouts batch for these creators' due credits. */
 async function sendBatch(
   env: Env,
-  chunk: { line: ReturnType<typeof releasePayable>[number]; receiver: string }[],
+  chunk: Payable[],
   creditIds: string[],
   now: string,
 ): Promise<PayoutBatchRun> {
   const senderBatchId = `cited-${(await sha256Hex(creditIds.join(","))).slice(0, 32)}`;
-  const items = chunk.map((p) => ({
-    recipient_type: "PAYPAL_ID" as const,
-    receiver: p.receiver,
-    amount: p.line.gross,
-    sender_item_id: senderItemId(p.line.creatorId, senderBatchId),
-    note: "CITED: commission on sales your test caused",
-  }));
+  const items = chunk.map((p) => payoutItem(p, senderBatchId));
+  // What is stored and shown never holds a Venmo phone number: a masked label instead.
   const stored = chunk.map((p) => ({
     creatorId: p.line.creatorId,
-    receiver: p.receiver,
+    receiver: p.venmo ? venmoLabel(p.venmo) : p.receiver,
+    ...(p.venmo ? { wallet: "VENMO" } : {}),
     amountMinor: p.line.gross.amountMinor,
     currency: p.line.currency,
     creditIds: p.line.creditIds,
