@@ -23,7 +23,12 @@ Every widget on screen is our own markup and CSS, captured from the running apps
    npx tsx video/scripts/build.mjs
    ```
    This writes `video/index.html`.
-4. Render:
+4. Music, which is original and synthesised (no samples), so there's no licence question:
+   ```bash
+   node video/scripts/music.mjs /tmp/music.wav 67
+   ffmpeg -i /tmp/music.wav -af loudnorm=I=-18:TP=-1.5 -c:a aac -b:a 192k video/assets/music.m4a
+   ```
+5. Render:
    ```bash
    cd video && npx hyperframes render . -f 30 --crf 20 -o out/cited-motion-1080p30.mp4
    ```
