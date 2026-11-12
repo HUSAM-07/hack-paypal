@@ -1,0 +1,582 @@
+.aui-apc {
+  --_strong: var(--foreground);
+  --_text: var(--muted-foreground);
+  --_subtle: var(--muted-foreground);
+  --_line: var(--border);
+  --_card: var(--aui-surface);
+  --_quiet-hover: var(--hover);
+  --_btn: var(--foreground);
+  --_btn-hover: var(--foreground);
+  --_btn-fg: var(--background);
+  --_kbd: color-mix(in oklab, var(--foreground) 5.5%, transparent);
+  --_kbd-on-btn: color-mix(in oklab, var(--background) 14%, transparent);
+  --_kbd-on-btn-fg: color-mix(in oklab, var(--background) 72%, transparent);
+  --_box: var(--aui-surface);
+  --_box-ring: var(--border);
+  --_box-ring-hover: var(--muted-foreground);
+  --_tile: transparent;
+  --_ok: var(--success-text);
+  --_ok-soft: var(--success-soft);
+  --_medium: var(--warning);
+  --_medium-soft: var(--warning-soft);
+  position: relative;
+  width: 100%;
+  border-radius: 6px;
+  container-type: inline-size;
+  color: var(--_text);
+  font-size: 13px;
+  line-height: 1.45;
+  letter-spacing: -0.006em;
+  overflow: clip;
+  overflow-clip-margin: 6px;
+}
+.aui-apc[data-actions="tray"],
+.aui-apc[data-label] {
+  padding: 4px;
+  background: var(--aui-tray);
+  border-radius: 8px;
+}
+
+.aui-apc__pending[data-returning] {
+  animation: aui-apc-in 0.42s var(--aui-ease) 0.08s both;
+}
+.aui-apc__card {
+  position: relative;
+  padding: 16px;
+  background: var(--_card);
+  border-radius: 6px;
+  box-shadow: inset 0 0 0 1px var(--_line);
+}
+.aui-apc[data-actions="tray"] .aui-apc__card,
+.aui-apc[data-label] .aui-apc__card {
+  box-shadow:
+    0 0 0 1px var(--_line),
+    0 1px 2px 0 color-mix(in oklab, var(--foreground) 4%, transparent);
+}
+
+/* header */
+.aui-apc__head {
+  display: grid;
+  grid-template-columns: 32px minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 12px;
+}
+.aui-apc__tile {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 9px;
+  background: var(--_tile);
+  box-shadow: inset 0 0 0 1px var(--_line);
+  color: var(--_strong);
+}
+.aui-apc__tile svg {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.aui-apc__heading {
+  display: grid;
+  min-width: 0;
+  padding-top: 1px;
+}
+.aui-apc__title {
+  font-size: 14px;
+  font-weight: 550;
+  line-height: 20px;
+  letter-spacing: -0.011em;
+  color: var(--_strong);
+}
+.aui-apc__desc {
+  margin-top: 1px;
+  line-height: 18px;
+  color: var(--_text);
+}
+.aui-apc__risk {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 22px;
+  margin-top: 1px;
+  padding: 0 7px;
+  border-radius: 6px;
+  background: var(--aui-muted);
+  color: var(--_text);
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 12px;
+  white-space: pre;
+}
+.aui-apc__risk[data-risk="medium"] {
+  background: var(--_medium-soft);
+  color: var(--_medium);
+}
+.aui-apc__risk[data-risk="high"] {
+  background: var(--aui-danger-soft);
+  color: var(--aui-danger-text);
+}
+.aui-apc__risk-dot {
+  display: none;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0.8;
+}
+
+/* preview */
+.aui-apc__preview {
+  display: grid;
+  gap: 12px;
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--_line);
+}
+.aui-apc__custom {
+  min-width: 0;
+}
+.aui-apc__details {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 6px 16px;
+  margin: 0;
+  padding-top: 2px;
+}
+.aui-apc__detail {
+  display: contents;
+}
+.aui-apc__detail dt {
+  color: var(--_subtle);
+}
+.aui-apc__detail dd {
+  margin: 0;
+  color: var(--_strong);
+}
+
+/* footer */
+.aui-apc__foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 12px;
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid var(--_line);
+}
+.aui-apc__actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-left: auto;
+}
+.aui-apc__always {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  cursor: pointer;
+  user-select: none;
+}
+.aui-apc__card > .aui-apc__always {
+  margin-top: 14px;
+}
+.aui-apc__box {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 16px;
+  height: 16px;
+  margin-top: 1.5px;
+  flex-shrink: 0;
+}
+.aui-apc__box input {
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  border-radius: 5px;
+  background: var(--_box);
+  box-shadow: inset 0 0 0 1px var(--_box-ring);
+  cursor: pointer;
+  transition:
+    background-color 0.16s ease,
+    box-shadow 0.16s ease;
+}
+.aui-apc__box input:hover:not(:disabled) {
+  box-shadow: inset 0 0 0 1px var(--_box-ring-hover);
+}
+.aui-apc__box input:checked {
+  background: var(--_btn);
+  box-shadow: inset 0 0 0 1px var(--_btn);
+}
+.aui-apc__box input:disabled {
+  cursor: default;
+}
+.aui-apc__box svg {
+  position: absolute;
+  inset: 0;
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: var(--_btn-fg);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  pointer-events: none;
+  opacity: 0;
+  transform: scale(0.6);
+  transition:
+    opacity 0.16s ease,
+    transform 0.26s var(--aui-ease);
+}
+.aui-apc__box input:checked + svg {
+  opacity: 1;
+  transform: none;
+}
+.aui-apc__timer {
+  font-size: 12px;
+  color: var(--_subtle);
+  white-space: nowrap;
+}
+.aui-apc__timer[data-warn] {
+  color: var(--_medium);
+}
+.aui-apc__spacer {
+  flex: 1;
+}
+.aui-apc__buttons {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.aui-apc__btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 34px;
+  padding: 0 8px 0 12px;
+  border-radius: 10px;
+  color: var(--_strong);
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 13px;
+  letter-spacing: normal;
+  white-space: nowrap;
+  transition:
+    background-color 0.16s ease,
+    box-shadow 0.16s ease,
+    transform 0.16s var(--aui-ease),
+    opacity 0.16s ease;
+}
+.aui-apc__btn:active:not([aria-disabled]) {
+  transform: scale(0.97);
+}
+.aui-apc__btn[data-tone="ghost"]:hover:not([aria-disabled]) {
+  background: var(--_quiet-hover);
+}
+.aui-apc__btn[data-tone="ghost"][aria-disabled] {
+  opacity: 0.5;
+}
+.aui-apc__btn[data-tone="primary"] {
+  background: var(--_btn);
+  box-shadow: 0 1px 2px 0 color-mix(in oklab, var(--foreground) 12%, transparent);
+  color: var(--_btn-fg);
+}
+.aui-apc__btn[data-tone="primary"]:hover:not([aria-disabled]) {
+  background: var(--_btn-hover);
+}
+.aui-apc__btn[data-busy] {
+  cursor: progress;
+}
+.aui-apc__kbd {
+  display: inline-grid;
+  place-items: center;
+  height: 20px;
+  padding: 0 5px;
+  border-radius: 6px;
+  background: var(--_kbd);
+  color: var(--_subtle);
+  font-family: var(--aui-font);
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 11px;
+}
+.aui-apc__btn[data-tone="primary"] .aui-apc__kbd {
+  background: var(--_kbd-on-btn);
+  color: var(--_kbd-on-btn-fg);
+}
+.aui-apc__spinner {
+  width: 14px;
+  height: 14px;
+  margin: 0 3px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.75;
+  stroke-linecap: round;
+  stroke-dasharray: 26 12;
+  animation: aui-apc-spin 0.8s linear infinite;
+}
+@keyframes aui-apc-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* tray variant */
+.aui-apc__label {
+  padding: 2px 10px 6px;
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--_subtle);
+}
+.aui-apc__tray {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 12px;
+  min-height: 44px;
+  padding: 6px 2px 2px 10px;
+}
+
+/* the request fading out above the resolved row */
+.aui-apc__ghost {
+  position: absolute;
+  inset: 0 0 auto;
+  z-index: 1;
+  pointer-events: none;
+  animation: aui-apc-out 0.28s var(--aui-ease) both;
+}
+@keyframes aui-apc-out {
+  to {
+    opacity: 0;
+    filter: blur(2px);
+    transform: translateY(-6px) scale(0.985);
+  }
+}
+@keyframes aui-apc-in {
+  from {
+    opacity: 0;
+    filter: blur(2px);
+    transform: translateY(4px);
+  }
+}
+
+/* resolved row */
+.aui-apc__resolved {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 48px;
+  padding: 12px 14px;
+  outline: none;
+  animation: aui-apc-in 0.42s var(--aui-ease) 0.12s both;
+}
+.aui-apc__resolved:focus-visible {
+  outline: 2px solid var(--aui-focus-ring);
+  outline-offset: 2px;
+}
+.aui-apc__mark {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--_ok-soft);
+  color: var(--_ok);
+  animation: aui-apc-pop 0.46s var(--aui-ease) 0.14s both;
+}
+.aui-apc__mark[data-status="denied"] {
+  background: var(--aui-danger-soft);
+  color: var(--aui-danger-text);
+}
+.aui-apc__mark path {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: aui-apc-draw 0.42s var(--aui-ease) 0.3s forwards;
+}
+@keyframes aui-apc-pop {
+  from {
+    transform: scale(0.5);
+    opacity: 0;
+  }
+}
+@keyframes aui-apc-draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+.aui-apc__row-title {
+  flex: 1;
+  font-size: 13.5px;
+  font-weight: 500;
+  line-height: 1.45;
+  color: var(--_strong);
+}
+.aui-apc__row-status {
+  color: var(--_subtle);
+  white-space: nowrap;
+}
+
+/* classic: the request sits on a gray tray, the buttons below the card */
+/* in classic the card keeps the checkbox and the buttons drop to the tray */
+
+/* responsive */
+@container (max-width: 400px) {
+  .aui-apc__actions,
+  .aui-apc__tray .aui-apc__buttons {
+    flex: 1 0 100%;
+  }
+  .aui-apc__buttons {
+    flex: 1;
+  }
+  .aui-apc__buttons .aui-apc__btn {
+    flex: 1;
+  }
+  .aui-apc__kbd {
+    display: none;
+  }
+}
+@container (max-width: 340px) {
+  .aui-apc__risk-word,
+  .aui-apc__row-time {
+    display: none;
+  }
+}
+@media (pointer: coarse) {
+  .aui-apc__kbd {
+    display: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .aui-apc__pending[data-returning],
+  .aui-apc__resolved,
+  .aui-apc__mark,
+  .aui-apc__ghost {
+    animation: none;
+  }
+  .aui-apc__mark path {
+    stroke-dashoffset: 0;
+    animation: none;
+  }
+  .aui-apc__spinner {
+    animation-duration: 2.4s;
+  }
+}
+
+/* ---- demo ---- */
+.aui-apc-demo {
+  --_bot: var(--foreground);
+  --_bot-fg: var(--background);
+  --_msg: var(--muted);
+  --_msg-fg: var(--foreground);
+  --_names: var(--foreground);
+  --_more: var(--muted-foreground);
+  --_av-fg: var(--foreground);
+  --_av0: var(--primary-soft);
+  --_av1: var(--primary-soft);
+  --_av2: var(--warning);
+  --_av3: var(--primary);
+  display: grid;
+  gap: 14px;
+  width: 420px;
+  max-width: 100%;
+  margin-top: 64px;
+  align-self: start;
+}
+.aui-apc-demo__agent {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+.aui-apc-demo__bot {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  margin-top: 3px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--_bot);
+  color: var(--_bot-fg);
+}
+.aui-apc-demo__msg {
+  margin: 0;
+  padding: 8px 13px;
+  border-radius: 6px;
+  background: var(--_msg);
+  color: var(--_msg-fg);
+  font-size: 14px;
+  line-height: 20.3px;
+}
+.aui-apc-demo__people {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+.aui-apc-demo__avatars {
+  display: flex;
+  flex-shrink: 0;
+}
+.aui-apc-demo__avatar {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--_av0);
+  box-shadow: 0 0 0 2px var(--aui-canvas);
+  color: var(--_av-fg);
+  font-size: 10.5px;
+  font-weight: 600;
+}
+.aui-apc-demo__avatar + .aui-apc-demo__avatar {
+  margin-left: -6px;
+}
+.aui-apc-demo__avatar[data-i="1"] {
+  background: var(--_av1);
+}
+.aui-apc-demo__avatar[data-i="2"] {
+  background: var(--_av2);
+}
+.aui-apc-demo__avatar[data-i="3"] {
+  background: var(--_av3);
+}
+.aui-apc-demo__to {
+  display: flex;
+  gap: 6px;
+  min-width: 0;
+}
+.aui-apc-demo__names {
+  color: var(--_names);
+}
+.aui-apc-demo__more {
+  color: var(--_more);
+  white-space: nowrap;
+}
+.aui-apc-demo__replay {
+  justify-self: center;
+  padding: 4px 10px;
+  border-radius: 8px;
+  color: var(--_more);
+  font-size: 12.5px;
+  transition:
+    background-color 0.16s ease,
+    color 0.16s ease;
+}
+.aui-apc-demo__replay:hover {
+  background: var(--aui-hover);
+  color: var(--_names);
+}
+
+/* genui: Approve shown but not yet allowed (e.g. no wallet connected) */
+.aui-apc__btn[data-tone="primary"][aria-disabled]:not([data-busy]) {
+  opacity: 0.45;
+  cursor: not-allowed;
+}

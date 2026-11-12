@@ -28,8 +28,10 @@
     "@pact/paypal": "*",
     "@pact/policy": "*",
     "@pact/protocol": "*",
+    "@shop/server": "*",
     "@simplewebauthn/server": "^14.0.3",
     "ai": "^7.0.159",
+    "arctic": "^3.7.0",
     "hono": "^4.13.16",
     "zod": "^4.6.7"
   },

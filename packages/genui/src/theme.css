@@ -1,0 +1,116 @@
+/*
+ * Token bridge. The vendored agentsUI blocks read `--aui-*` variables; here every one of them
+ * points at the CITED design system's semantic tokens (cited/spec/DESIGN.md; values live only in
+ * packages/protocol/src/theme.ts). The kit defines no colour of its own and uses no fallbacks,
+ * so the host's light/dark token swap restyles every widget with no JS.
+ *
+ * Declared on each widget root as well as :root so a theme scoped to a subtree still applies.
+ */
+:root,
+.aui-root,
+.genui {
+  /* type */
+  --aui-font: var(--font-sans);
+  --aui-mono: var(--font-mono);
+  --aui-text-xs: 11px;
+  --aui-text-sm: 12px;
+  --aui-text: 13px;
+  --aui-text-md: 14px;
+  --aui-text-lg: 15px;
+  --aui-text-xl: 18px;
+  --aui-leading: 20px;
+
+  /* motion */
+  --aui-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --aui-ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --aui-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --aui-dur-fast: 0.12s;
+  --aui-dur: 0.18s;
+  --aui-dur-slow: 0.32s;
+
+  /* surfaces */
+  --aui-canvas: var(--background);
+  --aui-surface: var(--card);
+  --aui-surface-2: color-mix(in oklab, var(--muted) 50%, var(--card));
+  --aui-surface-3: var(--muted);
+  --aui-field: var(--card);
+  --aui-pop: var(--popover);
+  --aui-muted: var(--fill);
+  --aui-hover: var(--hover);
+  --aui-active: var(--fill-strong);
+  --aui-selected: var(--fill);
+  --aui-tray: var(--muted);
+
+  /* text */
+  --aui-fg-strong: var(--foreground);
+  --aui-fg: color-mix(in oklab, var(--foreground) 90%, transparent);
+  --aui-fg-muted: var(--muted-foreground);
+  --aui-fg-subtle: color-mix(in oklab, var(--muted-foreground) 85%, transparent);
+  --aui-fg-faint: color-mix(in oklab, var(--muted-foreground) 60%, transparent);
+  --aui-icon: var(--muted-foreground);
+
+  /* lines */
+  --aui-border: var(--border);
+  --aui-border-strong: color-mix(in oklab, var(--foreground) 15%, transparent);
+  --aui-divider: var(--border);
+  --aui-card-stroke: var(--border);
+
+  /* intent */
+  --aui-primary: var(--foreground);
+  --aui-primary-hover: color-mix(in oklab, var(--foreground) 85%, var(--background));
+  --aui-primary-fg: var(--background);
+  --aui-accent: var(--primary);
+  --aui-accent-fg: var(--primary-foreground);
+  --aui-accent-soft: var(--primary-soft);
+  --aui-accent-text: var(--primary);
+  --aui-danger: var(--destructive);
+  --aui-danger-text: var(--destructive);
+  --aui-danger-soft: var(--destructive-soft);
+  --aui-danger-ring: color-mix(in oklab, var(--destructive) 55%, transparent);
+  --aui-field-error-text: var(--destructive);
+  --aui-field-error-edge: color-mix(in oklab, var(--destructive) 55%, transparent);
+  --aui-field-error-bg: var(--aui-field);
+  /* A step done: paid, settled, verified, connected. Test-arm meanings stay --primary. */
+  --aui-success: var(--success);
+  --aui-success-text: var(--success-text);
+  --aui-success-soft: var(--success-soft);
+  --aui-warning: var(--warning);
+  --aui-warning-text: var(--warning);
+  --aui-warning-soft: var(--warning-soft);
+  --aui-violet: var(--chart-2);
+  --aui-violet-soft: color-mix(in oklab, var(--chart-2) 12%, transparent);
+  --aui-pink: var(--destructive);
+  --aui-orange: var(--warning);
+  --aui-c1: var(--chart-1);
+  --aui-c2: var(--chart-2);
+  --aui-c3: var(--chart-3);
+  --aui-c4: var(--chart-4);
+  --aui-c5: var(--chart-5);
+  --aui-c6: var(--muted-foreground);
+
+  /* elevation: hairlines, not shadows (only popovers float) */
+  --aui-shadow-card: 0 0 0 1px var(--border);
+  --aui-shadow-field: 0 0 0 1px var(--input);
+  --aui-shadow-pop: var(--shadow-pop);
+  --aui-shadow-lift: 0 0 0 1px var(--border);
+  --aui-focus-ring: var(--primary);
+  --aui-focus: 0 0 0 2px var(--aui-surface), 0 0 0 4px var(--aui-focus-ring);
+  --aui-tray-ring: 0 0 0 0 transparent;
+
+  /* metrics: --radius (0.45rem) controls, 10px buttons and pills, 6px cards */
+  --aui-radius-xs: 3px;
+  --aui-radius-sm: 4px;
+  --aui-radius: var(--radius);
+  --aui-radius-md: 6px;
+  --aui-radius-card: 6px;
+  --aui-radius-lg: 8px;
+  --aui-radius-xl: 10px;
+  --aui-radius-pill: 999px;
+  --aui-control-h: 32px;
+  --aui-control-h-sm: 28px;
+  --aui-control-h-lg: 36px;
+  --aui-control-px: 10px;
+  --aui-control-text: 13px;
+  --aui-card-pad: 20px;
+  --aui-stack: 18px;
+}

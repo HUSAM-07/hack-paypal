@@ -40,3 +40,18 @@ LLM_BASE_URL=
 LLM_API_KEY=
 # Model for live runs (default claude-sonnet-5-5).
 CITED_LIVE_MODEL=
+
+# --- Shop at /shop and /api/shop (shop/spec/SHOP-SPEC.md) ---
+# "true" turns the shop on locally (wrangler.jsonc ships "false": its routes and Google sign-in 404).
+SHOP_ENABLED=true
+# Google OAuth web client (console.cloud.google.com → APIs & Services → Credentials). Authorized
+# redirect URI for local dev: http://localhost:8790/api/auth/google/callback. Both empty ⇒ the
+# /api/auth/google routes 404. Google sign-up is open (INVITE_CODE gates passkey sign-up only).
+GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_SECRET=
+# Model calls go to OpenRouter through AI Gateway (AI_GATEWAY_ID / CF_ACCOUNT_ID in wrangler.jsonc vars).
+OPENROUTER_API_KEY=
+# Web search and price re-checks.
+EXA_API_KEY=
+# Your Cloudflare account id, to build AI Gateway URLs locally (deploys set it per target).
+CF_ACCOUNT_ID=

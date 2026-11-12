@@ -1,0 +1,22 @@
+{
+  "name": "@shop/commerce",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./contract": "./src/contract.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "vitest run --passWithNoTests"
+  },
+  "dependencies": {
+    "@pact/paypal": "*",
+    "@pact/policy": "*",
+    "@pact/protocol": "*",
+    "@shop/agent-protocol": "*",
+    "exa-js": "^2.28.0",
+    "zod": "^4.6.7"
+  }
+}

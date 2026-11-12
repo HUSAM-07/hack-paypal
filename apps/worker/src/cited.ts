@@ -35,7 +35,8 @@ export function citedEnv(env: Env, caller: Caller = "public"): EngineEnv {
     DB: env.DB,
     PAYPAL_MODE: env.CITED_PAYPAL_MODE ?? env.PAYPAL_MODE,
     MODEL_PROVIDER: "fake",
-    PASSPORT_KEY: env.CITED_PASSPORT_KEY,
+    // The secret overrides the public dev key in wrangler.jsonc (a secret cannot share a var's name).
+    PASSPORT_KEY: env.CITED_PASSPORT_SECRET ?? env.CITED_PASSPORT_KEY,
     PAYPAL_WEBHOOK_ID: env.CITED_PAYPAL_WEBHOOK_ID,
     PAYPAL_CLIENT_ID: env.PAYPAL_CLIENT_ID,
     PAYPAL_CLIENT_SECRET: env.PAYPAL_CLIENT_SECRET,

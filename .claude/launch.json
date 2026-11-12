@@ -35,19 +35,26 @@
       "port": 5180
     },
     {
+      "name": "shop-web",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "dev",
+        "-w",
+        "@shop/web"
+      ],
+      "port": 5181
+    },
+    {
       "name": "shop-worker",
       "runtimeExecutable": "npm",
       "runtimeArgs": [
-        "--prefix",
-        "/Users/mohammedhusamuddin/codebase-core/hack-paypal/.claude/worktrees/shop-contract/apps/worker",
         "exec",
+        "-w",
+        "@pact/worker",
         "--",
         "wrangler",
         "dev",
-        "--config",
-        "/Users/mohammedhusamuddin/codebase-core/hack-paypal/.claude/worktrees/shop-contract/apps/worker/wrangler.jsonc",
-        "--persist-to",
-        "/Users/mohammedhusamuddin/codebase-core/hack-paypal/.claude/worktrees/shop-contract/apps/worker/.wrangler/state",
         "--port",
         "8795",
         "--var",

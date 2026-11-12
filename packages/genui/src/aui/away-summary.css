@@ -1,0 +1,434 @@
+.aui-awc {
+  --aui-awc-needs: var(--warning);
+  --aui-awc-failed: var(--destructive);
+  --aui-awc-done: var(--primary);
+  --aui-awc-on: var(--background);
+  --aui-awc-card: var(--aui-surface);
+  --_text: 13px;
+  --_title: var(--foreground);
+  --_strong: var(--aui-fg);
+  --_muted: var(--aui-fg-muted);
+  --_subtle: var(--aui-fg-subtle);
+  --_hover: var(--aui-hover);
+  --_act-hover: var(--aui-hover);
+  --_faint: color-mix(in oklab, var(--foreground) 27%, transparent);
+  --_rule: color-mix(in oklab, var(--foreground) 10%, transparent);
+  --_row-hover: color-mix(in oklab, var(--foreground) 2.4%, transparent);
+  --_act-shadow:
+    0 0 0 0.5px color-mix(in oklab, var(--foreground) 6%, transparent),
+    0 1px 1px -1px color-mix(in oklab, var(--foreground) 10%, transparent),
+    0 1px 2px 0 color-mix(in oklab, var(--foreground) 5%, transparent);
+  --_ease: cubic-bezier(0.32, 0.72, 0.24, 1);
+  position: relative;
+  container-type: inline-size;
+  font-size: var(--_text);
+  color: var(--_muted);
+}
+
+/* ---- fold: card <-> divider ---- */
+.aui-awc__fold {
+  display: grid;
+  grid-template-rows: 0fr;
+  opacity: 0;
+  transition:
+    grid-template-rows 0.32s var(--_ease),
+    opacity 0.22s ease;
+}
+.aui-awc__fold[data-open] {
+  grid-template-rows: 1fr;
+  opacity: 1;
+}
+.aui-awc__fold-in {
+  min-height: 0;
+  overflow: hidden;
+}
+/* once the fold has stopped moving the card's hairline and focus rings may reach outside it */
+.aui-awc__fold[data-settled] > .aui-awc__fold-in {
+  overflow: visible;
+}
+
+/* ---- divider ---- */
+.aui-awc__divider {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.aui-awc__rule {
+  flex: 1 1 0;
+  min-width: 8px;
+  height: 0.5px;
+  background: var(--_rule);
+}
+.aui-awc__divider-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  height: 28px;
+  padding: 0 8px 0 10px;
+  border-radius: 6px;
+  color: var(--_subtle);
+  font-size: var(--aui-text-sm);
+  line-height: 16px;
+  text-align: start;
+  transition:
+    background-color 0.14s ease,
+    color 0.14s ease;
+}
+.aui-awc__divider-btn:hover {
+  background: var(--_hover);
+  color: var(--_strong);
+}
+.aui-awc__divider-btn:focus-visible {
+  outline-offset: -2px;
+}
+.aui-awc__divider-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---- card ---- */
+.aui-awc__card {
+  display: grid;
+  background: var(--aui-awc-card);
+  border-radius: 6px;
+  box-shadow: var(--aui-shadow-card);
+}
+.aui-awc__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 12px;
+  min-width: 0;
+  padding: 10px 14px 9px;
+  border-bottom: 1px solid var(--aui-divider);
+}
+.aui-awc__title {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--_text);
+  line-height: 20px;
+  font-weight: 500;
+  color: var(--_title);
+}
+.aui-awc__when {
+  font-weight: 400;
+  color: var(--_subtle);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.aui-awc__counts {
+  display: flex;
+  flex-wrap: wrap;
+  flex-shrink: 0;
+  align-items: center;
+  column-gap: 6px;
+  margin-left: auto;
+  font-size: var(--aui-text-sm);
+  line-height: 16px;
+  color: var(--_subtle);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.aui-awc__count {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.aui-awc__sep {
+  color: var(--_faint);
+}
+.aui-awc__dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--aui-awc-done);
+  flex-shrink: 0;
+}
+.aui-awc__dot[data-kind="needs-you"] {
+  background: var(--aui-awc-needs);
+}
+.aui-awc__dot[data-kind="failed"] {
+  background: var(--aui-awc-failed);
+}
+/* the whole "1 needs you" ticks up whenever it changes */
+.aui-awc__n {
+  animation: aui-awc-tick 0.32s var(--_ease) both;
+}
+@keyframes aui-awc-tick {
+  from {
+    transform: translateY(4px);
+    opacity: 0;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+
+/* ---- rows ---- */
+.aui-awc__rows {
+  padding: 4px;
+}
+.aui-awc__list {
+  display: grid;
+}
+.aui-awc__empty {
+  padding: 14px 10px;
+  color: var(--_subtle);
+  font-size: var(--aui-text-sm);
+  line-height: 16px;
+}
+.aui-awc__row {
+  display: grid;
+  grid-template-columns: 14px minmax(0, 1fr) auto;
+  align-items: center;
+  column-gap: 10px;
+  height: 48px;
+  padding: 0 8px 0 10px;
+  border-radius: 8px;
+  transition: background-color 0.14s ease;
+}
+.aui-awc__row:hover {
+  background: var(--_row-hover);
+}
+.aui-awc__mark {
+  position: relative;
+  display: grid;
+  align-items: center;
+  animation: aui-awc-pop 0.36s var(--_ease) both;
+}
+.aui-awc__mark svg {
+  overflow: visible;
+}
+.aui-awc__row[data-detail] .aui-awc__mark {
+  align-self: start;
+  margin-top: 9px;
+}
+@keyframes aui-awc-pop {
+  0% {
+    transform: scale(0.4);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(1.12);
+  }
+  100% {
+    transform: none;
+    opacity: 1;
+  }
+}
+.aui-awc__tick {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 0;
+  animation: aui-awc-draw 0.36s ease-out 0.12s both;
+}
+@keyframes aui-awc-draw {
+  from {
+    stroke-dashoffset: 1;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+.aui-awc__halo {
+  transform-box: view-box;
+  transform-origin: 7px 7px;
+  opacity: 0;
+  animation: aui-awc-breathe 2.4s ease-out infinite;
+}
+@keyframes aui-awc-breathe {
+  0% {
+    transform: scale(1);
+    opacity: 0.35;
+  }
+  70%,
+  100% {
+    transform: scale(1.6);
+    opacity: 0;
+  }
+}
+.aui-awc__text {
+  display: grid;
+  min-width: 0;
+  text-align: left;
+}
+.aui-awc__name,
+.aui-awc__detail {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.aui-awc__name {
+  font-weight: 500;
+  color: var(--_strong);
+}
+.aui-awc__detail {
+  font-size: var(--aui-text-sm);
+  line-height: 16px;
+  color: var(--_subtle);
+  animation: aui-awc-fade 0.32s ease both;
+}
+@keyframes aui-awc-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+.aui-awc__act {
+  position: relative;
+  display: grid;
+  place-items: center;
+  min-width: 56px;
+  max-width: 42cqi;
+  height: 26px;
+  padding: 0 10px;
+  border-radius: 6px;
+  color: var(--_muted);
+  font-size: var(--aui-text-sm);
+  line-height: 16px;
+  font-weight: 500;
+  white-space: nowrap;
+  transition:
+    background-color 0.14s ease,
+    color 0.14s ease,
+    box-shadow 0.14s ease;
+}
+.aui-awc__act:hover,
+.aui-awc__act[aria-busy="true"] {
+  background: var(--_act-hover);
+  color: var(--_strong);
+}
+.aui-awc__act[data-kind="needs-you"] {
+  background: var(--_act-bg, var(--aui-awc-card));
+  color: var(--_strong);
+  box-shadow: var(--_act-shadow);
+}
+.aui-awc__act[data-kind="needs-you"]:hover,
+.aui-awc__act[data-kind="needs-you"][aria-busy="true"] {
+  background: var(--_row-hover);
+}
+.aui-awc__act:active:not([aria-disabled="true"]) {
+  transform: scale(0.97);
+}
+.aui-awc__act-label {
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.aui-awc__act[aria-busy="true"] {
+  cursor: default;
+}
+.aui-awc__act[aria-busy="true"] .aui-awc__act-label {
+  opacity: 0;
+}
+.aui-awc__spin {
+  position: absolute;
+  inset: 0;
+  width: 12px;
+  height: 12px;
+  margin: auto;
+  border: 1px solid var(--_hover);
+  border-top-color: var(--_subtle);
+  border-radius: 50%;
+  animation: aui-awc-spin 0.7s linear infinite;
+}
+@keyframes aui-awc-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.aui-awc__extra {
+  display: grid;
+  grid-template-rows: 0fr;
+  opacity: 0;
+  transition:
+    grid-template-rows 0.38s var(--_ease),
+    opacity 0.26s ease;
+}
+.aui-awc__extra[data-open] {
+  grid-template-rows: 1fr;
+  opacity: 1;
+}
+.aui-awc__extra-in {
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* ---- footer ---- */
+.aui-awc__foot {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 6px 6px;
+  border-top: 1px solid var(--aui-divider);
+}
+.aui-awc__more,
+.aui-awc__got {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  height: 28px;
+  padding: 0 8px;
+  border-radius: 6px;
+  color: var(--_muted);
+  font-size: var(--aui-text-sm);
+  line-height: 16px;
+  font-weight: 500;
+  white-space: nowrap;
+  transition:
+    background-color 0.14s ease,
+    color 0.14s ease;
+}
+.aui-awc__got {
+  gap: 6px;
+  padding: 0 10px 0 8px;
+  margin-left: auto;
+}
+.aui-awc__got svg {
+  color: var(--_subtle);
+}
+.aui-awc__more:hover,
+.aui-awc__got:hover {
+  background: var(--_hover);
+  color: var(--_strong);
+}
+.aui-awc__chev {
+  flex-shrink: 0;
+  color: var(--_faint);
+}
+
+/* ---- classic: solid greys, a tray around the rows ---- */
+
+@media (pointer: coarse) {
+  .aui-awc__act,
+  .aui-awc__more,
+  .aui-awc__got {
+    height: 36px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .aui-awc__fold,
+  .aui-awc__extra {
+    transition: none;
+  }
+  .aui-awc__n,
+  .aui-awc__mark,
+  .aui-awc__tick,
+  .aui-awc__detail,
+  .aui-awc__halo {
+    animation: none;
+  }
+}

@@ -60,6 +60,14 @@ const page = (body: string) =>
 
 export const live = new Hono<{ Bindings: Env }>();
 
+/**
+ * How long a run waits for the engine to join its sale. The simulator delivers the capture
+ * webhook in-process at once; the real PayPal sandbox takes several seconds (14s observed).
+ */
+function joinWaitMs(env: Env): number {
+  return (env.CITED_PAYPAL_MODE ?? env.PAYPAL_MODE) === "sandbox" ? 45_000 : 4_000;
+}
+
 live.get("/", (c) => {
   const choice = liveAgentChoice(c.env);
   // ?category= opens the page on a category; anything unknown is the default, purifiers.
@@ -70,6 +78,7 @@ live.get("/", (c) => {
       request: tryCategory(category).examples[0],
       agent: choice.label,
       scripted: choice.kind === "scripted",
+      paypalMode: c.env.CITED_PAYPAL_MODE ?? c.env.PAYPAL_MODE,
     }),
   );
 });
@@ -164,10 +173,24 @@ async function admit(
   return { request, category, hash, choice };
 }
 
-/** The catalogue (and, simulated, the engine) live in the one demo Durable Object. */
+/**
+ * The catalogue (and, simulated, the engine) live in the one demo Durable Object. /try calls it
+ * through the internal RPC, as a trusted caller: in sandbox mode only a trusted caller may pick
+ * its session id, which is how the side-by-side fixes each lane's arm.
+ */
 function endpointsFor(c: LiveCtx) {
   const demo = c.env.CITED_DEMO.get(c.env.CITED_DEMO.idFromName("demo"));
-  const toDemo: typeof fetch = (input, init) => demo.fetch(new Request(input, init));
+  // RPC can't carry an AbortSignal (the MCP client sets one), so the request crosses without it.
+  const toDemo: typeof fetch = (input, init) => {
+    const r = new Request(input, init);
+    return demo.internal(
+      new Request(r.url, {
+        method: r.method,
+        headers: r.headers,
+        ...(r.body ? { body: r.body } : {}),
+      }),
+    );
+  };
   return {
     catalogueUrl: `${INTERNAL}/catalogue`,
     catalogueFetch: toDemo,
@@ -226,6 +249,7 @@ live.post("/run", async (c) => {
       const r = await runLive({
         env: c.env,
         db: c.env.DB,
+        joinWaitMs: joinWaitMs(c.env),
         emit,
         runId,
         request: a.request,
@@ -266,6 +290,7 @@ live.post("/pair", async (c) => {
           runLive({
             env: c.env,
             db: c.env.DB,
+            joinWaitMs: joinWaitMs(c.env),
             emit: (e) => emit({ ...e, lane } satisfies PairEvent),
             runId: newId("live"),
             request: a.request,

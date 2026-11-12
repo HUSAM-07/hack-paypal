@@ -8,8 +8,15 @@ const json = (out: unknown) => ({
   structuredContent: out as Record<string, unknown>,
 });
 
-/** A fresh server per request (stateless transport); the catalogue holds the shared state. */
-export function createMcpServer(catalogue: Catalogue, deps?: Omit<CheckoutDeps, "catalogue">) {
+/**
+ * A fresh server per request (stateless transport); the catalogue holds the shared state.
+ * `opts.allowSessionId`: honour `search_product`'s `sessionId` for this (trusted) caller.
+ */
+export function createMcpServer(
+  catalogue: Catalogue,
+  deps?: Omit<CheckoutDeps, "catalogue">,
+  opts: { allowSessionId?: boolean } = {},
+) {
   const server = new McpServer({ name: "cited-catalogue", version: "0.0.0" });
 
   server.registerTool(
@@ -29,7 +36,8 @@ export function createMcpServer(catalogue: Catalogue, deps?: Omit<CheckoutDeps, 
           .optional(),
       },
     },
-    async (args) => json(await catalogue.search(args)),
+    async (args) =>
+      json(await catalogue.search(args, { allowSessionId: opts.allowSessionId === true })),
   );
 
   if (deps) {

@@ -1,5 +1,6 @@
 import {
   type CatalogueApp,
+  type CatalogueCallEnv,
   createCatalogueApp,
   createPublishedTests,
   type StoredTestRow,
@@ -142,7 +143,7 @@ function catalogueFor(env: Env, ctx: ExecCtx): CatalogueApp {
     PAYPAL_MODE: mode,
     PAYPAL_CLIENT_ID: env.PAYPAL_CLIENT_ID,
     PAYPAL_CLIENT_SECRET: env.PAYPAL_CLIENT_SECRET,
-    PASSPORT_SIGNING_KEY: env.CITED_PASSPORT_KEY,
+    PASSPORT_SIGNING_KEY: env.CITED_PASSPORT_SECRET ?? env.CITED_PASSPORT_KEY,
     CITED_BUYER_VAULT_ID: env.CITED_BUYER_VAULT_ID,
     CITED_SELLER_NORTHWIND_PAYEE: env.CITED_SELLER_NORTHWIND_PAYEE,
     CITED_SELLER_LUMEN_PAYEE: env.CITED_SELLER_LUMEN_PAYEE,
@@ -184,7 +185,10 @@ export async function serveStatefulDemo(
       const denied = catalogueWriteDenied(req, env);
       if (denied) return denied;
     }
-    return catalogueFor(env, ctx).fetch(strip(req, CATALOGUE_PREFIX));
+    // Only the worker's own code (the internal RPC) is a trusted caller; see CatalogueCallEnv.
+    const callEnv: CatalogueCallEnv | undefined =
+      caller === "internal" ? { trustedCaller: true } : undefined;
+    return catalogueFor(env, ctx).fetch(strip(req, CATALOGUE_PREFIX), callEnv);
   }
   if (path.startsWith(`${CITED_PREFIX}/`)) return serveEngine(req, env, ctx, caller);
   // Reached only through the rate-limited /mcp mount (apps/worker/src/mcp.ts).

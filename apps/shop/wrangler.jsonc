@@ -1,0 +1,17 @@
+{
+  // Standalone dev worker for the shop App Server (npm run dev -w @shop/server).
+  // Deployed, ShopperAgent lives in pact-worker (apps/worker/wrangler.jsonc) with the same binding.
+  "$schema": "../../node_modules/wrangler/config-schema.json",
+  "name": "shop-dev",
+  "main": "src/worker.ts",
+  "compatibility_date": "2026-10-28",
+  "compatibility_flags": ["nodejs_compat"],
+  "durable_objects": {
+    "bindings": [{ "name": "SHOPPER_AGENT", "class_name": "ShopperAgent" }]
+  },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["ShopperAgent"] }],
+  "vars": {
+    "MODEL_PROVIDER": "fake",
+    "DEV_USER": "dev-user"
+  }
+}

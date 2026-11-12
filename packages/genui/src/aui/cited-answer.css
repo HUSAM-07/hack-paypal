@@ -1,0 +1,654 @@
+.aui-ca {
+  /* surfaces */
+  --_card: var(--aui-pop);
+  --_card-shadow: var(--aui-shadow-card);
+  --_pop-hover: var(--hover);
+  --_line: color-mix(in oklab, var(--foreground) 6%, transparent);
+  /* text */
+  --_fg: var(--aui-fg);
+  --_strong: var(--foreground);
+  --_muted: var(--aui-fg-muted);
+  --_subtle: var(--aui-fg-subtle);
+  --_faint: color-mix(in oklab, var(--foreground) 27%, transparent);
+  --_icon: var(--aui-icon);
+  --_ok: var(--primary);
+  /* markers, chips, glyphs */
+  --_tag: color-mix(in oklab, var(--foreground) 6%, transparent);
+  --_tag-ring: inset 0 0 0 0.5px var(--_line);
+  --_tag-lit: color-mix(in oklab, var(--foreground) 10%, transparent);
+  --_tag-lit-fg: var(--_fg);
+  --_tag-open: var(--_tag-lit);
+  --_tag-open-fg: var(--_fg);
+  --_chip-ring: inset 0 0 0 0.5px var(--_line);
+  --_chip-lit: color-mix(in oklab, var(--foreground) 3%, transparent);
+  --_chip-lit-shadow: var(--_chip-ring);
+  --_chip-open: color-mix(in oklab, var(--foreground) 6%, transparent);
+  --_chip-open-shadow: var(--_chip-ring);
+  --_wash: color-mix(in oklab, var(--foreground) 3%, transparent);
+  --_glyph: color-mix(in oklab, var(--foreground) 6%, transparent);
+  --_glyph-fg: color-mix(in oklab, var(--foreground) 55%, transparent);
+  --_glyph-green: color-mix(in oklab, var(--primary) 9%, transparent);
+  --_glyph-green-fg: var(--primary);
+  /* highlights */
+  --_hl: color-mix(in oklab, var(--primary) 7%, transparent);
+  --_mark: color-mix(in oklab, var(--primary) 10%, transparent);
+  --_mark-fg: var(--_fg);
+  --_dim: 0.5;
+  /* shape and pace */
+  --_px: 20px;
+  --_r-tag: 4px;
+  --_r-chip: 6px;
+  --_r-pop: 8px;
+  --_t: 0.14s;
+  --_t-mark: 0.16s;
+  --_t-hl: 0.2s;
+  --_fold-ease: cubic-bezier(0.22, 1, 0.36, 1);
+
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  width: 100%;
+  max-width: 460px;
+  border-radius: 10px;
+  background: var(--_card);
+  box-shadow: var(--_card-shadow);
+  color: var(--_fg);
+  font-size: 13px;
+  line-height: 20px;
+  text-align: left;
+  container: aui-ca / inline-size;
+}
+.aui-ca > * {
+  grid-column: 1;
+  min-width: 0;
+}
+.aui-ca :focus-visible {
+  outline: 2px solid var(--aui-focus-ring);
+  outline-offset: 2px;
+}
+.aui-ca__card-bg {
+  display: none;
+}
+.aui-ca__head {
+  grid-row: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 16px var(--_px) 0;
+}
+.aui-ca__text {
+  grid-row: 2;
+  margin: 12px var(--_px) 0;
+}
+.aui-ca__chips {
+  grid-row: 3;
+  margin: 16px var(--_px) 0;
+}
+.aui-ca__fold {
+  grid-row: 4;
+  margin: 0 var(--_px) 16px;
+}
+.aui-ca__foot {
+  grid-row: 5;
+}
+.aui-ca__icon {
+  display: block;
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.1;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.aui-ca__dot {
+  color: var(--_faint);
+}
+
+/* ---- glyphs ---- */
+.aui-ca__glyph {
+  display: grid;
+  place-items: center;
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  overflow: hidden;
+  border-radius: var(--_r-tag);
+  background: var(--_glyph);
+  color: var(--_glyph-fg);
+  font-size: 9.5px;
+  line-height: 9.5px;
+  font-weight: 500;
+}
+.aui-ca__glyph svg,
+.aui-ca__glyph img {
+  width: 12px;
+  height: 12px;
+}
+.aui-ca__glyph[data-tone="green"] {
+  background: var(--_glyph-green);
+  color: var(--_glyph-green-fg);
+}
+.aui-ca__glyph[data-tone="blue"] {
+  background: var(--aui-accent-soft);
+  color: var(--aui-accent-text);
+}
+.aui-ca__glyph[data-tone="violet"] {
+  background: var(--aui-violet-soft);
+  color: var(--aui-violet);
+}
+.aui-ca__glyph[data-tone="orange"] {
+  background: var(--aui-warning-soft);
+  color: var(--aui-warning-text);
+}
+.aui-ca__stack {
+  display: flex;
+  flex-shrink: 0;
+}
+.aui-ca__stack .aui-ca__glyph {
+  box-shadow: 0 0 0 1.5px var(--_card);
+}
+.aui-ca__stack .aui-ca__glyph + .aui-ca__glyph {
+  margin-left: -4px;
+}
+.aui-ca__meta {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--_subtle);
+  font-size: 12px;
+  line-height: 16px;
+  font-variant-numeric: tabular-nums;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ---- answer text ---- */
+.aui-ca__p {
+  line-height: 22px;
+  overflow-wrap: anywhere;
+  white-space: pre-line;
+}
+.aui-ca__p + .aui-ca__p {
+  margin-top: 10px;
+}
+.aui-ca__seg {
+  padding: 2px;
+  margin: 0 -2px;
+  border-radius: var(--_r-tag);
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+  transition:
+    background-color var(--_t-hl),
+    color var(--_t-hl);
+}
+.aui-ca__seg[data-hl] {
+  background: var(--_hl);
+  color: var(--_strong);
+}
+.aui-ca__seg[data-dim] {
+  color: var(--_faint);
+}
+.aui-ca__keep {
+  white-space: nowrap;
+}
+.aui-ca__marker {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  margin-left: 3px;
+  border-radius: var(--_r-tag);
+  background: var(--_tag);
+  box-shadow: var(--_tag-ring);
+  color: var(--_muted);
+  font-size: 10px;
+  line-height: 16px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  vertical-align: 1px;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    background-color var(--_t-mark),
+    color var(--_t-mark),
+    opacity var(--_t-hl);
+}
+/* a taller hit area than the 16px tag */
+.aui-ca__marker::after {
+  content: "";
+  position: absolute;
+  inset: -4px -2px;
+}
+.aui-ca__marker[data-lit] {
+  background: var(--_tag-lit);
+  box-shadow: var(--_tag-lit-ring, var(--_tag-ring));
+  color: var(--_tag-lit-fg);
+}
+.aui-ca__marker[aria-expanded="true"] {
+  background: var(--_tag-open);
+  box-shadow: var(--_tag-open-ring, var(--_tag-ring));
+  color: var(--_tag-open-fg);
+}
+.aui-ca[data-hot] .aui-ca__marker:not([data-lit], [aria-expanded="true"]) {
+  opacity: 0.5;
+}
+
+/* ---- source chips ---- */
+.aui-ca__chips {
+  display: flex;
+  gap: 4px;
+}
+.aui-ca__chips[data-all] {
+  flex-wrap: wrap;
+}
+.aui-ca__chip-item {
+  display: flex;
+  max-width: 100%;
+  flex-shrink: 0;
+}
+.aui-ca__chip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 100%;
+  height: 28px;
+  padding: 0 8px 0 6px;
+  border-radius: var(--_r-chip);
+  box-shadow: var(--_chip-ring);
+  color: var(--_muted);
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 500;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    background-color var(--_t),
+    color var(--_t),
+    opacity var(--_t-hl);
+}
+.aui-ca__chip-name {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.aui-ca__chip-num {
+  display: block;
+  flex-shrink: 0;
+  margin-left: -1px;
+  color: var(--_faint);
+  font-size: 11px;
+  font-weight: 400;
+  font-variant-numeric: tabular-nums;
+}
+.aui-ca__chip:is(:hover, [data-lit]) {
+  background: var(--_chip-lit);
+  box-shadow: var(--_chip-lit-shadow);
+  color: var(--_fg);
+}
+.aui-ca__chip[data-dim] {
+  opacity: var(--_dim);
+}
+.aui-ca__chip[aria-expanded="true"] {
+  background: var(--_chip-open);
+  box-shadow: var(--_chip-open-shadow);
+  color: var(--_fg);
+  opacity: var(--_dim-open, 1);
+}
+.aui-ca__more {
+  display: grid;
+  place-items: center;
+  height: 28px;
+  padding: 0 8px;
+  border-radius: var(--_r-chip);
+  box-shadow: var(--_chip-ring);
+  color: var(--_muted);
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+  transition:
+    background-color var(--_t),
+    color var(--_t);
+}
+.aui-ca__more:hover {
+  background: var(--_chip-lit);
+  color: var(--_fg);
+}
+/* invisible copy of every chip – measured to see how many fit on one line */
+.aui-ca__ruler {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: flex;
+  gap: 4px;
+  height: 0;
+  overflow: hidden;
+  pointer-events: none;
+  visibility: hidden;
+}
+.aui-ca__ruler > * {
+  flex-shrink: 0;
+}
+
+/* ---- source preview ---- */
+.aui-ca__fold {
+  display: grid;
+  grid-template-rows: 0fr;
+  opacity: 0;
+  transition:
+    grid-template-rows 0.42s var(--_fold-ease),
+    opacity 0.22s;
+}
+.aui-ca__fold[data-open] {
+  grid-template-rows: 1fr;
+  opacity: 1;
+  transition:
+    grid-template-rows 0.42s var(--_fold-ease),
+    opacity 0.32s 0.08s;
+}
+/* room for the preview's own shadow inside the clipped row */
+.aui-ca__clip {
+  min-height: 0;
+  padding: 0 4px 4px;
+  margin: 0 -4px -4px;
+  overflow: hidden;
+}
+.aui-ca__preview {
+  padding: 10px 12px 12px;
+  margin-top: 12px;
+  border-radius: var(--_r-pop);
+  background: var(--_pv, var(--_card));
+  box-shadow: var(--_pv-shadow, var(--_card-shadow));
+  animation: aui-ca-swap-in 0.32s both;
+}
+.aui-ca__pv-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.aui-ca__pv-meta {
+  display: flex;
+  flex: 1 1 0;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--_subtle);
+  font-size: 12px;
+  line-height: 16px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.aui-ca__pv-domain {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--_muted);
+  text-overflow: ellipsis;
+}
+.aui-ca__pv-date {
+  display: block;
+  flex-shrink: 0;
+  white-space: pre;
+}
+.aui-ca__pv-num {
+  display: grid;
+  place-items: center;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  flex-shrink: 0;
+  border-radius: var(--_r-tag);
+  background: var(--_pv-tag, var(--_tag));
+  color: var(--_muted);
+  font-size: 10px;
+  line-height: 16px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+.aui-ca__close {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  margin-right: -6px;
+  flex-shrink: 0;
+  border-radius: var(--_r-chip);
+  color: var(--_icon);
+  cursor: pointer;
+  transition:
+    background-color var(--_t),
+    color var(--_t);
+}
+.aui-ca__close:hover {
+  background: var(--_wash);
+  color: var(--_wash-fg, var(--_fg));
+}
+.aui-ca__pv-title {
+  display: flow-root;
+  margin-top: 6px;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  color: var(--_strong);
+  font-weight: 500;
+}
+.aui-ca__quote {
+  max-height: 200px;
+  padding-left: 10px;
+  margin-top: 8px;
+  overflow: auto;
+  overflow-wrap: anywhere;
+  border-left: 2px solid var(--_line);
+  color: var(--_muted);
+  font-size: 12px;
+  line-height: 20px;
+  white-space: pre-line;
+}
+.aui-ca__quote mark {
+  padding: 1px;
+  margin: 0 -1px;
+  border-radius: 3px;
+  background: var(--_mark);
+  color: var(--_mark-fg);
+}
+.aui-ca__pv-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+}
+.aui-ca__btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  padding: 0 10px 0 8px;
+  border-radius: var(--_r-chip);
+  color: var(--_muted);
+  font-weight: 500;
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    background-color var(--_t),
+    color var(--_t);
+}
+.aui-ca__btn:hover {
+  background: var(--_wash);
+  color: var(--_wash-fg, var(--_fg));
+}
+.aui-ca__btn--main,
+.aui-ca__btn--main:hover {
+  background: var(--_card);
+  box-shadow: var(--_card-shadow);
+  color: var(--_strong);
+}
+.aui-ca__btn--main:hover {
+  background: var(--_pop-hover);
+}
+.aui-ca__btn[data-done],
+.aui-ca__btn[data-done]:hover {
+  color: var(--_ok);
+}
+.aui-ca__btn-icon {
+  display: grid;
+  place-items: center;
+  width: 16px;
+  height: 16px;
+  animation: aui-ca-swap-in 0.28s both;
+}
+.aui-ca__btn-text {
+  display: block;
+}
+
+/* ---- last row ---- */
+.aui-ca__foot {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  height: 44px;
+  padding: 0 8px 0 var(--_px);
+  border-top: 1px solid var(--_line);
+}
+.aui-ca__caption {
+  display: block;
+  flex: 1 1 0;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--_subtle);
+  font-size: 12px;
+  line-height: 16px;
+  font-variant-numeric: tabular-nums;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.aui-ca__swap {
+  display: grid;
+}
+.aui-ca__swap-item {
+  display: block;
+  grid-area: 1 / 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  animation: aui-ca-swap-in 0.32s both;
+}
+.aui-ca__swap-item[data-out] {
+  animation: aui-ca-swap-out 0.22s both;
+}
+.aui-ca__swap-item[data-tone="ok"] {
+  color: var(--_ok);
+}
+.aui-ca__caption b {
+  color: var(--_b, var(--_fg));
+  font-weight: 500;
+}
+.aui-ca__action {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 60%;
+  height: 28px;
+  padding: 0 8px 0 10px;
+  border-radius: var(--_r-chip);
+  background: var(--_card);
+  box-shadow: var(--_card-shadow);
+  color: var(--_strong);
+  font-weight: 500;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color var(--_t);
+}
+.aui-ca__action:hover {
+  background: var(--_pop-hover);
+}
+.aui-ca__action-label {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+@keyframes aui-ca-swap-in {
+  from {
+    opacity: 0;
+    filter: blur(2px);
+  }
+  to {
+    opacity: 1;
+    filter: none;
+  }
+}
+@keyframes aui-ca-swap-out {
+  from {
+    opacity: 1;
+    filter: none;
+  }
+  to {
+    opacity: 0;
+    filter: blur(2px);
+  }
+}
+
+/* ---- narrow cards ---- */
+@container aui-ca (width < 400px) {
+  .aui-ca__head {
+    margin: 14px 16px 0;
+  }
+  .aui-ca__text,
+  .aui-ca__chips {
+    margin-inline: 16px;
+  }
+  .aui-ca__fold {
+    margin-inline: 16px;
+  }
+  .aui-ca__foot {
+    padding-left: 16px;
+  }
+}
+@container aui-ca (width < 360px) {
+  .aui-ca__pv-num {
+    display: none;
+  }
+}
+@container aui-ca (width < 280px) {
+  .aui-ca__chips {
+    flex-wrap: wrap;
+  }
+  .aui-ca__btn-text {
+    display: none;
+  }
+}
+@media (pointer: coarse) {
+  .aui-ca__marker::after {
+    inset: -12px -6px;
+  }
+  .aui-ca__chip,
+  .aui-ca__more,
+  .aui-ca__btn,
+  .aui-ca__action {
+    height: 36px;
+  }
+  .aui-ca__close {
+    width: 32px;
+    height: 32px;
+  }
+}
+
+/* ---- classic: the answer is a card in a tray, the chips and the last row sit on the tray ---- */
+/* the arrow follows the label here, and leans out on hover */
+
+@media (prefers-reduced-motion: reduce) {
+  .aui-ca *,
+  .aui-ca *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+  .aui-ca__swap-item[data-out] {
+    display: none;
+  }
+}

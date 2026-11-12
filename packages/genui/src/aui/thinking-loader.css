@@ -1,0 +1,230 @@
+.aui-tl {
+  /* no shared token for these; dark and classic values below */
+  --aui-tl-ray: color-mix(in oklab, var(--primary) 76.5%, transparent);
+  --aui-tl-band: color-mix(in oklab, var(--background) 82%, transparent);
+  --aui-tl-sweep: 1.6s;
+  --_h: 32px;
+  --_line: 20px;
+  --_icon: 16px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: var(--_h);
+  padding: 0 10px 0 8px;
+  border-radius: var(--aui-radius-md);
+  background: var(--aui-pop);
+  box-shadow: var(--aui-shadow-card);
+  color: var(--aui-fg-muted);
+  font-size: 13px;
+  line-height: var(--_line);
+  font-weight: 500;
+  letter-spacing: -0.003em;
+  white-space: nowrap;
+  vertical-align: middle;
+}
+.aui-tl[data-size="sm"] {
+  --_h: 26px;
+  --_line: 16px;
+  --_icon: 14px;
+  gap: 5px;
+  padding: 0 8px 0 6px;
+  font-size: var(--aui-text-sm);
+}
+.aui-tl[data-variant="plain"] {
+  height: auto;
+  padding: 0;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+}
+
+/* ---- spinner / check ---- */
+.aui-tl__icon {
+  position: relative;
+  width: var(--_icon);
+  height: var(--_icon);
+  flex-shrink: 0;
+}
+.aui-tl__rays,
+.aui-tl__check {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  stroke: var(--aui-tl-ray);
+  stroke-linecap: round;
+  transition:
+    opacity 0.24s,
+    transform 0.42s var(--aui-ease);
+}
+.aui-tl__rays {
+  stroke-width: 1.1;
+}
+.aui-tl__rays line {
+  /* what stands still under reduced motion */
+  opacity: 0.6;
+  animation: aui-tl-ray 0.8s linear infinite;
+}
+.aui-tl__rays line:nth-child(1) {
+  animation-delay: -0.8s;
+}
+.aui-tl__rays line:nth-child(2) {
+  animation-delay: -0.7s;
+}
+.aui-tl__rays line:nth-child(3) {
+  animation-delay: -0.6s;
+}
+.aui-tl__rays line:nth-child(4) {
+  animation-delay: -0.5s;
+}
+.aui-tl__rays line:nth-child(5) {
+  animation-delay: -0.4s;
+}
+.aui-tl__rays line:nth-child(6) {
+  animation-delay: -0.3s;
+}
+.aui-tl__rays line:nth-child(7) {
+  animation-delay: -0.2s;
+}
+.aui-tl__rays line:nth-child(8) {
+  animation-delay: -0.1s;
+}
+@keyframes aui-tl-ray {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0.2;
+  }
+}
+.aui-tl__check {
+  fill: none;
+  stroke-width: 1.2;
+  stroke-linejoin: round;
+  opacity: 0;
+  transform: scale(0.6);
+}
+.aui-tl__check path {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+}
+.aui-tl[data-done] .aui-tl__rays {
+  opacity: 0;
+  transform: scale(0.6) rotate(-45deg);
+}
+.aui-tl[data-done] .aui-tl__check {
+  opacity: 1;
+  transform: none;
+}
+.aui-tl[data-done] .aui-tl__check path {
+  animation: aui-tl-draw 0.36s var(--aui-ease) 0.12s forwards;
+}
+@keyframes aui-tl-draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+/* ---- label ---- */
+.aui-tl__text {
+  position: relative;
+  display: block;
+  height: var(--_line);
+  overflow: hidden;
+  transition: width 0.46s var(--aui-ease);
+}
+.aui-tl__text[hidden] {
+  display: none;
+}
+.aui-tl__label {
+  position: absolute;
+  left: 0;
+  top: 0;
+  white-space: nowrap;
+}
+/* server render and first paint: the label itself sets the width */
+.aui-tl__text[data-auto] .aui-tl__label {
+  position: relative;
+  display: block;
+}
+.aui-tl[data-done] .aui-tl__label {
+  color: var(--aui-fg);
+}
+.aui-tl__label--in {
+  animation: aui-tl-in 0.46s var(--aui-ease) both;
+}
+.aui-tl__label--out {
+  animation: aui-tl-out 0.32s var(--aui-ease) both;
+}
+@keyframes aui-tl-in {
+  from {
+    opacity: 0;
+    transform: translateY(70%);
+    filter: blur(3px);
+  }
+}
+@keyframes aui-tl-out {
+  to {
+    opacity: 0;
+    transform: translateY(-70%);
+    filter: blur(3px);
+  }
+}
+/* a band of light sweeps through a copy of the label; the copy is silent */
+.aui-tl__shine::after {
+  content: attr(data-text);
+  content: attr(data-text) / "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image: linear-gradient(
+    90deg,
+    transparent 38%,
+    var(--aui-tl-band) 50%,
+    transparent 62%
+  );
+  background-size: 300% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+  animation: aui-tl-sweep var(--aui-tl-sweep) linear infinite;
+}
+@keyframes aui-tl-sweep {
+  from {
+    background-position: 100% 0;
+  }
+  to {
+    background-position: 0% 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .aui-tl__rays line {
+    animation: none;
+  }
+  .aui-tl__shine::after {
+    display: none;
+  }
+}
+
+/* ---- classic ---- */
+
+/* ---- docs demo: a tiny chat ---- */
+.aui-tl-demo {
+  --aui-tl-you: var(--aui-muted);
+  display: grid;
+  justify-items: start;
+  gap: 18px;
+  width: 420px;
+  max-width: 100%;
+}
+.aui-tl-demo__you {
+  justify-self: end;
+  margin: 0;
+  padding: 8px 12px;
+  border-radius: 10px 10px 4px 10px;
+  background: var(--aui-tl-you);
+  color: var(--aui-fg);
+}

@@ -32,7 +32,9 @@
       "/try",
       "/try/*",
       "/creators",
-      "/creators/*"
+      "/creators/*",
+      "/shop",
+      "/shop/*"
     ]
   },
   "durable_objects": {
@@ -40,13 +42,19 @@
       { "name": "THREAD", "class_name": "ThreadDO" },
       { "name": "USER", "class_name": "UserDO" },
       { "name": "PACT", "class_name": "PactDO" },
-      { "name": "CITED_DEMO", "class_name": "CitedDemoDO" }
+      { "name": "CITED_DEMO", "class_name": "CitedDemoDO" },
+      // Shop: one Agents SDK agent per user (apps/shop).
+      { "name": "SHOPPER_AGENT", "class_name": "ShopperAgent" }
     ]
   },
   "migrations": [
     { "tag": "v1", "new_sqlite_classes": ["ThreadDO", "UserDO", "PactDO"] },
-    { "tag": "v2", "new_sqlite_classes": ["CitedDemoDO"] }
+    { "tag": "v2", "new_sqlite_classes": ["CitedDemoDO"] },
+    { "tag": "v3", "new_sqlite_classes": ["ShopperAgent"] }
   ],
+  // Shop extras (Browser Run as BROWSER, KV as SHOP_CACHE) are opt-in per deploy: see SHOP_EXTRAS
+  // in scripts/deploy.mjs. Without them the shop runs on Exa + plain fetch and no price cache,
+  // and a deploy never provisions resources or needs Workers Paid.
   "d1_databases": [
     {
       "binding": "DB",
@@ -79,6 +87,14 @@
     // (all events). Not a secret; signatures are bound to it. (8042373202922840X was the retired
     // workers.dev subscription; SANDBOX-EVIDENCE.md records the events delivered to it.)
     "CITED_PAYPAL_WEBHOOK_ID": "422572436A741503U",
-    "CITED_PASSPORT_KEY": "cited-dev-passport-key"
+    "CITED_PASSPORT_KEY": "cited-dev-passport-key",
+    // Shop (shop/spec/SHOP-SPEC.md). Off: its routes and Google sign-in 404 and the sweep idles.
+    // scripts/deploy.mjs turns it on for the deployed target.
+    "SHOP_ENABLED": "false",
+    "AI_GATEWAY_ID": "pact-shop",
+    // Set per target by scripts/deploy.mjs (Browser Run REST calls).
+    "CF_ACCOUNT_ID": "",
+    "SHOP_MODEL": "anthropic/claude-sonnet-5.5",
+    "SHOP_COOLING_OFF_MINUTES": "10"
   }
 }

@@ -1,0 +1,9 @@
+/*
+ * Widget kit styles. Import once. Consumes the host's design tokens (shadcn semantic names:
+ * --background, --foreground, --card, --primary, --muted, --border, --destructive, --warning,
+ * --paypal, --font-sans/serif/mono); defines none of its own colours. Each vendored agentsUI
+ * block imports its own stylesheet next to it.
+ */
+@import "./theme.css";
+@import "./aui/base.css";
+@import "./widgets.css";
