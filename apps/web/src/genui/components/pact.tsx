@@ -265,8 +265,8 @@ function Sparkline({ points, target, id }: { points: number[]; target: number; i
           below ? "bg-success ring-success-soft" : "bg-foreground ring-fill-strong",
         )}
         style={{ left: "100%", top: `${(y(last) / h) * 100}%` }}
-        initial={reduce ? false : { scale: 0 }}
-        animate={{ scale: 1 }}
+        initial={reduce ? false : { scale: 0.6, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
         transition={{ delay: 0.9, type: "spring", stiffness: 500, damping: 22 }}
       />
     </div>

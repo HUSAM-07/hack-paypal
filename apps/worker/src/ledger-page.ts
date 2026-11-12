@@ -36,18 +36,24 @@ function side(s) {
 }
 function item(c) {
   var li = el("li", "check " + c.status);
-  var head = el("div", "head");
+  var box = el("details", "");
+  if (c.status !== "pass") box.open = true;
+  var head = el("summary", "head");
   head.appendChild(el("span", "mark", MARKS[c.status] + " " + WORDS[c.status]));
   head.appendChild(el("h3", "", c.title));
-  li.appendChild(head);
+  if (c.left && c.right) head.appendChild(el("span", "brief num", c.left.value + (c.status === "fail" ? " \u2260 " : " = ") + c.right.value));
+  box.appendChild(head);
+  var body = el("div", "body");
   if (c.left && c.right) {
     var cmp = el("div", "cmp");
     cmp.appendChild(side(c.left));
-    cmp.appendChild(el("span", "eq", c.status === "fail" ? "\\u2260" : "="));
+    cmp.appendChild(el("span", "eq", c.status === "fail" ? "\u2260" : "="));
     cmp.appendChild(side(c.right));
-    li.appendChild(cmp);
+    body.appendChild(cmp);
   }
-  li.appendChild(el("p", "plain", c.plain));
+  body.appendChild(el("p", "plain", c.plain));
+  box.appendChild(body);
+  li.appendChild(box);
   return li;
 }
 function say(msg, bad) { var s = $("status"); s.textContent = msg; s.className = "status" + (bad ? " bad" : ""); }
@@ -55,14 +61,42 @@ function draw(body) {
   var r = body.report, k = r.counts;
   var list = $("checks");
   list.textContent = "";
-  for (var i = 0; i < r.checks.length; i++) list.appendChild(item(r.checks[i]));
+  var groups = [
+    ["Sales and credits", function (id) { return /^(sales-|no-pay|withheld|levoit-zero)/.test(id); }],
+    ["Payout batches", function (id) { return /^(paid-|batches-|items-)/.test(id); }],
+    ["Each creator's pay", function (id) { return /^creator-/.test(id); }],
+    ["Each brand's deposit", function (id) { return /^(brand-|statement-)/.test(id); }],
+  ];
+  var used = {};
+  function group(title, rows) {
+    if (!rows.length) return;
+    var ok = rows.filter(function (c) { return c.status === "pass"; }).length;
+    var gli = el("li", "group");
+    var gh = el("p", "group-h");
+    gh.appendChild(el("span", "", title));
+    gh.appendChild(el("span", "group-n num" + (ok === rows.length ? "" : " bad"), ok + " of " + rows.length + " match"));
+    gli.appendChild(gh);
+    var ol = el("ol", "group-list");
+    for (var i = 0; i < rows.length; i++) ol.appendChild(item(rows[i]));
+    gli.appendChild(ol);
+    list.appendChild(gli);
+  }
+  for (var g = 0; g < groups.length; g++) {
+    var rows = r.checks.filter(function (c) { return !used[c.id] && groups[g][1](c.id || ""); });
+    rows.forEach(function (c) { used[c.id] = true; });
+    group(groups[g][0], rows);
+  }
+  group("Other checks", r.checks.filter(function (c) { return !used[c.id]; }));
   var skipped = r.notRun;
   var nr = $("notrun");
   nr.textContent = "";
   for (var j = 0; j < skipped.length; j++) {
-    var li = el("li");
-    li.appendChild(el("b", "", skipped[j].title));
-    li.appendChild(document.createTextNode(". " + skipped[j].reason));
+    var li = el("li", "nr");
+    li.appendChild(el("span", "mark", "\u2013 Not here"));
+    var tx = el("div", "nr-text");
+    tx.appendChild(el("p", "nr-title", skipped[j].title));
+    tx.appendChild(el("p", "plain", skipped[j].reason));
+    li.appendChild(tx);
     nr.appendChild(li);
   }
   var ran = k.pass + k.fail;
@@ -115,13 +149,19 @@ h1{margin:0 0 12px;font:400 clamp(34px,5vw,48px)/1.08 var(--font-serif);letter-s
 .status{margin:10px 0 0;font:400 12px/1.5 var(--font-mono);color:var(--muted-foreground);min-height:1.5em}
 .status.bad{color:var(--destructive)}
 ol.checks,ul.notrun{list-style:none;margin:0;padding:0}
-.check{padding:18px var(--pad) 20px;border-bottom:1px dashed var(--border);display:grid;gap:10px;min-width:0}
+.check{border-bottom:1px dashed var(--border);min-width:0}
+.body{display:grid;gap:10px;padding:0 var(--pad) 18px calc(var(--pad) + 22px)}
 .check:last-child{border-bottom:0}
-.head{display:flex;align-items:baseline;flex-wrap:wrap;gap:6px 12px}
+.head{display:flex;align-items:center;gap:6px 12px;padding:9px var(--pad);cursor:pointer;list-style:none}
+.head::-webkit-details-marker{display:none}
+.head::before{content:"";flex:none;width:7px;height:7px;border-right:1.5px solid var(--muted-foreground);border-bottom:1.5px solid var(--muted-foreground);transform:rotate(-45deg);transition:transform .15s}
+details[open]>.head::before{transform:rotate(45deg)}
+.head:hover{background:var(--hover)}
+.brief{margin-left:auto;flex:none;font:400 12.5px/1.4 var(--font-mono);color:var(--muted-foreground);white-space:nowrap}
 .mark{flex:none;font:500 11px/1 var(--font-mono);letter-spacing:.06em;text-transform:uppercase;border-radius:6px;padding:5px 8px;background:var(--warning-soft);color:var(--warning-text)}
 .check.pass .mark{background:var(--primary-soft);color:var(--primary)}
 .check.fail .mark{background:var(--destructive-soft);color:var(--destructive-text)}
-h3{margin:0;font:400 22px/1.2 var(--font-serif);letter-spacing:-.01em;min-width:0;overflow-wrap:anywhere;flex:1 1 16rem}
+h3{margin:0;font:500 15px/1.35 var(--font-sans);min-width:0;overflow-wrap:anywhere;flex:1 1 auto}
 .cmp{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);gap:12px;align-items:center;max-width:46rem}
 .side{display:flex;flex-direction:column;gap:3px;min-width:0;background:var(--card);border:1px dashed var(--border);border-radius:6px;padding:10px 14px}
 .lbl{font:400 11px/1.4 var(--font-mono);letter-spacing:.06em;text-transform:uppercase;color:var(--muted-foreground);overflow-wrap:anywhere}
@@ -129,11 +169,20 @@ h3{margin:0;font:400 22px/1.2 var(--font-serif);letter-spacing:-.01em;min-width:
 .eq{font:500 18px/1 var(--font-mono);color:var(--muted-foreground)}
 .check.fail .eq{color:var(--destructive)}
 .plain{margin:0;font-size:14px;color:var(--muted-foreground);max-width:62ch}
-.notrun li{margin:0 0 10px;font-size:14px;color:var(--muted-foreground);max-width:70ch}
-.notrun b{color:var(--foreground);font-weight:600}
+.group{border-bottom:1px dashed var(--border)}
+.group:last-child{border-bottom:0}
+.group-h{display:flex;justify-content:space-between;align-items:baseline;gap:12px;margin:0;padding:18px var(--pad) 6px;font:500 11px/1.4 var(--font-mono);letter-spacing:.06em;text-transform:uppercase;color:var(--muted-foreground)}
+.group-n{color:var(--primary)}
+.group-n.bad{color:var(--destructive-text)}
+.group-list{list-style:none;margin:0;padding:0 0 8px}
+.group-list .check{border-bottom:0}
+.nr{display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 14px;align-items:start;padding:14px var(--pad);border-bottom:1px dashed var(--border)}
+.nr:last-child{border-bottom:0}
+.nr .mark{margin-top:1px}
+.nr-title{margin:0 0 4px;font:500 15px/1.4 var(--font-sans);color:var(--foreground)}
 .after p{margin:0;font-size:14px;color:var(--muted-foreground);max-width:70ch}
 @media (pointer:coarse){.ui-btn{min-height:44px}}
-@media (max-width:760px){:root{--pad:16px}.cmp{grid-template-columns:minmax(0,1fr)}.eq{justify-self:center}}
+@media (max-width:760px){:root{--pad:16px}.brief{display:none}.cmp{grid-template-columns:minmax(0,1fr)}.eq{justify-self:center}}
 `;
 
 /** The page: what is compared, then every check, then what was not run and why. */
@@ -162,12 +211,12 @@ ${siteHeader("ledger")}
 
 <section class="ui-band" id="notrun-wrap" hidden>
 <h2 class="ui-band-h">Checks not run here</h2>
-<ul class="notrun ui-band-body" id="notrun"></ul>
+<ul class="notrun" id="notrun"></ul>
 </section>
 
 <section class="ui-band after">
 <div class="ui-band-body">
-<p>Results are read once and shared for about twenty seconds, so pressing the button more often shows the same answer. The one-command demo runs the full set of 45 checks end to end; see the <a href="/proof">proof page</a> for the recorded study, or <a href="/console/payout">the day-30 payout</a> for the money itself.</p>
+<p>Results are read once and shared for about twenty seconds, so pressing the button more often shows the same answer. The one-command demo runs the full set of 45 checks end to end; see the <a href="/proof">proof page</a> for the recorded study, or <a href="/#money">the day-30 payout</a> for the money itself.</p>
 </div>
 </section>
 </main></div>

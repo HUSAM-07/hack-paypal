@@ -83,6 +83,7 @@ export function SiteHeader({
                 href={cta.href}
                 aria-current={current === SITE_CTA_KEY ? "page" : undefined}
               >
+                <span className="site-cta-dot" aria-hidden="true" />
                 {cta.label}
               </a>
             )}

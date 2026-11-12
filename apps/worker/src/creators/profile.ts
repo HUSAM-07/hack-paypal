@@ -69,17 +69,17 @@ const MEASURED: Record<string, { study: StudyRow; anchor: string; label: string 
   },
   [narrowCloseTest.id]: {
     study: study(catalogueSummary, "narrow-forced"),
-    anchor: "secondary",
+    anchor: "result",
     label: "A close call, every agent made to choose",
   },
   [crumblabRoborockTest.id]: {
     study: study(vacuumSummary, "vacuum-parity-forced"),
-    anchor: "vacuums",
+    anchor: "result",
     label: "Robot vacuums, same price, every agent made to choose",
   },
   [quietbenchBoseTest.id]: {
     study: study(headphoneSummary, "headphones-parity-forced"),
-    anchor: "headphones",
+    anchor: "result",
     label: "Headphones, same price, every agent made to choose",
   },
 };

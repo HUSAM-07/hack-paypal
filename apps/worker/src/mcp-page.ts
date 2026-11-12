@@ -278,9 +278,9 @@ code{overflow-wrap:anywhere}
 .client{padding:18px var(--pad) 20px;min-width:0}
 .client h3{margin:0 0 4px;font:400 24px/1.2 var(--font-serif);letter-spacing:-.01em}
 .client p{margin:0 0 10px;font-size:14px;color:var(--muted-foreground)}
-.snip{display:flex;align-items:flex-start;gap:10px;background:var(--card);border:1px dashed var(--border);border-radius:6px;padding:10px 10px 10px 12px;margin-bottom:10px}
-.snip pre{flex:1;min-width:0;margin:0;font:400 12.5px/1.55 var(--font-mono);color:var(--card-foreground);white-space:pre-wrap;overflow-wrap:anywhere;tab-size:2;padding-top:6px}
-.copy{flex:none;height:30px;padding:0 12px;font-size:13px}
+.snip{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:start;background:var(--card);border:1px dashed var(--border);border-radius:6px;margin-bottom:10px}
+.snip pre{min-width:0;margin:0;padding:12px 14px;font:400 12.5px/1.55 var(--font-mono);color:var(--card-foreground);white-space:pre;overflow-x:auto;tab-size:2}
+.copy{margin:8px 8px 8px 0;height:30px;padding:0 12px;font-size:13px}
 @media (pointer:coarse){.copy{min-height:44px;min-width:44px}}
 .feed-head{display:flex;align-items:center;flex-wrap:wrap;gap:6px 14px}
 .feed-head h2{flex:1 1 auto}
@@ -315,7 +315,7 @@ ol.sales{list-style:none;margin:12px 0 0;padding:0;border-top:1px dashed var(--b
 .empty li{margin:4px 0}
 .empty .ask{color:var(--foreground)}
 .after p{margin:0 0 10px;font-size:14px;color:var(--muted-foreground);max-width:66ch}
-@media (max-width:640px){:root{--pad:16px}.snip{flex-direction:column;align-items:stretch}.copy{align-self:flex-start}}
+@media (max-width:640px){:root{--pad:16px}}
 `;
 
 /** The public MCP server's page: connect your agent, then watch the sales it makes. */

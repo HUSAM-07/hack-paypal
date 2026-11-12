@@ -241,7 +241,8 @@ describe("payout moment (#29)", () => {
     const html = await (await appWith(RUNS).request("/payout")).text();
     for (const href of ["../try", "../mcp", "../proof", "../studio", "../creators", 'href="/"'])
       expect(html).toContain(href);
-    expect(html).toContain('href="/payout" aria-current="page"');
+    // The payout now lives on the landing; the page stays reachable but has no nav tab of its own.
+    expect(html).not.toContain('href="/payout"');
     const clean = await (await appWith(RUNS).request("/payout?clean=1")).text();
     expect(clean).toContain('class="clean');
   });

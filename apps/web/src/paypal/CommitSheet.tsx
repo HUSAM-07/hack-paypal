@@ -182,8 +182,8 @@ function DoneOverlay() {
       className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 rounded-md bg-background/95"
     >
       <motion.span
-        initial={{ scale: 0 }}
-        animate={{ scale: 1 }}
+        initial={{ scale: 0.6, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
         transition={SPRING_POP}
         className="flex size-14 items-center justify-center rounded-full bg-success-soft text-success-text"
       >

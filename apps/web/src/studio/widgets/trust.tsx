@@ -10,6 +10,7 @@ import { asOfStore, type StudioContext } from "../context";
 import { csvFileName, downloadCsv, trustCsv } from "../csvExport";
 import { API, privateNote } from "../data";
 import { ExportButton } from "./ExportButton";
+import { Note } from "./Note";
 import { currencyOf, money, num, useOfBrand, useRows } from "./useRows";
 
 type P = AgWidgetParams<never, unknown, StudioContext>;
@@ -90,10 +91,10 @@ export function TrustSummary(p: P) {
           />
         </Fragment>
       ))}
-      <p className="cw-note">
+      <Note>
         Every credit the abuse guard or PayPal stopped is listed below with its reason. Nothing here
         is paid until a reviewer releases it or PayPal decides.
-      </p>
+      </Note>
     </div>
   );
 }

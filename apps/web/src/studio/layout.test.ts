@@ -6,14 +6,15 @@ const ai = (w: number) =>
     .panels.ai.collapsed;
 
 describe("Studio panels", () => {
-  it("opens the AI panel on wide screens and keeps it out of the way on narrow ones", () => {
-    expect(ai(1440)).toBe(false);
+  it("folds the AI panel inside the 1080px frame and opens it only on very wide screens", () => {
+    expect(ai(1920)).toBe(false);
+    expect(ai(1440)).toBe(true);
     expect(ai(800)).toBe(true);
   });
 
   it("opens it on the creator's view too, for the Creator Analyst, but not on Trust", () => {
     const at = (v: "creator" | "trust") =>
-      (initialState(v, "HouseFresh", 1440) as unknown as { panels: { ai: { collapsed: boolean } } })
+      (initialState(v, "HouseFresh", 1920) as unknown as { panels: { ai: { collapsed: boolean } } })
         .panels.ai.collapsed;
     expect(at("creator")).toBe(false);
     expect(at("trust")).toBe(true);

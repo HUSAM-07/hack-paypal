@@ -27,6 +27,11 @@ body {
   /* .ui-frame-wide asks for a full viewport; the top bar already takes some of it. */
   min-height: 640px;
 }
+/* Studio is a working dashboard: it takes the whole window, not the 1080px reading column. */
+.st-page.ui-frame-wide {
+  max-width: none;
+  border-inline: 0;
+}
 .st-head {
   display: flex;
   flex-direction: column;
@@ -144,8 +149,16 @@ body {
   min-height: 0;
   display: flex;
   flex-direction: column;
-  /* On a phone the dashboard is wider than the screen: scroll it, not the page. */
+  /* On a phone some widgets stay wider than the screen: scroll them, not the page. */
   overflow-x: auto;
+}
+/* The dashboard lays out at its full height and the page scrolls, instead of a short window
+   that scrolls inside itself. */
+.st-studio .ag-studio-layout {
+  /* biome-ignore lint/complexity/noImportantStyles: overrides AG Studio's own scroll box */
+  overflow: visible !important;
+  /* biome-ignore lint/complexity/noImportantStyles: overrides AG Studio's own scroll box */
+  height: auto !important;
 }
 /* AgStudio renders a wrapper with a 600px default height; let it take the space. */
 .st-studio > * {
@@ -252,7 +265,7 @@ body {
 }
 .cw-figures {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(84px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(64px, 1fr));
   gap: 8px;
   margin: 2px 0 0;
   padding-top: 10px;
@@ -266,7 +279,7 @@ body {
 }
 .cw-figures dd {
   margin: 2px 0 0;
-  font: 500 15px / 1.3 var(--font-mono);
+  font: 500 14px / 1.3 var(--font-mono);
   letter-spacing: -0.01em;
 }
 .cw-figures dd.is-paid {
@@ -325,7 +338,7 @@ body {
   display: block;
   height: 100%;
   background: var(--c);
-  transition: width 600ms cubic-bezier(0.2, 0.7, 0.2, 1);
+  transition: width 320ms cubic-bezier(0.2, 0.7, 0.2, 1);
 }
 .cw-arm-share {
   text-align: right;
@@ -373,7 +386,7 @@ body {
 }
 .cw-meter span {
   min-width: 3px;
-  transition: flex-grow 600ms cubic-bezier(0.2, 0.7, 0.2, 1);
+  transition: flex-grow 320ms cubic-bezier(0.2, 0.7, 0.2, 1);
 }
 .cw-meter span:first-child {
   border-radius: 3px 0 0 3px;
@@ -838,6 +851,10 @@ body {
   .st-page {
     --pad: 16px;
   }
+  /* AG Studio's canvas holds a 720px minimum; on a phone the stacked widgets fit the screen instead. */
+  .st-studio .ag-studio-layout-canvas {
+    min-width: 0 !important;
+  }
   .st-title {
     padding: 20px var(--pad) 16px;
   }
@@ -953,7 +970,7 @@ body {
 .cw-trust-bar span {
   min-width: 3px;
   background: var(--c);
-  transition: flex-grow 600ms cubic-bezier(0.2, 0.7, 0.2, 1);
+  transition: flex-grow 320ms cubic-bezier(0.2, 0.7, 0.2, 1);
 }
 .cw-trust-bar span:first-child {
   border-radius: 3px 0 0 3px;
@@ -1173,4 +1190,36 @@ body {
   .cw-export-btn {
     min-height: 44px;
   }
+}
+
+/* Card explanations fold under one line; the numbers lead. */
+details.cw-note > summary {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  list-style: none;
+  font-size: 12px;
+  color: var(--muted-foreground);
+}
+details.cw-note > summary::-webkit-details-marker {
+  display: none;
+}
+details.cw-note > summary::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-right: 1.5px solid currentColor;
+  border-bottom: 1.5px solid currentColor;
+  transform: rotate(-45deg);
+  transition: transform 0.15s;
+}
+details.cw-note[open] > summary::before {
+  transform: rotate(45deg);
+}
+details.cw-note > summary:hover {
+  color: var(--foreground);
+}
+.cw-note-body {
+  margin-top: 6px;
 }
