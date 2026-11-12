@@ -479,9 +479,10 @@ export function Landing() {
             </li>
             <li>
               <strong>
-                <a href="/try">/try</a> runs a scripted agent
+                <a href="/try">/try</a> runs a live agent:
               </strong>{" "}
-              until the host has a model key; the page says which one you got.
+              claude-sonnet-5-5 picks and buys the product itself; the page shows which model you
+              got.
             </li>
             <li>
               <strong>The payout ran once for real in the PayPal sandbox:</strong> batch Payout{" "}
