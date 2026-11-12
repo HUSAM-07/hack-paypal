@@ -145,7 +145,8 @@ export function StudioCanvas(p: StudioCanvasProps) {
     () => initialState(initialView, creatorName, window.innerWidth),
     [initialView, creatorName],
   );
-  const ai = useMemo(() => analyst.citedHarness(config), [analyst, config]);
+  // The harness reads the view the page opened on; `context` is one object for Studio's lifetime.
+  const ai = useMemo(() => analyst.citedHarness(config, p.context), [analyst, config, p.context]);
   // Before the journeys grid first renders; setting the same key again is harmless.
   if (config.gridLicenseKey) LicenseManager.setLicenseKey(config.gridLicenseKey);
   return (

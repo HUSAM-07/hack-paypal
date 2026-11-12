@@ -20,9 +20,18 @@ import type {
 } from "ag-studio";
 import { clientToolRunner, createAiHarness, directLlmRunner } from "ag-studio";
 import { useState } from "react";
+import type { StudioContext } from "../context";
 import type { StudioConfig } from "../data";
 import { API, getJson, privateNote } from "../data";
 import { workerAdapter } from "./adapter";
+import {
+  CREATOR_AGENT_ID,
+  CREATOR_STARTERS,
+  creatorAnalystAgent,
+  creatorTool,
+  creatorToolDisplay,
+  scriptedCreatorAnalyst,
+} from "./creatorAnalyst";
 
 export interface Recommendation {
   brandId: string;
@@ -148,6 +157,7 @@ export function ApprovalCard(p: AgAiToolDetailParams<{ brandId?: string }, Recom
 }
 
 export const aiToolDisplay = {
+  ...creatorToolDisplay,
   [RECOMMEND_TOOL]: {
     label: ({ result }: { result?: { success: boolean; data?: unknown } }) => {
       const rec = result?.success ? (result.data as Recommendation | undefined) : undefined;
@@ -270,15 +280,26 @@ function scriptedAnalyst(api: AgStudioApi, recommend: AgAiTool) {
   });
 }
 
-export function citedHarness(config: StudioConfig): AgAiHarnessSetup {
+/**
+ * The brand's Analyst and the creator's Analyst share one harness; the page decides which one
+ * answers (and which question chips show) from the view it opened on.
+ */
+export function citedHarness(
+  config: StudioConfig,
+  context: Pick<StudioContext, "view" | "creatorId">,
+): AgAiHarnessSetup {
   return ({ api }) => {
     const recommend = recommendTool(api as AgStudioApi);
+    const creator = creatorTool(api as AgStudioApi, context);
+    const forCreator = context.view === "creator";
+    const starters = forCreator ? CREATOR_STARTERS : PROMPT_STARTERS;
+    const primary = forCreator ? CREATOR_AGENT_ID : "analyst";
     return createAiHarness(api as AgStudioApi, ({ builtIn }) => {
       if (config.llm.kind === "scripted") {
         return {
-          agents: [scriptedAnalyst(api as AgStudioApi, recommend)],
-          primary: "analyst",
-          promptStarters: PROMPT_STARTERS,
+          agents: [scriptedAnalyst(api as AgStudioApi, recommend), scriptedCreatorAnalyst(creator)],
+          primary,
+          promptStarters: starters,
         };
       }
       const adapter = workerAdapter();
@@ -308,9 +329,14 @@ export function citedHarness(config: StudioConfig): AgAiHarnessSetup {
         ],
       });
       return {
-        agents: [analyst, ...team],
-        primary: "analyst",
-        promptStarters: PROMPT_STARTERS,
+        agents: [
+          ...(forCreator ? [] : [analyst]),
+          creatorAnalystAgent(api as AgStudioApi, context, creator, adapter),
+          ...(forCreator ? [analyst] : []),
+          ...team,
+        ],
+        primary,
+        promptStarters: starters,
         models: [{ id: config.llm.label, label: config.llm.label }],
       };
     });

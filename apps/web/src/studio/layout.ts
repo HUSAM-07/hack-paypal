@@ -158,7 +158,9 @@ export function initialState(
       filters: { collapsed: true },
       data: { collapsed: true },
       edit: { collapsed: true },
-      ai: { collapsed: view !== "brand" || viewportWidth < AI_PANEL_MIN_WIDTH },
+      ai: {
+        collapsed: (view !== "brand" && view !== "creator") || viewportWidth < AI_PANEL_MIN_WIDTH,
+      },
     },
   } as unknown as AgReportState;
 }
