@@ -25,6 +25,7 @@ export const MCP_PAGE_CSP =
 export const FEED_POLL_MS = 5000;
 export const FEED_LIMIT = 20;
 export const FEED_PATH = `${PUBLIC_MCP_SALES_PATH}&limit=${FEED_LIMIT}`;
+export const TESTS_PATH = "/api/cited/api/tests";
 
 const SELLER_NAMES: Record<string, string> = {
   northwind: "Northwind",
@@ -46,6 +47,8 @@ export interface FeedData {
   /** Content by group, then creator id. */
   content: { test: Record<string, FeedShown>; placebo: Record<string, FeedShown> };
   feedPath: string;
+  /** The engine's public list of tests creators published, which names creators the page was not built with. */
+  testsPath: string;
   pollMs: number;
 }
 
@@ -73,6 +76,7 @@ export function feedData(): FeedData {
       placebo: { [housefreshPlacebo.creatorId]: shownFrom(housefreshPlacebo) },
     },
     feedPath: FEED_PATH,
+    testsPath: TESTS_PATH,
     pollMs: FEED_POLL_MS,
   };
 }
@@ -114,6 +118,33 @@ export const SHAPE_SALE_JS = `function shapeSale(j, data) {
   };
 }`;
 
+/**
+ * Adds the tests creators published at /creators to the content the feed can name, from the
+ * engine's `GET /tests` (newest first: the first test and placebo per creator win). Everything
+ * is later written with textContent, never as HTML. Plain ES5, shipped to the browser as is.
+ */
+export const ADD_PUBLISHED_JS = `function addPublished(data, rows) {
+  var seen = {};
+  for (var i = 0; i < rows.length; i++) {
+    var t = rows[i] && rows[i].test;
+    if (!t || (t.kind !== "test" && t.kind !== "placebo") || typeof t.creatorId !== "string") continue;
+    var bucket = data.content[t.kind];
+    if (seen[t.kind + t.creatorId]) continue;
+    seen[t.kind + t.creatorId] = true;
+    var names = [];
+    var skus = t.skus || [];
+    for (var k = 0; k < skus.length; k++) names.push(data.products[skus[k].upc] || skus[k].brand + " " + skus[k].name);
+    var topic = String(t.category || "").replace(/-/g, " ");
+    bucket[t.creatorId] = {
+      creator: rows[i].creatorName || t.creatorName || t.creatorId,
+      headline: t.kind === "test"
+        ? "Product test: " + names.join(" vs ")
+        : "Other content, not a test of the product: " + (names.join(", ") || topic),
+      disclosure: t.disclosure
+    };
+  }
+}`;
+
 /** The words the page uses for each group and credit state (kept beside the shape function). */
 export const GROUP_WORDS: Record<string, string> = {
   test: "Test group",
@@ -138,6 +169,7 @@ var GROUP_NOTE = {
   none: "Shown no creator content"
 };
 ${SHAPE_SALE_JS}
+${ADD_PUBLISHED_JS}
 function $(id) { return document.getElementById(id); }
 function el(tag, cls, text) {
   var n = document.createElement(tag);
@@ -183,9 +215,16 @@ function draw(journeys) {
 function say(msg, bad) { var s = $("feed-status"); s.textContent = msg; s.className = "feed-status" + (bad ? " bad" : ""); }
 async function poll() {
   try {
-    var res = await fetch(DATA.feedPath, { headers: { accept: "application/json" } });
+    var asked = [fetch(DATA.feedPath, { headers: { accept: "application/json" } }),
+      fetch(DATA.testsPath, { headers: { accept: "application/json" } }).catch(function () { return null; })];
+    var res = await asked[0];
     if (!res.ok) throw new Error("status " + res.status);
     var body = await res.json();
+    var tres = await asked[1];
+    if (tres && tres.ok) {
+      var published = await tres.json().catch(function () { return null; });
+      if (published && Array.isArray(published.tests)) addPublished(DATA, published.tests);
+    }
     draw(Array.isArray(body.journeys) ? body.journeys : []);
     say("Updated " + new Date().toLocaleTimeString() + ". Checks again every " + DATA.pollMs / 1000 + " seconds.", false);
   } catch (err) {
@@ -317,7 +356,7 @@ ${siteHeader("mcp")}
 <h2>2. Ask it to buy</h2>
 <div class="client wide"><p>Try this in your agent. Each connection is its own shopping session, and CITED decides at random whether that session is shown a creator's test, other content from the same creator, or nothing.</p>${snip("c-prompt", "example request", prompt)}</div>
 
-<div class="feed-head"><h2>3. Your agent's sales</h2><span class="keep">Kept out of the study numbers</span><span class="count num" id="count"></span></div>
+<div class="feed-head" id="feed"><h2>3. Your agent's sales</h2><span class="keep">Kept out of the study numbers</span><span class="count num" id="count"></span></div>
 <div class="feed-wrap">
 <p class="feed-note">Every agent connected to this server shows up here, newest first. Yours has the order number your agent reported. These sales are recorded and checked the same way as the study's, but they never change the study's numbers or any creator's balance.</p>
 <p class="feed-status" id="feed-status" role="status" aria-live="polite">Loading…</p>

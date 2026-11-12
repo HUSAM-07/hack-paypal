@@ -89,3 +89,36 @@ describe("POST /tests", () => {
     expect(r.status).toBe(201);
   });
 });
+
+describe("published-test limits and bylines", () => {
+  it("lists the creator's byline with each test, and no PayPal id", async () => {
+    await call("POST", "/tests", input("c-byline"));
+    const list = await call<{ tests: { creatorName: string | null }[] }>(
+      "GET",
+      "/tests?creatorId=c-byline",
+    );
+    expect(list.json.tests.map((t) => t.creatorName)).toEqual(["Quiet Rooms", "Quiet Rooms"]);
+    expect(JSON.stringify(list.json)).not.toContain("SIMPAYER23456");
+  });
+
+  it("stops one creator filling the store: at most 10 tests", async () => {
+    const id = "c-flood";
+    for (let i = 0; i < 10; i++) {
+      const base = input(id);
+      const r = await call("POST", "/tests", {
+        ...base,
+        test: { ...base.test, id: `${id}-t${i}` },
+        placebo: { ...base.placebo, id: `${id}-p${i}` },
+      });
+      expect(r.status).toBe(201);
+    }
+    const base = input(id);
+    const over = await call("POST", "/tests", {
+      ...base,
+      test: { ...base.test, id: `${id}-t10` },
+      placebo: { ...base.placebo, id: `${id}-p10` },
+    });
+    expect(over.status).toBe(429);
+    expect(over.json).toEqual({ error: "too_many_tests" });
+  });
+});

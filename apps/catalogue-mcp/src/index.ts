@@ -5,6 +5,7 @@ import { type Catalogue, createCatalogue, DEV_PASSPORT_KEY } from "./catalogue";
 import { CheckoutError, checkout } from "./checkout";
 import { searchOffers } from "./offers";
 import { createPublicMcp, type PublicMcp } from "./public";
+import type { PublishedTests } from "./published";
 import { isSellerId, sellersFromEnv } from "./sellers";
 import { createMcpServer } from "./server";
 
@@ -13,6 +14,7 @@ export * from "./catalogue";
 export * from "./checkout";
 export * from "./offers";
 export * from "./public";
+export * from "./published";
 export * from "./sellers";
 
 export const PORT = 8801;
@@ -26,6 +28,8 @@ export interface CatalogueAppOptions {
   buyerVaultId?: string;
   /** Simulated only: the mock to use. Default: a fresh one that posts webhooks to ENGINE_URL. */
   mock?: MockPayPal;
+  /** Tests creators published at /creators, served to public MCP sessions only. */
+  published?: PublishedTests;
 }
 
 /** Dev key only in simulated mode; a live deployment must set the secret. */
@@ -84,6 +88,7 @@ export function createCatalogueApp(opts: CatalogueAppOptions = {}) {
     passportKey: passportKey(env),
     allowSessionId: mode === "simulated",
     sellers,
+    ...(opts.published ? { published: opts.published } : {}),
   });
   const { paypal, buyerVaultId, mock } = buildPayPal(env, opts);
   // Simulated: every agent session shops for its own buyer, with their own PayPal wallet, unless

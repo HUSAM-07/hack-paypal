@@ -6,7 +6,12 @@
  */
 import { PRODUCTS } from "@cited/catalogue-mcp";
 import { parseVenmoReceiver } from "@cited/engine/payout-method";
-import { VerifiedTest } from "@pact/protocol";
+import {
+  CREATOR_TEXT_LIMITS,
+  cleanCreatorText,
+  DEFAULT_CREATOR_DISCLOSURE,
+  VerifiedTest,
+} from "@pact/protocol";
 import { type Context, Hono } from "hono";
 import { deleteCookie, getCookie, setCookie } from "hono/cookie";
 import { CITED_PREFIX, internalEngineFetch } from "../cited";
@@ -29,11 +34,12 @@ import {
   verify,
 } from "./session";
 
+/** Mirrors the engine's per-creator cap, for the message. */
+const MAX_PUBLISHED_PER_CREATOR = 10;
 export const CREATORS_PREFIX = "/creators";
 /** The one category the catalogue sells; tests outside it would never be shown. */
 export const CREATOR_CATEGORY = "air-purifier";
-export const DEFAULT_DISCLOSURE =
-  "I may earn a commission from CITED when an AI agent buys after reading this test. The commission never affects my verdict.";
+export const DEFAULT_DISCLOSURE = DEFAULT_CREATOR_DISCLOSURE;
 
 type C = Context<{ Bindings: Env }>;
 
@@ -175,7 +181,7 @@ export function buildTests(
 ): { ok: true; test: VerifiedTest; placebo: VerifiedTest } | { ok: false; errors: string[] } {
   const errors: string[] = [];
   const skus = [...new Set(form.skus)]
-    .map((upc) => PRODUCTS.find((p) => p.upc === upc))
+    .map((upc) => PRODUCTS.find((p) => p.upc === upc && p.category === CREATOR_CATEGORY))
     .filter((p) => p !== undefined)
     .map((p) => ({ upc: p.upc, brand: p.brand, name: p.name }));
   if (!form.name) errors.push("Add the name you publish under.");
@@ -250,7 +256,7 @@ creators.get("/", async (c) => {
       creatorId,
       simulated: s.mode === "simulated",
       csrf: await csrfToken(c.env.SESSION_SECRET, s),
-      products: PRODUCTS,
+      products: PRODUCTS.filter((p) => p.category === CREATOR_CATEGORY),
       category: CREATOR_CATEGORY,
       defaultDisclosure: DEFAULT_DISCLOSURE,
       dashboardUrl: studioUrl(creatorId, c.req.query("as") ?? s.name),
@@ -372,15 +378,15 @@ creators.post("/tests", async (c) => {
     return page(messagePage("Form expired", "Reload the creators page and publish again."), 403);
   const rawSkus = body.skus;
   const form: TestForm = {
-    name: clean(body.name, 80),
+    name: cleanCreatorText(body.name, CREATOR_TEXT_LIMITS.name),
     skus: (Array.isArray(rawSkus) ? rawSkus : rawSkus === undefined ? [] : [rawSkus])
       .filter((x): x is string => typeof x === "string")
       .slice(0, 8),
-    verdict: clean(body.verdict, 16),
-    summary: clean(body.summary, 1200, true),
-    disclosure: clean(body.disclosure, 400),
-    placeboTopic: clean(body.placeboTopic, 40),
-    placeboSummary: clean(body.placeboSummary, 1200, true),
+    verdict: cleanCreatorText(body.verdict, 16),
+    summary: cleanCreatorText(body.summary, CREATOR_TEXT_LIMITS.summary, true),
+    disclosure: cleanCreatorText(body.disclosure, CREATOR_TEXT_LIMITS.disclosure),
+    placeboTopic: cleanCreatorText(body.placeboTopic, CREATOR_TEXT_LIMITS.topic),
+    placeboSummary: cleanCreatorText(body.placeboSummary, CREATOR_TEXT_LIMITS.placeboSummary, true),
   };
   const creatorId = await creatorIdFor(s.payerId);
   const built = buildTests(form, creatorId, randomToken(6).replace(/[^A-Za-z0-9]/g, "x"));
@@ -392,7 +398,7 @@ creators.post("/tests", async (c) => {
         creatorId,
         simulated: s.mode === "simulated",
         csrf: await csrfToken(c.env.SESSION_SECRET, s),
-        products: PRODUCTS,
+        products: PRODUCTS.filter((p) => p.category === CREATOR_CATEGORY),
         category: CREATOR_CATEGORY,
         defaultDisclosure: DEFAULT_DISCLOSURE,
         dashboardUrl: studioUrl(creatorId, form.name || s.name),
@@ -413,6 +419,11 @@ creators.post("/tests", async (c) => {
       placebo: built.placebo,
     }),
   });
+  if (res.status === 429)
+    return rerender(
+      [`You already have ${MAX_PUBLISHED_PER_CREATOR} published tests, the most CITED keeps.`],
+      422,
+    );
   if (!res.ok) {
     console.error("creator publish rejected", res.status);
     return rerender(["CITED couldn't store the test. Try publishing again."], 502);

@@ -37,6 +37,8 @@ export const VerifiedTest = z.object({
   id: Id,
   kind: z.enum(["test", "placebo"]),
   creatorId: Id,
+  /** The byline, set by the catalogue for tests published at /creators; the built-in fixtures have none. */
+  creatorName: z.string().max(80).optional(),
   category: z.string(),
   skus: z.array(Sku),
   /** UPC the verdict recommends; absent for placebos and close calls. */
