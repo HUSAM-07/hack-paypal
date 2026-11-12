@@ -298,7 +298,7 @@ export function Landing() {
         <section className="hero" aria-labelledby="hero-h">
           <div className="wrap hero-inner">
             <h1 id="hero-h" className="h1">
-              PayPal's affiliate network, rebuilt for AI&nbsp;agents.
+              Affiliate marketing, rebuilt on PayPal for AI&nbsp;agents.
             </h1>
             <div className="hero-foot">
               <div>

@@ -43,6 +43,7 @@ const CONSOLE_DARK = `/* the film: two agent transcripts, rows aligned like a di
 .notice .status{padding:.18rem .6rem;border-radius:999px;background:#E7F1EC;font-size:.66rem}
 .notice footer{background:#F7F8FA;padding:.8rem 1.6rem;font-size:.58rem;border-radius:0 0 16px 16px}
 .pay-cap{margin:.8rem 0 0;text-align:center;font-size:.58rem;color:var(--muted)}
+.pay-cap a{color:inherit;text-decoration:underline;text-underline-offset:2px}
 @media (max-width:1100px){.pay{padding:32px 24px 48px}.pay-grid{grid-template-columns:1fr;gap:2.4rem}.pay-h{font-size:2rem}}
 @media (max-width:640px){.pay-h{font-size:1.6rem}.notice .amount{font-size:2.4rem}.notice dl div{grid-template-columns:1fr;gap:.1rem}.pay-sub,.pay-card{font-size:.85rem}.notice dt,.notice dd,.notice .top p{font-size:.8rem}}
 /* Content sits in the same 1280px frame as the site header. */
@@ -595,7 +596,7 @@ ${mismatch ? `<p class="warn">Ledger shows ${usd(p.ledgerPaidMinor ?? 0)} paid, 
 </dl>
 <footer>Sent with PayPal Payouts. A refund during the hold voids the credit; a dispute holds it until PayPal decides.</footer>
 </article>
-<figcaption class="pay-cap">The notice ${esc(name)} receives from PayPal. Simulated PayPal on this demo.</figcaption>
+<figcaption class="pay-cap">The notice ${esc(name)} receives from PayPal. Simulated PayPal on this demo.${p.amountMinor === 38396 ? ` The same $383.96 payout also ran on the real PayPal sandbox: <a href="https://github.com/HUSAM-07/hack-paypal/blob/main/cited/SANDBOX-EVIDENCE.md">batch <span class="mono">ME2KV57B7KYNS</span>, SUCCESS</a>.` : ""}</figcaption>
 </figure>
 </div></main>`;
   return page("CITED · payout", "payout", body, opts);

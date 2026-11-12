@@ -182,11 +182,11 @@ export function App() {
             <span
               className={`st-live${live ? "" : " is-stale"}`}
               role="status"
-              title={asOf ? `Engine clock ${asOf}` : undefined}
+              title={asOf ? `Simulated engine clock: ${asOf}` : undefined}
             >
               <i aria-hidden="true" />
               {live ? "Live" : "Reconnecting"}
-              {asOf ? <small>engine day {asOf.slice(0, 10)}</small> : null}
+              {asOf ? <small>simulated clock {asOf.slice(0, 10)}</small> : null}
             </span>
           </div>
         </header>

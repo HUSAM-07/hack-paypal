@@ -61,7 +61,7 @@ CITED
 
 ## Tagline (Elevator pitch)
 
-PayPal's affiliate network, rebuilt for AI agents: it pays creators on proven lift, not last-click cookies.
+Affiliate marketing, rebuilt on PayPal for AI agents: it pays creators on proven lift, not last-click cookies.
 
 ## Inspiration
 
