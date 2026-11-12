@@ -161,3 +161,15 @@ All `verified=true`, `signedFor=subscription`, and listed at [/api/cited/api/web
 Earlier vault smoke test (2026-11-10): $1.00 order `50542347YD822594J`, capture `7NM60589UN236160Y` `COMPLETED`, `custom_id` kept; its capture event `WH-35E94278CM0934524-8AY757673V9186310` was verified on the hosted engine the same way.
 
 The eval numbers behind the $383.96 come from the committed results in [`packages/evals/results`](../packages/evals/results).
+
+## Separate seller accounts: what PayPal allows from a vaulted wallet
+
+2026-11-12, same sandbox app, same vaulted buyer wallet, $0.50 Orders v2 orders with `intent: CAPTURE`:
+
+| Payee | Charged to the vaulted wallet (`payment_source.paypal.vault_id`) | Order for the buyer to approve (no vault) |
+|---|---|---|
+| New sandbox business account 1 | 422 `BILLING_AGREEMENT_NOT_FOUND` | 201 `CREATED` |
+| New sandbox business account 2 | 422 `BILLING_AGREEMENT_NOT_FOUND` | 201 `CREATED` |
+| The app's own sandbox business account | 201 `COMPLETED` | 201 `CREATED` |
+
+A wallet vaulted with `usage_type: MERCHANT` is chargeable only by the merchant that vaulted it. An agent platform paying many sellers from one buyer wallet therefore needs PayPal's multiparty (partner) setup, with each seller onboarded through Partner Referrals; the demo's sellers share the one account the sandbox allows. The other sellers can still be paid when the buyer approves the order.
