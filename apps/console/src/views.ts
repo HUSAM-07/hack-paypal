@@ -412,7 +412,7 @@ function runColumn(v: RunView | null, kind: "exposed" | "held"): string {
   const capture = journey
     ? `<p class="capture"><span class="pp">PayPal</span> captured <code>Order ${esc(journey.orderId)}</code><span class="dim via">The agent paid with the buyer's saved PayPal${paidAt ? `, straight to ${esc(shopName(paidAt))}'s PayPal account` : ""}. No website, no redirect.</span>${
         run.passportAttached
-          ? `<span class="dim via">Passport read from <code>custom_id</code> · sale joined to the ${kind === "exposed" ? "test" : "held-out"} arm</span>`
+          ? `<span class="dim via">Passport read from <code>custom_id</code> · sale joined to the ${kind === "exposed" ? "test" : "held-out"} group</span>`
           : ""
       }</p>`
     : `<p class="note">Order ${esc(run.orderId ?? "")} is waiting for the engine to record it.</p>`;

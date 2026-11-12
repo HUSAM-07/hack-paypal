@@ -70,7 +70,7 @@ const widgets = (defaults: AgWidgetsConfig<AgCoreDefaultRegistry>) =>
       },
       {
         id: "cited-journeys",
-        label: "Journeys & Shapley split",
+        label: "Journeys & creator split (Shapley)",
         comp: JourneysGrid,
         form,
         defaultSize: { width: 900, height: 360 },

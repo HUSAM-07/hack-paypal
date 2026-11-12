@@ -598,9 +598,10 @@ export function Proof() {
               <div className="design-item">
                 <h3 className="h3">Three arms</h3>
                 <p>
-                  The <strong>test</strong> arm sees HouseFresh's Winix A230 vs Levoit Core 300
-                  test. The <strong>placebo</strong> arm sees another HouseFresh article, so the
-                  creator's name and reputation are present in both; only the test differs. The{" "}
+                  Each session is randomly assigned to one of three arms (groups). The{" "}
+                  <strong>test</strong> arm sees HouseFresh's Winix A230 vs Levoit Core 300 test.
+                  The <strong>placebo</strong> arm sees another HouseFresh article, so the creator's
+                  name and reputation are present in both; only the test differs. The{" "}
                   <strong>nothing</strong> arm checks that the placebo itself is neutral.
                 </p>
               </div>

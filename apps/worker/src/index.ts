@@ -71,7 +71,8 @@ const appPage = async (c: Context<{ Bindings: Env }>) => {
   for (const [k, v] of Object.entries(APP_PAGE_HEADERS)) out.headers.set(k, v);
   return out;
 };
-app.get("/app", appPage);
+// The old Pact home: nothing links here any more, so a stray visit lands on CITED.
+app.get("/app", (c) => c.redirect("/", 302));
 app.get("/app/*", appPage);
 
 // CITED demo apps: their pages set their own headers (inline CSS and scripts).

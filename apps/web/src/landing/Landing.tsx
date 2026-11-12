@@ -125,7 +125,7 @@ function VRandomise() {
         <span className="vis-ok" aria-hidden="true">
           ✓
         </span>{" "}
-        Ranking identical in every arm
+        Ranking identical in every group
       </p>
     </div>
   );
@@ -200,11 +200,13 @@ const STEPS: HowStep[] = [
     title: "The passport goes into the PayPal order.",
     body: (
       <>
-        The catalogue signs an Agent Affiliate Passport. The shopping agent checks out through
-        PayPal itself, with the buyer's saved PayPal and the seller as payee, and puts the passport
-        in Orders v2 <code>purchase_units[].custom_id</code>, so the capture joins the sale to its
-        arm even when another seller gets paid. No storefront, no redirect, nothing for the seller
-        to install. In the demo, all 57 exposed Winix buys settled at Lumen, $4 cheaper
+        The catalogue signs an Agent Affiliate Passport: a tamper-proof tag recording what this
+        session was shown. The shopping agent checks out through PayPal itself, with the buyer's
+        saved PayPal and the seller as payee, and puts the passport in Orders v2{" "}
+        <code>purchase_units[].custom_id</code>, so the capture joins the sale to its group (test,
+        placebo or nothing) even when another seller gets paid. No storefront, no redirect, nothing
+        for the seller to install. In the demo, all 57 exposed Winix buys settled at Lumen, $4
+        cheaper
         <Ref n={5} />, not Northwind, whose offer carried the test.
       </>
     ),
@@ -216,9 +218,9 @@ const STEPS: HowStep[] = [
     body: (
       <>
         Credit is the attributable fraction at its 80% lower bound, at 8% commission, split by
-        Shapley value across co-exposed creators. Credits wait 30 days; refunds void them, and a
-        dispute holds them until PayPal decides. Then one batch Payout pays the creators and the
-        unspent deposit is refunded.
+        Shapley value (each creator's average contribution) when more than one creator's test was
+        shown. Credits wait 30 days; refunds void them, and a dispute holds them until PayPal
+        decides. Then one batch Payout pays the creators and the unspent deposit is refunded.
       </>
     ),
   },
@@ -337,7 +339,7 @@ export function Landing() {
             />
             <dl className="stats num">
               <div>
-                <dt>Lift, test vs placebo</dt>
+                <dt>Lift, test vs placebo (pp = percentage points)</dt>
                 <dd>+94pp</dd>
               </div>
               <div>
@@ -388,9 +390,10 @@ export function Landing() {
                   <FlowTall />
                 </div>
                 <figcaption className="caption">
-                  <span className="fig-no">Fig. 2</span> The sale's path. The catalogue assigns an
-                  arm and signs the passport. The agent pays the seller through PayPal, the capture
-                  carries the passport to the engine, and the engine pays the creator.
+                  <span className="fig-no">Fig. 2</span> The sale's path. The catalogue assigns a
+                  group (test, placebo or nothing) and signs the passport. The agent pays the seller
+                  through PayPal, the capture carries the passport to the engine, and the engine
+                  pays the creator.
                 </figcaption>
               </figure>
             }
@@ -404,7 +407,7 @@ export function Landing() {
                 <p>
                   In 147 agent sessions with the Winix and Levoit priced the same, agents shown
                   HouseFresh's test chose the Winix 94 points more often than agents shown other
-                  HouseFresh content. The lower bound, +90.3pp, is what pays.
+                  HouseFresh content. The lower bound, +90.3 points, is what pays.
                   <Ref n={2} />
                 </p>
                 <p>

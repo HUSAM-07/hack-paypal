@@ -266,7 +266,7 @@ const handlers = {
   joined(lane, e) {
     at(lane, "engine").append(el("p", {}, e.unattributedReason
       ? (e.unattributedReason === "capture_not_received" ? "The capture webhook hasn't arrived." : "Passport rejected: " + e.unattributedReason)
-      : "Capture webhook joined to the " + (e.arm === "none" ? "held-out" : e.arm) + " arm by the signed passport."));
+      : "Capture webhook joined to the " + (e.arm === "none" ? "held-out" : e.arm) + " group by the signed passport."));
   },
   verdict(lane, e) {
     const v = e.verdict, p = lanes[lane].paid;
