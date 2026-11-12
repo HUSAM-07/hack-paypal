@@ -55,7 +55,8 @@ for (let b = 0; b < bars; b++) {
       const v =
         0.028 *
         env *
-        (Math.sin(2 * Math.PI * f * 0.998 * t) + Math.sin(2 * Math.PI * f * 1.002 * t + k) +
+        (Math.sin(2 * Math.PI * f * 0.998 * t) +
+          Math.sin(2 * Math.PI * f * 1.002 * t + k) +
           0.25 * Math.sin(2 * Math.PI * f * 2 * t));
       add(L, s0 + i, v * (1 - pan));
       add(R, s0 + i, v * (1 + pan));
@@ -83,7 +84,10 @@ for (let b = 0; b < bars; b++) {
       for (let i = 0; i < Math.round(0.9 * SR); i++) {
         const t = i / SR;
         const env = Math.min(1, t / 0.004) * Math.exp(-t * 7);
-        const v = 0.05 * env * (Math.sin(2 * Math.PI * f * t) + 0.3 * Math.sin(4 * Math.PI * f * t) * Math.exp(-t * 12));
+        const v =
+          0.05 *
+          env *
+          (Math.sin(2 * Math.PI * f * t) + 0.3 * Math.sin(4 * Math.PI * f * t) * Math.exp(-t * 12));
         add(L, st + i, v * (1 - pan));
         add(R, st + i, v * (1 + pan));
         // A quiet dotted-eighth echo.
