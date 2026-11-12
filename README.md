@@ -1,6 +1,6 @@
 # CITED
 
-**PayPal's affiliate network, rebuilt for AI agents: it pays creators on proven lift, not last-click cookies.**
+**Affiliate marketing, rebuilt on PayPal for AI agents: it pays creators on proven lift, not last-click cookies.**
 
 AI shopping agents read product tests but never click an affiliate link, so creators go unpaid when an agent buys on their verdict. CITED fixes that. Brands fund a category programme (say, air purifiers), never a verdict. In PayPal's agent catalogue (our mock of Store Sync), each shopping session randomly sees a creator's test, a placebo (other content from the same creator), or nothing; ranking never changes. A signed **Agent Affiliate Passport** rides in the PayPal Orders v2 `purchase_units[].custom_id`, so the sale joins back to its arm even when the agent pays a different seller. There are no storefronts: the agent checks out through PayPal itself, paying the seller's PayPal account from the wallet the buyer linked to it ([AGENT-CHECKOUT.md](cited/spec/AGENT-CHECKOUT.md)). The engine credits only the sales the test caused (80% lower bound, Shapley split across co-exposed creators), holds credits 30 days, voids them on refunds, freezes them while a dispute is open (voided if the buyer wins), then pays creators by batch Payouts and refunds the unspent deposit. AG Studio shows it to the brand and the creator.
 

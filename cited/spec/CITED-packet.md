@@ -5,7 +5,7 @@ The README intro, where every number comes from, and the 3-minute video script f
 ## (a) README intro
 
 # CITED
-**PayPal's affiliate network, rebuilt for AI agents: it pays creators on proven lift, not last-click cookies.**
+**Affiliate marketing, rebuilt on PayPal for AI agents: it pays creators on proven lift, not last-click cookies.**
 
 **Problem.** US affiliate spend ($13.81B/year, eMarketer) pays per click. AI shopping agents read creators' tests but never click. Meta's Muse sold on Vacuum Wars' tests, unpaid (Fast Company, 13 Oct 2026).
 
@@ -42,7 +42,7 @@ Base URL: `https://pact-worker.vincent-wesley-liem.workers.dev` (abbreviated `$B
 | Time | On screen (and what to do) | Voice-over | Number shown |
 |---|---|---|---|
 | 0:00-0:12 | `$B/console/payout?clean=1`: hold on the PayPal payment notice | "HouseFresh just got paid $383.96 through PayPal Payouts. AI shopping agents read its purifier test and bought the winner. Nobody clicked a link." | $383.96; caption: real sandbox batch `ME2KV57B7KYNS`, SUCCESS |
-| 0:12-0:30 | `$B/#problem`, scroll slowly to `$B/#how` | "Affiliate marketing pays per click, and agents never click. CITED is PayPal's affiliate network, rebuilt for agents: it pays creators on proven lift. Winix and Levoit each put $1,000 into a purifier programme. They fund the category, never a verdict." | $1,000 + $1,000 |
+| 0:12-0:30 | `$B/#problem`, scroll slowly to `$B/#how` | "Affiliate marketing pays per click, and agents never click. CITED is affiliate marketing, rebuilt on PayPal for agents: it pays creators on proven lift. Winix and Levoit each put $1,000 into a purifier programme. They fund the category, never a verdict." | $1,000 + $1,000 |
 | 0:30-0:58 | `$B/console?clean=1`: both lanes; point at the passport, then at "Lumen" in the test lane (right) | "Two agents get the same request: small bedroom purifier, light sleeper, around $100, just buy it. Same offers, same order. One is shown HouseFresh's review. It reads Northwind's offer, then pays Lumen, $4 cheaper, for the Winix. The other is held out and buys the Levoit. There are no storefronts: each agent pays the seller through PayPal Orders, from a wallet the buyer linked once with Vault, and a signed passport in the order brings the sale back." | $95.99 paid, "$4.00 under Northwind's offer" |
 | 0:58-1:20 | `$B/proof#result`: Fig. 1, then Fig. 2 | "Does the test cause the sale? We pre-registered it: 147 sessions across GPT, Gemini and Claude, with both purifiers at the same price. Shown the test, agents chose Winix 57 times out of 57. Shown other content from the same creator, 3 out of 54. That's +94 points, and we pay only on the cautious lower bound: +90." | 57/57, 3/54, +94pp, +90.3pp |
 | 1:20-1:48 | `$B/studio?view=first`: "+51" card, then the deposit meter | "Maya runs Winix. Her AG Studio dashboard shows 51 extra sales the test caused: $391.64 credited. A buyer returns one, and the seller's PayPal refund voids $7.68 before it can be paid. After the 30-day hold, $383.96 goes to HouseFresh in one Payouts batch, and $616.04 goes back to Winix. Levoit's test lifted nothing, so Levoit pays nothing." | 51, $391.64, −$7.68, $383.96, $616.04, Levoit $0 |

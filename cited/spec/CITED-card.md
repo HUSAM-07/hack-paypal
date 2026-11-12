@@ -1,6 +1,6 @@
 # CITED: the affiliate network for the AI-agent era
 
-**Pitch:** Agents read but never click. CITED, PayPal's affiliate network for agents, pays creators on proven lift, not clicks.
+**Pitch:** Agents read but never click. CITED, affiliate marketing rebuilt on PayPal for agents, pays creators on proven lift, not clicks.
 
 **Who + pain:** US product-testing creators. Affiliate ($13.81B, eMarketer) pays per click. On the open web, Muse sold on Vacuum Wars' tests: unprovable, unpaid (Fast Company, Oct 2026).
 
