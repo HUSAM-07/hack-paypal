@@ -10,4 +10,12 @@ describe("Studio panels", () => {
     expect(ai(1440)).toBe(false);
     expect(ai(800)).toBe(true);
   });
+
+  it("opens it on the creator's view too, for the Creator Analyst, but not on Trust", () => {
+    const at = (v: "creator" | "trust") =>
+      (initialState(v, "HouseFresh", 1440) as unknown as { panels: { ai: { collapsed: boolean } } })
+        .panels.ai.collapsed;
+    expect(at("creator")).toBe(false);
+    expect(at("trust")).toBe(true);
+  });
 });

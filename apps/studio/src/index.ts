@@ -1,5 +1,6 @@
 import { Hono } from "hono";
 import { recommend } from "./analyst";
+import { CREATOR_TOPICS, type CreatorTopic, creatorAnswer } from "./creator";
 import {
   createEngineApprover,
   createEngineReader,
@@ -120,6 +121,24 @@ export function createStudioApp(deps: StudioDeps = depsFromEnv(process.env)) {
     try {
       const rec = recommend(await readFor(c.req.raw), c.req.query("brand") ?? "winix");
       return rec ? c.json(rec) : c.json({ error: "no such brand programme yet" }, 404);
+    } catch (e) {
+      return c.json(engineError(e), 503);
+    }
+  });
+
+  // The Creator Analyst's figures: read-only, GET only. There is no write counterpart.
+  app.get("/api/creator-analyst", async (c) => {
+    c.header("cache-control", "no-store");
+    const topic = c.req.query("topic") ?? "overview";
+    if (!(CREATOR_TOPICS as readonly string[]).includes(topic))
+      return c.json({ error: `unknown topic; use one of ${CREATOR_TOPICS.join(", ")}` }, 400);
+    try {
+      const a = creatorAnswer(
+        await readFor(c.req.raw),
+        c.req.query("creator") ?? "housefresh",
+        topic as CreatorTopic,
+      );
+      return a ? c.json(a) : c.json({ error: "no such creator yet" }, 404);
     } catch (e) {
       return c.json(engineError(e), 503);
     }
@@ -246,6 +265,7 @@ export function createStudioApp(deps: StudioDeps = depsFromEnv(process.env)) {
 
 export const app = createStudioApp();
 export * from "./analyst";
+export * from "./creator";
 export * from "./dashboard";
 export * from "./llm";
 export * from "./overlay";

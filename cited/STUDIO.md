@@ -7,6 +7,7 @@
   - `GET /config`: licence keys, which model the Analyst uses, the table schema.
   - `GET /data`: the engine read API (`/api/cited/api/{clock,lift,deposits,credits,journeys,payouts}`) as Studio tables. The page polls it every 15 s while the tab is visible and in use (paused when hidden, stopped after 10 min without input, backing off after failures) and applies the difference as Studio transactions, so widgets update in place (a refund void shows without a reload).
   - `GET /analyst?brand=winix`: the cap recommendation, computed from engine numbers (no model).
+  - `GET /creator-analyst?creator=housefresh&topic=earned|voided|held|shared|earn_more|overview`: the Creator Analyst's figures from the same tables, each with its source (no model). Read only: it has no write counterpart.
   - `POST /analyst/approve`: Maya's Approve button. The amount comes from a fresh recommendation, never from the request, and the approval id must match the card she saw. Calls the engine's `POST /api/approvals/:approvalId/approve`.
   - `POST /llm`: one model turn for the Studio agents, streamed. Same-origin only, rate-limited per IP and overall, request and output capped. Keys never reach the browser.
 
@@ -21,6 +22,12 @@
 ## The Analyst
 
 A custom agent in AG Studio's Agent Framework (`apps/web/src/studio/agents/analyst.tsx`). It delegates to the built-in **Data** agent (reads the tables), the **Page** agent (adds a chart widget) and the **Widget** agent (configures it as a bar chart: paid out vs deposit left per brand). AG Studio has no separate "Chart" agent; the Widget agent configures charts. Then it calls `draft_cap_top_up`, which returns the engine's recommendation with every figure it used and its source, and shows Maya an **Approve** button in the tool's detail panel. Nothing moves money until she presses it. (Studio's own harness cannot pause a tool for approval yet, `agAiChat.d.ts`: "Studio's own harness does not pause for approval yet", so the approval is that button.)
+
+## The Creator Analyst
+
+A second custom agent in the Agent Framework, on the creator view (`apps/web/src/studio/agents/creatorAnalyst.tsx`; its figures come from `apps/studio/src/creator.ts`). It answers "Why did I earn $383.96?", "Why was $7.68 voided?", "Why is a credit held?", "How did the Shapley split work?" and "What would earn me more?" from the creator's own tables, with question chips like the brand view's. For "why did I earn" it delegates to the same built-in team: the **Data** agent reads the credits, the **Page** and **Widget** agents add a "Your credits by state" bar chart. Then it calls `explain_creator_credits`, whose only effect is a `GET`, and cites each figure with its table.
+
+It is read only by construction: it is offered no approve, release, void, payout or top-up tool (tests pin the tool list, the `GET`-only call and that the endpoint refuses every write verb), and it says so if asked. Its advice stays honest: a creator earns more by publishing tests with clear, accurate verdicts in categories brands fund, never by gaming the holdout, buying their own products or changing a verdict to favour a funder (those credits are held or voided). It uses the same model route as the brand Analyst, and the same scripted fallback (labelled) when no key is set. The AI panel is on the creator view on screens wider than a phone; switching between Brand and Creator reopens the page so the right agent and chips load.
 
 Model, chosen by the worker:
 1. `LLM_BASE_URL` + `LLM_API_KEY` (an OpenAI-compatible gateway, for local runs);
