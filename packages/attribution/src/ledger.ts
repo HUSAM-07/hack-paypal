@@ -38,6 +38,8 @@ export interface BrandProgramme {
   /** Whole units the lift result credited (`creditBrand(...).units`). */
   units: number;
   deposit: ProgrammeDeposit;
+  /** This programme's own commission rate (basis points). Unset: the input's, else the default 8%. */
+  commissionBps?: number;
 }
 
 export interface CreateCreditsInput {
@@ -63,13 +65,15 @@ export interface CreateCreditsInput {
  */
 export function createCredits(input: CreateCreditsInput): Credit[] {
   const existing = input.existing ?? [];
-  const bps = input.commissionBps ?? COMMISSION_BPS;
-  if (!Number.isInteger(bps) || bps < 0 || bps > 10_000)
-    throw new Error("commissionBps must be an integer from 0 to 10000");
+  const fallbackBps = input.commissionBps ?? COMMISSION_BPS;
+  const validBps = (n: number) => Number.isInteger(n) && n >= 0 && n <= 10_000;
+  if (!validBps(fallbackBps)) throw new Error("commissionBps must be an integer from 0 to 10000");
   const have = new Set(existing.map((c) => c.id));
   const out: Credit[] = [];
 
   for (const brand of input.brands) {
+    const bps = brand.commissionBps ?? fallbackBps;
+    if (!validBps(bps)) throw new Error("commissionBps must be an integer from 0 to 10000");
     if (!Number.isInteger(brand.units) || brand.units < 0)
       throw new Error("units must be a non-negative integer");
     const cur = brand.deposit.deposited.currency;

@@ -24,6 +24,11 @@ subscription are dispatched; simulator-signed ones are recorded only.
    Simulated: approved and captured at once (`201`). Sandbox: `202` with the order; after the
    brand approves at PayPal call `POST /api/deposits/:orderId/capture`.
    Idempotent on `key` (default `initial`).
+   `POST /api/programmes {category, upc, depositMinor, commissionBps}` starts a whole programme
+   for a catalogue product (`purifier` or `robot-vacuum`): it creates the brand with its own
+   commission rate and captures the `initial` deposit, with `PayPal-Request-Id`
+   `cited-dep:<brandId>:initial`. One programme per product (`409 programme_exists`), so a new
+   programme never shares a sale with another.
 2. `POST /api/approvals/:approvalId/approve` `{brandId, amountMinor}` — an approved Analyst
    recommendation adds a top-up deposit (own capture). Approving twice charges once.
 3. `POST /api/credits/recompute` — per brand: model-stratified lift at the 80% lower bound →

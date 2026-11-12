@@ -1,0 +1,388 @@
+/* Programmes page: the list of programmes and the Start a programme flow. Same palette as studio.css. */
+.pg-list {
+  display: grid;
+  gap: 14px;
+  align-content: start;
+}
+.pg-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px 16px;
+  border: 1px solid var(--hair);
+  border-radius: 8px;
+  background: var(--paper);
+}
+.pg-card.is-new {
+  border-color: var(--proof);
+  background: var(--surface);
+  box-shadow: inset 3px 0 0 var(--proof);
+}
+.pg-card-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.pg-card-head h3 {
+  margin: 0;
+  font: 500 18px / 1.2 var(--serif);
+}
+.pg-chip,
+.pg-new {
+  font-size: 11.5px;
+  line-height: 1;
+  padding: 4px 8px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+.pg-chip {
+  color: var(--muted);
+  border: 1px solid var(--hair);
+}
+.pg-new {
+  color: var(--proof);
+  background: var(--proof-tint);
+  font-weight: 600;
+}
+.pg-terms,
+.pg-sales {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+  text-wrap: pretty;
+}
+.pg-terms b,
+.pg-sales b {
+  color: var(--ink);
+  font-weight: 600;
+}
+.pg-ledger {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 4px 20px;
+  margin: 0;
+  font-size: 13px;
+}
+.pg-ledger > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+}
+.pg-ledger dt {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--muted);
+  min-width: 0 !important; /* beats the inline style Studio sets */
+}
+.pg-ledger dt i {
+  flex: none;
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  background: var(--quiet);
+}
+.pg-ledger .cw-ledger-paid i {
+  background: var(--proof);
+}
+.pg-ledger .cw-ledger-held i {
+  background: var(--amber);
+}
+.pg-ledger .cw-ledger-left i {
+  background: var(--proof-tint);
+  box-shadow: inset 0 0 0 1px #b9d6c6;
+}
+.pg-ledger .cw-ledger-returned i {
+  background: repeating-linear-gradient(-45deg, var(--quiet) 0 2px, var(--paper) 2px 5px);
+}
+.pg-ledger dd {
+  margin: 0;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+/* Start a programme */
+.pg-start {
+  gap: 14px;
+}
+.pg-start:focus:not(:focus-visible),
+.pg-list:focus:not(:focus-visible) {
+  outline: none;
+}
+.pg-steps {
+  display: flex;
+  gap: 6px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  font-size: 12.5px;
+  color: var(--muted);
+}
+.pg-steps li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px 4px 4px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+}
+.pg-steps li span {
+  display: inline-grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 1px solid var(--quiet);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+.pg-steps li.is-now {
+  color: var(--ink);
+  font-weight: 600;
+  border-color: var(--hair);
+  background: var(--surface);
+}
+.pg-steps li.is-now span {
+  background: var(--proof);
+  border-color: var(--proof);
+  color: #fff;
+}
+.pg-steps li.is-past span {
+  background: var(--proof-tint);
+  border-color: #b9d6c6;
+  color: var(--proof);
+}
+.pg-step {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.pg-fieldset {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-width: 0 !important; /* beats the inline style Studio sets */
+}
+.pg-fieldset legend {
+  padding: 0;
+  margin-bottom: 8px;
+  font: 500 15px / 1.3 var(--serif);
+}
+.pg-choices {
+  display: grid;
+  gap: 8px;
+}
+.pg-choice {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 12px 10px 38px;
+  border: 1px solid var(--hair);
+  border-radius: 8px;
+  background: var(--paper);
+  cursor: pointer;
+  min-height: 44px;
+}
+.pg-choice input {
+  position: absolute;
+  left: 13px;
+  top: 14px;
+  margin: 0;
+  accent-color: var(--proof);
+}
+.pg-choice.is-on {
+  border-color: var(--proof);
+  background: var(--proof-tint);
+}
+.pg-choice.is-off {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+.pg-choice:has(input:focus-visible) {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+.pg-choice-title {
+  font-weight: 600;
+}
+.pg-choice small {
+  color: var(--muted);
+  font-size: 12.5px;
+}
+.pg-choice.is-on small {
+  color: var(--ink);
+}
+.pg-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.pg-field label {
+  font: 500 15px / 1.3 var(--serif);
+}
+.pg-input {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 12px;
+  border: 1px solid var(--quiet);
+  border-radius: 6px;
+  background: var(--surface);
+  min-height: 44px;
+}
+.pg-input:focus-within {
+  border-color: var(--ink);
+  box-shadow: 0 0 0 1px var(--ink);
+}
+.pg-input.is-bad {
+  border-color: var(--void);
+}
+.pg-input span {
+  color: var(--muted);
+}
+.pg-input input:focus,
+.pg-input input:focus-visible {
+  outline: 0;
+  box-shadow: none;
+}
+.pg-input input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  font: 500 16px / 1 var(--sans);
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+  padding: 10px 0;
+}
+.pg-presets {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.pg-preset {
+  font: 500 12.5px / 1 var(--sans);
+  padding: 8px 12px;
+  min-height: 32px;
+  border: 1px solid var(--hair);
+  border-radius: 999px;
+  background: var(--paper);
+  color: var(--ink);
+  cursor: pointer;
+}
+.pg-preset.is-on {
+  border-color: var(--proof);
+  background: var(--proof-tint);
+}
+.pg-preset:active,
+.pg-btn:active {
+  transform: scale(0.96);
+}
+.pg-preset:focus-visible,
+.pg-btn:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+.pg-bad {
+  color: var(--void);
+  font-size: 12.5px;
+  margin: 0;
+}
+.pg-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}
+.pg-btn {
+  font: 600 13px / 1 var(--sans);
+  background: var(--proof);
+  color: #fff;
+  border: 1px solid var(--proof);
+  border-radius: 6px;
+  padding: 11px 16px;
+  min-height: 40px;
+  cursor: pointer;
+}
+.pg-btn.is-quiet {
+  background: transparent;
+  color: var(--ink);
+  border-color: var(--quiet);
+}
+.pg-btn:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+.pg-review-head {
+  margin: 0;
+  font: 500 19px / 1.25 var(--serif);
+}
+.pg-review {
+  display: grid;
+  gap: 0;
+  margin: 0;
+  border-top: 1px solid var(--hair);
+}
+.pg-review > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--hair);
+}
+.pg-review dt {
+  color: var(--muted);
+}
+.pg-review dd {
+  margin: 0;
+  font-weight: 600;
+  text-align: right;
+}
+.pg-promises {
+  margin: 0;
+  padding: 0 0 0 18px;
+  display: grid;
+  gap: 6px;
+  font-size: 13.5px;
+  text-wrap: pretty;
+}
+.pg-demo {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: var(--amber-tint);
+  color: var(--ink);
+  font-size: 12.5px;
+  line-height: 1.5;
+  text-wrap: pretty;
+}
+.pg-demo b {
+  color: var(--amber-ink);
+}
+.pg-done {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: flex-start;
+}
+.pg-done p {
+  margin: 0;
+}
+.pg-done-head {
+  font: 500 20px / 1.2 var(--serif);
+  color: var(--proof);
+}
+@media (prefers-reduced-motion: reduce) {
+  .pg-btn:active,
+  .pg-preset:active {
+    transform: none;
+  }
+}
+
+/* Studio's canvas is 720px wide at least; on a phone the Programmes page stacks in the viewport instead. */
+.st-studio.is-phone-programmes .ag-studio-layout-canvas {
+  min-width: 0 !important; /* beats the inline style Studio sets */
+}

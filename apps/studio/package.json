@@ -15,6 +15,7 @@
   "dependencies": {
     "@anthropic-ai/sdk": "^1.6.0",
     "@hono/node-server": "^1.19.0",
+    "@pact/protocol": "*",
     "hono": "^4.13.16"
   },
   "devDependencies": {

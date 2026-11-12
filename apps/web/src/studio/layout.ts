@@ -1,5 +1,6 @@
 import type { AgReportState } from "ag-studio";
 import type { StudioConfig } from "./data";
+import { programmesPage } from "./programmesPage";
 import { trustPage } from "./trustPage";
 
 const USD = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" });
@@ -36,9 +37,11 @@ const creatorFilter = (table: string, creator: string) => ({
 /** Two pages: Maya's brand view and the creator's view. Widget ids are stable for the agents. */
 /** Below this width the AI panel would cover the dashboard, so it starts collapsed (one click opens it). */
 export const AI_PANEL_MIN_WIDTH = 1200;
+/** Below this width the Programmes page stacks its two widgets. */
+const NARROW_PAGE_MAX_WIDTH = 760;
 
 export function initialState(
-  view: "brand" | "creator" | "trust",
+  view: "brand" | "creator" | "trust" | "programmes",
   creatorName: string,
   viewportWidth = AI_PANEL_MIN_WIDTH,
 ): AgReportState {
@@ -152,6 +155,7 @@ export function initialState(
         },
       },
       trustPage(),
+      programmesPage(viewportWidth < NARROW_PAGE_MAX_WIDTH),
     ],
     selectedPageId: view,
     panels: {

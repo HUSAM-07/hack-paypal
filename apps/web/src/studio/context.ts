@@ -2,11 +2,13 @@ import type { RawWhatIf, Scope } from "@cited/studio/tables";
 
 /** What the page hands every widget through AG Studio's `context` property. */
 export interface StudioContext {
-  view: "brand" | "creator" | "trust";
+  view: "brand" | "creator" | "trust" | "programmes";
   brandId: string;
   creatorId: string;
   /** "First payout" (the day-30 batch) or "Programme to date". */
   scope: Scope;
+  /** The hosted demo: writes are locked, so a started programme stays in this browser. */
+  demo?: boolean;
 }
 
 /**

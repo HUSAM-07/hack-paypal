@@ -4,5 +4,6 @@ export * from "./domain";
 export * from "./fixtures";
 export * from "./money";
 export * from "./passport";
+export * from "./programme";
 export * from "./rpc";
 export * from "./site";

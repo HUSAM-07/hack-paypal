@@ -49,14 +49,15 @@ function displayName(raw: string | null): string | undefined {
 
 function viewFromPath(): StudioContext["view"] {
   if (window.location.pathname.replace(/\/$/, "").endsWith("/creator")) return "creator";
-  return new URLSearchParams(window.location.search).get("page") === "trust" ? "trust" : "brand";
+  const page = new URLSearchParams(window.location.search).get("page");
+  return page === "trust" ? "trust" : page === "programmes" ? "programmes" : "brand";
 }
 
-/** /studio/creator for the creator, /studio?page=trust for Trust, /studio for the brand. */
+/** /studio/creator for the creator, /studio?page=trust (or programmes) for those pages, /studio for the brand. */
 export function urlFor(v: StudioContext["view"], search: string): string {
   const q = new URLSearchParams(search);
   q.delete("page");
-  if (v === "trust") q.set("page", "trust");
+  if (v === "trust" || v === "programmes") q.set("page", v);
   const rest = q.toString();
   return `${v === "creator" ? "/studio/creator" : "/studio"}${rest ? `?${rest}` : ""}`;
 }
@@ -121,7 +122,14 @@ export function App() {
         return false;
       }
     };
-    return startPolling(tick, POLL_MS);
+    // "Start a programme" asks for a read right after confirming, so it shows up at once.
+    const refresh = () => void tick();
+    window.addEventListener("cited:refresh", refresh);
+    const stop = startPolling(tick, POLL_MS);
+    return () => {
+      window.removeEventListener("cited:refresh", refresh);
+      stop();
+    };
   }, [config]);
 
   const go = useCallback((v: StudioContext["view"]) => {
@@ -139,7 +147,7 @@ export function App() {
 
   // One object for Studio's lifetime (its `context` is read once); kept in step with the page.
   const context = useRef<StudioContext>({ view, scope, brandId: "winix", creatorId }).current;
-  Object.assign(context, { view, scope, creatorId });
+  Object.assign(context, { view, scope, creatorId, demo: !!config?.privateWrites });
   useEffect(() => scopeStore.set(scope), [scope]);
   const [initialView] = useState(viewFromPath);
   const Canvas = loaded?.[0].StudioCanvas;
@@ -160,14 +168,18 @@ export function App() {
                 ? "Purifier programme · Winix"
                 : view === "trust"
                   ? "Trust review · Winix"
-                  : `${creatorName} · creator`}
+                  : view === "programmes"
+                    ? "Programmes · start one"
+                    : `${creatorName} · creator`}
             </h1>
             <p>
               {view === "brand"
                 ? "Maya, brand manager. Winix pays only for the sales its creators' tests caused."
                 : view === "trust"
                   ? "Every credit that was held, frozen or voided, and exactly why. Nothing here is paid until a person or PayPal decides."
-                  : "Every credit from the purifier test: pending, held for review, frozen, voided or paid."}
+                  : view === "programmes"
+                    ? "Fund a category the catalogue can test. You pay only for sales a creator's test caused; unspent money comes back through a PayPal refund."
+                    : "Every credit from the purifier test: pending, held for review, frozen, voided or paid."}
             </p>
           </div>
           <div className="st-controls">
@@ -180,6 +192,13 @@ export function App() {
               </button>
               <button type="button" aria-pressed={view === "trust"} onClick={() => go("trust")}>
                 Trust
+              </button>
+              <button
+                type="button"
+                aria-pressed={view === "programmes"}
+                onClick={() => go("programmes")}
+              >
+                Programmes
               </button>
             </nav>
             {view === "brand" ? (
