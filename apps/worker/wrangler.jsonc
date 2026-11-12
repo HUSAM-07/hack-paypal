@@ -75,11 +75,10 @@
     // CITED engine at /api/cited. The passport key here is the published dev key the catalogue
     // uses in simulated mode (not a secret); a sandbox deployment overrides it with a secret.
     "CITED_PAYPAL_MODE": "simulated",
-    // Sandbox webhook subscription id for /api/cited/webhooks/paypal (capture, refund, reversal,
-    // dispute and payout-batch events). Not a secret; signatures are bound to it. This id was
-    // registered for the retired workers.dev URL: before switching CITED_PAYPAL_MODE to sandbox,
-    // register https://caaash.shipwith.si/api/cited/webhooks/paypal and put its id here.
-    "CITED_PAYPAL_WEBHOOK_ID": "8042373202922840X",
+    // Sandbox webhook subscription id for https://caaash.shipwith.si/api/cited/webhooks/paypal
+    // (all events). Not a secret; signatures are bound to it. (8042373202922840X was the retired
+    // workers.dev subscription; SANDBOX-EVIDENCE.md records the events delivered to it.)
+    "CITED_PAYPAL_WEBHOOK_ID": "422572436A741503U",
     "CITED_PASSPORT_KEY": "cited-dev-passport-key"
   }
 }
