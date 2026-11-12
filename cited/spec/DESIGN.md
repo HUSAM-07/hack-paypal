@@ -81,7 +81,7 @@ React entries: import `styles/site-theme.css` first and render `<SiteHeader />`;
   (`image_generation`) in the same style and run `scripts/optimize-stickers.ts`.
 - The mark (`SITE_MARK` in `packages/protocol/src/meta.ts`) is the only logo: a disc with a "C" cut out, open
   to the right (the holdout), and a dot in its mouth (the credited sale). `SITE_MARK_SVG` is built from it. Favicon, app icons and the
-  manifest are generated from it by `scripts/gen-icons.ts`, and the share card by `scripts/gen-og.ts`; don't hand-edit them.
+  manifest are generated from it by `scripts/gen-icons.ts`; don't hand-edit them.
 - The dither field (`components/magicui/dither-field.tsx`) is for the footer and the bottom fade.
 
 ## 5. Imported components
