@@ -140,6 +140,9 @@ aside{position:sticky;top:24px}
 .key span::before{content:"";display:inline-block;width:.65rem;height:.65rem;border-radius:2px;margin-right:.35rem;vertical-align:-1px;background:var(--test)}
 .key span.h::before{background:var(--held)}
 .h-list{font-size:1.25rem}
+.live{background:var(--paper);border-left:3px solid var(--test);padding:.8rem 1rem .9rem;margin:0 0 1.2rem;max-width:46rem}
+.live h3{margin:0 0 .3rem;font-size:.95rem}
+.live p{margin:.3rem 0;font-size:.82rem}
 .published{list-style:none;margin:0 0 2rem;padding:0;font-size:.82rem}
 .published li{display:flex;flex-wrap:wrap;gap:.3rem .9rem;padding:.55rem 0;border-top:1px solid var(--line)}
 
@@ -270,6 +273,9 @@ function scheduleBlock(studioUrl: string): string {
 <p><b>From day ${s.calibrationDays + 1}, for good</b>${pct(steadyTest)} see it. ${pct(s.steadyHoldoutShare)} stay held out, half shown your placebo, so the lift stays measured.</p>
 </div>
 <div class="key"><span>Shown your test</span><span class="h">Held out</span></div>
+<div class="live" id="see-it"><h3>See it in front of an agent</h3>
+<p>Point an agent at <a href="/mcp"><code>/mcp</code></a> and search for <b>air purifiers</b>. Within a few seconds, each new session is randomly shown your test, your placebo article, or nothing. Try a few sessions to see each one.</p>
+<p>If your agent buys, the sale appears on the <a href="/mcp#feed">live feed at /mcp</a> under your name, with the credit CITED would hold for you. It is never paid out, and it stays out of the study numbers. CITED keeps the newest three creators' tests live at once.</p></div>
 <a class="btn" href="${esc(studioUrl)}">Open your creator dashboard</a>
 </section>`;
 }

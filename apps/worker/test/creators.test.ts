@@ -180,4 +180,10 @@ describe("buildTests", () => {
     expect(r.ok).toBe(false);
     expect(!r.ok && r.errors.join(" ")).toMatch(/at least two products.*other than air purifiers/);
   });
+
+  it("only takes air purifiers: a test mixing in a robot vacuum would never go live", () => {
+    const r = buildTests({ ...base, skus: [UPC_WINIX_A230, "100000000006"] }, "c-1", "abc");
+    expect(r.ok).toBe(false);
+    expect(!r.ok && r.errors.join(" ")).toMatch(/at least two products/);
+  });
 });
