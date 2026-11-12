@@ -65,7 +65,7 @@ h2.ui-band-h{font:600 20px/1.4 var(--font-sans);letter-spacing:-.01em;margin:0 0
 .how b{display:block;margin-bottom:4px;font:400 22px/1.2 var(--font-serif);color:var(--foreground)}
 
 .who{display:flex;flex-wrap:wrap;align-items:center;gap:6px 18px;padding:6px 0;border-block:1px dashed var(--border);font-size:14px}
-.who .sim{font:500 11px/1.3 var(--font-mono);letter-spacing:.04em;color:var(--warning);background:var(--warning-soft);border-radius:999px;padding:4px 10px}
+.who .sim{font:500 11px/1.3 var(--font-mono);letter-spacing:.04em;color:var(--warning-text);background:var(--warning-soft);border-radius:999px;padding:4px 10px}
 .who form{margin-left:auto}
 .linkish{font:inherit;background:none;border:0;padding:0;color:var(--muted-foreground);text-decoration:underline;text-underline-offset:3px;cursor:pointer;min-height:44px}
 .linkish:hover{color:var(--foreground)}
@@ -88,7 +88,7 @@ input:focus,textarea:focus{outline:none;border-color:var(--primary);box-shadow:0
 .opt:has(input:checked){border-color:var(--primary);background:var(--primary-soft)}
 .opt input{margin:3px 0 0;width:18px;height:18px;accent-color:var(--primary)}
 .opt b{font-weight:600}
-.opt small{display:block;color:var(--muted-foreground);font-size:13px}
+.opt small{display:block;color:var(--muted-text);font-size:13px}
 .opt code{font-size:11px}
 .verdicts .opt.close:has(input:checked){border-color:var(--warning);background:var(--warning-soft)}
 .verdicts .opt.close input{accent-color:var(--warning)}

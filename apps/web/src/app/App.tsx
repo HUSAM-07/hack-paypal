@@ -243,7 +243,14 @@ export function App({
             </div>
           )}
 
-          <main className="flex min-w-0 flex-1 flex-col">
+          <a
+            href="#main"
+            className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-50 focus:rounded-lg focus:bg-foreground focus:px-4 focus:py-3 focus:text-background"
+          >
+            Skip to content
+          </a>
+          <main id="main" className="flex min-w-0 flex-1 flex-col">
+            <h1 className="sr-only">Pact</h1>
             <header className="flex h-14 shrink-0 items-center gap-2 border-b border-dashed border-border px-2 sm:px-4">
               {!lg && (
                 <button

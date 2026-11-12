@@ -284,7 +284,7 @@ code{overflow-wrap:anywhere}
 @media (pointer:coarse){.copy{min-height:44px;min-width:44px}}
 .feed-head{display:flex;align-items:center;flex-wrap:wrap;gap:6px 14px}
 .feed-head h2{flex:1 1 auto}
-.keep{display:inline-block;font:500 11px/1.3 var(--font-mono);letter-spacing:.04em;color:var(--warning);background:var(--warning-soft);border-radius:999px;padding:4px 10px}
+.keep{display:inline-block;font:500 11px/1.3 var(--font-mono);letter-spacing:.04em;color:var(--warning-text);background:var(--warning-soft);border-radius:999px;padding:4px 10px}
 .count{font:400 12px/1 var(--font-mono);color:var(--muted-foreground)}
 .feed-note{margin:0;font-size:14px;color:var(--muted-foreground);max-width:62ch}
 .feed-status{margin:8px 0 0;font:400 12px/1.5 var(--font-mono);color:var(--muted-foreground);min-height:1.5em}

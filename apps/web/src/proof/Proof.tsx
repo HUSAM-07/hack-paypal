@@ -74,6 +74,16 @@ function Section({
   );
 }
 
+/** A result table that scrolls inside its own box on narrow phones, reachable by keyboard. */
+function TableScroll({ children }: { children: ReactNode }) {
+  return (
+    // biome-ignore lint/a11y/noNoninteractiveTabindex: a scrollable region must be reachable by keyboard (WCAG 2.1.1)
+    <section className="table-scroll" aria-label="Results table, scrolls sideways" tabIndex={0}>
+      {children}
+    </section>
+  );
+}
+
 function Src({ path, children }: { path: string; children?: ReactNode }) {
   return (
     <a className="src-link" href={blob(path)}>
@@ -595,57 +605,59 @@ function SecondCategory() {
           . When the Roomba is $4 cheaper the default flips and the test matters again (below).
         </p>
       </div>
-      <table className="table num result-table">
-        <thead>
-          <tr>
-            <th scope="col">Model</th>
-            <th scope="col">Test</th>
-            <th scope="col">Placebo</th>
-            <th scope="col">Nothing</th>
-            <th scope="col">Lift</th>
-          </tr>
-        </thead>
-        <tbody>
-          {V1.byModel.map((m) => {
-            const l = V1.lift.perModel.find((x) => x.model === m.model);
-            return (
-              <tr key={m.model}>
-                <th scope="row">{MODEL_NAMES[m.model] ?? m.model}</th>
-                <td>
-                  {m.test.target}/{m.test.sessions}
-                </td>
-                <td>
-                  {m.placebo.target}/{m.placebo.sessions}
-                </td>
-                <td>
-                  {m.none.target}/{m.none.sessions}
-                </td>
-                <td className={l ? liftClass(l.lift) : undefined}>{l ? pp(l.lift) : "n/a"}</td>
-              </tr>
-            );
-          })}
-          <tr className="row-total">
-            <th scope="row">Pooled, model-stratified</th>
-            <td>
-              {V1.pooled.test.target}/{V1.pooled.test.sessions}
-            </td>
-            <td>
-              {V1.pooled.placebo.target}/{V1.pooled.placebo.sessions}
-            </td>
-            <td>
-              {V1.pooled.none.target}/{V1.pooled.none.sessions}
-            </td>
-            <td className={liftClass(V1.lift.lift)}>{pp(V1.lift.lift)}</td>
-          </tr>
-          <tr>
-            <th scope="row">Standard error · 80% lower bound</th>
-            <td colSpan={3} />
-            <td className={liftClass(V1.lift.lowerBound)}>
-              ±{(V1.lift.stdError * 100).toFixed(1)} · {pp(V1.lift.lowerBound)}
-            </td>
-          </tr>
-        </tbody>
-      </table>
+      <TableScroll>
+        <table className="table num result-table">
+          <thead>
+            <tr>
+              <th scope="col">Model</th>
+              <th scope="col">Test</th>
+              <th scope="col">Placebo</th>
+              <th scope="col">Nothing</th>
+              <th scope="col">Lift</th>
+            </tr>
+          </thead>
+          <tbody>
+            {V1.byModel.map((m) => {
+              const l = V1.lift.perModel.find((x) => x.model === m.model);
+              return (
+                <tr key={m.model}>
+                  <th scope="row">{MODEL_NAMES[m.model] ?? m.model}</th>
+                  <td>
+                    {m.test.target}/{m.test.sessions}
+                  </td>
+                  <td>
+                    {m.placebo.target}/{m.placebo.sessions}
+                  </td>
+                  <td>
+                    {m.none.target}/{m.none.sessions}
+                  </td>
+                  <td className={l ? liftClass(l.lift) : undefined}>{l ? pp(l.lift) : "n/a"}</td>
+                </tr>
+              );
+            })}
+            <tr className="row-total">
+              <th scope="row">Pooled, model-stratified</th>
+              <td>
+                {V1.pooled.test.target}/{V1.pooled.test.sessions}
+              </td>
+              <td>
+                {V1.pooled.placebo.target}/{V1.pooled.placebo.sessions}
+              </td>
+              <td>
+                {V1.pooled.none.target}/{V1.pooled.none.sessions}
+              </td>
+              <td className={liftClass(V1.lift.lift)}>{pp(V1.lift.lift)}</td>
+            </tr>
+            <tr>
+              <th scope="row">Standard error · 80% lower bound</th>
+              <td colSpan={3} />
+              <td className={liftClass(V1.lift.lowerBound)}>
+                ±{(V1.lift.stdError * 100).toFixed(1)} · {pp(V1.lift.lowerBound)}
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </TableScroll>
       <div className="secondary">
         <div>
           <h3 className="h3">Roomba $4 cheaper: {pp(V2.lift.lift)}</h3>
@@ -776,57 +788,59 @@ function ThirdCategory() {
           better headphone.
         </p>
       </div>
-      <table className="table num result-table">
-        <thead>
-          <tr>
-            <th scope="col">Model</th>
-            <th scope="col">Test</th>
-            <th scope="col">Placebo</th>
-            <th scope="col">Nothing</th>
-            <th scope="col">Lift</th>
-          </tr>
-        </thead>
-        <tbody>
-          {N1.byModel.map((m) => {
-            const l = N1.lift.perModel.find((x) => x.model === m.model);
-            return (
-              <tr key={m.model}>
-                <th scope="row">{MODEL_NAMES[m.model] ?? m.model}</th>
-                <td>
-                  {m.test.target}/{m.test.sessions}
-                </td>
-                <td>
-                  {m.placebo.target}/{m.placebo.sessions}
-                </td>
-                <td>
-                  {m.none.target}/{m.none.sessions}
-                </td>
-                <td className={l ? liftClass(l.lift) : undefined}>{l ? pp(l.lift) : "n/a"}</td>
-              </tr>
-            );
-          })}
-          <tr className="row-total">
-            <th scope="row">Pooled, model-stratified</th>
-            <td>
-              {N1.pooled.test.target}/{N1.pooled.test.sessions}
-            </td>
-            <td>
-              {N1.pooled.placebo.target}/{N1.pooled.placebo.sessions}
-            </td>
-            <td>
-              {N1.pooled.none.target}/{N1.pooled.none.sessions}
-            </td>
-            <td className={liftClass(N1.lift.lift)}>{pp(N1.lift.lift)}</td>
-          </tr>
-          <tr>
-            <th scope="row">Standard error · 80% lower bound</th>
-            <td colSpan={3} />
-            <td className={liftClass(N1.lift.lowerBound)}>
-              ±{(N1.lift.stdError * 100).toFixed(1)} · {pp(N1.lift.lowerBound)}
-            </td>
-          </tr>
-        </tbody>
-      </table>
+      <TableScroll>
+        <table className="table num result-table">
+          <thead>
+            <tr>
+              <th scope="col">Model</th>
+              <th scope="col">Test</th>
+              <th scope="col">Placebo</th>
+              <th scope="col">Nothing</th>
+              <th scope="col">Lift</th>
+            </tr>
+          </thead>
+          <tbody>
+            {N1.byModel.map((m) => {
+              const l = N1.lift.perModel.find((x) => x.model === m.model);
+              return (
+                <tr key={m.model}>
+                  <th scope="row">{MODEL_NAMES[m.model] ?? m.model}</th>
+                  <td>
+                    {m.test.target}/{m.test.sessions}
+                  </td>
+                  <td>
+                    {m.placebo.target}/{m.placebo.sessions}
+                  </td>
+                  <td>
+                    {m.none.target}/{m.none.sessions}
+                  </td>
+                  <td className={l ? liftClass(l.lift) : undefined}>{l ? pp(l.lift) : "n/a"}</td>
+                </tr>
+              );
+            })}
+            <tr className="row-total">
+              <th scope="row">Pooled, model-stratified</th>
+              <td>
+                {N1.pooled.test.target}/{N1.pooled.test.sessions}
+              </td>
+              <td>
+                {N1.pooled.placebo.target}/{N1.pooled.placebo.sessions}
+              </td>
+              <td>
+                {N1.pooled.none.target}/{N1.pooled.none.sessions}
+              </td>
+              <td className={liftClass(N1.lift.lift)}>{pp(N1.lift.lift)}</td>
+            </tr>
+            <tr>
+              <th scope="row">Standard error · 80% lower bound</th>
+              <td colSpan={3} />
+              <td className={liftClass(N1.lift.lowerBound)}>
+                ±{(N1.lift.stdError * 100).toFixed(1)} · {pp(N1.lift.lowerBound)}
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </TableScroll>
       <div className="secondary">
         <div>
           <h3 className="h3">Sony $4 cheaper: {pp(N2.lift.lift)}</h3>
@@ -1097,62 +1111,64 @@ export function Proof() {
                   of its own. Invalid sessions: {H.invalid}.
                 </p>
               </div>
-              <table className="table num result-table">
-                <thead>
-                  <tr>
-                    <th scope="col">Model</th>
-                    <th scope="col">Test</th>
-                    <th scope="col">Placebo</th>
-                    <th scope="col">Nothing</th>
-                    <th scope="col">Lift</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {H.byModel.map((m) => {
-                    const l = H.lift.perModel.find((x) => x.model === m.model);
-                    return (
-                      <tr key={m.model}>
-                        <th scope="row">
-                          {MODEL_NAMES[m.model] ?? m.model}
-                          {MODEL_NAMES[m.model] && MODEL_NAMES[m.model] !== m.model ? (
-                            <span className="model-id"> {m.model}</span>
-                          ) : null}
-                        </th>
-                        <td>
-                          {m.test.target}/{m.test.sessions}
-                        </td>
-                        <td>
-                          {m.placebo.target}/{m.placebo.sessions}
-                        </td>
-                        <td>
-                          {m.none.target}/{m.none.sessions}
-                        </td>
-                        <td className="pos">{l ? pp(l.lift) : "n/a"}</td>
-                      </tr>
-                    );
-                  })}
-                  <tr className="row-total">
-                    <th scope="row">Pooled, model-stratified</th>
-                    <td>
-                      {H.pooled.test.target}/{H.pooled.test.sessions}
-                    </td>
-                    <td>
-                      {H.pooled.placebo.target}/{H.pooled.placebo.sessions}
-                    </td>
-                    <td>
-                      {H.pooled.none.target}/{H.pooled.none.sessions}
-                    </td>
-                    <td className="pos">{pp(H.lift.lift)}</td>
-                  </tr>
-                  <tr>
-                    <th scope="row">Standard error · 80% lower bound</th>
-                    <td colSpan={3} />
-                    <td className="pos">
-                      ±{(H.lift.stdError * 100).toFixed(1)} · {pp(H.lift.lowerBound)}
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
+              <TableScroll>
+                <table className="table num result-table">
+                  <thead>
+                    <tr>
+                      <th scope="col">Model</th>
+                      <th scope="col">Test</th>
+                      <th scope="col">Placebo</th>
+                      <th scope="col">Nothing</th>
+                      <th scope="col">Lift</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {H.byModel.map((m) => {
+                      const l = H.lift.perModel.find((x) => x.model === m.model);
+                      return (
+                        <tr key={m.model}>
+                          <th scope="row">
+                            {MODEL_NAMES[m.model] ?? m.model}
+                            {MODEL_NAMES[m.model] && MODEL_NAMES[m.model] !== m.model ? (
+                              <span className="model-id"> {m.model}</span>
+                            ) : null}
+                          </th>
+                          <td>
+                            {m.test.target}/{m.test.sessions}
+                          </td>
+                          <td>
+                            {m.placebo.target}/{m.placebo.sessions}
+                          </td>
+                          <td>
+                            {m.none.target}/{m.none.sessions}
+                          </td>
+                          <td className="pos">{l ? pp(l.lift) : "n/a"}</td>
+                        </tr>
+                      );
+                    })}
+                    <tr className="row-total">
+                      <th scope="row">Pooled, model-stratified</th>
+                      <td>
+                        {H.pooled.test.target}/{H.pooled.test.sessions}
+                      </td>
+                      <td>
+                        {H.pooled.placebo.target}/{H.pooled.placebo.sessions}
+                      </td>
+                      <td>
+                        {H.pooled.none.target}/{H.pooled.none.sessions}
+                      </td>
+                      <td className="pos">{pp(H.lift.lift)}</td>
+                    </tr>
+                    <tr>
+                      <th scope="row">Standard error · 80% lower bound</th>
+                      <td colSpan={3} />
+                      <td className="pos">
+                        ±{(H.lift.stdError * 100).toFixed(1)} · {pp(H.lift.lowerBound)}
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </TableScroll>
             </Section>
 
             <Section

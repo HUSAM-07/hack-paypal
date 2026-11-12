@@ -150,7 +150,7 @@
     font-size: 11px;
     letter-spacing: 0.06em;
     text-transform: uppercase;
-    color: var(--muted-foreground);
+    color: var(--muted-text);
   }
   .scrollbar-none {
     scrollbar-width: none;

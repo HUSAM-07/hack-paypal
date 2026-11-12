@@ -14,7 +14,8 @@ Colour values live in **one file**: [`packages/protocol/src/theme.ts`](../../pac
   `apps/web/src/styles/no-raw-colours.test.ts` fails the build on any of them.
 - No `var(--x, #fallback)` fallbacks: the tokens are always loaded.
 - Need a tint? Use a derived token (`--primary-soft`, `--warning-soft`, `--destructive-soft`, `--fill`,
-  `--fill-strong`, `--band`, `--hover`) or `color-mix(in oklab, var(--token) N%, transparent)`.
+  `--fill-strong`, `--band`, `--hover`); small coloured text on a soft tint uses `--warning-text` /
+  `--destructive-text`, and small grey text on a tint uses `--muted-text` (all AA-safe) or `color-mix(in oklab, var(--token) N%, transparent)`.
 - Need a new role? Add it to `SITE_TOKENS` (light **and** dark), then run
   `npx tsx apps/web/scripts/gen-theme-css.ts`. Don't invent colours locally.
 
@@ -95,7 +96,8 @@ Before using a component from shadcn, agentsUI (components.ihusam.tech), Magic U
 - Touch targets at least 40×40px on coarse pointers (the shared header already does this).
 - Every page has the skip link (`siteHeader` / `<SiteHeader skip />`) and a `<main id="main">`.
 - Visible focus: `:focus-visible` uses `--primary`. Text meets WCAG AA on both themes (the token
-  pairs are chosen for it; check new combinations).
+  pairs are chosen for it; check new combinations). `--muted-foreground` is for text on `--background`
+  or `--card` only; on tints use `--foreground` or the `-text` tokens.
 - Animations respect `prefers-reduced-motion`.
 - Decorative art has `alt=""`/`aria-hidden`; meaning is always in text too.
 

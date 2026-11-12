@@ -39,7 +39,7 @@ form{margin:0}
 .cats{border:0;margin:0 0 22px;padding:0;min-width:0}
 .cats legend,.examples legend{padding:0;margin:0 0 10px;font:400 11px/1.4 var(--font-mono);letter-spacing:.06em;text-transform:uppercase;color:var(--muted-foreground)}
 .cats .opts{display:flex;flex-wrap:wrap;gap:6px}
-.cats label{position:relative;display:inline-flex;align-items:center;height:36px;padding:0 14px;border-radius:10px;font:500 14px/1 var(--font-sans);background:var(--fill);color:var(--muted-foreground);cursor:pointer;transition:background-color .15s,color .15s}
+.cats label{position:relative;display:inline-flex;align-items:center;height:36px;padding:0 14px;border-radius:10px;font:500 14px/1 var(--font-sans);background:var(--fill);color:var(--foreground);cursor:pointer;transition:background-color .15s,color .15s}
 .cats label:hover{background:var(--fill-strong);color:var(--foreground)}
 .cats input{position:absolute;inset:0;width:100%;height:100%;margin:0;opacity:0;cursor:pointer}
 .cats label:has(input:checked){background:var(--foreground);color:var(--background)}

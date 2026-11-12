@@ -90,6 +90,10 @@ const DERIVED = [
   "--primary-soft:color-mix(in oklab,var(--primary) 12%,transparent)",
   "--warning-soft:color-mix(in oklab,var(--warning) 14%,transparent)",
   "--destructive-soft:color-mix(in oklab,var(--destructive) 12%,transparent)",
+  // Small text on a tinted surface: pulled toward the foreground so it keeps AA contrast.
+  "--muted-text:color-mix(in oklab,var(--muted-foreground) 70%,var(--foreground))",
+  "--warning-text:color-mix(in oklab,var(--warning) 70%,var(--foreground))",
+  "--destructive-text:color-mix(in oklab,var(--destructive) 75%,var(--foreground))",
   "--fill:color-mix(in oklab,var(--foreground) 5%,transparent)",
   "--fill-strong:color-mix(in oklab,var(--foreground) 9%,transparent)",
   "--shadow-sticker:drop-shadow(0 6px 10px var(--shadow-color)) drop-shadow(0 1px 1px var(--shadow-color))",
@@ -162,7 +166,7 @@ export const SITE_BASE_CSS = [
   ".ui-btn-primary{background:var(--primary-soft);color:var(--primary)}",
   ".ui-card{background:var(--card);color:var(--card-foreground);border:1px dashed var(--border);border-radius:6px}",
   ".ui-dots{background:radial-gradient(circle at 1px 1px,var(--border) 1px,transparent 0) 0 0/16px 16px}",
-  "code{font-family:var(--font-mono);font-size:.86em;padding:.12em .36em;border-radius:5px;background:var(--band);box-shadow:inset 0 0 0 1px var(--border)}",
+  "code{font-family:var(--font-mono);font-size:.86em;padding:.12em .36em;border-radius:5px;color:var(--foreground);background:var(--band);box-shadow:inset 0 0 0 1px var(--border)}",
 ].join("");
 
 /** Fonts, tokens and base rules: everything a page needs before its own CSS. */

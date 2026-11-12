@@ -192,7 +192,8 @@ body {
   overflow: auto;
 }
 .cw-empty {
-  color: var(--muted-foreground);
+  /* Sits on the widget's tinted surface, where plain muted-foreground falls below AA. */
+  color: var(--muted-text);
   padding: 8px 0;
 }
 .cw-muted {

@@ -118,9 +118,9 @@ ol.checks,ul.notrun{list-style:none;margin:0;padding:0}
 .check{padding:18px var(--pad) 20px;border-bottom:1px dashed var(--border);display:grid;gap:10px;min-width:0}
 .check:last-child{border-bottom:0}
 .head{display:flex;align-items:baseline;flex-wrap:wrap;gap:6px 12px}
-.mark{flex:none;font:500 11px/1 var(--font-mono);letter-spacing:.06em;text-transform:uppercase;border-radius:6px;padding:5px 8px;background:var(--warning-soft);color:var(--warning)}
+.mark{flex:none;font:500 11px/1 var(--font-mono);letter-spacing:.06em;text-transform:uppercase;border-radius:6px;padding:5px 8px;background:var(--warning-soft);color:var(--warning-text)}
 .check.pass .mark{background:var(--primary-soft);color:var(--primary)}
-.check.fail .mark{background:var(--destructive-soft);color:var(--destructive)}
+.check.fail .mark{background:var(--destructive-soft);color:var(--destructive-text)}
 h3{margin:0;font:400 22px/1.2 var(--font-serif);letter-spacing:-.01em;min-width:0;overflow-wrap:anywhere;flex:1 1 16rem}
 .cmp{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);gap:12px;align-items:center;max-width:46rem}
 .side{display:flex;flex-direction:column;gap:3px;min-width:0;background:var(--card);border:1px dashed var(--border);border-radius:6px;padding:10px 14px}
