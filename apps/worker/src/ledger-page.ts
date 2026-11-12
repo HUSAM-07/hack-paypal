@@ -166,7 +166,7 @@ ${siteHeader("ledger")}
 </div>
 
 <div class="after">
-<p>Results are read once and shared for about twenty seconds, so pressing the button more often shows the same answer. The one-command demo runs the full set of 32 checks end to end; see the <a href="/proof">proof page</a> for the recorded study, or <a href="/console/payout">the day-30 payout</a> for the money itself.</p>
+<p>Results are read once and shared for about twenty seconds, so pressing the button more often shows the same answer. The one-command demo runs the full set of 45 checks end to end; see the <a href="/proof">proof page</a> for the recorded study, or <a href="/console/payout">the day-30 payout</a> for the money itself.</p>
 </div>
 </main>
 <script>${CLIENT_JS}</script>

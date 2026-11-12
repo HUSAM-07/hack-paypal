@@ -6,7 +6,8 @@
  * jumps 30 days, one batch payout lands, one refund voids (or flags) one credit, unspent deposits
  * return, and the engine's ledger agrees with what the PayPal mocks hold. Then a later cycle:
  * 12 agents see two creators' tests (Shapley split), and a disputed sale's credits freeze until
- * PayPal resolves the dispute for the seller.
+ * PayPal resolves the dispute for the seller. Last, robot vacuums and headphones are funded
+ * programmes too (a smaller study each), moving no purifier number.
  */
 import { afterAll, describe, expect, it } from "vitest";
 import { CARD, COEXPOSURE, type DemoEvent, GUARD, runDemo } from "../src/demo";
@@ -66,6 +67,18 @@ describe("CITED end to end (simulated PayPal)", () => {
       causedUnits: [COEXPOSURE.causedUnitsAfter, COEXPOSURE.causedUnitsAfter],
     });
 
+    // The categories beat: Roborock and Bose are funded and their tests caused units, so a
+    // test-arm sale of either is credited. Their credits stay pending and the study stays small
+    // enough for one read of the engine's journeys.
+    const cats = a.result.numbers.categories;
+    expect(cats.map((c) => c.brandId)).toEqual(["roborock", "bose"]);
+    for (const c of cats) {
+      expect(c.causedUnits).toBeGreaterThan(0);
+      expect(c.pendingMinor).toBeGreaterThan(0);
+      expect(c.depositMinor).toBe(CARD.deposit);
+    }
+    expect(a.result.records.length).toBeLessThan(200);
+
     // Every beat plays, in order, and a seed replays byte for byte on a fresh stack.
     const beats = a.events.filter((e) => e.type === "beat.start").map((e) => e.beat);
     expect(beats).toEqual([
@@ -82,6 +95,7 @@ describe("CITED end to end (simulated PayPal)", () => {
       "shapley",
       "dispute",
       "guard",
+      "categories",
       "checks",
     ]);
     expect(a.events.map((e) => e.seq)).toEqual(a.events.map((_, i) => i + 1));
