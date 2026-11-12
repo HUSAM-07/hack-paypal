@@ -4,6 +4,12 @@ import type { RawWhatIf, Scope } from "@cited/studio/tables";
 export interface StudioContext {
   view: "brand" | "creator" | "trust" | "programmes";
   brandId: string;
+  /** The brand view's brand: its name and programme category (for the Analyst), and every funded brand's id. */
+  brandName?: string;
+  category?: string;
+  brandIds?: string[];
+  /** The other funded brand in the same category, if there is one. */
+  rivalName?: string;
   creatorId: string;
   /** "First payout" (the day-30 batch) or "Programme to date". */
   scope: Scope;

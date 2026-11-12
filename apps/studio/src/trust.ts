@@ -136,6 +136,7 @@ export function trustRows(raw: RawEngine, ctx: TrustContext): Row[] {
         creditId: x.id,
         creatorId: c.creatorId,
         creator: ctx.nameOf(c.creatorId),
+        brandId: x.brandId,
         brand: ctx.brandOf(x.brandId),
         orderId,
         amount: usd(x.amountMinor),

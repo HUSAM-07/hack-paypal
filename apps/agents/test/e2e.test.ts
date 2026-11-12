@@ -10,7 +10,7 @@
  * programmes too (a smaller study each), moving no purifier number.
  */
 import { afterAll, describe, expect, it } from "vitest";
-import { CARD, COEXPOSURE, type DemoEvent, GUARD, runDemo } from "../src/demo";
+import { CARD, CATEGORY_STUDIES, COEXPOSURE, type DemoEvent, GUARD, runDemo } from "../src/demo";
 import { type Stack, startStack } from "../src/stack";
 
 const stacks: Stack[] = [];
@@ -75,7 +75,9 @@ describe("CITED end to end (simulated PayPal)", () => {
     for (const c of cats) {
       expect(c.causedUnits).toBeGreaterThan(0);
       expect(c.pendingMinor).toBeGreaterThan(0);
-      expect(c.depositMinor).toBe(CARD.deposit);
+      expect(c.depositMinor).toBe(
+        CATEGORY_STUDIES.find((x) => x.brandId === c.brandId)?.depositMinor,
+      );
     }
     expect(a.result.records.length).toBeLessThan(200);
 
