@@ -358,7 +358,7 @@ export function publishPage(v: PublishView): string {
         )
         .join(
           "",
-        )}</ul>${v.published ? "" : `<p><a class="btn ghost" href="${esc(v.dashboardUrl)}">Open your creator dashboard</a></p>`}`
+        )}</ul>${v.published ? "" : `<p><a class="btn ghost" href="${esc(v.dashboardUrl)}">Open your creator dashboard</a> <a class="btn ghost" href="/creators/${esc(v.creatorId)}">Your public profile</a></p>`}`
     : "";
   const step = v.published ? 3 : 2;
   return shell(

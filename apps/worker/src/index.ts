@@ -10,6 +10,7 @@ import {
   statefulDemoHandler,
   studioHandler,
 } from "./cited-apps";
+import { profiles } from "./creators/profile";
 import { CREATORS_PREFIX, creators } from "./creators/routes";
 import { allowedOrigins, type Env } from "./env";
 import { newId } from "./ids";
@@ -88,6 +89,8 @@ for (const [prefix, handler] of [
 app.all(PUBLIC_MCP_PATH, publicMcpHandler);
 app.route(TRY_PREFIX, live);
 app.route(CREATORS_PREFIX, creators);
+// After `creators`: its fixed paths (/connect, /callback, ...) match first; this is only /:creatorId.
+app.route(CREATORS_PREFIX, profiles);
 
 app.use("*", securityHeaders);
 app.use("/api/auth/*", ipRateLimit);
