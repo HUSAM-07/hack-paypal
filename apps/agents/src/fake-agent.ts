@@ -8,6 +8,8 @@ export interface FakeAgentOptions {
   loyalty?: number;
   /** What it buys when no creator test is shown (a scripted stand-in for a model's own taste). */
   baselineUpc?: string;
+  /** What it searches for. Default: "air purifier", the category the study and the demo run on. */
+  query?: string;
 }
 
 const SELLERS = ["northwind", "lumen", "megamart"];
@@ -25,7 +27,10 @@ export class FakeAgent implements ShopperAgent {
     const browse =
       this.opts.browseSeller ?? SELLERS[Math.floor(rand() * SELLERS.length)] ?? "northwind";
     const loyal = rand() < (this.opts.loyalty ?? 0.2);
-    const found = await session.search({ query: "air purifier", sellerId: browse });
+    const found = await session.search({
+      query: this.opts.query ?? "air purifier",
+      sellerId: browse,
+    });
 
     const budget = parseBudgetMinor(request);
     const affordable = (o: Offer) => budget === null || o.price.amountMinor <= budget;

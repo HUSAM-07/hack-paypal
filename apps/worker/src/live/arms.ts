@@ -32,11 +32,13 @@ export async function passportInArm(
   arm: PairArm,
   prefix: string,
   attempts = 6,
+  /** The category's search, so the passport names that category's creator and no other. */
+  query = "air purifier",
 ): Promise<string> {
   for (const sessionId of sessionIdsFor(arm, prefix, attempts)) {
     const probe = new ShopperSession(ep, `${sessionId}-probe`, { sessionId });
     try {
-      await probe.search({ query: "air purifier" });
+      await probe.search({ query });
       if (probe.passportBody()?.arm === arm && probe.passport) return probe.passport;
     } finally {
       await probe.close();
