@@ -2,15 +2,15 @@ name: ci
 on:
   push: { branches: [main] }
   pull_request:
-  # Manual deploy of main: to redeploy one target, retry a failed one, or deploy while
+  # Manual deploy of main: to redeploy, retry a failed deploy, or deploy while
   # DEPLOY_FREEZE is true (with force).
   workflow_dispatch:
     inputs:
       target:
         description: Deploy target
         type: choice
-        options: [all, workers-dev, shipwith]
-        default: all
+        options: [shipwith]
+        default: shipwith
       force:
         description: Deploy even while DEPLOY_FREEZE is true
         type: boolean
@@ -46,18 +46,16 @@ jobs:
             echo "CITED_OPEN_API is local-only; remove it from apps/worker/wrangler.jsonc" >&2
             exit 1
           fi
-      - name: Dry-run every deploy target
-        run: |
-          node apps/worker/scripts/deploy.mjs workers-dev --dry-run
-          node apps/worker/scripts/deploy.mjs shipwith --dry-run
+      - name: Dry-run the deploy
+        run: node apps/worker/scripts/deploy.mjs shipwith --dry-run
       - if: github.event_name != 'pull_request'
         uses: actions/upload-artifact@v4
         with: { name: web-dist, path: apps/web/dist, retention-days: 7, if-no-files-found: error }
 
-  # CD: every green push to main deploys pact-worker (D1 migrations, then the worker) to each
-  # target, unless the repo variable DEPLOY_FREEZE is "true" (the judging window): then only a
-  # manual run on main with force: true deploys. Each target is its own GitHub environment
-  # with its own Cloudflare account, token, D1 and passkey users.
+  # CD: every green push to main deploys pact-worker (D1 migrations, then the worker) to
+  # https://caaash.shipwith.si, unless the repo variable DEPLOY_FREEZE is "true" (the judging
+  # window): then only a manual run on main with force: true deploys. The target is the
+  # "shipwith" GitHub environment (its Cloudflare token and account id).
   deploy:
     needs: check
     if: >-
@@ -66,17 +64,16 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        target: ${{ fromJSON(inputs.target && inputs.target != 'all' && format('["{0}"]', inputs.target) || '["workers-dev","shipwith"]') }}
+        target: ["shipwith"]
     runs-on: ubuntu-latest
     timeout-minutes: 15
     environment:
-      # workers-dev keeps the original environment name so its deploy history and secrets carry on.
-      name: ${{ matrix.target == 'workers-dev' && 'production' || matrix.target }}
+      name: ${{ matrix.target }}
       url: ${{ vars.DEPLOY_URL }}
-    # One deploy per target at a time; a newer push waits. workers-dev shares its group with
-    # reseed-hosted so a reseed never races a deploy.
+    # One deploy at a time; a newer push waits. Shares its group with reseed-hosted so a reseed
+    # never races a deploy.
     concurrency:
-      group: ${{ matrix.target == 'workers-dev' && 'deploy-production' || format('deploy-{0}', matrix.target) }}
+      group: deploy-${{ matrix.target }}
       cancel-in-progress: false
     env:
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}

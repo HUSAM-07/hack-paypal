@@ -18,7 +18,7 @@ The README intro, where every number comes from, and the 3-minute video script f
 - Creators earn 8% on units the test caused (cautious lower bound); $0 on no lift. Co-exposed creators split by Shapley value. Each brand pays only for its own lifted units, so an honest "buy the rival" verdict still earns.
 - Only PayPal combines an affiliate network (Honey), the agent catalogue (Store Sync) and creator Payouts to PayPal/Venmo.
 
-**Try it.** Hosted: <https://pact-worker.vincent-wesley-liem.workers.dev> (`/console`, `/proof`, `/studio`, `/try`, `/mcp`, `/creators`). Local: `npm ci && npm run demo:cited` (15 beats, self-checking, no keys).
+**Try it.** Hosted: <https://caaash.shipwith.si> (`/console`, `/proof`, `/studio`, `/try`, `/mcp`, `/creators`). Local: `npm ci && npm run demo:cited` (15 beats, self-checking, no keys).
 
 ## (a2) Number provenance
 
@@ -39,7 +39,7 @@ Never mix the two cycles: $383.96 is the first payout; $468.43 is everything pai
 
 ## (b) 3-minute video script
 
-Base URL: `https://pact-worker.vincent-wesley-liem.workers.dev` (abbreviated `$B`). Record at 1920×1080 with `?clean=1` where given (hides the nav). The voice-over is about 390 spoken words: about 2:47 at 140 words a minute, which leaves about 11 seconds of pauses under the 3:00 limit. Keep the cuts tight; if a take runs long, drop the robot-vacuum sentence first. Only the first cycle is on screen (51 caused units, $383.96 paid); the Shapley, dispute and self-purchase beats, which move totals to 62 caused units and $468.43 paid, are under "If time allows".
+Base URL: `https://caaash.shipwith.si` (abbreviated `$B`). Record at 1920×1080 with `?clean=1` where given (hides the nav). The voice-over is about 390 spoken words: about 2:47 at 140 words a minute, which leaves about 11 seconds of pauses under the 3:00 limit. Keep the cuts tight; if a take runs long, drop the robot-vacuum sentence first. Only the first cycle is on screen (51 caused units, $383.96 paid); the Shapley, dispute and self-purchase beats, which move totals to 62 caused units and $468.43 paid, are under "If time allows".
 
 | Time | On screen (and what to do) | Voice-over | Number shown |
 |---|---|---|---|

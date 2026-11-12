@@ -245,7 +245,7 @@ const TRUST: { sticker: StickerName; title: string; body: string }[] = [
   },
 ];
 
-const MCP_URL = "https://pact-worker.vincent-wesley-liem.workers.dev/mcp";
+const MCP_URL = "https://caaash.shipwith.si/mcp";
 
 const TRY: { href: string; title: string; path: string; sticker: StickerName; live?: boolean }[] = [
   {

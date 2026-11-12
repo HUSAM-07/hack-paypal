@@ -9,10 +9,8 @@
  * Optional env: CITED_BASE_URL (default the deployed worker), CITED_PAYPAL_WEBHOOK_ID (default
  * the sandbox subscription). Credentials are read from env and never printed.
  */
-const BASE = (
-  process.env.CITED_BASE_URL ?? "https://pact-worker.vincent-wesley-liem.workers.dev"
-).replace(/\/$/, "");
-const WEBHOOK_ID = process.env.CITED_PAYPAL_WEBHOOK_ID ?? "8042373202922840X";
+const BASE = (process.env.CITED_BASE_URL ?? "https://caaash.shipwith.si").replace(/\/$/, "");
+const WEBHOOK_ID = process.env.CITED_PAYPAL_WEBHOOK_ID ?? "422572436A741503U";
 const PAYPAL = "https://api-m.sandbox.paypal.com";
 const TYPES = ["PAYMENT.CAPTURE.COMPLETED", "PAYMENT.CAPTURE.REFUNDED"];
 const TIMEOUT_MS = 180_000;

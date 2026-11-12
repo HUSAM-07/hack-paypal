@@ -19,7 +19,7 @@ With `CITED_PAYPAL_MODE=simulated`, "Connect PayPal" opens `/creators/paypal/sim
 Set `CITED_PAYPAL_MODE=sandbox` with the app's `PAYPAL_CLIENT_ID` / `PAYPAL_CLIENT_SECRET` (wrangler secrets). Then, in the PayPal Developer Dashboard → **Apps & Credentials → Sandbox → the CITED app**:
 
 1. Under **Features**, tick **Log in with PayPal** and open its **Advanced settings**.
-2. **Return URL**: add `https://pact-worker.vincent-wesley-liem.workers.dev/creators/callback` (and `http://localhost:8790/creators/callback` for `wrangler dev`). It must match exactly, path included.
+2. **Return URL**: add `https://caaash.shipwith.si/creators/callback` (and `http://localhost:8790/creators/callback` for `wrangler dev`). It must match exactly, path included.
 3. **Information requested from customers**: tick **Full name**, **Email** and, under **Advanced attributes**, **PayPal account ID (payer ID)**. Without the payer id the callback refuses the sign-in ("PayPal did not return a payer id").
 4. Fill in the **privacy policy** and **user agreement** URLs the dashboard asks for, then **Save**.
 
