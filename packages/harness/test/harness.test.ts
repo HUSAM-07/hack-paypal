@@ -6,7 +6,6 @@ import {
   fakeProvider,
   HarnessError,
   itemsToMessages,
-  type Notification,
   resolveModelProvider,
   wrapUntrusted,
 } from "../src";
