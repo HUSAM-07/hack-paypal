@@ -6,8 +6,8 @@
 
 export interface EvalRecord {
   id: string;
-  price?: "catalogue" | "parity" | "levoit-cheaper";
-  study: "purifier" | "narrow";
+  price?: "catalogue" | "parity" | "levoit-cheaper" | "rival-cheaper";
+  study: "purifier" | "narrow" | "vacuum";
   variant: "forced" | "abstain";
   model: string;
   arm: "test" | "placebo" | "none";
@@ -41,6 +41,8 @@ export interface SessionRow {
 const PRODUCTS: Record<string, string> = {
   "100000000001": "Winix A230",
   "100000000002": "Levoit Core 300",
+  "100000000006": "Roborock Q7 Max",
+  "100000000007": "iRobot Roomba Combo j5",
 };
 const SELLERS: Record<string, string> = {
   northwind: "Northwind",
@@ -49,6 +51,10 @@ const SELLERS: Record<string, string> = {
 };
 const WINIX = "100000000001";
 const LEVOIT = "100000000002";
+const ROBOROCK = "100000000006";
+const ROOMBA = "100000000007";
+/** Robot-vacuum study prices: VACUUM_SHOP_PRICES in packages/protocol/src/fixtures.ts. */
+const ROBOROCK_PRICE: Record<string, number> = { northwind: 29999, lumen: 29599, megamart: 30299 };
 
 /** Winix prices in every study (unchanged since the first run). */
 const WINIX_PRICE: Record<string, number> = { northwind: 9999, lumen: 9599, megamart: 10299 };
@@ -72,11 +78,17 @@ const NARROW: Record<string, { product: string; price: Record<string, number> }>
     price: { northwind: 9499, lumen: 9399, megamart: 9899 },
   },
 };
-export const TARGET_UPC = { purifier: WINIX, narrow: "100000000004" } as const;
+export const TARGET_UPC = { purifier: WINIX, narrow: "100000000004", vacuum: ROBOROCK } as const;
 
 /** Listed unit price, in minor units, the session saw for this shop and product. */
 export function listedPrice(r: EvalRecord, shopId: string, upc: string): number | undefined {
   if (r.study === "narrow") return NARROW[upc]?.price[shopId];
+  if (r.study === "vacuum") {
+    const target = ROBOROCK_PRICE[shopId];
+    if (upc === ROBOROCK) return target;
+    if (upc !== ROOMBA || target === undefined) return undefined;
+    return r.price === "rival-cheaper" ? target - 400 : target;
+  }
   const winix = WINIX_PRICE[shopId];
   if (upc === WINIX) return winix;
   if (upc !== LEVOIT || winix === undefined) return undefined;
@@ -95,7 +107,8 @@ export function toRow(r: EvalRecord): SessionRow {
   const price = bought ? listedPrice(r, shopId, upc) : undefined;
   return {
     session_id: r.id,
-    study: r.study === "narrow" ? "narrow-verdict" : "purifier",
+    study:
+      r.study === "narrow" ? "narrow-verdict" : r.study === "vacuum" ? "robot-vacuum" : "purifier",
     price_condition: r.price ?? "catalogue",
     variant: r.variant,
     model: r.model,

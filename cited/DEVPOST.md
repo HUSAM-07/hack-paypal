@@ -39,7 +39,7 @@ No login, no keys. Open in this order:
 1. <https://pact-worker.vincent-wesley-liem.workers.dev/>: the problem and how it works.
 2. <https://pact-worker.vincent-wesley-liem.workers.dev/console?clean=1>: two agents, same request; one shown the test buys the Winix, one held out buys the Levoit.
 3. <https://pact-worker.vincent-wesley-liem.workers.dev/console/payout?clean=1>: the $383.96 payout; "Statement" opens Winix's PayPal invoice.
-4. <https://pact-worker.vincent-wesley-liem.workers.dev/proof>: the pre-registered eval (147 headline sessions, +94pp, 80% bound +90.3pp); all 963 sessions download as CSV.
+4. <https://pact-worker.vincent-wesley-liem.workers.dev/proof>: the pre-registered eval (147 headline sessions, +94pp, 80% bound +90.3pp); all 1,551 sessions download as CSV; `#vacuums` repeats the study on robot vacuums.
 5. <https://pact-worker.vincent-wesley-liem.workers.dev/studio?view=first>: the brand's AG Studio dashboard. Ask the Analyst "Should we raise the purifier cap?": it hands the work to Studio's Data, Page and Widget agents, adds a chart, and answers from the ledger (on the hosted data, which already includes a top-up, it says keep the cap; the video shows the Approve flow). "Why did Levoit pay nothing?" answers in about 10 seconds. `/studio/creator?clean=1` is the creator's view.
 6. <https://pact-worker.vincent-wesley-liem.workers.dev/try>: run a shopping agent yourself.
 7. Your own agent: `claude mcp add --transport http cited https://pact-worker.vincent-wesley-liem.workers.dev/mcp`, then ask it to buy an air purifier.
@@ -84,7 +84,7 @@ CITED pays creators for sales their tests cause, measured with a randomised hold
 
 **Who pays and who earns.** Brands pay commission only on sales their creators' tests caused, out of a deposit they control, and get back whatever is unspent. CITED, run by PayPal, would take a platform fee on the commission it settles, as affiliate networks take an override today, so it earns only when a test provably caused a sale (the demo charges no fee). PayPal gains more than the fee: every caused sale is a PayPal checkout, every creator payment a Payouts transfer and every brand statement a PayPal invoice.
 
-Judges can check it four ways: read the pre-registration and per-model results at `/proof` (all 963 sessions downloadable), watch the recorded two-agent demo at `/console` and Studio, run a live agent at `/try`, or point their own agent at the public MCP server at `/mcp` and buy a purifier.
+Judges can check it four ways: read the pre-registration and per-model results at `/proof` (all 1,551 sessions downloadable), watch the recorded two-agent demo at `/console` and Studio, run a live agent at `/try`, or point their own agent at the public MCP server at `/mcp` and buy a purifier.
 
 ## How we built it
 
@@ -114,7 +114,8 @@ Judges can check it four ways: read the pre-registration and per-model results a
 
 ## Accomplishments that we're proud of
 
-- **A pre-registered eval with a real effect.** 147 forced-buy sessions across GPT, Gemini and Sonnet, Winix and Levoit priced the same: shown the test, agents bought Winix 57/57; shown the placebo, 3/54. Lift **+94pp**, 80% lower bound **+90.3pp**, positive in all three models (GPT +89, Gemini +100, Sonnet +94). Across all evals: 963 sessions under two pre-registrations, including the cases where it does not pay (a close verdict: lower bound −6.0pp, $0).
+- **A pre-registered eval with a real effect.** 147 forced-buy sessions across GPT, Gemini and Sonnet, Winix and Levoit priced the same: shown the test, agents bought Winix 57/57; shown the placebo, 3/54. Lift **+94pp**, 80% lower bound **+90.3pp**, positive in all three models (GPT +89, Gemini +100, Sonnet +94). Across all evals: 1,551 sessions under three pre-registrations, including the cases where it does not pay (a close verdict: lower bound −6.0pp, $0).
+- **It holds in a second category, with an honest smaller number.** The same pre-registered study on robot vacuums (a fictional creator, Roborock Q7 Max vs iRobot Roomba Combo j5, 588 sessions, same three models): priced alike, shown the test agents bought the Roborock 57/57, shown the placebo 45/54, a lift of +16.7pp with an 80% lower bound of +11.7pp. Agents already leaned towards the Roborock, so there was less for the test to add, and the engine credits 5 of 50 sales instead of nearly all; Sonnet showed no lift, so one pre-registered check (positive in every model) is not met. With the Roomba $4 cheaper: +74.1pp, bound +68.6pp.
 - **The demo checks itself.** `npm run demo:cited` plays 14 beats and ends with 32 reconciliation checks: 160 orders paid sellers from the buyer's wallet, every capture reached the engine, and the ledger's $468.43 paid equals PayPal's 3 payout batches.
 - **A real PayPal sandbox payout** of the headline $383.96 (batch `ME2KV57B7KYNS`, SUCCESS) and a matching Invoicing statement.
 - **Anyone can try it with their own agent**, through the public MCP server, with live sessions kept apart from the recorded numbers.
@@ -130,7 +131,7 @@ Judges can check it four ways: read the pre-registration and per-model results a
 
 - Run the agent checkout on the PayPal sandbox with three separate seller accounts (it already ran end to end there with one, with PayPal-signed webhooks: [SANDBOX-EVIDENCE.md](https://github.com/HUSAM-07/hack-paypal/blob/main/cited/SANDBOX-EVIDENCE.md)).
 - Feed tests published at `/creators` into the live catalogue's holdout.
-- More categories and creators, so tests compete and Shapley splits get richer.
+- More categories and creators beyond purifiers and robot vacuums, so tests compete and Shapley splits get richer.
 - Venmo payouts for creators and a brand self-serve programme flow in AG Studio.
 - Integrate with PayPal's real agent catalogue and Honey's affiliate contracts.
 
@@ -145,7 +146,7 @@ Judges can check it four ways: read the pre-registration and per-model results a
 - The payout: <https://pact-worker.vincent-wesley-liem.workers.dev/console/payout?clean=1>
 - Run a live agent: <https://pact-worker.vincent-wesley-liem.workers.dev/try>
 - Public MCP server: <https://pact-worker.vincent-wesley-liem.workers.dev/mcp> (`claude mcp add --transport http cited https://pact-worker.vincent-wesley-liem.workers.dev/mcp`)
-- The proof (pre-registration, per-model results, all 963 sessions): <https://pact-worker.vincent-wesley-liem.workers.dev/proof>
+- The proof (pre-registration, per-model results, all 1,551 sessions): <https://pact-worker.vincent-wesley-liem.workers.dev/proof>
 - AG Studio, brand view: <https://pact-worker.vincent-wesley-liem.workers.dev/studio?view=first>
 - AG Studio, creator view: <https://pact-worker.vincent-wesley-liem.workers.dev/studio/creator?clean=1>
 - Winix's statement (PayPal Invoicing): <https://pact-worker.vincent-wesley-liem.workers.dev/console/statement?brand=winix&clean=1>

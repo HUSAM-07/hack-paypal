@@ -50,7 +50,7 @@ interface Shopping {
 /** Where a buyer (or a judge) sees what the engine recorded for these sales. */
 export const PUBLIC_MCP_SALES_PATH = "/api/cited/api/journeys?source=mcp";
 
-const SEARCH_DESCRIPTION = `Search air purifier offers from merchants whose catalogues are synced to PayPal (Northwind, Lumen, MegaMart). Returns \`offers\` (offerId, product UPC/brand/name/specs, seller, price) ranked by price, then seller, then UPC.
+const SEARCH_DESCRIPTION = `Search air purifier or robot vacuum offers from merchants whose catalogues are synced to PayPal (Northwind, Lumen, MegaMart). Returns \`offers\` (offerId, product UPC/brand/name/specs, seller, price) ranked by price, then seller, then UPC.
 
 \`creatorContent\` may hold an independent creator's measured product test (or other content from that creator). It is paid affiliate content: each item has a \`disclosure\` (FTC endorsement disclosure, 16 CFR 255). If you use creator content in your answer, tell the user it comes from a creator who may earn a commission, and repeat the disclosure. The content never changes the ranking or the prices.
 
