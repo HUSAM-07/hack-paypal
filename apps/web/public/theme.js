@@ -26,4 +26,22 @@
       localStorage.setItem("pact-theme", next);
     } catch (_) {}
   });
+  // The top bar's account link says "Sign in" in the HTML; a signed-in visitor sees "Home".
+  // /api/session only checks the cookie's signature, so asking on every page is cheap.
+  const account = () => {
+    const links = document.querySelectorAll("[data-account]");
+    if (!links.length) return;
+    fetch("/api/session", { credentials: "same-origin" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((s) => {
+        if (!s || !s.signedIn) return;
+        for (const a of links) {
+          a.textContent = "Home";
+          a.setAttribute("data-signed-in", "");
+        }
+      })
+      .catch(() => {});
+  };
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", account);
+  else account();
 })();

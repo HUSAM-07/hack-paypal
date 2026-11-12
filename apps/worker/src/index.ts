@@ -15,6 +15,7 @@ import {
 import { profiles } from "./creators/profile";
 import { CREATORS_PREFIX, creators } from "./creators/routes";
 import { allowedOrigins, type Env } from "./env";
+import { home } from "./home/routes";
 import { newId } from "./ids";
 import { LEDGER_PATH, ledger } from "./ledger";
 import { previewFor, withLinkPreview } from "./link-preview";
@@ -114,6 +115,8 @@ app.route(TRY_PREFIX, live);
 app.route(CREATORS_PREFIX, creators);
 // After `creators`: its fixed paths (/connect, /callback, ...) match first; this is only /:creatorId.
 app.route(CREATORS_PREFIX, profiles);
+// The app side: /signin, /home (the apps portal for both verticals) and /api/session.
+app.route("/", home);
 
 app.use("*", securityHeaders);
 app.use("/api/auth/*", ipRateLimit);

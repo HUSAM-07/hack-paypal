@@ -55,3 +55,21 @@ export function shopRouter<E extends ShopEnv = ShopEnv>(opts: ShopRouterOptions<
 
   return app;
 }
+
+/**
+ * The user's shop state, read-only, for pages outside the chat (the apps home). Null when the
+ * agent can't be reached; callers show the tile without numbers rather than failing the page.
+ */
+export async function readShopState<E extends ShopEnv>(
+  env: E,
+  userId: string,
+): Promise<unknown | null> {
+  if (!USER_ID.test(userId)) return null;
+  try {
+    const agent = await getAgentByName(env.SHOPPER_AGENT, userId);
+    const res = await agent.fetch(new Request("https://shop.internal/state"));
+    return res.ok ? await res.json() : null;
+  } catch {
+    return null;
+  }
+}
