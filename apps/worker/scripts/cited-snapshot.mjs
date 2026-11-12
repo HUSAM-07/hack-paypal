@@ -119,6 +119,12 @@ async function main() {
         "CITED_OPEN_API:1",
         "--var",
         "CITED_API_TOKEN:",
+        // The replay is the seeded demo, always on the simulated PayPal (its disputes and demo
+        // clock exist only there), whatever mode the deployed worker runs in.
+        "--var",
+        "CITED_PAYPAL_MODE:simulated",
+        "--var",
+        "PAYPAL_MODE:simulated",
       ],
       { cwd: workerDir, stdio: ["ignore", "ignore", "inherit"], detached: true },
     );

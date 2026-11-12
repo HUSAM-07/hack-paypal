@@ -245,7 +245,7 @@ const TRUST: { sticker: StickerName; title: string; body: string }[] = [
   },
 ];
 
-const MCP_URL = "https://pact-worker.vincent-wesley-liem.workers.dev/mcp";
+const MCP_URL = "https://caaash.shipwith.si/mcp";
 
 const TRY: { href: string; title: string; path: string; sticker: StickerName; live?: boolean }[] = [
   {
@@ -621,9 +621,11 @@ export function Landing() {
               <Ref n={2} />
             </li>
             <li>
-              <strong>The hosted demo simulates PayPal</strong>{" "}
-              <Sticker name="cart" width={22} className="stk-inline" /> Orders, webhooks and Payouts
-              run against an in-memory mock, so no money moves.
+              <strong>Agents pay through the real PayPal sandbox</strong>{" "}
+              <Sticker name="cart" width={22} className="stk-inline" /> On /try and over MCP, each
+              checkout is a real sandbox Orders v2 order charged to the buyer's vaulted wallet, and
+              PayPal's signed webhook credits it. The seeded console and payout numbers are a
+              recorded replay, so they stay fixed.
             </li>
             <li>
               <strong>

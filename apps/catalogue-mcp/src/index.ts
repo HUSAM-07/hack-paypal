@@ -127,10 +127,15 @@ export function createCatalogueApp(opts: CatalogueAppOptions = {}) {
     }),
   );
 
-  /** Streamable HTTP MCP endpoint. Stateless: the passport, not a transport session, carries state. */
+  /**
+   * Streamable HTTP MCP endpoint. Stateless: the passport, not a transport session, carries state.
+   * A trusted in-process caller (Hono env `trustedCaller`, never part of an HTTP request) may pick
+   * its session id in every mode: /try's side-by-side fixes each lane's arm that way.
+   */
   app.all("/mcp", async (c) => {
     const transport = new WebStandardStreamableHTTPServerTransport({ enableJsonResponse: true });
-    await createMcpServer(catalogue, deps).connect(transport);
+    const trusted = (c.env as CatalogueCallEnv | undefined)?.trustedCaller === true;
+    await createMcpServer(catalogue, deps, { allowSessionId: trusted }).connect(transport);
     const res = await transport.handleRequest(c.req.raw);
     // The checkout's webhooks reach the engine before the agent hears back.
     await mock?.flush();
@@ -303,6 +308,15 @@ export function createCatalogueApp(opts: CatalogueAppOptions = {}) {
 
   const extras: CatalogueAppExtras = { catalogue, mock, publicMcp };
   return Object.assign(app, extras);
+}
+
+/**
+ * The Hono env an in-process caller passes to `app.fetch(req, env)`. It never comes from an HTTP
+ * request, so the internet cannot set it; the worker passes it only for its own server-side
+ * code (the demo Durable Object's `internal()` RPC).
+ */
+export interface CatalogueCallEnv {
+  trustedCaller?: boolean;
 }
 
 export interface CatalogueAppExtras {

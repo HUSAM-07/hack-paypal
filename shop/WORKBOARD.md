@@ -10,7 +10,7 @@ Spec: [spec/SHOP-SPEC.md](spec/SHOP-SPEC.md). Contracts: `packages/agent-protoco
 - [x] Integrate: /api/shop + /shop in pact-worker, commerce ↔ agent adapter, simulator state survives hibernation, CITED demo green
 
 ## Verified (2026-11-12)
-- `npm test`, `npm run typecheck`, `npm run lint`, web build, deploy dry-runs (workers-dev, shipwith).
+- `npm test`, `npm run typecheck`, `npm run lint`, web build, deploy dry-run (shipwith).
 - `CITED_ENGINE=worker npm run demo:cited`: all checks ok.
 - Browser, local worker, real OpenRouter + Exa, simulated PayPal: search → approval card → authorize → cooling-off → undo (voided) after the agent hibernated.
 

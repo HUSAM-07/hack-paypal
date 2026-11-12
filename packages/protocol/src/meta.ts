@@ -7,7 +7,7 @@ import { SITE_TOKENS } from "./theme";
  */
 
 /** The canonical origin for share cards (both deploy targets serve the same pages). */
-export const SITE_ORIGIN = "https://pact-worker.vincent-wesley-liem.workers.dev";
+export const SITE_ORIGIN = "https://caaash.shipwith.si";
 
 export const SITE_NAME = "CITED";
 export const SITE_TAGLINE = "Affiliate marketing, rebuilt on PayPal for AI agents";

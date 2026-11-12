@@ -1,5 +1,5 @@
 // Checks a CITED deployment against the demo's locked numbers and fails loudly otherwise.
-// Usage: node apps/worker/scripts/verify-cited.mjs https://pact-worker.vincent-wesley-liem.workers.dev
+// Usage: node apps/worker/scripts/verify-cited.mjs https://caaash.shipwith.si
 //
 // The numbers (cited/spec/CITED-packet.md): 62 caused units over 69 exposed sales, Levoit 0;
 // first payout $383.96 to HouseFresh; programme to date $468.43 in 3 batches; Winix invoiced

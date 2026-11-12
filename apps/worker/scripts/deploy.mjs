@@ -17,13 +17,14 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
+/** The sandbox app's own business account: every seller's payee on the shipwith target. */
+const SANDBOX_PAYEE = "M5R4D5A6BC3QC"; // sb-iicfz53660186@business.example.com
+
 // Optional per target: `kv` pins SHOP_CACHE (SHOP_EXTRAS=1 only) to an existing namespace id;
 // without it wrangler provisions one in the target's account on its first deploy.
 const TARGETS = {
-  // The team account on workers.dev; wrangler.jsonc as committed.
-  "workers-dev": {},
-  // Husam's account on the custom domain. Passkeys are bound to RP_ID, so this target
-  // has its own users (and its own D1) separate from workers-dev.
+  // The one deploy target: Husam's Cloudflare account on the custom domain. Passkeys are bound
+  // to RP_ID, so its users are its own. (The old team workers.dev target is retired.)
   shipwith: {
     account_id: "22d85cc3a000928da154b1f41ead366e",
     workers_dev: false,
@@ -32,7 +33,20 @@ const TARGETS = {
     vars: {
       RP_ID: "caaash.shipwith.si",
       ORIGINS: "https://caaash.shipwith.si",
+      // CITED runs against the real PayPal sandbox here (the legacy Pact app stays simulated).
+      // Needs the worker secrets PAYPAL_CLIENT_ID, PAYPAL_CLIENT_SECRET, CITED_BUYER_VAULT_ID
+      // and CITED_PASSPORT_SECRET. Local dev, tests and the demo keep wrangler.jsonc's simulated.
+      CITED_PAYPAL_MODE: "sandbox",
+      // A wallet vaulted by the app can only pay the app's own business account, so every
+      // seller's payee is that account (separate sellers need PayPal multiparty access).
+      CITED_SELLER_NORTHWIND_PAYEE: SANDBOX_PAYEE,
+      CITED_SELLER_LUMEN_PAYEE: SANDBOX_PAYEE,
+      CITED_SELLER_MEGAMART_PAYEE: SANDBOX_PAYEE,
+      // The shop vertical (shop/spec/SHOP-SPEC.md). Needs the worker secrets OPENROUTER_API_KEY,
+      // EXA_API_KEY, GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET; its PayPal stays simulated.
+      SHOP_ENABLED: "true",
       CF_ACCOUNT_ID: "22d85cc3a000928da154b1f41ead366e",
+      SHOP_PUBLIC_ORIGIN: "https://caaash.shipwith.si",
     },
   },
 };
@@ -46,7 +60,7 @@ const DEPLOY_ONLY =
 
 const workerDir = join(dirname(fileURLToPath(import.meta.url)), "..");
 const args = process.argv.slice(2);
-const target = args.find((a) => !a.startsWith("--")) ?? "workers-dev";
+const target = args.find((a) => !a.startsWith("--")) ?? "shipwith";
 const mode = args.includes("--dry-run")
   ? "dry-run"
   : args.includes("--rollback")
@@ -108,6 +122,11 @@ function configFor(name) {
       ),
     }),
   };
+  if (mode === "deploy") {
+    const todo = Object.entries(out.vars).filter(([, v]) => String(v).startsWith("TODO_"));
+    if (todo.length)
+      fail(`Set ${todo.map(([k]) => k).join(", ")} in deploy.mjs before deploying ${name}.`);
+  }
   // Written next to wrangler.jsonc so its relative paths (main, assets, migrations) resolve.
   const file = `wrangler.${name}.generated.jsonc`;
   writeFileSync(join(workerDir, file), `${JSON.stringify(out, null, 2)}\n`);

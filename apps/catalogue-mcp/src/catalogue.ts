@@ -63,14 +63,22 @@ export function createCatalogue(opts: CatalogueOptions) {
   const sellers = opts.sellers ?? sellersFromEnv();
   const offers = buildOffers(sellers);
 
-  async function search(input: SearchInput): Promise<SearchResult> {
+  /**
+   * `call.allowSessionId`: this caller may pick its session id even when the catalogue does not
+   * allow it by default (sandbox). Only the worker's own in-process callers set it (see
+   * createCatalogueApp's `trustedCaller`); a request from the internet never can.
+   */
+  async function search(
+    input: SearchInput,
+    call: { allowSessionId?: boolean } = {},
+  ): Promise<SearchResult> {
     const category = categoryOfQuery(input.query);
     const verified = input.passport ? await verifyPassport(input.passport, opts.passportKey) : null;
     let body: PassportBody =
       verified?.ok === true
         ? verified.body
         : newSession(
-            (opts.allowSessionId && input.sessionId) ||
+            ((opts.allowSessionId || call.allowSessionId) && input.sessionId) ||
               crypto.randomUUID().replaceAll("-", "").slice(0, 20),
             input.coExposed ?? false,
             category,

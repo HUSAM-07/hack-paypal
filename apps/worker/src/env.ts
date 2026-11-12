@@ -51,6 +51,8 @@ export interface Env {
   CITED_PAYPAL_WEBHOOK_ID?: string;
   /** HMAC key the catalogue signs Agent Affiliate Passports with. */
   CITED_PASSPORT_KEY?: string;
+  /** Secret passport key for deployed sandbox/live; overrides the public CITED_PASSPORT_KEY. */
+  CITED_PASSPORT_SECRET?: string;
   /** AG Grid Enterprise licence key for /studio; optional (watermark without it). */
   AG_GRID_LICENSE_KEY?: string;
   /** AG Studio licence (trial) key; unset = watermark. Ships to the browser. */
