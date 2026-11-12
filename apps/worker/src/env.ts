@@ -76,6 +76,42 @@ export interface Env {
   LLM_API_KEY?: string;
   /** Model id for live runs; default claude-sonnet-5-5. */
   CITED_LIVE_MODEL?: string;
+
+  // Shop vertical (shop/spec/SHOP-SPEC.md), mounted at /api/shop and /shop.
+  /** "true" turns the shop on (routes, Google sign-in, the sweep). Anything else: they 404. */
+  SHOP_ENABLED?: string;
+  /** One ShopperAgent per user (Agents SDK), named by the session user id. */
+  SHOPPER: DurableObjectNamespace;
+  /** CheckoutWorkflow: re-verify → authorize → cooling-off → capture or void. */
+  CHECKOUT: Workflow;
+  /**
+   * Browser Run: price extraction fallback and Live View. Optional: a target can deploy
+   * without it, and the shop then falls back to Exa contents.
+   */
+  BROWSER?: BrowserRun;
+  /** Product and price snapshots (short TTL). */
+  SHOP_CACHE: KVNamespace;
+  /** Receipts and page screenshots. */
+  SHOP_FILES: R2Bucket;
+  /**
+   * Workers AI: Browser Run /json extraction and cheap classification. Deployed targets only
+   * (scripts/deploy.mjs adds it); absent under `wrangler dev` and in tests.
+   */
+  AI?: Ai;
+  /** AI Gateway that model calls go through (`env.AI.gateway(id)`). */
+  AI_GATEWAY_ID?: string;
+  /** This target's Cloudflare account id, for AI Gateway URLs built by hand. */
+  CF_ACCOUNT_ID?: string;
+  /** OpenRouter model id for the shopper agent. */
+  SHOP_MODEL_ID?: string;
+  /** Minutes between authorizing a purchase and capturing it (the undo window). */
+  SHOP_COOLING_OFF_MINUTES?: string;
+  /** Secrets (.dev.vars / `wrangler secret put`). */
+  OPENROUTER_API_KEY?: string;
+  EXA_API_KEY?: string;
+  /** Google OAuth client for /api/auth/google; both unset ⇒ the routes 404. */
+  GOOGLE_CLIENT_ID?: string;
+  GOOGLE_CLIENT_SECRET?: string;
 }
 
 export function allowedOrigins(env: Env): string[] {

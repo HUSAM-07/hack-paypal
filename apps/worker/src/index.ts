@@ -28,6 +28,8 @@ export { CitedDemoDO } from "./do/cited-demo";
 export { PactDO } from "./do/pact";
 export { ThreadDO } from "./do/thread";
 export { UserDO } from "./do/user";
+// TEMPORARY stand-ins for the shop's bindings; the integrator swaps in apps/shop's classes.
+export { CheckoutWorkflow, ShopperAgent } from "./shop-placeholders";
 
 const app = new Hono<{ Bindings: Env }>();
 
