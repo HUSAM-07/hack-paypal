@@ -21,6 +21,7 @@ import {
   whatIfFor,
 } from "../whatif";
 import { ExportButton } from "./ExportButton";
+import { Note } from "./Note";
 import { money, num, useRows } from "./useRows";
 
 ModuleRegistry.registerModules([AllEnterpriseModule]);
@@ -241,7 +242,7 @@ export function WhatIfPanel(p: P) {
           suppressCellFocus
         />
       </div>
-      <p className="cw-note">
+      <Note>
         Credited {usd(what.credited.amountMinor)}
         {what.voided.amountMinor > 0
           ? `, less ${usd(what.voided.amountMinor)} that stays voided by a refund`
@@ -249,7 +250,7 @@ export function WhatIfPanel(p: P) {
         . Earnings are what is paid or still to be paid; a credit already voided by a refund stays
         voided. The rate sets the price of each sale, not how many the test caused. Sales are shared
         between creators by the same Shapley split, and no credit can draw more than the deposit.
-      </p>
+      </Note>
     </div>
   );
 }

@@ -62,8 +62,8 @@ const creatorFilter = (table: string, creator: string) => ({
 });
 
 /** Two pages: Maya's brand view and the creator's view. Widget ids are stable for the agents. */
-/** Below this width the AI panel would cover the dashboard, so it starts collapsed (one click opens it). */
-export const AI_PANEL_MIN_WIDTH = 1200;
+/** The page frame is 1080px; the AI panel would take a third of it, so it starts folded (one click opens it). */
+export const AI_PANEL_MIN_WIDTH = 1600;
 /** Below this width the Programmes page stacks its two widgets. */
 const NARROW_PAGE_MAX_WIDTH = 760;
 
@@ -111,14 +111,25 @@ export function initialState(
             },
           },
         },
-        widgetLayout: {
-          caused: { xTrack: 0, yTrack: 0, xSpan: 9, ySpan: 23 },
-          arms: { xTrack: 9, yTrack: 0, xSpan: 7, ySpan: 23 },
-          deposit: { xTrack: 16, yTrack: 0, xSpan: 8, ySpan: 23 },
-          whatif: { xTrack: 0, yTrack: 23, xSpan: 24, ySpan: 36 },
-          journeys: { xTrack: 0, yTrack: 59, xSpan: 24, ySpan: 33 },
-          flags: { xTrack: 0, yTrack: 92, xSpan: 24, ySpan: 16 },
-        },
+        // On a phone the three top cards stack instead of sharing one row.
+        widgetLayout:
+          viewportWidth < NARROW_PAGE_MAX_WIDTH
+            ? {
+                caused: { xTrack: 0, yTrack: 0, xSpan: 24, ySpan: 26 },
+                arms: { xTrack: 0, yTrack: 26, xSpan: 24, ySpan: 26 },
+                deposit: { xTrack: 0, yTrack: 52, xSpan: 24, ySpan: 26 },
+                whatif: { xTrack: 0, yTrack: 78, xSpan: 24, ySpan: 52 },
+                journeys: { xTrack: 0, yTrack: 130, xSpan: 24, ySpan: 33 },
+                flags: { xTrack: 0, yTrack: 163, xSpan: 24, ySpan: 16 },
+              }
+            : {
+                caused: { xTrack: 0, yTrack: 0, xSpan: 9, ySpan: 23 },
+                arms: { xTrack: 9, yTrack: 0, xSpan: 7, ySpan: 23 },
+                deposit: { xTrack: 16, yTrack: 0, xSpan: 8, ySpan: 23 },
+                whatif: { xTrack: 0, yTrack: 23, xSpan: 24, ySpan: 31 },
+                journeys: { xTrack: 0, yTrack: 54, xSpan: 24, ySpan: 33 },
+                flags: { xTrack: 0, yTrack: 87, xSpan: 24, ySpan: 16 },
+              },
       },
       {
         id: "creator",

@@ -727,3 +727,46 @@
     padding-left: 0.6rem;
   }
 }
+
+/* Pre-registration: one column per study, the plan above its results. */
+.timeline-wide {
+  display: grid;
+  grid-template-rows: repeat(2, auto);
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
+  gap: 18px 20px;
+  margin: 0;
+}
+.timeline-wide::before {
+  display: none;
+}
+.timeline-wide .tl {
+  padding: 12px 14px 12px 32px;
+  border: 1px dashed var(--border);
+  border-radius: 8px;
+}
+.timeline-wide .tl::before {
+  left: 13px;
+  top: 17px;
+}
+@media (max-width: 760px) {
+  .timeline-wide {
+    grid-template-rows: none;
+    grid-auto-flow: row;
+  }
+}
+/* Sandbox runs read left to right. */
+.sandbox-runs td {
+  text-align: left;
+}
+/* Downloads sit in one row. */
+.downloads-row {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+@media (max-width: 760px) {
+  .downloads-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

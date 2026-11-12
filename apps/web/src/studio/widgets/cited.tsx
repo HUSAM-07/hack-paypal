@@ -7,6 +7,7 @@ import type { AgWidgetParams } from "ag-studio";
 import { useState, useSyncExternalStore } from "react";
 import { type StudioContext, scopeStore } from "../context";
 import { API, privateNote } from "../data";
+import { Note } from "./Note";
 import { currencyOf, money, num, useOfBrand, useRows } from "./useRows";
 
 type P = AgWidgetParams<never, unknown, StudioContext>;
@@ -91,7 +92,7 @@ export function CausedTile(p: P) {
           </>
         ) : null}
       </p>
-      <p className="cw-note">
+      <Note>
         {scope === "todate" ? (
           <>
             At least {caused}: lift is {pts(row.lift)}, and the engine credits only its 80% lower
@@ -103,7 +104,7 @@ export function CausedTile(p: P) {
             exposed), {m(num(row.voided))} voided by a refund before it ran.
           </>
         )}
-      </p>
+      </Note>
       <dl className="cw-figures">
         <div>
           <dt>Credited</dt>
@@ -184,7 +185,7 @@ export function ArmStrip(p: P) {
           <div className="cw-arm-share">{pct(r.share)}</div>
         </div>
       ))}
-      <p className="cw-note">
+      <Note>
         {test && placebo ? (
           <>
             Shown the test vs. the same creator's other content:{" "}
@@ -192,7 +193,7 @@ export function ArmStrip(p: P) {
           </>
         ) : null}{" "}
         Every group sees the same offers in the same order; only the test is added or withheld.
-      </p>
+      </Note>
     </div>
   );
 }
@@ -243,10 +244,10 @@ export function DepositMeter(p: P) {
           </div>
         ))}
       </dl>
-      <p className="cw-note">
+      <Note>
         {String(row.brand)} pays only for its own lifted units. Unspent money goes back through
         PayPal refunds; a top-up funds the category, never a creator or a verdict.
-      </p>
+      </Note>
     </div>
   );
 }
@@ -477,10 +478,10 @@ export function ReviewFlags(p: P) {
           })}
         </tbody>
       </table>
-      <p className="cw-note">
+      <Note>
         A held credit is never paid automatically. Release pays it at the next payout run; void
         cancels it and frees its share of the deposit.
-      </p>
+      </Note>
     </div>
   );
 }
