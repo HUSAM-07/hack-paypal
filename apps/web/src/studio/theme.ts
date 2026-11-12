@@ -1,24 +1,24 @@
 import { studioTheme } from "ag-studio";
 
 /**
- * CITED's palette, shared with the landing page. Proof green is the one strong colour: it marks
+ * CITED's palette, shared with the landing page. Proof cobalt is the one strong colour: it marks
  * what the test caused and what was paid. Amber marks money still held (30-day hold, disputes).
  */
 export const C = {
-  paper: "#FAF8F4",
-  surface: "#FFFDF9",
-  ink: "#16181D",
-  muted: "#5B5F68",
-  proof: "#1F7A55",
-  proofTint: "#E3EFE8",
+  paper: "#FAFAFA",
+  surface: "#FFFFFF",
+  ink: "#0A0A0A",
+  muted: "#737373",
+  proof: "#2547D0",
+  proofTint: "#E9EDFB",
   amber: "#B7791F",
   amberTint: "#F5EAD6",
-  hairline: "#E6E2DA",
-  quiet: "#C9C3B8",
+  hairline: "#E5E5E5",
+  quiet: "#C4C4C4",
 } as const;
 
-export const SERIF = `"Newsreader", Georgia, "Times New Roman", serif`;
-export const SANS = `"Geist", "Geist Fallback", system-ui, sans-serif`;
+export const SERIF = `"Instrument Serif", Georgia, "Times New Roman", serif`;
+export const SANS = `"DM Sans", system-ui, sans-serif`;
 
 export const citedTheme = studioTheme.withParams({
   browserColorScheme: "light",

@@ -19,7 +19,7 @@ const STAGES: [id: string, label: string][] = [
 ];
 
 /* After the shared dark theme. */
-const TRY_DARK = `main{max-width:1280px;padding-left:clamp(16px,4vw,56px);padding-right:clamp(16px,4vw,56px)}button{background:var(--cream);color:var(--bg);font-family:var(--sans);font-weight:500;letter-spacing:0;text-transform:none;font-size:.9rem;border-radius:999px}button:hover{background:#2B2E36}`;
+const TRY_DARK = `main{max-width:1280px;padding-left:clamp(16px,4vw,56px);padding-right:clamp(16px,4vw,56px)}button{background:var(--cream);color:var(--bg);font-family:var(--sans);font-weight:500;letter-spacing:0;text-transform:none;font-size:.9rem;border-radius:10px}button:hover{background:#2B2E36}`;
 
 const CSS = `
 @font-face{font-family:"Newsreader";font-style:normal;font-weight:200 800;font-display:swap;src:url("/fonts/newsreader-latin-opsz-v1.woff2") format("woff2-variations")}
@@ -53,7 +53,7 @@ form{margin:0}
 .cats{border:0;margin:0 0 1.8rem;padding:0;min-width:0}
 .cats legend{padding:0;margin:0 0 .6rem;font-size:.8rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
 .cats .opts{display:flex;flex-wrap:wrap;gap:.5rem}
-.cats label{position:relative;display:inline-flex;align-items:center;min-height:44px;padding:.45rem 1.1rem;border:1.5px solid var(--line);border-radius:999px;font-size:.9rem;font-weight:500;cursor:pointer}
+.cats label{position:relative;display:inline-flex;align-items:center;min-height:44px;padding:.45rem 1.1rem;border:1.5px solid var(--line);border-radius:10px;font-size:.9rem;font-weight:500;cursor:pointer}
 .cats label:hover{border-color:var(--ink)}
 .cats input{position:absolute;inset:0;width:100%;height:100%;margin:0;opacity:0;cursor:pointer}
 .cats label:has(input:checked){background:var(--ink);border-color:var(--ink);color:var(--bg)}
@@ -68,11 +68,11 @@ textarea{display:block;width:100%;max-width:34ch;resize:none;border:0;border-bot
 textarea:focus{outline:none;border-bottom-color:var(--ink);box-shadow:0 1.5px 0 var(--ink)}
 textarea:disabled{color:var(--muted)}
 .controls{display:flex;align-items:center;gap:.8rem 1.2rem;flex-wrap:wrap;margin:1.3rem 0 0}
-button{font:inherit;font-size:.9rem;font-weight:600;background:var(--ink);color:var(--bg);border:1.5px solid var(--ink);border-radius:999px;padding:.65rem 1.4rem;min-height:44px;cursor:pointer}
+button{font:inherit;font-size:.9rem;font-weight:600;background:var(--ink);color:var(--bg);border:1.5px solid var(--ink);border-radius:10px;padding:.65rem 1.4rem;min-height:44px;cursor:pointer}
 button:hover{background:#2B2E36}
 button.quiet{background:transparent;color:var(--ink)}
 button.quiet:hover{background:var(--paper)}
-button.chip{font-family:var(--sans);font-size:.8rem;font-weight:500;letter-spacing:0;text-transform:none;text-align:left;line-height:1.3;border-radius:14px;padding:.5rem .9rem;border-color:var(--line)}
+button.chip{font-family:var(--sans);font-size:.8rem;font-weight:500;letter-spacing:0;text-transform:none;text-align:left;line-height:1.3;border-radius:10px;padding:.5rem .9rem;border-color:var(--line)}
 button.chip:hover{border-color:var(--ink)}
 button:active{transform:scale(.96)}
 button:disabled{background:transparent;border-color:var(--line);color:var(--muted);cursor:default;transform:none}

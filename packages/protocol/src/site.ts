@@ -45,28 +45,33 @@ export const SITE_NAV_TOUCH_CSS =
   "@media (pointer:coarse){.nav a{display:inline-flex;align-items:center;justify-content:center;min-width:44px;min-height:44px}}";
 
 /**
- * The light palette every CITED page shares. `--serif` keeps its name (dozens of rules use it)
- * but now holds the display stack: large Geist at a light weight, not a serif.
+ * The light palette every CITED page shares: near-black ink on white, hairline greys, one cobalt
+ * accent (the landing's). `--serif` is Instrument Serif for display headings, `--sans` DM Sans.
  */
 export const SITE_PALETTE_CSS =
-  ':root{color-scheme:light;--bg:#FFFFFF;--paper:#FFFFFF;--raise:#F6F6F7;--ink:#0B0D10;--ink-2:#33363D;--muted:#5F636B;--line:#ECECEE;--line-strong:#D9DADD;--test:#1F7A55;--test-tint:#E8F3EE;--held:#B7791F;--held-ink:#8A5A12;--held-tint:#F7EEDD;--void:#9B3B2A;--cream:#0B0D10;--link:#2E6BE6;--pp-text:#003087;--serif:"Geist","Geist Fallback",ui-sans-serif,system-ui,sans-serif}';
+  ':root{color-scheme:light;--bg:#FFFFFF;--paper:#FFFFFF;--raise:#FAFAFA;--ink:#0A0A0A;--ink-2:#3F3F46;--muted:#737373;--line:#E5E5E5;--line-strong:#D4D4D4;--accent:#2547D0;--test:#2547D0;--test-tint:#E9EDFB;--held:#B7791F;--held-ink:#8A5A12;--held-tint:#F7EEDD;--void:#B42318;--cream:#0A0A0A;--link:#2547D0;--pp-text:#003087;--serif:"Instrument Serif",ui-serif,Georgia,serif;--sans:"DM Sans",ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;--mono:"Geist Mono",ui-monospace,SFMono-Regular,Menlo,monospace}';
 
 /**
- * The theme shared by the server-rendered pages (console, /try, /creators, /mcp). Pages append
- * it after their own CSS: it redefines the tokens they already use and restyles the shared
- * pieces (buttons, headings) into black pills and light display type.
+ * The theme shared by the server-rendered pages (console, /try, /creators, /mcp, ledger, 404).
+ * Pages append it after their own CSS: it redefines the tokens they already use and restyles the
+ * shared pieces (buttons, headings, code) to match the landing: DM Sans text, Instrument Serif
+ * display headings, dashed hairlines and 10px-radius buttons.
  */
 export const SITE_THEME_CSS = [
+  '@font-face{font-family:"Instrument Serif";font-style:normal;font-weight:400;font-display:swap;src:url("/fonts/instrument-serif-latin-v1.woff2") format("woff2")}',
+  '@font-face{font-family:"Instrument Serif";font-style:italic;font-weight:400;font-display:swap;src:url("/fonts/instrument-serif-latin-italic-v1.woff2") format("woff2")}',
   SITE_PALETTE_CSS,
-  "body{background:var(--bg)}",
+  "body{background:var(--bg);font-family:var(--sans);font-synthesis-weight:none;-webkit-font-smoothing:antialiased}",
   "::selection{background:var(--test-tint);color:var(--ink)}",
-  ":focus-visible{outline-color:var(--link)}",
-  "h1,h2{font-weight:400;letter-spacing:-.025em}",
-  ".btn{background:var(--cream);color:var(--bg);font-family:var(--sans);font-weight:500;letter-spacing:0;text-transform:none;font-size:.9rem;border-radius:999px;padding:.6rem 1.1rem}",
-  ".btn:hover{background:#2B2E36}",
-  ".btn.ghost{background:transparent;color:var(--ink);box-shadow:inset 0 0 0 1px var(--line-strong)}",
-  ".btn.ghost:hover{box-shadow:inset 0 0 0 1px var(--ink-2)}",
-  "code{background:var(--raise)}",
+  ":focus-visible{outline-color:var(--accent)}",
+  "h1,h2{font-family:var(--serif);font-weight:400;letter-spacing:-.015em}",
+  "h1{line-height:1.05}",
+  "hr{border:0;border-top:1px dashed var(--line)}",
+  ".btn{background:var(--cream);color:var(--bg);font-family:var(--sans);font-weight:500;letter-spacing:0;text-transform:none;font-size:.9rem;border-radius:10px;padding:.6rem 1rem}",
+  ".btn:hover{background:#27272A}",
+  ".btn.ghost{background:color-mix(in srgb,var(--ink) 5%,transparent);color:var(--ink);box-shadow:none}",
+  ".btn.ghost:hover{background:color-mix(in srgb,var(--ink) 9%,transparent)}",
+  "code{font-family:var(--mono);background:var(--raise);box-shadow:inset 0 0 0 1px var(--line);border-radius:5px}",
 ].join("");
 
 /** The nav entry the top bar shows as its call-to-action pill instead of a plain link. */

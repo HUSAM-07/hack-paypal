@@ -53,11 +53,14 @@ export function SiteHeader({
   skip,
   column,
   links,
+  theme = true,
 }: {
   current?: SiteNavKey;
   skip?: boolean;
   column?: boolean;
   links?: SiteNavKey[];
+  /** Show the light/dark toggle; off for pages without a dark theme. */
+  theme?: boolean;
 }) {
   const cta = SITE_NAV.find((l) => l.key === SITE_CTA_KEY);
   const nav = SITE_NAV.filter((l) => l.key !== SITE_CTA_KEY && (!links || links.includes(l.key)));
@@ -94,7 +97,7 @@ export function SiteHeader({
                 <path d="M6 13.2c-2.6.8-2.6-1.3-3.6-1.6m7.2 3v-2.2c0-.7.1-1-.3-1.4 1.9-.2 3.6-.9 3.6-4a3.1 3.1 0 0 0-.8-2.1 2.9 2.9 0 0 0-.1-2.1s-.7-.2-2.2.8a7.6 7.6 0 0 0-4 0C4.3 2.6 3.6 2.8 3.6 2.8a2.9 2.9 0 0 0-.1 2.1 3.1 3.1 0 0 0-.8 2.1c0 3.1 1.7 3.8 3.6 4-.4.4-.4.8-.3 1.4v2.2" />
               </svg>
             </a>
-            <ThemeToggle />
+            {theme ? <ThemeToggle /> : null}
             {cta && (
               <a
                 className="site-cta"

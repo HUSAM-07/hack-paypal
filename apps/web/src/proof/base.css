@@ -1,10 +1,24 @@
 /* /proof base (the previous landing stylesheet): tokens, header, sections, tables, footer. proof.css builds on it. */
 
 @font-face {
-  font-family: "Geist";
-  src: url("/fonts/geist-latin-v1.woff2") format("woff2");
-  font-weight: 100 900;
+  font-family: "DM Sans";
+  src: url("/fonts/dm-sans-latin-v1.woff2") format("woff2-variations");
+  font-weight: 100 1000;
   font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Instrument Serif";
+  src: url("/fonts/instrument-serif-latin-v1.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Instrument Serif";
+  src: url("/fonts/instrument-serif-latin-italic-v1.woff2") format("woff2");
+  font-weight: 400;
+  font-style: italic;
   font-display: swap;
 }
 @font-face {
@@ -18,25 +32,28 @@
 :root {
   --bg: #ffffff;
   --paper: #ffffff;
-  --raise: #f6f6f7;
-  --ink: #0b0d10;
-  --ink-2: #33363d;
-  --muted: #5f636b;
-  --dim: #c9cbd0;
-  --rule: #ececee;
-  --rule-strong: #d9dadd;
-  --proof: #1f7a55;
-  --proof-tint: #e8f3ee;
+  --raise: #fafafa;
+  --ink: #0a0a0a;
+  --ink-2: #3f3f46;
+  --muted: #737373;
+  --dim: #c4c4c4;
+  --rule: #e5e5e5;
+  --rule-strong: #d4d4d4;
+  --proof: #2547d0;
+  --proof-tint: #e9edfb;
   --held: #b7791f;
   --held-ink: #8a5a12; /* amber for text: --held is below AA on white */
   --void: #9b3b2a;
   --none: #c9cbd0;
-  --cream: #0b0d10; /* primary button fill */
-  --cream-hover: #2b2e36;
-  --link: #2e6be6;
-  /* Display type: large Geist at a light weight. The name is historical; rules use it widely. */
-  --serif: "Geist", "Geist Fallback", ui-sans-serif, system-ui, sans-serif;
-  --sans: "Geist", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --cream: #0a0a0a; /* primary button fill */
+  --cream-hover: #27272a;
+  --link: #2547d0;
+  /* Names the shared top bar reads. */
+  --line: var(--rule);
+  --accent: var(--proof);
+  /* Display type, as on the landing: Instrument Serif headings, DM Sans text. */
+  --serif: "Instrument Serif", ui-serif, Georgia, serif;
+  --sans: "DM Sans", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
   --mono: "Geist Mono", ui-monospace, "SF Mono", Menlo, monospace;
   --frame: 1200px;
   /* Sky and pastel tints for the hero, closer and feature panels. */
@@ -59,7 +76,7 @@
   color-scheme: light;
 }
 @media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
+  :root:not([data-theme="light"]):not(.light) {
     --bg: #0b0c0e;
     --paper: #111215;
     --raise: #16171a;
@@ -69,8 +86,8 @@
     --dim: #3a3d44;
     --rule: #222429;
     --rule-strong: #33363d;
-    --proof: #4fbf8b;
-    --proof-tint: #12291f;
+    --proof: #7d98ff;
+    --proof-tint: #161d3a;
     --held: #e0a34a;
     --held-ink: #e8b46a;
     --void: #e0735f;
@@ -97,7 +114,8 @@
     color-scheme: dark;
   }
 }
-:root[data-theme="dark"] {
+:root[data-theme="dark"],
+:root.dark {
   --bg: #0b0c0e;
   --paper: #111215;
   --raise: #16171a;
@@ -107,8 +125,8 @@
   --dim: #3a3d44;
   --rule: #222429;
   --rule-strong: #33363d;
-  --proof: #4fbf8b;
-  --proof-tint: #12291f;
+  --proof: #7d98ff;
+  --proof-tint: #161d3a;
   --held: #e0a34a;
   --held-ink: #e8b46a;
   --void: #e0735f;
@@ -1531,4 +1549,26 @@ em {
 }
 .btn-tour:hover {
   background: #d9eadf;
+}
+
+/* The top bar's theme toggle: CSS picks the icon, so prerendered markup matches either theme. */
+.theme-sun {
+  display: none;
+}
+:root.dark .theme-sun {
+  display: block;
+}
+:root.dark .theme-moon {
+  display: none;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not(.light) .theme-sun {
+    display: block;
+  }
+  :root:not(.light) .theme-moon {
+    display: none;
+  }
+}
+body {
+  font-synthesis-weight: none;
 }

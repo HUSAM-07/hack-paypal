@@ -22,28 +22,41 @@
   src: url("/fonts/geist-mono-latin-v1.woff2") format("woff2-variations");
 }
 @font-face {
-  font-family: "Newsreader";
+  font-family: "DM Sans";
   font-style: normal;
-  font-weight: 200 800;
+  font-weight: 100 1000;
   font-display: swap;
-  src: url("/fonts/newsreader-latin-opsz-v1.woff2") format("woff2-variations");
+  src: url("/fonts/dm-sans-latin-v1.woff2") format("woff2-variations");
+}
+@font-face {
+  font-family: "Instrument Serif";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/instrument-serif-latin-v1.woff2") format("woff2");
 }
 
 :root {
-  --paper: #faf8f4;
-  --surface: #fffdf9;
-  --ink: #16181d;
-  --muted: #5b5f68;
-  --proof: #1f7a55;
-  --proof-tint: #e3efe8;
+  /* The landing's palette: white sheet, hairline greys, one cobalt accent for proof. */
+  --paper: #fafafa;
+  --surface: #ffffff;
+  --ink: #0a0a0a;
+  --muted: #737373;
+  --proof: #2547d0;
+  --proof-tint: #e9edfb;
   --amber: #b7791f;
   --amber-ink: #8a5a12; /* amber for text: --amber is 3.4:1 on --paper, below AA */
   --amber-tint: #f5ead6;
-  --hair: #e6e2da;
-  --quiet: #c9c3b8;
-  --void: #9b3b2a;
-  --serif: "Newsreader", Georgia, "Times New Roman", serif;
-  --sans: "Geist", "Geist Fallback", system-ui, sans-serif;
+  --hair: #e5e5e5;
+  --quiet: #c4c4c4;
+  --void: #b42318;
+  --serif: "Instrument Serif", Georgia, "Times New Roman", serif;
+  --sans: "DM Sans", system-ui, sans-serif;
+  /* Names the shared top bar reads. */
+  --bg: var(--surface);
+  --line: var(--hair);
+  --accent: var(--proof);
+  --ink-2: #3f3f46;
 }
 * {
   box-sizing: border-box;
@@ -60,6 +73,7 @@ body {
   font: 14px / 1.45 var(--sans);
   -webkit-font-smoothing: antialiased;
   font-variant-numeric: tabular-nums;
+  font-synthesis-weight: none;
 }
 
 /* ── Page shell ── */

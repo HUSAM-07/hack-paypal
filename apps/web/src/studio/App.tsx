@@ -209,7 +209,7 @@ export function App() {
 
   return (
     <>
-      <SiteHeader current="studio" skip />
+      <SiteHeader current="studio" skip theme={false} />
       <div className="st-page">
         <section className="st-head" aria-labelledby="st-h1">
           <div className="st-title">
