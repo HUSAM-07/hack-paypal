@@ -2,7 +2,7 @@ import type { RawWhatIf, Scope } from "@cited/studio/tables";
 
 /** What the page hands every widget through AG Studio's `context` property. */
 export interface StudioContext {
-  view: "brand" | "creator";
+  view: "brand" | "creator" | "trust";
   brandId: string;
   creatorId: string;
   /** "First payout" (the day-30 batch) or "Programme to date". */

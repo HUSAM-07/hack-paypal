@@ -21,6 +21,7 @@ import { initialState, sourcesFor } from "./layout";
 import { citedTheme } from "./theme";
 import { ArmStrip, CausedTile, CreatorTiles, DepositMeter, ReviewFlags } from "./widgets/cited";
 import { JourneysGrid } from "./widgets/JourneysGrid";
+import { TrustList, TrustSummary } from "./widgets/trust";
 import { WhatIfPanel } from "./widgets/WhatIf";
 
 // biome-ignore lint/suspicious/noExplicitAny: our widgets take no data mapping
@@ -78,6 +79,22 @@ const widgets = (defaults: AgWidgetsConfig<AgCoreDefaultRegistry>) =>
         minSize: { width: 300, height: 300 },
       },
       {
+        id: "cited-trust-summary",
+        label: "Trust summary",
+        comp: TrustSummary,
+        form,
+        defaultSize: { width: 900, height: 200 },
+        minSize: { width: 300, height: 160 },
+      },
+      {
+        id: "cited-trust-list",
+        label: "Trust review",
+        comp: TrustList,
+        form,
+        defaultSize: { width: 900, height: 360 },
+        minSize: { width: 320, height: 200 },
+      },
+      {
         id: "cited-journeys",
         label: "Journeys & creator split (Shapley)",
         comp: JourneysGrid,
@@ -98,6 +115,8 @@ const widgets = (defaults: AgWidgetsConfig<AgCoreDefaultRegistry>) =>
           "cited-whatif",
           "cited-journeys",
           "cited-flags",
+          "cited-trust-summary",
+          "cited-trust-list",
         ],
       },
     ],
