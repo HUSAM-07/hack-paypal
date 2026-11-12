@@ -119,6 +119,37 @@ export interface RawJourney {
   capturedAt: string;
 }
 
+/**
+ * The recorded sales behind the Studio commission what-if (engine `GET /what-if`). Money is
+ * integer minor units; the page re-runs the ledger's own maths on it and never writes back.
+ */
+export interface RawWhatIf {
+  brands: {
+    brandId: string;
+    upc: string;
+    currency: string;
+    causedUnits: number;
+    sales: RawWhatIfSale[];
+    selfDealtSales: RawWhatIfSale[];
+    coalitions: Record<string, number>;
+  }[];
+  /** True when there were too many sales to send: the panel says so instead of guessing. */
+  truncated: boolean;
+}
+
+export interface RawWhatIfSale {
+  captureId: string;
+  orderId: string;
+  shopId: string;
+  upc: string;
+  amount: { amountMinor: number; currency: string };
+  sessionId: string;
+  arm: ArmName;
+  creatorsSeen: string[];
+  model: string;
+  capturedAt: string;
+}
+
 export interface RawEngine {
   now: string;
   lift: RawLift[];
@@ -129,6 +160,8 @@ export interface RawEngine {
   payouts?: RawPayoutBatch[];
   /** Review flags (guard holds and late-refund notes). Optional, like `payouts`. */
   reviewFlags?: RawReviewFlag[];
+  /** Inputs for the commission what-if. Optional: an older engine does not have the endpoint. */
+  whatIf?: RawWhatIf | null;
 }
 
 export interface BrandView {
@@ -328,7 +361,7 @@ export function createEngineReader(opts: {
     return (await res.json()) as T;
   }
   return async () => {
-    const [clock, lift, deposits, credits, journeys, payouts, flags] = await Promise.all([
+    const [clock, lift, deposits, credits, journeys, payouts, flags, whatIf] = await Promise.all([
       get<{ now: string }>("/clock"),
       get<{ brands: RawLift[] }>("/lift"),
       get<{ brands: RawDeposits[] }>("/deposits"),
@@ -336,6 +369,8 @@ export function createEngineReader(opts: {
       get<{ journeys: RawJourney[] }>("/journeys?limit=200"),
       get<{ batches: RawPayoutBatch[] }>("/payouts"),
       get<{ flags: RawReviewFlag[] }>("/review-flags"),
+      // Only the what-if panel uses it, so an engine without it must not break the dashboards.
+      get<RawWhatIf>("/what-if").catch(() => null),
     ]);
     return {
       now: clock.now,
@@ -345,6 +380,7 @@ export function createEngineReader(opts: {
       journeys: journeys.journeys,
       payouts: payouts.batches,
       reviewFlags: flags.flags,
+      whatIf,
     };
   };
 }

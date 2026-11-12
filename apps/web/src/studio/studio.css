@@ -699,6 +699,113 @@ body {
   clip-path: inset(50%);
 }
 
+/* Commission what-if */
+.cw-wi-flag {
+  margin: 0;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: var(--amber-tint, #f5ead6);
+  color: var(--ink);
+  font-size: 13px;
+  line-height: 1.45;
+}
+.cw-wi-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 12px 24px;
+}
+.cw-wi-controls label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12.5px;
+  color: var(--muted);
+}
+.cw-wi-rate {
+  flex: 1 1 240px;
+  min-width: 0;
+}
+.cw-wi-rate output {
+  margin-left: 6px;
+  color: var(--ink);
+  font: 400 20px / 1 var(--serif);
+}
+.cw-wi-rate input {
+  width: 100%;
+  accent-color: var(--proof);
+}
+.cw-wi-deposit input {
+  width: 130px;
+  padding: 6px 8px;
+  border: 1px solid var(--hair);
+  border-radius: 6px;
+  background: var(--paper);
+  color: var(--ink);
+  font: inherit;
+}
+.cw-wi-reset {
+  padding: 7px 12px;
+  border: 1px solid var(--hair);
+  border-radius: 6px;
+  background: var(--paper);
+  color: var(--ink);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+.cw-wi-reset:disabled {
+  color: var(--muted);
+  cursor: default;
+}
+.cw-wi input:focus-visible,
+.cw-wi-reset:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+.cw-wi-tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 12px;
+  margin: 0;
+}
+.cw-wi-tile {
+  padding: 10px 14px;
+  border-radius: 8px;
+  border: 1px solid var(--hair);
+  background: var(--paper);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.cw-wi-tile dt {
+  font-size: 12px;
+  color: var(--muted);
+}
+.cw-wi-tile dd {
+  margin: 0;
+  font: 400 30px / 1.05 var(--serif);
+  letter-spacing: -0.02em;
+}
+.cw-wi-tile.is-paid dd {
+  color: var(--proof);
+}
+.cw-wi-tile small {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.4;
+}
+.cw-wi-grid {
+  flex: none;
+}
+.cw-wi-what {
+  font-weight: 600;
+}
+.cw-wi-total {
+  font-weight: 600;
+  border-top: 1px solid var(--hair);
+}
+
 @media (max-width: 760px) {
   .st-head {
     padding: 14px 16px 12px;
@@ -747,5 +854,205 @@ body {
 @media (pointer: coarse) {
   .st-seg button {
     min-height: 44px;
+  }
+}
+
+/* Trust view: stopped money against paid, then every stopped credit with its reason */
+.cw-trust-figures {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  margin: 0;
+}
+.cw-trust-figures > div {
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: var(--paper);
+  border: 1px solid var(--hair);
+  border-left: 3px solid var(--c, var(--quiet));
+}
+.cw-trust-figures dt {
+  color: var(--muted);
+  font-size: 12px;
+}
+.cw-trust-figures dd {
+  margin: 2px 0 0;
+  font: 500 28px / 1.1 var(--serif);
+  letter-spacing: -0.01em;
+  font-variant-numeric: tabular-nums;
+}
+.cw-trust-figures small {
+  display: block;
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.35;
+}
+.cw-trust-figures .is-paid {
+  --c: var(--proof);
+}
+.cw-trust-figures .is-paid dd {
+  color: var(--proof);
+}
+.cw-trust-figures .is-held,
+.cw-trust-figures .is-frozen {
+  --c: var(--amber);
+}
+.cw-trust-figures .is-held dd,
+.cw-trust-figures .is-frozen dd {
+  color: var(--amber-ink);
+}
+.cw-trust-figures .is-voided {
+  --c: var(--void);
+}
+.cw-trust-figures .is-voided dd {
+  color: var(--void);
+}
+.cw-trust-bar {
+  display: flex;
+  height: 12px;
+  gap: 2px;
+  flex: none;
+}
+.cw-trust-bar span {
+  min-width: 3px;
+  background: var(--c);
+  transition: flex-grow 600ms cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+.cw-trust-bar span:first-child {
+  border-radius: 3px 0 0 3px;
+}
+.cw-trust-bar span:last-child {
+  border-radius: 0 3px 3px 0;
+}
+.cw-trust-bar .is-paid {
+  --c: var(--proof);
+}
+.cw-trust-bar .is-held {
+  --c: var(--amber);
+}
+.cw-trust-bar .is-frozen {
+  --c: #d9b36a;
+}
+.cw-trust-bar .is-voided {
+  --c: var(--void);
+}
+.cw-trust {
+  gap: 12px;
+}
+.cw-trust-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.cw-trust-chips button {
+  max-width: 100%;
+  text-align: left;
+  font: 500 13px / 1.25 var(--sans);
+  background: var(--surface);
+  color: var(--muted);
+  border: 1px solid var(--hair);
+  border-radius: 999px;
+  padding: 8px 12px;
+  min-height: 34px;
+  cursor: pointer;
+}
+.cw-trust-chips button b {
+  margin-left: 4px;
+  font-weight: 600;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+.cw-trust-chips button[aria-pressed="true"] {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: var(--paper);
+}
+.cw-trust-chips button[aria-pressed="true"] b {
+  color: var(--paper);
+}
+.cw-trust-chips button:active {
+  transform: scale(0.96);
+}
+.cw-trust-chips button:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+.cw-trust-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.cw-trust-row {
+  display: grid;
+  grid-template-columns: 150px minmax(0, 1fr) auto;
+  gap: 8px 18px;
+  align-items: start;
+  padding: 12px 0;
+  border-top: 1px solid var(--hair);
+}
+.cw-trust-main {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+}
+.cw-trust-amount {
+  font: 500 22px / 1.1 var(--serif);
+  font-variant-numeric: tabular-nums;
+}
+.cw-trust-row.is-voided .cw-trust-amount {
+  color: var(--void);
+  text-decoration: line-through;
+  text-decoration-thickness: 1px;
+}
+.cw-trust-why {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.cw-trust-why b {
+  font-weight: 600;
+}
+.cw-trust-why span {
+  color: var(--ink);
+  text-wrap: pretty;
+}
+.cw-trust-why small {
+  color: var(--muted);
+  font-size: 12px;
+}
+.cw-trust-actions {
+  white-space: nowrap;
+}
+/* Container queries: a widget resized small in the editor stacks the same way a phone's would. */
+.cw-trust-sum,
+.cw-trust {
+  container-type: inline-size;
+}
+@container (max-width: 560px) {
+  .cw-trust-figures {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+  .cw-trust-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .cw-trust-main {
+    flex-direction: row;
+    align-items: center;
+    gap: 10px;
+  }
+  .cw-trust-actions {
+    text-align: left;
+  }
+  .cw-trust-actions button:first-child {
+    margin-left: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .cw-trust-bar span {
+    transition: none;
   }
 }

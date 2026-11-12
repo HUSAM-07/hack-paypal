@@ -2,7 +2,7 @@ import type { Scope } from "@cited/studio/tables";
 import type { AgStudioApi, AgStudioApiReadyEvent } from "ag-studio";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { SiteHeader } from "../landing/SiteHeader";
-import { type StudioContext, scopeStore } from "./context";
+import { type StudioContext, scopeStore, whatIfStore } from "./context";
 import { diffTables, getJson, POLL_MS, type StudioConfig, type StudioTables } from "./data";
 import { startPolling } from "./poll";
 import { scopeFromParams, searchWithScope } from "./scope";
@@ -48,7 +48,17 @@ function displayName(raw: string | null): string | undefined {
 }
 
 function viewFromPath(): StudioContext["view"] {
-  return window.location.pathname.replace(/\/$/, "").endsWith("/creator") ? "creator" : "brand";
+  if (window.location.pathname.replace(/\/$/, "").endsWith("/creator")) return "creator";
+  return new URLSearchParams(window.location.search).get("page") === "trust" ? "trust" : "brand";
+}
+
+/** /studio/creator for the creator, /studio?page=trust for Trust, /studio for the brand. */
+export function urlFor(v: StudioContext["view"], search: string): string {
+  const q = new URLSearchParams(search);
+  q.delete("page");
+  if (v === "trust") q.set("page", "trust");
+  const rest = q.toString();
+  return `${v === "creator" ? "/studio/creator" : "/studio"}${rest ? `?${rest}` : ""}`;
 }
 
 export function App() {
@@ -79,6 +89,7 @@ export function App() {
     Promise.all([getJson<StudioConfig>("/config"), getJson<StudioTables>("/data")])
       .then(([c, d]) => {
         last.current = d;
+        whatIfStore.set(d.whatIf ?? null);
         setConfig(c);
         setFirst(d);
         setAsOf(d.asOf);
@@ -95,6 +106,7 @@ export function App() {
       try {
         const next = await getJson<StudioTables>("/data");
         setLive(true);
+        whatIfStore.set(next.whatIf ?? null);
         setAsOf(next.asOf);
         setFirstBatch(next.firstBatch?.label ?? null);
         const engine = api.current?.getDataEngine();
@@ -114,8 +126,7 @@ export function App() {
 
   const go = useCallback((v: StudioContext["view"]) => {
     setView(v);
-    const path = v === "creator" ? "/studio/creator" : "/studio";
-    window.history.replaceState(null, "", `${path}${window.location.search}`);
+    window.history.replaceState(null, "", urlFor(v, window.location.search));
     const a = api.current;
     if (a) a.setState({ ...a.getState(), selectedPageId: v });
   }, []);
@@ -144,11 +155,19 @@ export function App() {
         <header className="st-head">
           <div className="st-title">
             <span className="st-mark">AG Studio</span>
-            <h1>{view === "brand" ? "Purifier programme · Winix" : `${creatorName} · creator`}</h1>
+            <h1>
+              {view === "brand"
+                ? "Purifier programme · Winix"
+                : view === "trust"
+                  ? "Trust review · Winix"
+                  : `${creatorName} · creator`}
+            </h1>
             <p>
               {view === "brand"
                 ? "Maya, brand manager. Winix pays only for the sales its creators' tests caused."
-                : "Every credit from the purifier test: pending, held for review, frozen, voided or paid."}
+                : view === "trust"
+                  ? "Every credit that was held, frozen or voided, and exactly why. Nothing here is paid until a person or PayPal decides."
+                  : "Every credit from the purifier test: pending, held for review, frozen, voided or paid."}
             </p>
           </div>
           <div className="st-controls">
@@ -158,6 +177,9 @@ export function App() {
               </button>
               <button type="button" aria-pressed={view === "creator"} onClick={() => go("creator")}>
                 Creator
+              </button>
+              <button type="button" aria-pressed={view === "trust"} onClick={() => go("trust")}>
+                Trust
               </button>
             </nav>
             {view === "brand" ? (

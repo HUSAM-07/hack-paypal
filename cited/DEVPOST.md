@@ -42,7 +42,7 @@ No login, no keys. Open in this order:
 4. <https://pact-worker.vincent-wesley-liem.workers.dev/proof>: the pre-registered eval (147 headline sessions, +94pp, 80% bound +90.3pp); all 1,551 sessions download as CSV; `#vacuums` repeats the study on robot vacuums.
 5. <https://pact-worker.vincent-wesley-liem.workers.dev/studio?view=first>: the brand's AG Studio dashboard. Ask the Analyst "Should we raise the purifier cap?": it hands the work to Studio's Data, Page and Widget agents, adds a chart, and answers from the ledger (on the hosted data, which already includes a top-up, it says keep the cap; the video shows the Approve flow). "Why did Levoit pay nothing?" answers in about 10 seconds. `/studio/creator?clean=1` is the creator's view.
 6. <https://pact-worker.vincent-wesley-liem.workers.dev/try>: run a shopping agent yourself.
-7. Your own agent: `claude mcp add --transport http cited https://pact-worker.vincent-wesley-liem.workers.dev/mcp`, then ask it to buy an air purifier.
+7. Your own agent: `claude mcp add --transport http cited https://pact-worker.vincent-wesley-liem.workers.dev/mcp`, then ask it to buy an air purifier. Open the same URL in a browser: the page has copy buttons for Claude Code, Claude Desktop and Cursor, and a live list of your agent's sale (which creator test it was shown, the disclosure, and the credit CITED would give), kept out of the study numbers.
 8. <https://pact-worker.vincent-wesley-liem.workers.dev/creators>: onboard as a creator (simulated Log in with PayPal) and publish a test.
 
 Fallback, locally with Node 22+ (no keys; simulated PayPal, scripted agents):
@@ -84,7 +84,7 @@ CITED pays creators for sales their tests cause, measured with a randomised hold
 
 **Who pays and who earns.** Brands pay commission only on sales their creators' tests caused, out of a deposit they control, and get back whatever is unspent. CITED, run by PayPal, would take a platform fee on the commission it settles, as affiliate networks take an override today, so it earns only when a test provably caused a sale (the demo charges no fee). PayPal gains more than the fee: every caused sale is a PayPal checkout, every creator payment a Payouts transfer and every brand statement a PayPal invoice.
 
-Judges can check it four ways: read the pre-registration and per-model results at `/proof` (all 1,551 sessions downloadable), watch the recorded two-agent demo at `/console` and Studio, run a live agent at `/try`, or point their own agent at the public MCP server at `/mcp` and buy a purifier.
+Judges can check it four ways: read the pre-registration and per-model results at `/proof` (all 1,551 sessions downloadable), watch the recorded two-agent demo at `/console` and Studio, run a live agent at `/try`, or point their own agent at the public MCP server at `/mcp`, buy a purifier, and watch the sale appear on the same page.
 
 ## How we built it
 
