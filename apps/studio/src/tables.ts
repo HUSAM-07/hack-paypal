@@ -517,7 +517,7 @@ export const TABLES: TableMeta[] = [
     id: "arms",
     name: "Arms",
     description:
-      "Agent sessions per brand per arm: shown the test, a same-creator placebo, or held out. Ranking was identical in every arm. One row per scope: the first payout's cycle, or the programme to date.",
+      "Agent sessions per brand per group: shown the test, a same-creator placebo, or held out. Ranking was identical in every group. One row per scope: the first payout's cycle, or the programme to date.",
     fields: [
       t("id", "Row id"),
       t("brandId", "Brand id"),
@@ -525,7 +525,7 @@ export const TABLES: TableMeta[] = [
       t("scope", "Scope"),
       t("scopeKey", "Scope key"),
       t("armKey", "Arm key"),
-      t("arm", "Arm"),
+      t("arm", "Group"),
       n("sessions", "Sessions"),
       n("purchases", "Purchases of this brand"),
       p("share", "Share of sessions buying this brand"),
@@ -585,7 +585,7 @@ export const TABLES: TableMeta[] = [
       t("id", "Row id"),
       t("orderId", "PayPal order"),
       t("model", "Agent model"),
-      t("arm", "Arm"),
+      t("arm", "Group"),
       t("product", "Product"),
       t("firstStore", "Store read first"),
       m("firstPrice", "Price there"),

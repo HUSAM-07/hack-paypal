@@ -187,7 +187,7 @@ export function ArmStrip(p: P) {
             <b>{pts(num(test.share) - num(placebo.share))}</b>.
           </>
         ) : null}{" "}
-        Every arm sees the same offers in the same order; only the test is added or withheld.
+        Every group sees the same offers in the same order; only the test is added or withheld.
       </p>
     </div>
   );

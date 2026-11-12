@@ -52,7 +52,7 @@ export function initialState(
           },
           arms: {
             type: "cited-arms",
-            format: { title: { enabled: true, text: "Winix share by arm" } },
+            format: { title: { enabled: true, text: "Winix share by group" } },
           },
           deposit: {
             type: "cited-deposit",
