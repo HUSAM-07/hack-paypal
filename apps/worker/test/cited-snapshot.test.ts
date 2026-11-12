@@ -78,6 +78,8 @@ describe("hosted data check", () => {
       brands: [
         { brandId: "winix", causedUnits: 62, exposedSales: 69 },
         { brandId: "levoit", causedUnits: 0, exposedSales: 0 },
+        { brandId: "roborock", causedUnits: 3, exposedSales: 6 },
+        { brandId: "bose", causedUnits: 3, exposedSales: 6 },
       ],
     },
     payouts: {
@@ -99,6 +101,16 @@ describe("hosted data check", () => {
   it("passes the locked numbers", () => {
     expect(LOCKED.programmePaidMinor).toBe(46843);
     expect(checkCited(good)).toEqual([]);
+  });
+
+  it("fails when a funded vacuum or headphone programme measured no lift", () => {
+    const flat = {
+      ...good,
+      lift: {
+        brands: good.lift.brands.map((b) => (b.brandId === "bose" ? { ...b, causedUnits: 0 } : b)),
+      },
+    };
+    expect(checkCited(flat).join("\n")).toMatch(/bose caused units: got 0, want more than 0/);
   });
 
   it("fails an empty ledger loudly", () => {

@@ -64,7 +64,7 @@ Needs Node 22+.
 
 ```bash
 npm ci
-npm run demo:cited     # the full demo in your terminal, 14 beats, self-checking
+npm run demo:cited     # the full demo in your terminal, 15 beats, self-checking
 npm run dev:cited      # every app locally: console, catalogue, agents, studio, engine
 ```
 

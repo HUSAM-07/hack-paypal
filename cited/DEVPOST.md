@@ -54,7 +54,7 @@ Fallback, locally with Node 22+ (no keys; simulated PayPal, scripted agents):
 npm ci && npm run demo:cited
 ```
 
-It plays the 14 beats and ends with 32 ledger-vs-PayPal checks.
+It plays the 15 beats and ends with 45 ledger-vs-PayPal checks.
 
 ---
 
@@ -124,7 +124,7 @@ Judges can check it four ways: read the pre-registration and per-model results a
 - **A pre-registered eval with a real effect.** 147 forced-buy sessions across GPT, Gemini and Sonnet, Winix and Levoit priced the same: shown the test, agents bought Winix 57/57; shown the placebo, 3/54. Lift **+94pp**, 80% lower bound **+90.3pp**, positive in all three models (GPT +89, Gemini +100, Sonnet +94). Across all evals: 2,139 sessions under four pre-registrations, including the cases where it does not pay (a close verdict: lower bound −6.0pp, $0).
 - **It holds in a second category, with an honest smaller number.** The same pre-registered study on robot vacuums (a fictional creator, Roborock Q7 Max vs iRobot Roomba Combo j5, 588 sessions, same three models): priced alike, shown the test agents bought the Roborock 57/57, shown the placebo 45/54, a lift of +16.7pp with an 80% lower bound of +11.7pp. Agents already leaned towards the Roborock, so there was less for the test to add, and the engine credits 5 of 50 sales instead of nearly all; Sonnet showed no lift, so one pre-registered check (positive in every model) is not met. With the Roomba $4 cheaper: +74.1pp, bound +68.6pp.
 - **And a third, with the tested pick listed second.** The same study on noise-cancelling headphones (a fictional creator, Bose QuietComfort Headphones vs Sony WH-1000XM5, 588 sessions, same three models), with the Bose given the higher UPC so that at equal price the Sony is listed first: priced alike, shown the test agents bought the Bose 57/57, shown the placebo 18/54, a lift of +66.7pp with an 80% lower bound of +61.2pp, positive in all three models (GPT +44.4, Gemini +55.6, Sonnet +100.0). The engine credits 30 of 50 sales. With the Sony $4 cheaper: +83.3pp, bound +78.8pp. Much of it is deference to an explicit verdict, in illustrative text we wrote.
-- **The demo checks itself.** `npm run demo:cited` plays 14 beats and ends with 32 reconciliation checks: 160 orders paid sellers from the buyer's wallet, every capture reached the engine, and the ledger's $468.43 paid equals PayPal's 3 payout batches.
+- **The demo checks itself.** `npm run demo:cited` plays 15 beats and ends with 45 reconciliation checks: 190 orders paid sellers from the buyer's wallet, every capture reached the engine, and the ledger's $468.43 paid equals PayPal's 3 payout batches.
 - **A real PayPal sandbox payout** of the headline $383.96 (batch `ME2KV57B7KYNS`, SUCCESS) and a matching Invoicing statement.
 - **Anyone can try it with their own agent**, through the public MCP server, with live sessions kept apart from the recorded numbers.
 - **Every number on the card traces to a committed result.**
