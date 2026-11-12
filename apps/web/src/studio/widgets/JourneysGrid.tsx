@@ -101,7 +101,7 @@ function Detail(p: IDetailCellRendererParams<Journey>) {
         <p className="cw-note">
           {String(d.model)} · {String(d.arm).toLowerCase()} · {String(d.product)}. Order{" "}
           {String(d.orderId)}; the Affiliate Passport rode in <code>custom_id</code>, so the sale
-          joined its arm at whichever store it was paid.
+          joined its group at whichever store it was paid.
         </p>
       </section>
       <section>
@@ -161,7 +161,7 @@ export function JourneysGrid(p: P) {
         minWidth: 210,
       },
       { field: "model", headerName: "Agent", width: 160 },
-      { field: "arm", headerName: "Arm", width: 150 },
+      { field: "arm", headerName: "Group", width: 150 },
       { field: "product", headerName: "Product", width: 150 },
       {
         headerName: "Store paid",
