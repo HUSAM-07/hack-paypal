@@ -1,5 +1,6 @@
 import {
   type CatalogueApp,
+  type CatalogueCallEnv,
   createCatalogueApp,
   createPublishedTests,
   type StoredTestRow,
@@ -184,7 +185,10 @@ export async function serveStatefulDemo(
       const denied = catalogueWriteDenied(req, env);
       if (denied) return denied;
     }
-    return catalogueFor(env, ctx).fetch(strip(req, CATALOGUE_PREFIX));
+    // Only the worker's own code (the internal RPC) is a trusted caller; see CatalogueCallEnv.
+    const callEnv: CatalogueCallEnv | undefined =
+      caller === "internal" ? { trustedCaller: true } : undefined;
+    return catalogueFor(env, ctx).fetch(strip(req, CATALOGUE_PREFIX), callEnv);
   }
   if (path.startsWith(`${CITED_PREFIX}/`)) return serveEngine(req, env, ctx, caller);
   // Reached only through the rate-limited /mcp mount (apps/worker/src/mcp.ts).

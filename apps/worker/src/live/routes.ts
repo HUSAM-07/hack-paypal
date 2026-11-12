@@ -164,10 +164,24 @@ async function admit(
   return { request, category, hash, choice };
 }
 
-/** The catalogue (and, simulated, the engine) live in the one demo Durable Object. */
+/**
+ * The catalogue (and, simulated, the engine) live in the one demo Durable Object. /try calls it
+ * through the internal RPC, as a trusted caller: in sandbox mode only a trusted caller may pick
+ * its session id, which is how the side-by-side fixes each lane's arm.
+ */
 function endpointsFor(c: LiveCtx) {
   const demo = c.env.CITED_DEMO.get(c.env.CITED_DEMO.idFromName("demo"));
-  const toDemo: typeof fetch = (input, init) => demo.fetch(new Request(input, init));
+  // RPC can't carry an AbortSignal (the MCP client sets one), so the request crosses without it.
+  const toDemo: typeof fetch = (input, init) => {
+    const r = new Request(input, init);
+    return demo.internal(
+      new Request(r.url, {
+        method: r.method,
+        headers: r.headers,
+        ...(r.body ? { body: r.body } : {}),
+      }),
+    );
+  };
   return {
     catalogueUrl: `${INTERNAL}/catalogue`,
     catalogueFetch: toDemo,
