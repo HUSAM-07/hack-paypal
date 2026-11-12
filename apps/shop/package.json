@@ -1,0 +1,33 @@
+{
+  "name": "@shop/server",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "dev": "wrangler dev --port 8810",
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "vitest run --passWithNoTests"
+  },
+  "dependencies": {
+    "@ag-ui/core": "^1.0.4",
+    "@ag-ui/encoder": "^1.0.4",
+    "@pact/paypal": "*",
+    "@pact/policy": "*",
+    "@shop/agent-protocol": "*",
+    "@shop/commerce": "*",
+    "@shop/harness": "*",
+    "agents": "^0.33.0",
+    "ai": "^7.0.170",
+    "hono": "^4.13.16",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@cloudflare/vitest-plugin": "^1.4.11",
+    "@cloudflare/workers-types": "^5.20261101.1",
+    "@types/node": "^26.6.6",
+    "wrangler": "^4.156.0"
+  }
+}
