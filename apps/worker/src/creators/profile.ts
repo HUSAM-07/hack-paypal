@@ -20,6 +20,7 @@ import {
   SITE_NAV_TOUCH_CSS,
   SITE_THEME_CSS,
   siteHeader,
+  siteMeta,
   type VerifiedTest,
 } from "@pact/protocol";
 import { Hono } from "hono";
@@ -329,7 +330,7 @@ export function renderProfile(v: ProfileView): string {
     : `<p class="small pay">No payout batch has included ${esc(v.name)} yet.</p>`;
   return `<!doctype html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>${esc(v.name)} · CITED creator</title><link rel="icon" href="/favicon.svg">
+<title>${esc(v.name)} · CITED creator</title>${siteMeta({ title: `${v.name} · CITED creator`, description: `${v.name}: published tests, credited sales and PayPal payouts on CITED.`, path: "/creators" })}
 ${SITE_HEAD_HTML}
 <style>${SITE_THEME_CSS}${CSS}${SITE_NAV_TOUCH_CSS}${SITE_HEADER_CSS}</style></head><body class="site-col">${siteHeader("creators")}
 <div class="ui-frame"><main id="main">
@@ -347,7 +348,7 @@ ${v.disclosure ? `<p class="disclosure"><b>Disclosure.</b> ${esc(v.disclosure)}<
 }
 
 function notFoundHtml(): string {
-  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Creator not found · CITED</title><link rel="icon" href="/favicon.svg">${SITE_HEAD_HTML}<style>${SITE_THEME_CSS}${CSS}${SITE_NAV_TOUCH_CSS}${SITE_HEADER_CSS}</style></head><body class="site-col">${siteHeader("creators")}<div class="ui-frame"><main id="main"><section class="hero"><p class="crumb ui-label">Error 404</p><h1>No creator here</h1><p class="lede">CITED has no creator with that address.</p><p class="cta"><a class="ui-btn ui-btn-solid" href="/creators">Back to creators</a></p></section></main></div></body></html>`;
+  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Creator not found · CITED</title>${siteMeta({ title: "Creator not found · CITED", path: "/creators", noindex: true })}${SITE_HEAD_HTML}<style>${SITE_THEME_CSS}${CSS}${SITE_NAV_TOUCH_CSS}${SITE_HEADER_CSS}</style></head><body class="site-col">${siteHeader("creators")}<div class="ui-frame"><main id="main"><section class="hero"><p class="crumb ui-label">Error 404</p><h1>No creator here</h1><p class="lede">CITED has no creator with that address.</p><p class="cta"><a class="ui-btn ui-btn-solid" href="/creators">Back to creators</a></p></section></main></div></body></html>`;
 }
 
 const html = (body: string, status = 200) =>

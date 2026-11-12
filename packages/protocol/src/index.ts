@@ -3,6 +3,7 @@ export * from "./creator-content";
 export * from "./domain";
 export * from "./fixtures";
 export * from "./ledger-check";
+export * from "./meta";
 export * from "./money";
 export * from "./passport";
 export * from "./programme";

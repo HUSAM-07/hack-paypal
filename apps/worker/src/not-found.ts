@@ -1,4 +1,11 @@
-import { SITE_HEADER_CSS, SITE_NAV_TOUCH_CSS, SITE_THEME_CSS, siteHeader } from "@pact/protocol";
+import {
+  SITE_HEADER_CSS,
+  SITE_ICONS_HTML,
+  SITE_NAV_TOUCH_CSS,
+  SITE_THEME_CSS,
+  siteHeader,
+  siteMeta,
+} from "@pact/protocol";
 
 /** The 404 page inlines its CSS and loads the site fonts; no scripts, no forms, no frames. */
 export const NOT_FOUND_CSP =
@@ -41,7 +48,7 @@ export function notFoundPage(): string {
   return `<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Page not found · CITED</title>
-<meta name="robots" content="noindex">
+${siteMeta({ title: "Page not found · CITED", path: "/", noindex: true })}${SITE_ICONS_HTML}
 <style>${SITE_THEME_CSS}${CSS}${SITE_NAV_TOUCH_CSS}${SITE_HEADER_CSS}</style></head><body class="site-col">
 ${siteHeader()}
 <div class="ui-frame"><main id="main">

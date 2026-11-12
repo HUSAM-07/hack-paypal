@@ -1,3 +1,4 @@
+import { SITE_ICONS_HTML } from "./meta";
 import { SITE_STYLE_CSS } from "./theme";
 
 /**
@@ -54,10 +55,11 @@ export const SITE_NAV_TOUCH_CSS =
 export const SITE_THEME_CSS = SITE_STYLE_CSS;
 
 /**
- * Goes in every page's <head>: applies the saved light/dark choice before first paint and wires
- * every `[data-theme-toggle]` button (public/theme.js; external, so script-src 'self' allows it).
+ * Goes in every page's <head>: icons, the web manifest and the browser theme colours (./meta),
+ * then public/theme.js, which applies the saved light/dark choice before first paint and wires
+ * every `[data-theme-toggle]` button (external, so script-src 'self' allows it).
  */
-export const SITE_HEAD_HTML = '<script src="/theme.js"></script>';
+export const SITE_HEAD_HTML = `${SITE_ICONS_HTML}<script src="/theme.js"></script>`;
 
 /** The light/dark toggle in the top bar. Both icons render; CSS shows the right one. */
 export const SITE_THEME_TOGGLE_HTML =

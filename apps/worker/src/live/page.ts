@@ -10,6 +10,7 @@ import {
   SITE_NAV_TOUCH_CSS,
   SITE_THEME_CSS,
   siteHeader,
+  siteMeta,
 } from "@pact/protocol";
 import { TRY_CATEGORIES, type TryCategoryId, tryCategory } from "./categories";
 
@@ -418,21 +419,7 @@ export function tryPage(o: {
   const last = STAGES.length + 2;
   return `<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Two agents, one request · CITED</title>
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="description" content="Type what the buyer wants. An agent shops, pays a seller through PayPal, and CITED decides whether the creator earns.">
-<meta property="og:type" content="website" />
-<meta property="og:site_name" content="CITED" />
-<meta property="og:title" content="CITED · Run a shopping agent" />
-<meta property="og:description" content="Type what the buyer wants. An agent shops, pays a seller through PayPal, and CITED decides whether the creator earns." />
-<meta property="og:url" content="https://pact-worker.vincent-wesley-liem.workers.dev/try" />
-<meta property="og:image" content="https://pact-worker.vincent-wesley-liem.workers.dev/og/cited-proof-v1.png" />
-<meta property="og:image:width" content="1200" />
-<meta property="og:image:height" content="630" />
-<meta property="og:image:alt" content="Bar chart: 100% of AI agents shown a creator's test bought the Winix, against 6% shown a placebo and 8% shown nothing." />
-<meta name="twitter:card" content="summary_large_image" />
-<meta name="twitter:title" content="CITED · Run a shopping agent" />
-<meta name="twitter:description" content="Type what the buyer wants. An agent shops, pays a seller through PayPal, and CITED decides whether the creator earns." />
-<meta name="twitter:image" content="https://pact-worker.vincent-wesley-liem.workers.dev/og/cited-proof-v1.png" />
-<meta name="twitter:image:alt" content="Bar chart: 100% of AI agents shown a creator's test bought the Winix, against 6% shown a placebo and 8% shown nothing." />
+${siteMeta({ title: "Run a shopping agent · CITED", description: "Type what the buyer wants. An agent shops, pays a seller through PayPal, and CITED decides whether the creator earns.", path: "/try" })}
 ${SITE_HEAD_HTML}
 <style>${SITE_THEME_CSS}${CSS}${SITE_NAV_TOUCH_CSS}${SITE_HEADER_CSS}</style></head><body>
 ${siteHeader("try")}

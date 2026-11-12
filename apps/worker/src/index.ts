@@ -1,3 +1,4 @@
+import { robotsTxt, sitemapXml } from "@pact/protocol";
 import { type Context, Hono } from "hono";
 import { auth } from "./auth/routes";
 import { sessionUser } from "./auth/session";
@@ -101,6 +102,16 @@ app.use("*", securityHeaders);
 app.use("/api/auth/*", ipRateLimit);
 
 app.get("/api/health", (c) => c.json({ ok: true }));
+// Built from the request's own origin, so each deploy target lists its own URLs.
+app.get("/sitemap.xml", (c) =>
+  c.body(sitemapXml(new URL(c.req.url).origin), 200, {
+    "content-type": "application/xml; charset=utf-8",
+    "cache-control": "public, max-age=3600",
+  }),
+);
+app.get("/robots.txt", (c) =>
+  c.text(robotsTxt(new URL(c.req.url).origin), 200, { "cache-control": "public, max-age=3600" }),
+);
 app.route("/api/auth", auth);
 // Before `payments`: PayPal calls this without a session, and the first matching
 // handler wins, so payments' session middleware never sees webhook requests.
