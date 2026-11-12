@@ -1,5 +1,9 @@
 import { SITE_HEADER_CSS, SITE_NAV_TOUCH_CSS, SITE_THEME_CSS, siteHeader } from "@pact/protocol";
 
+/** The 404 page inlines its CSS and loads the site fonts; no scripts, no forms, no frames. */
+export const NOT_FOUND_CSP =
+  "default-src 'none'; style-src 'unsafe-inline'; font-src 'self'; img-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'";
+
 /** A browser asking for a page (not an API client) gets the 404 as a page, not as JSON. */
 export function wantsHtml(path: string, accept: string | undefined): boolean {
   if (path.startsWith("/api/") || path === "/api") return false;
