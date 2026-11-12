@@ -133,6 +133,12 @@ export function App() {
   }, [config]);
 
   const go = useCallback((v: StudioContext["view"]) => {
+    // The Creator Analyst and the brand Analyst are different agents with their own question
+    // chips, chosen when Studio starts; crossing between them reopens the page on the new view.
+    if ((v === "creator") !== (viewFromPath() === "creator")) {
+      window.location.assign(urlFor(v, window.location.search));
+      return;
+    }
     setView(v);
     window.history.replaceState(null, "", urlFor(v, window.location.search));
     const a = api.current;
@@ -244,7 +250,7 @@ export function App() {
               analyst={analyst}
               initialView={initialView}
               creatorName={creatorName}
-              mode={view === "brand" && !narrow ? "edit" : "view"}
+              mode={(view === "brand" || view === "creator") && !narrow ? "edit" : "view"}
               context={context}
               onApiReady={onApiReady}
             />
