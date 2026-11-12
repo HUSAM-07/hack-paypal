@@ -7,6 +7,7 @@ import {
   UPC_SONY_XM5,
   UPC_WINIX_A230,
 } from "./fixtures";
+import { formatCurrency, isProgrammeCurrency, type ProgrammeCurrency } from "./money";
 
 // Brand self-serve: what a brand can pick when it starts a programme, and the one validator the
 // engine and Studio both run, so a private demo programme is refused exactly when a real one is.
@@ -60,7 +61,10 @@ export const PROGRAMME_CATEGORIES: readonly ProgrammeCategory[] = [
 ];
 
 export const PROGRAMME_LIMITS = {
-  /** $100.00 to $10,000.00, in cents. */
+  /**
+   * 100.00 to 10,000.00 in the programme's own currency (USD, GBP or EUR), in minor units. The same
+   * figures apply in each currency: a limit stated in that currency, never a conversion.
+   */
   minDepositMinor: 10_000,
   maxDepositMinor: 1_000_000,
   defaultDepositMinor: 50_000,
@@ -73,8 +77,11 @@ export const PROGRAMME_LIMITS = {
 export interface ProgrammeTermsInput {
   category: string;
   upc: string;
+  /** In the programme's currency. */
   depositMinor: number;
   commissionBps: number;
+  /** USD, GBP or EUR. Absent means USD, as every programme was before currencies. */
+  currency?: string | undefined;
 }
 
 export interface ProgrammeTerms {
@@ -85,9 +92,12 @@ export interface ProgrammeTerms {
   upc: string;
   depositMinor: number;
   commissionBps: number;
+  /** The one currency the deposit, credits, payouts and statement of this programme use. */
+  currency: ProgrammeCurrency;
 }
 
 export type ProgrammeRefusal =
+  | "unsupported_currency"
   | "unknown_category"
   | "unknown_product"
   | "deposit_out_of_range"
@@ -98,7 +108,8 @@ export type ProgrammeCheck =
   | { ok: true; terms: ProgrammeTerms }
   | { ok: false; error: ProgrammeRefusal; message: string };
 
-const dollars = (minor: number) => `$${(minor / 100).toLocaleString("en-US")}`;
+const whole = (minor: number, currency: string) =>
+  formatCurrency(minor, currency, { cents: false });
 
 /**
  * Checks the choices against the catalogue and the programmes that already run (by UPC).
@@ -108,6 +119,13 @@ export function checkProgrammeTerms(
   input: ProgrammeTermsInput,
   runningUpcs: ReadonlySet<string>,
 ): ProgrammeCheck {
+  const currency = input.currency ?? "USD";
+  if (!isProgrammeCurrency(currency))
+    return {
+      ok: false,
+      error: "unsupported_currency",
+      message: "Pick US dollars, British pounds or euros.",
+    };
   const category = PROGRAMME_CATEGORIES.find((c) => c.id === input.category);
   if (!category)
     return {
@@ -131,7 +149,7 @@ export function checkProgrammeTerms(
     return {
       ok: false,
       error: "deposit_out_of_range",
-      message: `The deposit must be between ${dollars(lo)} and ${dollars(hi)}.`,
+      message: `The deposit must be between ${whole(lo, currency)} and ${whole(hi, currency)}.`,
     };
   const { minCommissionBps: cLo, maxCommissionBps: cHi } = PROGRAMME_LIMITS;
   if (
@@ -160,6 +178,7 @@ export function checkProgrammeTerms(
       upc: product.upc,
       depositMinor: input.depositMinor,
       commissionBps: input.commissionBps,
+      currency,
     },
   };
 }

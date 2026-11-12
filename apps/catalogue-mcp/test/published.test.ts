@@ -286,8 +286,13 @@ describe("the catalogue and published tests", () => {
         );
       }
     }
-    // The co-exposed built-in pairing still works for a non-public session.
-    const co = await withPub.search({ query: "air purifier", coExposed: true });
+    // The co-exposed built-in pairing still works for a non-public session. Pick a session in the
+    // test group: a random one can land in the placebo or held-out group and show nothing.
+    const coId = sessionIn(withPub, "test", "co-");
+    const co = await withPub.search({
+      query: "air purifier",
+      passport: await signPassport(withPub.newSession(coId, true), DEV_PASSPORT_KEY),
+    });
     expect(co.creatorContent.map((t) => t.creatorId)).toEqual(["housefresh", "airlab"]);
   });
 

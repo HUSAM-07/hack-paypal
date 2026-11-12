@@ -388,7 +388,7 @@ export function tryPage(o: { request: string; agent: string; scripted: boolean }
 <meta name="twitter:image:alt" content="Bar chart: 100% of AI agents shown a creator's test bought the Winix, against 6% shown a placebo and 8% shown nothing." />
 <style>${CSS}${SITE_NAV_TOUCH_CSS}${SITE_THEME_CSS}${SITE_HEADER_CSS}${TRY_DARK}</style></head><body>
 ${siteHeader("try")}
-<main>
+<main id="main">
 <h1 class="eyebrow">One request, two live shopping agents</h1>
 <form id="ask">
 <label class="sr" for="request">What should the agents buy?</label>

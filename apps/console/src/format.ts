@@ -1,11 +1,16 @@
-export function usd(minor: number): string {
+import { currencySymbol } from "@pact/protocol";
+
+/** "$1,234.00", "£1,234.00", "€1,234.00": the amount's own currency, never converted. */
+export function money(minor: number, currency = "USD"): string {
   const sign = minor < 0 ? "-" : "";
   const abs = Math.abs(minor);
-  const dollars = Math.floor(abs / 100)
+  const whole = Math.floor(abs / 100)
     .toString()
     .replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-  return `${sign}$${dollars}.${String(abs % 100).padStart(2, "0")}`;
+  return `${sign}${currencySymbol(currency)}${whole}.${String(abs % 100).padStart(2, "0")}`;
 }
+
+export const usd = (minor: number): string => money(minor, "USD");
 
 export function esc(s: unknown): string {
   return String(s ?? "").replace(

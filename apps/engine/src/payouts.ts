@@ -154,7 +154,7 @@ interface Payable {
 export function payoutItem(p: Payable, senderBatchId: string) {
   const base = {
     amount: p.line.gross,
-    sender_item_id: senderItemId(p.line.creatorId, senderBatchId),
+    sender_item_id: senderItemId(p.line.creatorId, senderBatchId, p.line.currency),
     note: VENMO_NOTE,
   };
   return p.venmo
@@ -273,9 +273,18 @@ export async function applyBatchStatus(
   await setPayoutStatus(env, paypalBatchId, status);
 }
 
-/** Deterministic per-creator item id inside a batch (the console mirrors this rule). */
-export function senderItemId(creatorId: string, senderBatchId: string): string {
-  return `${creatorId}-${senderBatchId.slice(6, 14)}`.slice(0, 63);
+/**
+ * Deterministic per-creator item id inside a batch (the console mirrors this rule). A batch can
+ * carry one item per creator per currency (each item has its own currency), so a non-USD item's
+ * id ends in its currency: unique in the batch, and USD ids are exactly what they always were.
+ */
+export function senderItemId(
+  creatorId: string,
+  senderBatchId: string,
+  currency: string = "USD",
+): string {
+  const base = `${creatorId}-${senderBatchId.slice(6, 14)}`;
+  return (currency === "USD" ? base : `${base}-${currency}`).slice(0, 63);
 }
 
 /**

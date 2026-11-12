@@ -175,39 +175,39 @@ export function WhatIfPanel(p: P) {
         <div className="cw-wi-tile">
           <dt>Sales the test caused</dt>
           <dd>{what.causedUnits}</dd>
-          <small>
+          <dd className="cw-sub">
             {dueToDeposit
               ? `${today.causedUnits} today: the deposit would run out`
               : "same as today"}
-          </small>
+          </dd>
         </div>
         <div className="cw-wi-tile is-paid">
           <dt>Creators earn</dt>
           <dd>{usd(what.kept.amountMinor)}</dd>
-          <small>
+          <dd className="cw-sub">
             {usd(today.kept.amountMinor)} today
             {unchanged ? "" : ` (${change(what.kept.amountMinor - today.kept.amountMinor)})`}
-          </small>
+          </dd>
         </div>
         <div className="cw-wi-tile">
           <dt>{brandName}'s cost per caused sale</dt>
           <dd>{what.costPerCausedSale ? usd(costNow) : "–"}</dd>
-          <small>
+          <dd className="cw-sub">
             {today.costPerCausedSale ? usd(costWas) : "–"} today
             {unchanged || !what.costPerCausedSale || !today.costPerCausedSale
               ? ""
               : ` (${change(costNow - costWas)})`}
-          </small>
+          </dd>
         </div>
         <div className="cw-wi-tile">
           <dt>Unspent deposit refunded</dt>
           <dd>{usd(what.refunded.amountMinor)}</dd>
-          <small>
+          <dd className="cw-sub">
             {usd(today.refunded.amountMinor)} today
             {unchanged
               ? ""
               : ` (${change(what.refunded.amountMinor - today.refunded.amountMinor)})`}
-          </small>
+          </dd>
         </div>
       </dl>
       <div className="cw-wi-grid" style={{ height: GRID_HEAD + GRID_ROW * gridRows.length + 2 }}>

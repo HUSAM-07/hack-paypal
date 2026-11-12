@@ -6,6 +6,7 @@
  * end, because Studio formats and aggregates plain numbers (display values, never re-summed
  * into a payout). Pure, so every number on screen is testable without a browser.
  */
+import { currencySymbol } from "@pact/protocol";
 import type { ArmName, RawCredit, RawEngine, RawPayoutBatch, RawWhatIf } from "./dashboard";
 import { trustRows } from "./trust";
 
@@ -147,6 +148,12 @@ export function buildTables(raw: RawEngine): StudioTables {
   for (const j of raw.journeys)
     for (const s of j.shapley) orderOfCapture.set(s.captureId, j.orderId);
   const productOf = new Map(raw.lift.map((b) => [b.upc, b.name]));
+  // Every programme lives in one currency; its rows are shown in it, never converted.
+  const currencyOf = new Map<string, string>([
+    ...raw.deposits.map((d) => [d.brandId, d.currency] as const),
+    ...raw.lift.flatMap((b) => (b.currency ? [[b.brandId, b.currency] as const] : [])),
+  ]);
+  const cur = (brandId: string) => currencyOf.get(brandId) ?? "USD";
   const sum = (xs: CreditWithCreator[], f: (x: CreditWithCreator) => boolean) =>
     xs.filter(f).reduce((a, x) => a + x.amountMinor, 0);
 
@@ -200,6 +207,7 @@ export function buildTables(raw: RawEngine): StudioTables {
         brandId: b.brandId,
         brand: b.name,
         category: b.category,
+        currency: cur(b.brandId),
         commissionRate: (b.commissionBps ?? 800) / 10_000,
         scope: SCOPE_LABEL[scope],
         scopeKey: scope,
@@ -264,6 +272,7 @@ export function buildTables(raw: RawEngine): StudioTables {
       captureId: x.captureId,
       orderId: orderOfCapture.get(x.captureId) ?? null,
       amount: usd(x.amountMinor),
+      currency: x.currency ?? "USD",
       state: stateOf(x),
       // Text cells read "–" rather than blank: a grid shows a null as "(Blanks)".
       voidReason: x.voidReason ?? "–",
@@ -277,37 +286,51 @@ export function buildTables(raw: RawEngine): StudioTables {
       firstPayout: inFirstPayout(x, first),
       coExposed: others.length > 0,
       splitWith:
-        others.map((s) => `${nameOf(s.creatorId)} $${usd(s.amountMinor).toFixed(2)}`).join(", ") ||
-        "–",
+        others
+          .map(
+            (s) =>
+              `${nameOf(s.creatorId)} ${currencySymbol(s.currency ?? "USD")}${usd(s.amountMinor).toFixed(2)}`,
+          )
+          .join(", ") || "–",
     };
   });
 
-  const creators: Row[] = raw.creators.map((c) => {
-    const xs = credits.filter((x) => x.creatorId === c.creatorId);
-    return {
-      id: c.creatorId,
-      creatorId: c.creatorId,
-      creator: c.name,
-      pending: usd(sum(xs, isPending)),
-      frozen: usd(sum(xs, isFrozen)),
-      held: usd(sum(xs, isHeld)),
-      voided: usd(sum(xs, (x) => x.state === "voided")),
-      paid: usd(sum(xs, (x) => x.state === "paid")),
-      credits: xs.length,
-      voidedCount: xs.filter((x) => x.state === "voided").length,
-      frozenCount: xs.filter(isFrozen).length,
-      heldCount: xs.filter(isHeld).length,
-      heldReasons:
-        [...new Set(xs.filter(isHeld).flatMap((x) => x.holdReasons ?? []))]
-          .map(holdLabel)
-          .join(", ") || "–",
-      coExposed: xs.filter((x) => (byCapture.get(x.captureId)?.length ?? 0) > 1).length,
-      firstPayout: usd(
-        first?.items
-          .filter((i) => i.creatorId === c.creatorId)
-          .reduce((a, i) => a + i.amountMinor, 0) ?? 0,
-      ),
-    };
+  // One row per creator per currency: a creator paid in pounds and in dollars has two, never one
+  // sum of both. The first (USD when they have any) keeps the creator's id, so a creator with a
+  // single currency, as every creator was, has exactly the row they always had.
+  const creators: Row[] = raw.creators.flatMap((c) => {
+    const mineAll = credits.filter((x) => x.creatorId === c.creatorId);
+    const currencies = [...new Set(mineAll.map((x) => x.currency ?? "USD"))].sort(
+      (a, b) => Number(b === "USD") - Number(a === "USD") || (a < b ? -1 : 1),
+    );
+    return (currencies.length ? currencies : ["USD"]).map((currency, i) => {
+      const xs = mineAll.filter((x) => (x.currency ?? "USD") === currency);
+      return {
+        id: i === 0 ? c.creatorId : `${c.creatorId}:${currency}`,
+        creatorId: c.creatorId,
+        creator: c.name,
+        currency,
+        pending: usd(sum(xs, isPending)),
+        frozen: usd(sum(xs, isFrozen)),
+        held: usd(sum(xs, isHeld)),
+        voided: usd(sum(xs, (x) => x.state === "voided")),
+        paid: usd(sum(xs, (x) => x.state === "paid")),
+        credits: xs.length,
+        voidedCount: xs.filter((x) => x.state === "voided").length,
+        frozenCount: xs.filter(isFrozen).length,
+        heldCount: xs.filter(isHeld).length,
+        heldReasons:
+          [...new Set(xs.filter(isHeld).flatMap((x) => x.holdReasons ?? []))]
+            .map(holdLabel)
+            .join(", ") || "–",
+        coExposed: xs.filter((x) => (byCapture.get(x.captureId)?.length ?? 0) > 1).length,
+        firstPayout: usd(
+          first?.items
+            .filter((i) => i.creatorId === c.creatorId && i.currency === currency)
+            .reduce((a, i) => a + i.amountMinor, 0) ?? 0,
+        ),
+      };
+    });
   });
 
   const journeys: Row[] = raw.journeys.map((j) => {
@@ -323,6 +346,7 @@ export function buildTables(raw: RawEngine): StudioTables {
       model: agentLabel(j.model),
       arm: ARM_LABEL[j.arm as ArmName] ?? j.arm,
       product: j.items.map((i) => productOf.get(i.upc) ?? i.upc).join(", "),
+      currency: j.items[0]?.currency ?? "USD",
       firstStore,
       firstPrice:
         firstStore !== j.storeChosen && j.priceSavedMinor !== null
@@ -354,6 +378,7 @@ export function buildTables(raw: RawEngine): StudioTables {
           creatorId: x.creatorId,
           creator: nameOf(x.creatorId),
           amount: usd(x.amountMinor),
+          currency: credit?.currency ?? j.items[0]?.currency ?? "USD",
           state: credit ? stateOf(credit) : x.state,
           payoutBatch: credit?.payoutBatchId
             ? (labels.get(credit.payoutBatchId) ?? credit.payoutBatchId)
@@ -373,6 +398,7 @@ export function buildTables(raw: RawEngine): StudioTables {
       creatorId: it.creatorId,
       creator: nameOf(it.creatorId),
       amount: usd(it.amountMinor),
+      currency: it.currency ?? "USD",
       credits: it.creditIds.length,
       status: b.status,
       createdAt: b.createdAt,
@@ -385,6 +411,7 @@ export function buildTables(raw: RawEngine): StudioTables {
       brandId: d.brandId,
       brand: d.name,
       kind: x.kind,
+      currency: d.currency ?? "USD",
       amount: usd(x.amountMinor),
       returned: usd(x.returnedMinor),
       status: x.status ?? null,
@@ -402,6 +429,7 @@ export function buildTables(raw: RawEngine): StudioTables {
     captureId: f.captureId,
     orderId: orderOfCapture.get(f.captureId) ?? null,
     amount: usd(f.credit?.amountMinor ?? 0),
+    currency: f.credit?.currency ?? "USD",
     kind: f.hold ? "Held for review" : "Note on a paid credit",
     hold: f.hold,
     reason: holdLabel(f.reason),
@@ -499,6 +527,11 @@ export const TABLES: TableMeta[] = [
       t("brandId", "Brand id"),
       t("brand", "Brand"),
       t("category", "Category"),
+      t(
+        "currency",
+        "Currency",
+        "The programme's currency: USD, GBP or EUR. Every amount in the row is in it, never converted.",
+      ),
       p(
         "commissionRate",
         "Commission rate",
@@ -560,6 +593,11 @@ export const TABLES: TableMeta[] = [
       t("id", "Row id"),
       t("creatorId", "Creator id"),
       t("creator", "Creator"),
+      t(
+        "currency",
+        "Currency",
+        "The programme's currency: USD, GBP or EUR. Every amount in the row is in it, never converted.",
+      ),
       m("pending", "Pending (30-day hold)"),
       m("frozen", "Frozen by a dispute"),
       m("held", "Held for review", "Held by the abuse guard; never paid automatically."),
@@ -583,6 +621,11 @@ export const TABLES: TableMeta[] = [
       t("id", "Credit id"),
       t("creatorId", "Creator id"),
       t("creator", "Creator"),
+      t(
+        "currency",
+        "Currency",
+        "The programme's currency: USD, GBP or EUR. Every amount in the row is in it, never converted.",
+      ),
       t("brand", "Brand"),
       t("captureId", "PayPal capture"),
       t("orderId", "PayPal order"),
@@ -608,6 +651,11 @@ export const TABLES: TableMeta[] = [
       t("model", "Agent model"),
       t("arm", "Group"),
       t("product", "Product"),
+      t(
+        "currency",
+        "Currency",
+        "The programme's currency: USD, GBP or EUR. Every amount in the row is in it, never converted.",
+      ),
       t("firstStore", "Store read first"),
       m("firstPrice", "Price there"),
       t("storeChosen", "Store paid"),
@@ -634,6 +682,11 @@ export const TABLES: TableMeta[] = [
       t("captureId", "PayPal capture"),
       t("creatorId", "Creator id"),
       t("creator", "Creator"),
+      t(
+        "currency",
+        "Currency",
+        "The programme's currency: USD, GBP or EUR. Every amount in the row is in it, never converted.",
+      ),
       m("amount", "Share"),
       t("state", "State"),
       t("payoutBatch", "Payout batch"),
@@ -651,6 +704,11 @@ export const TABLES: TableMeta[] = [
       t("senderBatchId", "sender_batch_id"),
       t("creatorId", "Creator id"),
       t("creator", "Creator"),
+      t(
+        "currency",
+        "Currency",
+        "The programme's currency: USD, GBP or EUR. Every amount in the row is in it, never converted.",
+      ),
       m("amount", "Amount"),
       n("credits", "Credits paid"),
       t("status", "Status"),
@@ -665,6 +723,11 @@ export const TABLES: TableMeta[] = [
       t("id", "Deposit id"),
       t("brandId", "Brand id"),
       t("brand", "Brand"),
+      t(
+        "currency",
+        "Currency",
+        "The programme's currency: USD, GBP or EUR. Every amount in the row is in it, never converted.",
+      ),
       t("kind", "Kind"),
       m("amount", "Amount"),
       m("returned", "Returned"),
@@ -682,6 +745,11 @@ export const TABLES: TableMeta[] = [
       t("creditId", "Credit id"),
       t("creatorId", "Creator id"),
       t("creator", "Creator"),
+      t(
+        "currency",
+        "Currency",
+        "The programme's currency: USD, GBP or EUR. Every amount in the row is in it, never converted.",
+      ),
       t("brand", "Brand"),
       t("captureId", "PayPal capture"),
       t("orderId", "PayPal order"),
@@ -703,6 +771,11 @@ export const TABLES: TableMeta[] = [
     fields: [
       t("id", "Credit id"),
       t("creator", "Creator"),
+      t(
+        "currency",
+        "Currency",
+        "The programme's currency: USD, GBP or EUR. Every amount in the row is in it, never converted.",
+      ),
       t("brand", "Brand"),
       t("orderId", "PayPal order"),
       m("amount", "Amount at stake"),

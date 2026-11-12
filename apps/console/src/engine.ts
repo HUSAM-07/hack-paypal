@@ -40,6 +40,8 @@ export interface EngineCreatorCredits {
   credits: {
     brandId: string;
     amountMinor: number;
+    /** The credit's own currency (its programme's). Absent from an engine older than currencies: USD. */
+    currency?: string;
     state: string;
     /** The PayPal batch that paid it (engine `payout_batch_id`). */
     payoutBatchId?: string | null;

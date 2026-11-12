@@ -79,3 +79,33 @@ describe("checkProgrammeTerms", () => {
     expect(new Set(products.map((p) => p.upc)).size).toBe(products.length);
   });
 });
+
+describe("checkProgrammeTerms by currency", () => {
+  it("defaults to dollars and takes pounds and euros", () => {
+    expect(checkProgrammeTerms(ok, new Set())).toMatchObject({
+      ok: true,
+      terms: { currency: "USD" },
+    });
+    for (const currency of ["USD", "GBP", "EUR"])
+      expect(checkProgrammeTerms({ ...ok, currency }, new Set())).toMatchObject({
+        ok: true,
+        terms: { currency, depositMinor: 50_000 },
+      });
+  });
+  it("refuses any other currency", () => {
+    for (const currency of ["JPY", "CHF", "gbp", "", "POUNDS"])
+      expect(checkProgrammeTerms({ ...ok, currency }, new Set())).toMatchObject({
+        ok: false,
+        error: "unsupported_currency",
+      });
+  });
+  it("states the limits in the programme's currency", () => {
+    const msg = (currency: string) => {
+      const r = checkProgrammeTerms({ ...ok, currency, depositMinor: 1 }, new Set());
+      return r.ok ? "" : r.message;
+    };
+    expect(msg("USD")).toBe("The deposit must be between $100 and $10,000.");
+    expect(msg("GBP")).toBe("The deposit must be between £100 and £10,000.");
+    expect(msg("EUR")).toBe("The deposit must be between €100 and €10,000.");
+  });
+});

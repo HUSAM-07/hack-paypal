@@ -99,7 +99,8 @@ describe("/mcp page", () => {
     expect(res.status).toBe(200);
     const csp = res.headers.get("content-security-policy") ?? "";
     expect(csp).toContain("connect-src 'self'");
-    expect(csp).toContain("script-src 'unsafe-inline'");
+    expect(csp).toContain("script-src 'self' 'unsafe-inline'"); // 'self' for the tour's script
+    expect(csp).not.toMatch(/script-src[^;]*https?:/);
     expect(csp).not.toContain("https:");
     const html = await res.text();
     expect(html).toContain("claude mcp add --transport http cited https://example.com/mcp");
@@ -108,6 +109,7 @@ describe("/mcp page", () => {
     expect(html.match(/data-copy="/g)?.length).toBeGreaterThanOrEqual(5);
     expect(html).toContain("Kept out of the study numbers");
     expect(html).toContain(FEED_PATH);
+    expect(html).toContain('<script type="module" src="/fx/tour.js"></script>');
     // Plain words: groups, not arms.
     expect(html.replace(/<script[\s\S]*?<\/script>/g, "")).not.toMatch(/\barm\b/i);
     // Nav is the shared header, with MCP current; links stay root-relative.

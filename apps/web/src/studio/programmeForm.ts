@@ -4,16 +4,31 @@
  * The server checks the same choices again with the engine's own rules (checkProgrammeTerms).
  */
 import {
+  CURRENCY_NAME,
   commissionOn,
   DEMO_SHOP_PRICES,
   HEADPHONE_SHOP_PRICES,
+  formatCurrency,
   PROGRAMME_CATEGORIES,
+  PROGRAMME_CURRENCIES,
   PROGRAMME_LIMITS,
   type ProgrammeCategory,
   type ProgrammeCategoryId,
+  type ProgrammeCurrency,
   type ProgrammeProduct,
   VACUUM_SHOP_PRICES,
 } from "@pact/protocol";
+
+export { PROGRAMME_CURRENCIES };
+
+/** The money word in the words a brand reads: "dollars", "pounds", "euros". */
+export const CURRENCY_WORD: Record<ProgrammeCurrency, string> = {
+  USD: "dollars",
+  GBP: "pounds",
+  EUR: "euros",
+};
+/** A sale of 100.00 in the programme's currency: a round example, never an exchange rate. */
+const EXAMPLE_SALE_MINOR = 10_000;
 
 export type Step = "category" | "terms" | "review" | "done";
 export const STEPS: { id: Exclude<Step, "done">; label: string }[] = [
@@ -26,7 +41,9 @@ export interface FormState {
   step: Step;
   category: ProgrammeCategoryId | null;
   upc: string | null;
-  /** What the brand typed: dollars, e.g. "500" or "$1,250.50". Parsed only when read. */
+  /** The currency the programme lives in. Its deposit, credits and payouts are all in it. */
+  currency: ProgrammeCurrency;
+  /** What the brand typed, in that currency: e.g. "500" or "$1,250.50". Parsed only when read. */
   deposit: string;
   /** What the brand typed: percent, e.g. "8" or "12.5". */
   commission: string;
@@ -35,6 +52,7 @@ export interface FormState {
 export type Action =
   | { type: "category"; category: ProgrammeCategoryId }
   | { type: "product"; upc: string }
+  | { type: "currency"; currency: ProgrammeCurrency }
   | { type: "deposit"; value: string }
   | { type: "commission"; value: string }
   | { type: "next" }
@@ -76,17 +94,18 @@ export function initialForm(running: Running): FormState {
     step: "category",
     category,
     upc: first ? first.upc : null,
+    currency: "USD",
     deposit: String(PROGRAMME_LIMITS.defaultDepositMinor / 100),
     commission: String(PROGRAMME_LIMITS.defaultCommissionBps / 100),
   };
 }
 
 /**
- * "$1,250.50" or "500" to integer cents, without ever going through a float. Null when it is not
- * a plain amount with at most two decimals.
+ * "$1,250.50", "£1,250.50", "€500" or "500" to integer cents (or pence), without ever going
+ * through a float. Null when it is not a plain amount with at most two decimals.
  */
 export function parseDollars(text: string): number | null {
-  const m = /^\$?\s*(\d{1,3}(?:,\d{3})*|\d+)(?:\.(\d{1,2}))?$/.exec(text.trim());
+  const m = /^[$£€]?\s*(\d{1,3}(?:,\d{3})*|\d+)(?:\.(\d{1,2}))?$/.exec(text.trim());
   if (!m) return null;
   const whole = Number((m[1] as string).replaceAll(",", ""));
   const cents = Number(((m[2] ?? "") + "00").slice(0, 2));
@@ -111,12 +130,18 @@ export interface TermsProblem {
   commission: string | null;
 }
 
-const usd = (minor: number) =>
-  (minor / 100).toLocaleString("en-US", { style: "currency", currency: "USD" });
+/** "$500.00", "£500.00", "€500.00": a deposit shown in the programme's own currency. */
+export const fmt = (minor: number, currency: ProgrammeCurrency = "USD") =>
+  formatCurrency(minor, currency);
 const pctText = (bps: number) => `${bps / 100}%`;
 
+type Typed = Pick<FormState, "deposit" | "commission"> & {
+  currency?: ProgrammeCurrency | undefined;
+};
+
 /** What is wrong with the typed terms, in plain words; null on a field means it is fine. */
-export function termsProblems(s: Pick<FormState, "deposit" | "commission">): TermsProblem {
+export function termsProblems(s: Typed): TermsProblem {
+  const currency = s.currency ?? "USD";
   const dep = parseDollars(s.deposit);
   const com = parsePercent(s.commission);
   const {
@@ -128,9 +153,9 @@ export function termsProblems(s: Pick<FormState, "deposit" | "commission">): Ter
   return {
     deposit:
       dep === null
-        ? "Enter an amount in dollars, like 500 or 1,250.50."
+        ? `Enter an amount in ${CURRENCY_WORD[currency]}, like 500 or 1,250.50.`
         : dep < lo || dep > hi
-          ? `Choose between ${usd(lo)} and ${usd(hi)}.`
+          ? `Choose between ${fmt(lo, currency)} and ${fmt(hi, currency)}.`
           : null,
     commission:
       com === null
@@ -142,7 +167,7 @@ export function termsProblems(s: Pick<FormState, "deposit" | "commission">): Ter
 }
 
 /** The integer terms, or null while anything is invalid. */
-export function termsOf(s: Pick<FormState, "deposit" | "commission">): Terms | null {
+export function termsOf(s: Typed): Terms | null {
   const p = termsProblems(s);
   if (p.deposit || p.commission) return null;
   return {
@@ -169,6 +194,8 @@ export function reduce(s: FormState, a: Action, running: Running): FormState {
       const first = freeProducts(c, running)[0];
       return { ...s, category: a.category, upc: first ? first.upc : null };
     }
+    case "currency":
+      return { ...s, currency: a.currency };
     case "product":
       return productOf(a.upc)?.category === s.category &&
         !running.has(productOf(a.upc)?.brandId ?? "")
@@ -206,12 +233,24 @@ export function lowestPriceMinor(upc: string): number | null {
   return prices.length ? Math.min(...prices) : null;
 }
 
-/** One example in dollars: what creators earn on a single sale their test caused. */
-export function exampleLine(upc: string | null, commissionBps: number): string | null {
+/**
+ * One example: what creators earn on a single sale their test caused. In dollars it uses the
+ * catalogue's lowest listed price. The catalogue lists dollar prices only, and nothing is
+ * converted, so in pounds or euros it is a round 100.00 sale.
+ */
+export function exampleLine(
+  upc: string | null,
+  commissionBps: number,
+  currency: ProgrammeCurrency = "USD",
+): string | null {
+  if (currency !== "USD") {
+    const pay = commissionOn({ amountMinor: EXAMPLE_SALE_MINOR, currency }, commissionBps);
+    return `A ${fmt(EXAMPLE_SALE_MINOR, currency)} sale that a creator's test caused pays creators ${fmt(pay.amountMinor, currency)}.`;
+  }
   const price = upc ? lowestPriceMinor(upc) : null;
   if (price === null) return null;
   const pay = commissionOn({ amountMinor: price, currency: "USD" }, commissionBps);
-  return `A sale at ${usd(price)} that a creator's test caused pays creators ${usd(pay.amountMinor)}.`;
+  return `A sale at ${fmt(price)} that a creator's test caused pays creators ${fmt(pay.amountMinor)}.`;
 }
 
 /** Plain promises shown before the brand confirms. The first three are the programme's rules. */
@@ -237,7 +276,10 @@ export function reviewOf(s: FormState): Review | null {
     rows: [
       { label: "Category", value: c.label },
       { label: "Product", value: `${p.brand} ${p.product}` },
-      { label: "Deposit", value: usd(t.depositMinor) },
+      ...(s.currency === "USD"
+        ? []
+        : [{ label: "Currency", value: `${CURRENCY_NAME[s.currency]} (${s.currency})` }]),
+      { label: "Deposit", value: fmt(t.depositMinor, s.currency) },
       { label: "Commission rate", value: pctText(t.commissionBps) },
     ],
     promises: PROMISES,
@@ -245,13 +287,23 @@ export function reviewOf(s: FormState): Review | null {
 }
 
 /** What the request to create the programme carries: integers only. */
-export function requestOf(
-  s: FormState,
-): { category: string; upc: string; depositMinor: number; commissionBps: number } | null {
+export function requestOf(s: FormState): {
+  category: string;
+  upc: string;
+  depositMinor: number;
+  commissionBps: number;
+  /** Only named when it is not dollars: the engine's default. */
+  currency?: ProgrammeCurrency;
+} | null {
   const p = productOf(s.upc);
   const t = termsOf(s);
   if (!p || !t || p.category !== s.category) return null;
-  return { category: p.category, upc: p.upc, ...t };
+  return {
+    category: p.category,
+    upc: p.upc,
+    ...t,
+    ...(s.currency === "USD" ? {} : { currency: s.currency }),
+  };
 }
 
 /** What a brand reads after confirming. Honest about the hosted demo: it never reaches PayPal. */
@@ -260,7 +312,9 @@ export function outcomeMessage(r: {
   resetsAt?: string | undefined;
   depositMinor: number;
   brand: string;
+  currency?: ProgrammeCurrency | undefined;
 }): string {
+  const usd = (minor: number) => fmt(minor, r.currency ?? "USD");
   if (r.private) {
     const at = r.resetsAt
       ? new Date(r.resetsAt).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })

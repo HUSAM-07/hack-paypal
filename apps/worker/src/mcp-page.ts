@@ -13,13 +13,14 @@ import {
   SITE_NAV_TOUCH_CSS,
   SITE_THEME_CSS,
   siteHeader,
+  TOUR_SCRIPT,
   type VerifiedTest,
 } from "@pact/protocol";
 
 const esc = (s: string) => s.replace(/[&<>"']/g, (ch) => `&#${ch.charCodeAt(0)};`);
 
 export const MCP_PAGE_CSP =
-  "default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; connect-src 'self'; font-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'";
+  "default-src 'none'; style-src 'unsafe-inline'; script-src 'self' 'unsafe-inline'; connect-src 'self'; font-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'";
 
 /** How often the open page asks the engine for new sales. The read API is cached for 10 s. */
 export const FEED_POLL_MS = 5000;
@@ -341,7 +342,7 @@ export function mcpPage(origin: string): string {
 <title>Run your own agent · CITED</title>
 <style>${CSS}${SITE_NAV_TOUCH_CSS}${SITE_THEME_CSS}${SITE_HEADER_CSS}</style></head><body>
 ${siteHeader("mcp")}
-<main>
+<main id="main">
 <h1>Point your own agent at CITED</h1>
 <p class="lede">This is a public shopping server for AI agents (an MCP server). Your agent searches air purifier offers synced to PayPal and buys one. Simulated PayPal: no real money moves, and there is nothing to sign in to. Below, you can watch what CITED recorded for the sale.</p>
 
@@ -374,5 +375,6 @@ ${siteHeader("mcp")}
 </div>
 </main>
 <script>${CLIENT_JS}</script>
+${TOUR_SCRIPT}
 </body></html>`;
 }
