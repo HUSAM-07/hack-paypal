@@ -1077,3 +1077,98 @@ a:hover .row-arrow {
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+/* ───────── Two apps ───────── */
+.apps {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  padding: 0 12px;
+}
+.app {
+  display: flex;
+  flex-direction: column;
+  padding: 16px;
+  border: 1px dashed var(--border);
+  border-radius: 6px;
+  background: var(--card);
+}
+.app-who {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.app-new {
+  padding: 2px 8px;
+  border-radius: 999px;
+  font: 600 11px / 1.4 var(--font-sans);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--primary);
+  background: var(--primary-soft);
+}
+.app-name {
+  margin-top: 12px;
+  font: 400 30px / 1.1 var(--font-serif);
+  letter-spacing: -0.01em;
+}
+.app-line {
+  margin-top: 6px;
+  font: 500 15px / 1.5 var(--font-sans);
+}
+.app-points {
+  display: grid;
+  gap: 6px;
+  margin-top: 12px;
+}
+.app-points > li {
+  position: relative;
+  padding-left: 16px;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--muted-foreground);
+}
+.app-points > li::before {
+  content: "";
+  position: absolute;
+  left: 2px;
+  top: 0.7em;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--foreground);
+}
+.app-foot {
+  margin-top: auto;
+}
+.app-ctas {
+  margin-top: 16px;
+}
+.app-gate {
+  margin-top: 10px;
+  font-size: 12px;
+  color: var(--muted-foreground);
+}
+.principles {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 16px;
+  padding: 0 12px;
+}
+.principles > li {
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: var(--muted-foreground);
+}
+.principles strong {
+  color: var(--foreground);
+  font-weight: 600;
+}
+@media (max-width: 640px) {
+  .apps,
+  .principles {
+    grid-template-columns: 1fr;
+  }
+}

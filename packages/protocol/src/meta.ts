@@ -12,7 +12,7 @@ export const SITE_ORIGIN = "https://caaash.shipwith.si";
 export const SITE_NAME = "CITED";
 export const SITE_TAGLINE = "Affiliate marketing, rebuilt on PayPal for AI agents";
 export const SITE_DESCRIPTION =
-  "CITED pays creators on proven lift, not last-click cookies. AI shopping agents are randomly shown a creator's test, a placebo or nothing; PayPal Payouts credit only the sales the test caused.";
+  "Two apps for AI shopping agents on one PayPal rail. CITED pays creators only for the sales their tests caused, not last-click cookies. Shop is an agent that buys through your PayPal wallet when your price rule hits, with approval, a live re-check and an undo window.";
 
 export const SITE_OG_IMAGE = {
   path: "/og/cited-agents-v1.png",

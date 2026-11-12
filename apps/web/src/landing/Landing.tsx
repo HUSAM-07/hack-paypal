@@ -6,9 +6,9 @@ import { SiteHeader } from "./SiteHeader";
 import { STICKERS, type StickerName } from "./stickers";
 
 /**
- * CITED landing: one bordered column of dashed section bands, with die-cut sticker art.
- * Every number on this page comes from cited/spec/CITED-card.md and the committed eval
- * summaries; each one carries a footnote to its source.
+ * The marketing landing: one bordered column of dashed section bands, with die-cut sticker
+ * art. It sells both apps (CITED and Shop); the apps themselves sit behind sign-in at /home.
+ * Every CITED number comes from cited/spec/CITED-card.md and the committed eval summaries.
  */
 
 const REPO = "https://github.com/HUSAM-07/hack-paypal";
@@ -181,6 +181,13 @@ const SHELF: { name: StickerName; w: number; rot: number }[] = [
 
 const FOOT: { title: string; links: { href: string; label: string }[] }[] = [
   {
+    title: "Apps",
+    links: [
+      { href: "/home", label: "Open the app" },
+      { href: "/shop", label: "Shop" },
+    ],
+  },
+  {
     title: "Demo",
     links: [
       { href: "/console?clean=1", label: "Two agents, side by side" },
@@ -206,8 +213,66 @@ const FOOT: { title: string; links: { href: string; label: string }[] }[] = [
   },
 ];
 
+type App = {
+  id: string;
+  who: string;
+  name: string;
+  isNew?: boolean;
+  line: string;
+  points: string[];
+  ctas: { href: string; label: string; primary?: boolean }[];
+  gate: string;
+};
+
+/** The two verticals. Both run on the same PayPal rail: Orders v2, webhooks, Payouts. */
+const APPS: App[] = [
+  {
+    id: "cited",
+    who: "For creators and brands",
+    name: "CITED",
+    line: "Get paid when your test changes what an AI agent buys.",
+    points: [
+      "Agents are randomly shown your test, a placebo or nothing. Ranking never moves.",
+      "A signed passport rides in the PayPal order, so the sale finds your test at any shop.",
+      "Credits wait 30 days, refunds void them, and PayPal Payouts pay the rest.",
+    ],
+    ctas: [
+      { href: "/console?clean=1", label: "Watch the demo", primary: true },
+      { href: "/creators", label: "For creators" },
+    ],
+    gate: "Open demo. No account needed.",
+  },
+  {
+    id: "shop",
+    who: "For the person buying",
+    name: "Shop",
+    isNew: true,
+    line: "Tell it what you want and your price. It watches, then buys through your PayPal wallet.",
+    points: [
+      "Searches the web and PayPal sellers. Every step is a card you can read: products, compare, price watch, approval, checkout, receipt.",
+      "Auto-buy is a mandate you approve once, and the live price is re-checked before money moves.",
+      "It authorises first, then gives you 10 minutes to undo. Big buys ask you to step up.",
+    ],
+    ctas: [{ href: "/shop", label: "Open Shop", primary: true }],
+    gate: "Sign-in required. It's your wallet.",
+  },
+];
+
+const PRINCIPLES: { k: string; v: string }[] = [
+  {
+    k: "Value first",
+    v: "The CITED demo runs with no account. You see it work before you sign up.",
+  },
+  {
+    k: "Friction first",
+    v: "Money waits for your rule, a live re-check and an undo window. Friction where it protects you.",
+  },
+  { k: "User first", v: "Creators are paid on proof. Buyers keep the last word on every payment." },
+];
+
 const RAIL = [
-  { id: "top", label: "CITED" },
+  { id: "top", label: "Start" },
+  { id: "apps", label: "Two apps" },
   { id: "problem", label: "The problem" },
   { id: "how", label: "How it works" },
   { id: "proof", label: "The proof" },
@@ -299,12 +364,16 @@ export function Landing() {
               Affiliate marketing, rebuilt on <u>PayPal</u> for <u>AI&nbsp;agents</u>.
             </h1>
             <p className="lede">
-              Agents read a creator's test and buy wherever the price is best. CITED measures which
-              tests changed what they bought, and pays only for those sales.
+              Agents read a creator's test and buy wherever the price is best. CITED pays creators
+              only for the sales their tests caused. Shop is the agent that buys for you, and stops
+              to ask before your money moves.
             </p>
             <div className="ctas">
-              <a className="btn btn-primary" href="/console?clean=1">
-                Watch two agents shop <span aria-hidden="true">→</span>
+              <a className="btn btn-primary" href="/home">
+                Open the app <span aria-hidden="true">→</span>
+              </a>
+              <a className="btn btn-quiet" href="/console?clean=1">
+                Watch two agents shop
               </a>
               <a className="btn btn-tour" href="/?tour=1#problem">
                 <span className="dot" aria-hidden="true" /> Take the 2-minute tour
@@ -312,6 +381,55 @@ export function Landing() {
             </div>
           </div>
         </section>
+
+        <Band id="apps" title="Two apps, one PayPal rail" note="this page sells, /home is the app">
+          <div className="apps">
+            {APPS.map((a) => (
+              <article key={a.id} className="app" aria-labelledby={`app-${a.id}`}>
+                <p className="app-who">
+                  <span className="chip-serif">{a.who}</span>
+                  {a.isNew ? <span className="app-new">New</span> : null}
+                </p>
+                <h3 id={`app-${a.id}`} className="app-name">
+                  {a.name}
+                </h3>
+                <p className="app-line">{a.line}</p>
+                <ul className="app-points">
+                  {a.points.map((pt) => (
+                    <li key={pt}>{pt}</li>
+                  ))}
+                </ul>
+                <div className="app-foot">
+                  <div className="ctas app-ctas">
+                    {a.ctas.map((c) => (
+                      <a
+                        key={c.href}
+                        className={`btn ${c.primary ? "btn-primary" : "btn-quiet"}`}
+                        href={c.href}
+                      >
+                        {c.label}
+                        {c.primary ? <span aria-hidden="true">→</span> : null}
+                      </a>
+                    ))}
+                  </div>
+                  <p className="app-gate mono">{a.gate}</p>
+                </div>
+              </article>
+            ))}
+          </div>
+          <ul className="principles">
+            {PRINCIPLES.map((p) => (
+              <li key={p.k}>
+                <strong>{p.k}.</strong> {p.v}
+              </li>
+            ))}
+          </ul>
+          <p className="more-row">
+            <a className="more" href="/home">
+              Already signed in? Open the app <Arrow />
+            </a>
+          </p>
+        </Band>
 
         <Band id="problem" title="The problem" note="no click, no cookie, no pay">
           <div className="prose">
