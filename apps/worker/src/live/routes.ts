@@ -60,6 +60,14 @@ const page = (body: string) =>
 
 export const live = new Hono<{ Bindings: Env }>();
 
+/**
+ * How long a run waits for the engine to join its sale. The simulator delivers the capture
+ * webhook in-process at once; the real PayPal sandbox takes several seconds (14s observed).
+ */
+function joinWaitMs(env: Env): number {
+  return (env.CITED_PAYPAL_MODE ?? env.PAYPAL_MODE) === "sandbox" ? 45_000 : 4_000;
+}
+
 live.get("/", (c) => {
   const choice = liveAgentChoice(c.env);
   // ?category= opens the page on a category; anything unknown is the default, purifiers.
@@ -241,6 +249,7 @@ live.post("/run", async (c) => {
       const r = await runLive({
         env: c.env,
         db: c.env.DB,
+        joinWaitMs: joinWaitMs(c.env),
         emit,
         runId,
         request: a.request,
@@ -281,6 +290,7 @@ live.post("/pair", async (c) => {
           runLive({
             env: c.env,
             db: c.env.DB,
+            joinWaitMs: joinWaitMs(c.env),
             emit: (e) => emit({ ...e, lane } satisfies PairEvent),
             runId: newId("live"),
             request: a.request,
