@@ -15,8 +15,8 @@
   --_box-ring: var(--border);
   --_box-ring-hover: var(--muted-foreground);
   --_tile: transparent;
-  --_ok: var(--primary);
-  --_ok-soft: var(--primary-soft);
+  --_ok: var(--success-text);
+  --_ok-soft: var(--success-soft);
   --_medium: var(--warning);
   --_medium-soft: var(--warning-soft);
   position: relative;
