@@ -17,6 +17,7 @@ import { newId } from "./ids";
 import { previewFor, withLinkPreview } from "./link-preview";
 import { live, TRY_PREFIX } from "./live/routes";
 import { PUBLIC_MCP_PATH, publicMcpHandler } from "./mcp";
+import { notFoundPage, wantsHtml } from "./not-found";
 import { payments } from "./payments/routes";
 import { webhooks } from "./payments/webhooks";
 import { clearReadCache } from "./read-cache";
@@ -130,7 +131,11 @@ app.get("/ws", ipRateLimit, async (c) => {
   return stub.fetch(new Request(c.req.raw.url, { headers }));
 });
 
-app.notFound((c) => c.json({ error: "not_found" }, 404));
+app.notFound((c) =>
+  wantsHtml(c.req.path, c.req.header("accept"))
+    ? c.html(notFoundPage(), 404)
+    : c.json({ error: "not_found" }, 404),
+);
 app.onError((err, c) => {
   console.error("unhandled", err.name);
   return c.json({ error: "internal" }, 500);

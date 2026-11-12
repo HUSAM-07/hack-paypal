@@ -1,5 +1,6 @@
 import type { MiddlewareHandler } from "hono";
 import type { Env } from "./env";
+import { NOT_FOUND_CSP } from "./not-found";
 
 /**
  * Strict headers for every API response. The worker serves JSON and WebSocket only;
@@ -11,9 +12,14 @@ export const securityHeaders: MiddlewareHandler<{ Bindings: Env }> = async (c, n
   // Responses proxied from a Durable Object have immutable headers.
   c.res = new Response(c.res.body, c.res);
   const h = c.res.headers;
+  // The HTML 404 page (not-found.ts) needs its inline CSS and the site fonts; every other
+  // response keeps the strict API policy.
+  const html404 = c.res.status === 404 && (h.get("content-type") ?? "").startsWith("text/html");
   h.set(
     "Content-Security-Policy",
-    "default-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'",
+    html404
+      ? NOT_FOUND_CSP
+      : "default-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'",
   );
   h.set("Strict-Transport-Security", "max-age=63072000; includeSubDomains; preload");
   h.set("X-Content-Type-Options", "nosniff");
