@@ -19,19 +19,19 @@ const BAR_ID = "cited-tour";
 
 const CSS = `
 html.cited-tour-on body{padding-bottom:var(--ct-h,0px)}
-#${BAR_ID}{position:fixed;left:0;right:0;bottom:0;z-index:1000;box-sizing:border-box;background:#16181D;color:#FAF8F4;border-top:1px solid #33363D;font:400 14px/1.45 var(--sans,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif);padding:10px max(16px,env(safe-area-inset-right)) calc(10px + env(safe-area-inset-bottom)) max(16px,env(safe-area-inset-left))}
+#${BAR_ID}{position:fixed;left:0;right:0;bottom:0;z-index:1000;box-sizing:border-box;background:var(--foreground);color:var(--background);border-top:1px dashed var(--border);font:400 14px/1.45 var(--font-sans);padding:10px max(16px,env(safe-area-inset-right)) calc(10px + env(safe-area-inset-bottom)) max(16px,env(safe-area-inset-left))}
 #${BAR_ID} *{box-sizing:border-box}
-#${BAR_ID} .ct-in{max-width:1120px;margin:0 auto;display:flex;align-items:center;gap:8px 20px;flex-wrap:wrap}
+#${BAR_ID} .ct-in{max-width:var(--frame-wide);margin:0 auto;display:flex;align-items:center;gap:8px 20px;flex-wrap:wrap}
 #${BAR_ID} .ct-text{flex:1 1 320px;min-width:0}
-#${BAR_ID} .ct-meta{display:flex;gap:10px;align-items:baseline;font:500 11px/1.2 var(--mono,ui-monospace,Menlo,monospace);letter-spacing:.08em;text-transform:uppercase;color:#A8D5BF;margin:0 0 3px}
-#${BAR_ID} .ct-cap{margin:0;color:#F1EDE5}
+#${BAR_ID} .ct-meta{display:flex;gap:10px;align-items:baseline;font:500 11px/1.2 var(--font-mono);letter-spacing:.08em;text-transform:uppercase;color:color-mix(in oklab,var(--background) 65%,transparent);margin:0 0 3px}
+#${BAR_ID} .ct-cap{margin:0;color:var(--background)}
 #${BAR_ID} .ct-btns{display:flex;gap:8px;flex:0 0 auto}
-#${BAR_ID} .ct-btn{appearance:none;display:inline-flex;align-items:center;justify-content:center;min-height:40px;min-width:40px;padding:0 16px;border-radius:6px;border:1px solid #6B6F78;background:transparent;color:#FAF8F4;font-size:13px;font-weight:500;line-height:1;font-family:inherit;text-decoration:none;cursor:pointer}
-#${BAR_ID} .ct-btn:hover{border-color:#FAF8F4}
-#${BAR_ID} .ct-next{background:#FAF8F4;border-color:#FAF8F4;color:#16181D}
-#${BAR_ID} .ct-next:hover{background:#fff}
-#${BAR_ID} .ct-btn[disabled]{opacity:.45;cursor:default;border-color:#4A4D55}
-#${BAR_ID} .ct-btn:focus-visible{outline:3px solid #fff;outline-offset:2px;box-shadow:0 0 0 5px #16181D}
+#${BAR_ID} .ct-btn{appearance:none;display:inline-flex;align-items:center;justify-content:center;min-height:40px;min-width:40px;padding:0 16px;border-radius:10px;border:1px solid color-mix(in oklab,var(--background) 35%,transparent);background:transparent;color:var(--background);font-size:13px;font-weight:500;line-height:1;font-family:inherit;text-decoration:none;cursor:pointer}
+#${BAR_ID} .ct-btn:hover{border-color:var(--background)}
+#${BAR_ID} .ct-next{background:var(--background);border-color:var(--background);color:var(--foreground)}
+#${BAR_ID} .ct-next:hover{opacity:.9}
+#${BAR_ID} .ct-btn[disabled]{opacity:.45;cursor:default}
+#${BAR_ID} .ct-btn:focus-visible{outline:3px solid var(--background);outline-offset:2px;box-shadow:0 0 0 5px var(--foreground)}
 @media (pointer:coarse){#${BAR_ID} .ct-btn{min-height:44px;min-width:44px}}
 @media (max-width:640px){
 #${BAR_ID}{padding-top:8px;padding-bottom:calc(8px + env(safe-area-inset-bottom))}

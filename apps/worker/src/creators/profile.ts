@@ -15,10 +15,12 @@ import {
   housefreshWinixTest,
   narrowCloseTest,
   quietbenchBoseTest,
+  SITE_HEAD_HTML,
   SITE_HEADER_CSS,
   SITE_NAV_TOUCH_CSS,
   SITE_THEME_CSS,
   siteHeader,
+  siteMeta,
   type VerifiedTest,
 } from "@pact/protocol";
 import { Hono } from "hono";
@@ -232,47 +234,49 @@ export function shapeProfile(input: ProfileInput): ProfileView {
 }
 
 const CSS = `
-@font-face{font-family:"Newsreader";font-style:normal;font-weight:200 800;font-display:swap;src:url("/fonts/newsreader-latin-opsz-v1.woff2") format("woff2-variations")}
-@font-face{font-family:"Geist";font-style:normal;font-weight:100 900;font-display:swap;src:url("/fonts/geist-latin-v1.woff2") format("woff2-variations")}
-@font-face{font-family:"Geist Mono";font-style:normal;font-weight:100 900;font-display:swap;src:url("/fonts/geist-mono-latin-v1.woff2") format("woff2-variations")}
-:root{--serif:"Newsreader",Charter,Georgia,serif;--sans:"Geist",ui-sans-serif,-apple-system,"Segoe UI",Helvetica,Arial,sans-serif;--mono:"Geist Mono",ui-monospace,Menlo,monospace}
-*{box-sizing:border-box}
-html{font-size:18px;-webkit-text-size-adjust:100%}
-body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);line-height:1.5;-webkit-font-smoothing:antialiased}
-a{color:inherit}
+*,*::before,*::after{box-sizing:border-box}
+body{font:400 15px/1.6 var(--font-sans)}
+a{color:inherit;text-underline-offset:3px;text-decoration-color:var(--border)}
+a:hover{text-decoration-color:var(--foreground)}
 .num{font-variant-numeric:tabular-nums lining-nums}
-main{max-width:900px;margin:0 auto;padding:40px clamp(16px,4vw,56px) 72px}
-.crumb{font-size:.8rem;margin:0 0 1.2rem}
-.crumb a{color:var(--muted)}
-h1{font-family:var(--serif);font-weight:300;font-size:clamp(2.2rem,7vw,3.2rem);line-height:1.05;letter-spacing:-.02em;margin:0 0 .6rem;overflow-wrap:anywhere}
-h2{font-family:var(--serif);font-weight:500;font-size:1.5rem;line-height:1.15;margin:0 0 .6rem}
-h3{font-family:var(--serif);font-weight:500;font-size:1.2rem;line-height:1.2;margin:0 0 .4rem;overflow-wrap:anywhere}
-.lede{margin:0 0 .4rem;color:var(--ink-2);max-width:40rem}
-.disclosure{margin:1rem 0 0;padding:.7rem 1rem;border-left:3px solid var(--held);background:var(--held-tint);font-size:.85rem;max-width:42rem;overflow-wrap:anywhere}
-.disclosure b{color:var(--held-ink)}
-section{margin:2.6rem 0 0}
-.test{padding:1.2rem 0;border-top:1px solid var(--line)}
-.meta{display:flex;flex-wrap:wrap;gap:.2rem 1rem;font-size:.8rem;color:var(--muted);margin:0 0 .6rem}
-.vd{font-weight:600;margin:0 0 .6rem}
-.sum{font-family:var(--serif);font-size:1rem;line-height:1.4;margin:.4rem 0 .8rem;white-space:pre-wrap;overflow-wrap:anywhere}
-.lift{background:var(--test-tint);border-top:3px solid var(--test);padding:.8rem 1rem;font-size:.85rem}
-.lift.none{background:var(--raise);border-top-color:var(--line-strong)}
-.lift.zero{background:var(--held-tint);border-top-color:var(--held)}
+.hero{padding:36px var(--pad) 32px}
+.crumb{margin:0 0 14px}
+.crumb a{text-decoration:none;color:var(--muted-foreground)}
+.crumb a:hover{color:var(--foreground)}
+h1{font:400 clamp(40px,8vw,56px)/1.04 var(--font-serif);letter-spacing:-.02em;margin:0 0 10px;overflow-wrap:anywhere}
+h2{margin:0 0 14px}
+h3{font:400 24px/1.2 var(--font-serif);letter-spacing:-.01em;margin:0 0 6px;overflow-wrap:anywhere}
+.lede{margin:0;color:var(--muted-foreground);max-width:62ch}
+.ui-band .lede{padding:0 var(--pad)}
+.disclosure{margin:18px 0 0;padding:10px 14px;border:1px dashed var(--warning);border-radius:6px;background:var(--warning-soft);font-size:14px;max-width:62ch;overflow-wrap:anywhere}
+.disclosure b{color:var(--warning)}
+.test{padding:18px var(--pad) 22px;border-bottom:1px dashed var(--border)}
+.test:last-child{border-bottom:0}
+.meta{display:flex;flex-wrap:wrap;gap:4px 14px;margin:0 0 10px;font:400 11px/1.5 var(--font-mono);letter-spacing:.06em;text-transform:uppercase;color:var(--muted-foreground)}
+.vd{font-weight:600;margin:0 0 6px}
+.sum{font:400 18px/1.45 var(--font-serif);margin:6px 0 12px;white-space:pre-wrap;overflow-wrap:anywhere}
+.lift{border:1px dashed var(--primary);border-radius:6px;background:var(--primary-soft);padding:12px 16px;font-size:14px}
+.lift.none{background:var(--fill);border-color:var(--border)}
+.lift.zero{background:var(--warning-soft);border-color:var(--warning)}
 .lift b{font-weight:600}
-.lift p{margin:.2rem 0}
-.lift .big{font-family:var(--serif);font-size:1.5rem;line-height:1.1}
-.dl{display:grid;grid-template-columns:repeat(auto-fit,minmax(9.5rem,1fr));gap:1rem 1.4rem;margin:0 0 1rem}
-.dl div{border-top:1px solid var(--ink);padding-top:.4rem}
-.dl dt{font-size:.75rem;color:var(--muted)}
-.dl dd{margin:0;font-family:var(--serif);font-size:1.4rem}
-.cur{font-size:.8rem;font-weight:600;margin:1.2rem 0 .4rem}
-.batches{list-style:none;margin:.4rem 0 0;padding:0;font-size:.85rem}
-.batches li{display:flex;flex-wrap:wrap;gap:.2rem 1rem;padding:.5rem 0;border-top:1px solid var(--line)}
+.lift p{margin:3px 0}
+.lift .big{font:400 26px/1.15 var(--font-serif);color:var(--primary)}
+.lift.zero .big{color:var(--warning)}
+.cur{margin:0;padding:0 var(--pad) 8px}
+.dl{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));margin:0 0 18px;border-top:1px dashed var(--border)}
+.dl div{padding:12px var(--pad);border-bottom:1px dashed var(--border);border-right:1px dashed var(--border);min-width:0}
+.dl div:nth-child(3n){border-right:0}
+.dl dt{font:400 11px/1.4 var(--font-mono);letter-spacing:.06em;text-transform:uppercase;color:var(--muted-foreground)}
+.dl dd{margin:4px 0 0;font:400 26px/1.15 var(--font-serif)}
+.pay{padding:0 var(--pad)}
+.pay h3{font-size:20px}
+.batches{list-style:none;margin:6px -12px 0;padding:0;font-size:14px}
+.batches li{flex-wrap:wrap;gap:4px 14px}
 .batches code{overflow-wrap:anywhere}
-.how{max-width:42rem;font-size:.9rem}
-.small{font-size:.8rem;color:var(--muted)}
-.btn{display:inline-flex;align-items:center;min-height:44px;padding:.6rem 1.4rem;border-radius:999px;text-decoration:none}
-@media (max-width:600px){html{font-size:17px}main{padding-top:24px}}
+.how{margin:0;padding:0 var(--pad);max-width:70ch;color:var(--muted-foreground)}
+.small{font-size:13px;color:var(--muted-foreground)}
+.cta{margin:20px 0 0}
+@media (max-width:640px){:root{--pad:16px}.dl{grid-template-columns:repeat(2,minmax(0,1fr))}.dl div:nth-child(3n){border-right:1px dashed var(--border)}.dl div:nth-child(2n){border-right:0}}
 `;
 
 function measuredHtml(t: TestView, fixture: boolean): string {
@@ -317,31 +321,34 @@ function ledgerHtml(v: ProfileView): string {
 
 export function renderProfile(v: ProfileView): string {
   const batches = v.payouts.length
-    ? `<h3>Payout batches</h3><ul class="batches">${v.payouts
+    ? `<div class="pay"><h3>Payout batches</h3><ul class="batches">${v.payouts
         .map(
           (p) =>
-            `<li><code>${esc(p.batchId)}</code><span class="num">${esc(p.amount)}</span><span>${esc(p.status.toLowerCase())}</span><span class="num">${esc(p.date)}</span></li>`,
+            `<li class="ui-row"><code>${esc(p.batchId)}</code><span class="num">${esc(p.amount)}</span><span>${esc(p.status.toLowerCase())}</span><span class="num">${esc(p.date)}</span></li>`,
         )
-        .join("")}</ul>`
-    : `<p class="small">No payout batch has included ${esc(v.name)} yet.</p>`;
+        .join("")}</ul></div>`
+    : `<p class="small pay">No payout batch has included ${esc(v.name)} yet.</p>`;
   return `<!doctype html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>${esc(v.name)} · CITED creator</title><link rel="icon" href="/favicon.svg">
-<style>${CSS}${SITE_NAV_TOUCH_CSS}${SITE_THEME_CSS}${SITE_HEADER_CSS}</style></head><body>${siteHeader("creators")}
-<main id="main">
-<p class="crumb"><a href="/creators">Creators</a></p>
+<title>${esc(v.name)} · CITED creator</title>${siteMeta({ title: `${v.name} · CITED creator`, description: `${v.name}: published tests, credited sales and PayPal payouts on CITED.`, path: "/creators" })}
+${SITE_HEAD_HTML}
+<style>${SITE_THEME_CSS}${CSS}${SITE_NAV_TOUCH_CSS}${SITE_HEADER_CSS}</style></head><body class="site-col">${siteHeader("creators")}
+<div class="ui-frame"><main id="main">
+<section class="hero">
+<p class="crumb ui-label"><a href="/creators">← Creators</a></p>
 <h1>${esc(v.name)}</h1>
 <p class="lede">A creator on CITED. ${v.tests.length} published ${v.tests.length === 1 ? "test" : "tests"}.</p>
 ${v.disclosure ? `<p class="disclosure"><b>Disclosure.</b> ${esc(v.disclosure)}</p>` : ""}
-<section aria-labelledby="tests-h"><h2 id="tests-h">Published tests</h2>${v.tests.map((t) => testHtml(t, v)).join("")}</section>
-<section aria-labelledby="earn-h"><h2 id="earn-h">Earned and paid</h2>${ledgerHtml(v)}${batches}</section>
-<section aria-labelledby="how-h"><h2 id="how-h">How CITED pays</h2>
+</section>
+<section class="ui-band" aria-labelledby="tests-h"><h2 class="ui-band-h" id="tests-h">Published tests</h2>${v.tests.map((t) => testHtml(t, v)).join("")}</section>
+<section class="ui-band" aria-labelledby="earn-h"><h2 class="ui-band-h" id="earn-h">Earned and paid</h2>${ledgerHtml(v)}${batches}</section>
+<section class="ui-band" aria-labelledby="how-h"><h2 class="ui-band-h" id="how-h">How CITED pays</h2>
 <p class="how">CITED pays only for sales a test caused. Some agents are shown the test, others a placebo from the same creator, and the difference in what they buy is the lift. Credits are ${COMMISSION_BPS / 100}% commission on the share of sales the lift explains, taken at the 80% lower bound of that lift, so a test that cannot be told apart from the placebo earns nothing. Credits wait ${HOLD_DAYS} days, are voided by refunds, are frozen while a dispute is open, then arrive in one PayPal Payouts batch.</p></section>
-</main></body></html>`;
+</main></div></body></html>`;
 }
 
 function notFoundHtml(): string {
-  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Creator not found · CITED</title><link rel="icon" href="/favicon.svg"><style>${CSS}${SITE_NAV_TOUCH_CSS}${SITE_THEME_CSS}${SITE_HEADER_CSS}</style></head><body>${siteHeader("creators")}<main id="main"><h1>No creator here</h1><p class="lede">CITED has no creator with that address.</p><p><a class="btn" style="background:var(--cream);color:var(--bg)" href="/creators">Back to creators</a></p></main></body></html>`;
+  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Creator not found · CITED</title>${siteMeta({ title: "Creator not found · CITED", path: "/creators", noindex: true })}${SITE_HEAD_HTML}<style>${SITE_THEME_CSS}${CSS}${SITE_NAV_TOUCH_CSS}${SITE_HEADER_CSS}</style></head><body class="site-col">${siteHeader("creators")}<div class="ui-frame"><main id="main"><section class="hero"><p class="crumb ui-label">Error 404</p><h1>No creator here</h1><p class="lede">CITED has no creator with that address.</p><p class="cta"><a class="ui-btn ui-btn-solid" href="/creators">Back to creators</a></p></section></main></div></body></html>`;
 }
 
 const html = (body: string, status = 200) =>

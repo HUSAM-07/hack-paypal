@@ -30,7 +30,7 @@ export const HostDataContext = createContext<{ activity: ActivityEntry[] | null 
 });
 
 const MANDATE_STATUS = {
-  active: "bg-success-soft text-success",
+  active: "bg-success-soft text-success-text",
   revoked: "bg-danger-soft text-danger",
   exhausted: "bg-surface-2 text-muted-foreground",
   expired: "bg-surface-2 text-muted-foreground",
@@ -58,7 +58,7 @@ export function MandateCardView({ props }: R<PropsOf<"MandateCard">>) {
       aside={
         <span
           className={cn(
-            "rounded-full px-2.5 py-1 text-xs font-medium capitalize",
+            "rounded-md px-2 py-1 font-mono text-[11px] uppercase tracking-[0.04em]",
             MANDATE_STATUS[m.status],
           )}
         >
@@ -171,7 +171,7 @@ export function TransferFundsCardView({ props }: R<PropsOf<"TransferFundsCard">>
       <button
         type="button"
         onClick={() => setDismissed(false)}
-        className="rounded-full bg-surface-2 px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground"
+        className="rounded-lg bg-fill px-3 py-1.5 text-xs text-muted-foreground hover:bg-fill-strong hover:text-foreground"
       >
         Transfer draft hidden · show
       </button>
@@ -183,12 +183,12 @@ export function TransferFundsCardView({ props }: R<PropsOf<"TransferFundsCard">>
       <motion.div
         initial={{ opacity: 0, scale: 0.96 }}
         animate={{ opacity: 1, scale: 1 }}
-        className="mt-[25px] flex h-[34px] items-center justify-center gap-1.5 rounded-[26px] bg-success-soft text-sm font-medium text-success"
+        className="mt-[25px] flex h-[34px] items-center justify-center gap-1.5 rounded-lg bg-success-soft text-sm font-medium text-success"
       >
         <CheckCircle2 className="size-4" /> Sent to {who.split(" ")[0]}
       </motion.div>
     ) : t.status === "cancelled" || t.status === "failed" ? (
-      <div className="mt-[25px] flex h-[34px] items-center justify-center rounded-[26px] bg-surface-2 text-sm text-muted-foreground">
+      <div className="mt-[25px] flex h-[34px] items-center justify-center rounded-lg bg-fill text-sm text-muted-foreground">
         {t.status === "cancelled" ? "Cancelled" : "Failed"}
       </div>
     ) : undefined;
@@ -196,7 +196,7 @@ export function TransferFundsCardView({ props }: R<PropsOf<"TransferFundsCard">>
   return (
     <div className="w-full max-w-[380px]">
       <TransferFundsCard
-        className="bg-surface shadow-card dark:bg-surface dark:shadow-card"
+        className="border border-dashed border-border bg-card"
         title={sending ? "Send money" : "Request money"}
         description={
           t.note ? t.note : sending ? `To ${who} via PayPal.` : `From ${who} via PayPal.`
@@ -262,16 +262,16 @@ export function ActivityRows({ entries, limit = 6 }: { entries: ActivityEntry[];
             initial={{ opacity: 0, y: 4 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3, ease: EASE_OUT, delay: i * 0.03 }}
-            className="flex min-h-14 items-center gap-3 border-t border-border px-3.5 py-2.5 first:border-t-0"
+            className="flex min-h-14 items-center gap-3 border-t border-dashed border-border px-3.5 py-2.5 first:border-t-0"
           >
             <span
               className={cn(
                 "flex size-8 shrink-0 items-center justify-center rounded-full",
                 e.direction === "in"
-                  ? "bg-success-soft text-success"
+                  ? "bg-success-soft text-success-text"
                   : failed
                     ? "bg-danger-soft text-danger"
-                    : "bg-surface-3 text-muted-foreground",
+                    : "bg-fill text-muted-foreground",
               )}
             >
               <Icon className="size-4" />

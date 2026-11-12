@@ -16,7 +16,9 @@
       "!docs",
       "!cited/paypal-openapi",
       "!tasks",
-      "!**/*.md"
+      "!**/*.md",
+      "!apps/web/src/styles/site-theme.css",
+      "!apps/web/src/styles/site-head.html"
     ]
   },
   "formatter": {
@@ -39,5 +41,18 @@
     "parser": {
       "tailwindDirectives": true
     }
-  }
+  },
+  "overrides": [
+    {
+      "includes": ["apps/web/src/components/magicui/**"],
+      "linter": {
+        "rules": {
+          "correctness": {
+            "useHookAtTopLevel": "off",
+            "useExhaustiveDependencies": "off"
+          }
+        }
+      }
+    }
+  ]
 }

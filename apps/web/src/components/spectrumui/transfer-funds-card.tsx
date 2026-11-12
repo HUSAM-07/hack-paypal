@@ -44,7 +44,7 @@ function SelectField({ value, readOnly }: { value: string; readOnly?: boolean | 
     <motion.div
       whileHover="hover"
       whileTap={{ scale: 0.99 }}
-      className="mt-3 flex h-9 cursor-pointer items-center justify-between rounded-[22px] bg-surface-2 pl-3 pr-3 transition-colors hover:bg-surface-3"
+      className="mt-3 flex h-9 cursor-pointer items-center justify-between rounded-lg bg-fill pl-3 pr-3 transition-colors hover:bg-fill-strong"
     >
       <span className="truncate text-sm leading-5 text-foreground">{value}</span>
       {!readOnly && (
@@ -83,9 +83,7 @@ export function TransferFundsCard({
   return (
     <div
       className={cn(
-        "relative w-full rounded-[26px] bg-white p-6",
-        "shadow-[0_0_0_1px_rgba(10,10,10,0.05),0_4px_6px_-1px_rgba(0,0,0,0.1),0_2px_4px_-2px_rgba(0,0,0,0.1)]",
-        "dark:bg-surface dark:shadow-[0_0_0_1px_rgba(255,255,255,0.12),0_4px_6px_-1px_rgba(0,0,0,0.5)]",
+        "relative w-full rounded-lg border border-dashed border-border bg-card p-6",
         className,
       )}
     >
@@ -97,7 +95,7 @@ export function TransferFundsCard({
             onClick={onClose}
             whileTap={{ scale: 0.88 }}
             aria-label="Close"
-            className="flex h-[30px] w-[30px] shrink-0 items-center justify-center rounded-full bg-surface-2 text-foreground transition-colors hover:bg-surface-3"
+            className="flex h-[30px] w-[30px] shrink-0 items-center justify-center rounded-lg bg-fill text-foreground transition-colors hover:bg-fill-strong"
           >
             <motion.span
               whileHover={{ rotate: 90 }}
@@ -114,7 +112,7 @@ export function TransferFundsCard({
       {/* Amount */}
       <div className="mt-6">
         <p className="text-sm font-medium leading-[14px] text-foreground">{amountLabel}</p>
-        <div className="mt-3 flex h-9 items-center gap-1.5 rounded-[26px] bg-surface-2 px-3 transition-colors hover:bg-surface-3">
+        <div className="mt-3 flex h-9 items-center gap-1.5 rounded-lg bg-fill px-3 transition-colors hover:bg-fill-strong">
           <span className="text-sm font-medium leading-5 text-muted-foreground">
             {currencySymbol}
           </span>
@@ -135,13 +133,13 @@ export function TransferFundsCard({
       </div>
 
       {/* Summary */}
-      <div className="mt-7 rounded-[18px] bg-surface-2 px-4">
+      <div className="mt-7 rounded-md border border-dashed border-border bg-band px-4">
         {summary.map((row, index) => (
           <div
             key={row.label}
             className={cn(
               "flex h-[46px] items-center justify-between",
-              index > 0 && "border-t border-border",
+              index > 0 && "border-t border-dashed border-border",
             )}
           >
             <span
@@ -173,7 +171,7 @@ export function TransferFundsCard({
           whileHover={{ scale: 1.015 }}
           whileTap={{ scale: 0.97 }}
           transition={{ type: "spring", bounce: 0.4, duration: 0.35 }}
-          className="mt-[25px] flex h-[34px] w-full disabled:pointer-events-none disabled:opacity-45 items-center justify-center rounded-[26px] bg-primary text-sm font-medium leading-5 text-primary-foreground transition-opacity hover:opacity-90"
+          className="mt-[25px] flex h-[34px] w-full disabled:pointer-events-none disabled:opacity-45 items-center justify-center rounded-lg bg-foreground text-sm font-medium leading-5 text-background transition-opacity hover:opacity-90"
         >
           {buttonLabel}
         </motion.button>

@@ -4,20 +4,58 @@
     {
       "name": "web",
       "runtimeExecutable": "npm",
-      "runtimeArgs": ["run", "dev", "-w", "@pact/web"],
+      "runtimeArgs": [
+        "run",
+        "dev",
+        "-w",
+        "@pact/web"
+      ],
       "port": 5180
     },
     {
       "name": "worker",
       "runtimeExecutable": "npm",
-      "runtimeArgs": ["run", "dev", "-w", "@pact/worker"],
+      "runtimeArgs": [
+        "run",
+        "dev",
+        "-w",
+        "@pact/worker"
+      ],
       "port": 8790
     },
     {
       "name": "web-live",
       "runtimeExecutable": "npm",
-      "runtimeArgs": ["run", "dev:live", "-w", "@pact/web"],
+      "runtimeArgs": [
+        "run",
+        "dev:live",
+        "-w",
+        "@pact/web"
+      ],
       "port": 5180
+    },
+    {
+      "name": "shop-worker",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "--prefix",
+        "/Users/mohammedhusamuddin/codebase-core/hack-paypal/.claude/worktrees/shop-contract/apps/worker",
+        "exec",
+        "--",
+        "wrangler",
+        "dev",
+        "--config",
+        "/Users/mohammedhusamuddin/codebase-core/hack-paypal/.claude/worktrees/shop-contract/apps/worker/wrangler.jsonc",
+        "--persist-to",
+        "/Users/mohammedhusamuddin/codebase-core/hack-paypal/.claude/worktrees/shop-contract/apps/worker/.wrangler/state",
+        "--port",
+        "8795",
+        "--var",
+        "ORIGINS:http://localhost:8795",
+        "--var",
+        "SHOP_PUBLIC_ORIGIN:http://localhost:8795"
+      ],
+      "port": 8795
     }
   ]
 }

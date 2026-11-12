@@ -1,3 +1,78 @@
+# CITED UI revamp v3: every page on one semantic theme (2026-11-13)
+
+Goal: every page (landing, /proof, /try, /creators + profiles, /mcp, console + payout + ledger,
+Studio, legacy /app, 404, tour bar) in the reference's fonts, layout, styles and colours, with
+colour values in ONE file (packages/protocol/src/theme.ts) and every other file reading
+semantic tokens (shadcn names + warning/subtle/paypal).
+
+- [x] theme.ts: SITE_TOKENS (light/dark, the reference's neutral palette and blue primary), derived
+      tints, fonts, ui-* layout primitives; SITE_STYLE_CSS; header + theme toggle on every page
+- [x] site-theme.css generated for React entries (+ drift test); theme.js wires every toggle
+- [x] Guard test: no colour literal outside theme.ts (no-raw-colours.test.ts)
+- [x] Landing, /proof (pruned base.css, framed column + bands), tour bar
+- [x] Server pages (/try, /creators, profile, /mcp, ledger, 404) - subagent
+- [x] Console + payout + statement - subagent
+- [x] Studio - subagent
+- [x] Legacy /app - subagent
+- [x] Favicon/app icons/manifest from the mark (gen-icons.ts), shared head, siteMeta, sitemap.xml, robots.txt
+- [x] cited/spec/DESIGN.md + CLAUDE.md rule 12; note sent to the four Shop sessions
+- [x] Responsive + a11y audit: 12 pages x 320/375/768/1440, light and dark; full test/lint/typecheck/build; pushed to PR #170
+
+Review (v3, 2026-11-13)
+- Audit (built-in browser, local worker build): no horizontal scroll at any width; contrast AA on every page in
+  both themes (after fixes); every control named, every image has alt; one h1, main, lang, skip link per page.
+- Not run: Playwright e2e, `CITED_ENGINE=worker npm run demo:cited`, a real-device test. Studio and the console
+  showed empty states locally (no seeded engine); Studio's AG canvas scrolls inside itself at 375px.
+- 404 has no theme toggle (its CSP allows no scripts); it follows the OS theme.
+
+# CITED UI revamp v2: sticker column (branch `feat/ui-redesign`, 2026-11-12)
+
+Goal: every CITED page in the reference's style: a narrow bordered column, dashed section bands,
+die-cut sticker illustrations (generated with Codex image_gen), DM Sans text, Instrument Serif
+accents, Geist Mono labels, Caveat margin notes, cobalt accent, light-first with dark as a token swap.
+
+- [x] Merge origin/main (47 commits; resolved site.ts, SiteHeader, Landing, index.html)
+- [x] Fonts self-hosted (CSP font-src 'self'): DM Sans, Instrument Serif, Caveat in public/fonts
+- [x] Stickers: 13 Codex PNGs -> trimmed WebP in public/art/stickers (scripts/optimize-stickers.ts)
+- [x] Landing: sticker hero, section bands (problem, how, proof, payout, guardrails, try, real), sources; Magic UI Dither Field footer
+- [x] /proof keeps the old base CSS (moved to proof/base.css), retokened to the new fonts/colours
+- [x] Shared header (SITE_HEADER_CSS) + SITE_THEME_CSS -> server pages (console, try, creators, mcp, ledger, 404)
+- [x] Studio tokens (studio.css, theme.ts)
+- [x] Verify: typecheck, lint (0 errors), all unit tests, web build + prerender; landing checked light/dark/375px (no horizontal scroll); /try, /console, /proof, /studio checked locally; #problem and the tour link kept
+
+Review (v2, 2026-11-12)
+- Not run: Playwright e2e and `CITED_ENGINE=worker npm run demo:cited`. Studio and console showed no data locally (engine not seeded).
+- Server pages are a token + header + font swap; their layouts are unchanged.
+
+# CITED UI redesign (branch `feat/ui-redesign`, 2026-11-12)
+
+Goal: one light, airy design system across every CITED page, with agentsUI blocks
+(`npx shadcn add https://components.ihusam.tech/r/<name>.json`) for the agent surfaces.
+Deadline is 2026-11-12 12:00 PT; the demo video was cut against the current UI, so
+every beat in `cited/spec/CITED-packet.md` must still read the same numbers.
+
+Design language
+- White page, near-black text, Geist for text, Geist Mono for figures; large display headings at weight 400, slight negative tracking.
+- Framed column: 1px vertical guide lines down the page, full-width horizontal rules between sections, alternating white / soft-grey bands.
+- Hero: CSS-only sky gradient with soft cloud shapes (no copied imagery), centered headline, black pill CTA, an "app window" mockup of the agent shopping session.
+- Small blue eyebrow links with a chevron above each section heading.
+- Feature cards: pastel mesh-gradient panels with a real product snippet inside, caption below (bold lead-in + grey text).
+- Trust grid: four cards (signed passport, void before pay, randomised holdout, batch payouts).
+- Dark mode kept as a token swap.
+
+Steps
+- [x] Tokens + shared header (`apps/web/src/styles/tokens.css`, `SITE_HEADER_CSS` in `@pact/protocol`) so server-rendered pages follow
+- [x] Landing `/`: hero, problem, how it works (4 cards), proof strip, trust grid, CTA footer
+- [ ] (session `studio-redesign`) Studio `/studio`: app-window shell; always-on agents panel (Agent Inbox / Running Now / Away Summary over real engine data), Approval Card for Maya, Cited Answer for the Analyst, Usage Meter for the deposit
+- [x] `/proof` restyle to the new tokens
+- [x] Server-rendered pages (console, creators, try, payout, mcp): tokens + header only
+- [ ] Verify: typecheck, lint, tests, e2e, `CITED_ENGINE=worker npm run demo:cited`, screenshots light/dark/mobile
+
+Review (landing pass, 2026-11-12)
+- Done: `17d9f61` tokens + shared bar, `de2607a` landing. typecheck, lint, all unit tests and the web prerender build pass; landing checked in light, dark and 375px (no horizontal scroll); /proof, /try, /creators, /console checked on the local worker.
+- Not run: Playwright e2e (Chromium not installed locally; those specs cover `/app`, untouched) and `CITED_ENGINE=worker npm run demo:cited`.
+- Local worker needed `wrangler d1 migrations apply pact --local` before /console would load.
+
 # Pact — Build Plan
 
 Spec: [docs/spec.md](../docs/spec.md). Deadline: **Nov 12, 12:00pm PT**. Early check: **Nov 5**.

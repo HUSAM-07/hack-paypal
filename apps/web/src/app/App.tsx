@@ -48,11 +48,14 @@ function useTheme(): [Theme, () => void] {
   });
   useEffect(() => {
     const root = document.documentElement;
+    // Both classes, so an explicit choice also beats the OS preference the shared tokens follow.
     root.classList.toggle("dark", theme === "dark");
+    root.classList.toggle("light", theme === "light");
     root.style.colorScheme = theme;
-    document
-      .querySelector('meta[name="theme-color"]')
-      ?.setAttribute("content", theme === "dark" ? "#0e0c12" : "#fafaf9");
+    const background = getComputedStyle(root).getPropertyValue("--background").trim();
+    if (background) {
+      document.querySelector('meta[name="theme-color"]')?.setAttribute("content", background);
+    }
     try {
       localStorage.setItem("pact-theme", theme);
     } catch {}
@@ -235,17 +238,26 @@ export function App({
           data-connection={connection}
         >
           {lg && (
-            <div className="w-[264px] shrink-0 border-r border-border bg-background">{sidebar}</div>
+            <div className="w-[264px] shrink-0 border-r border-dashed border-border bg-background">
+              {sidebar}
+            </div>
           )}
 
-          <main className="flex min-w-0 flex-1 flex-col">
-            <header className="flex h-14 shrink-0 items-center gap-2 border-b border-border px-2 sm:px-4">
+          <a
+            href="#main"
+            className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-50 focus:rounded-lg focus:bg-foreground focus:px-4 focus:py-3 focus:text-background"
+          >
+            Skip to content
+          </a>
+          <main id="main" className="flex min-w-0 flex-1 flex-col">
+            <h1 className="sr-only">Pact</h1>
+            <header className="flex h-14 shrink-0 items-center gap-2 border-b border-dashed border-border px-2 sm:px-4">
               {!lg && (
                 <button
                   type="button"
                   onClick={() => setNavOpen(true)}
                   aria-label="Open threads"
-                  className="flex size-9 items-center justify-center rounded-full text-muted-foreground hover:bg-surface-2 hover:text-foreground active:scale-90"
+                  className="flex size-9 items-center justify-center rounded-lg text-muted-foreground hover:bg-surface-2 hover:text-foreground active:scale-90"
                 >
                   <Menu className="size-[18px]" />
                 </button>
@@ -275,7 +287,7 @@ export function App({
                 aria-label={xl ? (walletPinned ? "Hide wallet" : "Show wallet") : "Open wallet"}
                 aria-pressed={xl ? walletPinned : undefined}
                 className={cn(
-                  "flex size-9 items-center justify-center rounded-full transition-[background-color,color,transform] active:scale-90",
+                  "flex size-9 items-center justify-center rounded-lg transition-[background-color,color,transform] active:scale-90",
                   showWalletColumn
                     ? "bg-surface-2 text-foreground"
                     : "text-muted-foreground hover:bg-surface-2 hover:text-foreground",
@@ -337,7 +349,7 @@ export function App({
                 animate={{ width: 340, opacity: 1 }}
                 exit={{ width: 0, opacity: 0 }}
                 transition={{ duration: 0.35, ease: EASE_DRAWER }}
-                className="shrink-0 overflow-hidden border-l border-border bg-background"
+                className="shrink-0 overflow-hidden border-l border-dashed border-border bg-background"
               >
                 <div className="h-full w-[340px]">
                   <WalletPanel />
@@ -352,7 +364,7 @@ export function App({
           {!lg && navOpen && (
             <>
               <motion.div
-                className="fixed inset-0 z-40 bg-black/50"
+                className="fixed inset-0 z-40 bg-background/70 backdrop-blur-[2px]"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}

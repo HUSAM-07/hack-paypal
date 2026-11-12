@@ -60,8 +60,7 @@ const SIZES = {
   lg: { px: 44, text: "text-sm" },
 } as const;
 
-const TOOLTIP_SHADOW =
-  "shadow-[0px_0px_0px_1px_rgba(0,0,0,0.06),0px_1px_2px_0px_rgba(0,0,0,0.04),0px_2px_4px_0px_rgba(0,0,0,0.04)]";
+const TOOLTIP_SHADOW = "shadow-pop";
 
 /** First letters of the first two words: "Ada Lovelace" → "AL" */
 function getInitials(name: string) {
@@ -226,8 +225,8 @@ export function AvatarStack({
                 animate={isActive ? { y: LIFT_Y, scale: LIFT_SCALE } : { y: 0, scale: 1 }}
                 transition={shouldReduceMotion ? INSTANT : SPRING_SNAPPY}
                 className={cn(
-                  "flex select-none items-center justify-center overflow-hidden rounded-full bg-accent-soft font-medium text-accent-soft-foreground ring-2 ring-surface",
-                  "focus-visible:outline-hidden focus-visible:ring-neutral-950 dark:focus-visible:ring-neutral-300",
+                  "flex select-none items-center justify-center overflow-hidden rounded-full bg-muted font-medium text-foreground ring-2 ring-background",
+                  "focus-visible:outline-hidden focus-visible:ring-primary",
                   text,
                 )}
                 style={{ width: px, height: px }}
@@ -250,7 +249,7 @@ export function AvatarStack({
                   <motion.span
                     aria-hidden="true"
                     className={cn(
-                      "pointer-events-none absolute bottom-full left-1/2 mb-2 whitespace-nowrap rounded-full bg-neutral-900 px-2.5 py-1 text-xs font-medium text-white dark:bg-white dark:text-neutral-900",
+                      "pointer-events-none absolute bottom-full left-1/2 mb-2 whitespace-nowrap rounded-md bg-foreground px-2.5 py-1 text-xs font-medium text-background",
                       TOOLTIP_SHADOW,
                     )}
                     style={{ transformOrigin: "bottom center" }}
@@ -305,8 +304,8 @@ export function AvatarStack({
             onFocus={() => setRovingIndex(pillIndex)}
             transition={{ layout: layoutTransition }}
             className={cn(
-              "relative flex select-none items-center justify-center rounded-full bg-accent-soft font-medium text-accent-soft-foreground ring-2 ring-surface",
-              "focus-visible:outline-hidden focus-visible:ring-neutral-950 dark:focus-visible:ring-neutral-300",
+              "relative flex select-none items-center justify-center rounded-full bg-muted font-medium text-foreground ring-2 ring-background",
+              "focus-visible:outline-hidden focus-visible:ring-primary",
               text,
             )}
             style={{
@@ -336,7 +335,7 @@ export function AvatarStack({
             layout
             transition={{ layout: layoutTransition }}
             className={cn(
-              "flex select-none items-center justify-center rounded-full bg-accent-soft font-medium text-accent-soft-foreground ring-2 ring-surface",
+              "flex select-none items-center justify-center rounded-full bg-muted font-medium text-foreground ring-2 ring-background",
               text,
             )}
             style={{

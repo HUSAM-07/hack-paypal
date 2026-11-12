@@ -6,7 +6,7 @@ import { formatMoney } from "@/lib/money";
 import { blockEnter } from "@/lib/motion";
 import { cn, initials } from "@/lib/utils";
 
-/** Outer shell every generated card shares: soft surface, hairline ring, generous radius. */
+/** Outer shell every generated card shares: card surface, dashed hairline, small radius. */
 export function GenCard({
   icon: Icon,
   title,
@@ -29,18 +29,21 @@ export function GenCard({
     <motion.section
       {...(reduce ? {} : blockEnter)}
       aria-label={label ?? (typeof title === "string" ? title : undefined)}
-      className={cn("w-full rounded-[24px] bg-surface p-4 shadow-card sm:p-5", className)}
+      className={cn(
+        "w-full rounded-lg border border-dashed border-border bg-card p-4 sm:p-5",
+        className,
+      )}
     >
       {(title || Icon) && (
         <header className="mb-3.5 flex items-center gap-2.5">
           {Icon && (
             <span
               className={cn(
-                "flex size-7 shrink-0 items-center justify-center rounded-[9px]",
-                tone === "accent" && "bg-info-soft text-accent",
-                tone === "success" && "bg-success-soft text-success",
-                tone === "warning" && "bg-warning-soft text-warning",
-                tone === "neutral" && "bg-surface-2 text-muted-foreground",
+                "flex size-7 shrink-0 items-center justify-center rounded-md",
+                tone === "accent" && "bg-primary-soft text-primary",
+                tone === "success" && "bg-success-soft text-success-text",
+                tone === "warning" && "bg-warning-soft text-warning-text",
+                tone === "neutral" && "bg-fill text-muted-foreground",
               )}
             >
               <Icon className="size-[15px]" strokeWidth={2.2} />
@@ -57,7 +60,7 @@ export function GenCard({
 
 export function Well({ children, className }: { children: ReactNode; className?: string }) {
   return (
-    <div className={cn("rounded-2xl bg-surface-2/70 dark:bg-surface-2/60", className)}>
+    <div className={cn("rounded-md border border-dashed border-border bg-band", className)}>
       {children}
     </div>
   );
@@ -74,10 +77,10 @@ export function CardSkeleton({ lines = 3, label = "Loading" }: { lines?: number;
       role="status"
       aria-label={label}
       data-testid="ref-skeleton"
-      className="w-full rounded-[24px] bg-surface p-4 shadow-card sm:p-5"
+      className="w-full rounded-lg border border-dashed border-border bg-card p-4 sm:p-5"
     >
       <div className="mb-4 flex items-center gap-2.5">
-        <Skeleton className="size-7 rounded-[9px]" />
+        <Skeleton className="size-7 rounded-md" />
         <Skeleton className="h-4 w-36" />
       </div>
       <div className="space-y-2.5">
@@ -90,11 +93,12 @@ export function CardSkeleton({ lines = 3, label = "Loading" }: { lines?: number;
   );
 }
 
-const HUES = [255, 160, 25, 300, 70, 200, 340];
-function hueFor(id: string) {
+/** Each person gets a tint from the chart palette, so avatars stay on the theme's tokens. */
+const TINTS = ["--chart-1", "--chart-4", "--chart-2", "--chart-5", "--chart-3"];
+function tintFor(id: string) {
   let h = 0;
   for (const c of id) h = (h * 31 + c.charCodeAt(0)) >>> 0;
-  return HUES[h % HUES.length]!;
+  return TINTS[h % TINTS.length]!;
 }
 
 export function Avatar({
@@ -110,21 +114,21 @@ export function Avatar({
   className?: string;
   ring?: boolean;
 }) {
-  const hue = hueFor(id ?? name);
+  const tint = tintFor(id ?? name);
   return (
     <span
       aria-hidden
       className={cn(
         "inline-flex shrink-0 select-none items-center justify-center rounded-full font-semibold",
-        ring && "ring-2 ring-surface",
+        ring && "ring-2 ring-background",
         className,
       )}
       style={{
         width: size,
         height: size,
         fontSize: Math.max(9, Math.round(size * 0.36)),
-        background: `oklch(0.7 0.12 ${hue} / 0.18)`,
-        color: `oklch(var(--avatar-l) 0.13 ${hue})`,
+        background: `color-mix(in oklab, var(${tint}) 22%, var(--background))`,
+        color: "var(--foreground)",
       }}
     >
       {initials(name)}
@@ -133,14 +137,14 @@ export function Avatar({
 }
 
 const STATE_STYLE: Record<PactState, { label: string; cls: string; live?: boolean }> = {
-  draft: { label: "Draft", cls: "bg-surface-2 text-muted-foreground" },
-  collecting: { label: "Collecting", cls: "bg-info-soft text-accent", live: true },
-  armed: { label: "Armed", cls: "bg-success-soft text-success", live: true },
-  triggered: { label: "Triggered", cls: "bg-warning-soft text-warning", live: true },
-  settling: { label: "Settling", cls: "bg-warning-soft text-warning", live: true },
-  done: { label: "Done", cls: "bg-success-soft text-success" },
-  cancelled: { label: "Cancelled", cls: "bg-surface-2 text-muted-foreground" },
-  failed: { label: "Failed", cls: "bg-danger-soft text-danger" },
+  draft: { label: "Draft", cls: "bg-fill text-muted-foreground" },
+  collecting: { label: "Collecting", cls: "bg-primary-soft text-primary", live: true },
+  armed: { label: "Armed", cls: "bg-success-soft text-success-text", live: true },
+  triggered: { label: "Triggered", cls: "bg-warning-soft text-warning-text", live: true },
+  settling: { label: "Settling", cls: "bg-warning-soft text-warning-text", live: true },
+  done: { label: "Done", cls: "bg-success-soft text-success-text" },
+  cancelled: { label: "Cancelled", cls: "bg-fill text-muted-foreground" },
+  failed: { label: "Failed", cls: "bg-danger-soft text-danger-text" },
 };
 
 export function StateBadge({ state }: { state: PactState }) {
@@ -152,7 +156,7 @@ export function StateBadge({ state }: { state: PactState }) {
       animate={{ opacity: 1, scale: 1 }}
       transition={{ type: "spring", stiffness: 500, damping: 30 }}
       className={cn(
-        "inline-flex h-6 items-center gap-1.5 rounded-full px-2.5 text-xs font-medium",
+        "inline-flex h-6 items-center gap-1.5 rounded-md px-2 font-mono text-[11px] uppercase tracking-[0.04em]",
         s.cls,
       )}
     >
@@ -193,7 +197,7 @@ export function Row({
   strong?: boolean;
 }) {
   return (
-    <div className="flex min-h-11 items-center justify-between gap-3 border-t border-border px-4 py-2 first:border-t-0">
+    <div className="flex min-h-11 items-center justify-between gap-3 border-t border-dashed border-border px-4 py-2 first:border-t-0">
       <span
         className={cn("text-sm", strong ? "font-medium text-foreground" : "text-muted-foreground")}
       >

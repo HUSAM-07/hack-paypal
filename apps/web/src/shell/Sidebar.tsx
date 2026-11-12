@@ -9,7 +9,7 @@ import type { ConnectionState } from "@/protocol/client";
 export function BrandMark({ className }: { className?: string }) {
   return (
     <span className={cn("flex items-center gap-2", className)}>
-      <span className="flex size-7 items-center justify-center rounded-[9px] bg-primary text-primary-foreground">
+      <span className="flex size-7 items-center justify-center rounded-md bg-foreground text-background">
         <svg viewBox="0 0 32 32" className="size-[18px]" aria-hidden>
           <path
             d="M10 22V10h7a4 4 0 0 1 0 8h-7"
@@ -19,10 +19,10 @@ export function BrandMark({ className }: { className?: string }) {
             strokeLinecap="round"
             strokeLinejoin="round"
           />
-          <circle cx="22.5" cy="22.5" r="2.5" fill="var(--lav-400)" />
+          <circle cx="22.5" cy="22.5" r="2.5" fill="var(--primary)" />
         </svg>
       </span>
-      <span className="text-[15px] font-semibold tracking-tight">Pact</span>
+      <span className="display text-[22px]">Pact</span>
     </span>
   );
 }
@@ -62,13 +62,13 @@ export function Sidebar({
   const conn = CONN[connection];
   return (
     <nav aria-label="Threads" className="flex h-full flex-col">
-      <div className="flex h-14 items-center justify-between px-4">
+      <div className="flex h-14 shrink-0 items-center justify-between border-b border-dashed border-border px-4">
         <BrandMark />
         <button
           type="button"
           onClick={onToggleTheme}
           aria-label={theme === "dark" ? "Switch to light theme" : "Switch to dark theme"}
-          className="flex size-8 items-center justify-center rounded-full text-muted-foreground transition-[background-color,color,transform] hover:bg-surface-2 hover:text-foreground active:scale-90"
+          className="flex size-8 items-center justify-center rounded-lg text-muted-foreground transition-[background-color,color,transform] hover:bg-hover hover:text-foreground active:scale-90"
         >
           <motion.span
             key={theme}
@@ -80,18 +80,16 @@ export function Sidebar({
           </motion.span>
         </button>
       </div>
-      <div className="px-3 pb-2">
+      <div className="px-3 pb-2 pt-3">
         <button
           type="button"
           onClick={onNew}
-          className="flex h-9 w-full items-center gap-2 rounded-full bg-surface px-3 text-sm font-medium shadow-card transition-[background-color,transform] hover:bg-surface-2 active:scale-[0.98]"
+          className="flex h-9 w-full items-center gap-2 rounded-lg border border-dashed border-input bg-background px-3 text-sm font-medium transition-[background-color,transform] hover:bg-hover active:scale-[0.98]"
         >
           <Plus className="size-4" /> New pact
         </button>
       </div>
-      <div className="px-4 pb-1.5 pt-3 text-[11px] font-medium uppercase tracking-wider text-subtle-foreground">
-        Threads
-      </div>
+      <div className="label px-4 pb-1.5 pt-3">Threads</div>
       <ul className="scrollbar-thin min-h-0 flex-1 space-y-0.5 overflow-y-auto px-2">
         {threads.map((t) => {
           const active = t.id === activeId;
@@ -102,23 +100,23 @@ export function Sidebar({
                 onClick={() => onSelect(t.id)}
                 aria-current={active ? "page" : undefined}
                 className={cn(
-                  "relative flex h-11 w-full items-center gap-2.5 rounded-xl px-2.5 text-left text-sm transition-colors",
+                  "relative flex h-11 w-full items-center gap-2.5 rounded-md px-2.5 text-left text-sm transition-colors",
                   active
                     ? "text-foreground"
-                    : "text-muted-foreground hover:bg-surface-2/60 hover:text-foreground",
+                    : "text-muted-foreground hover:bg-hover hover:text-foreground",
                 )}
               >
                 {active && (
                   <motion.span
                     {...(reduce ? {} : { layoutId: "thread-active" })}
                     transition={SPRING_LAYOUT}
-                    className="absolute inset-0 rounded-xl bg-surface-2"
+                    className="absolute inset-0 rounded-md bg-muted"
                   />
                 )}
                 <span
                   className={cn(
-                    "relative flex size-7 items-center justify-center rounded-lg",
-                    active ? "bg-surface-3 text-foreground" : "bg-surface-2 text-muted-foreground",
+                    "relative flex size-7 items-center justify-center rounded-md",
+                    active ? "bg-background text-foreground" : "bg-fill text-muted-foreground",
                   )}
                 >
                   {t.kind === "group" ? (
@@ -138,7 +136,7 @@ export function Sidebar({
           );
         })}
       </ul>
-      <div className="m-2 flex items-center gap-2.5 rounded-2xl p-2">
+      <div className="flex items-center gap-2.5 border-t border-dashed border-border p-3">
         <Avatar name={me.name} id="me" size={32} />
         <div className="min-w-0 flex-1">
           <div className="truncate text-sm font-medium">{me.name}</div>
@@ -157,7 +155,7 @@ export function Sidebar({
             type="button"
             onClick={onSignOut}
             aria-label="Sign out"
-            className="flex size-8 items-center justify-center rounded-full text-muted-foreground transition-[background-color,color,transform] hover:bg-surface-2 hover:text-foreground active:scale-90"
+            className="flex size-8 items-center justify-center rounded-lg text-muted-foreground transition-[background-color,color,transform] hover:bg-hover hover:text-foreground active:scale-90"
           >
             <LogOut className="size-4" />
           </button>

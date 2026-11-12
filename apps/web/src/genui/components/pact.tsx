@@ -110,7 +110,7 @@ export function PactCardView({ props }: R<PropsOf<"PactCard">>) {
             return (
               <li
                 key={m.userId}
-                className="flex min-h-12 items-center gap-3 border-t border-border px-3 py-2 first:border-t-0"
+                className="flex min-h-12 items-center gap-3 border-t border-dashed border-border px-3 py-2 first:border-t-0"
               >
                 <Avatar name={m.displayName} id={m.userId} size={28} />
                 <div className="min-w-0 flex-1">
@@ -220,7 +220,7 @@ function Sparkline({ points, target, id }: { points: number[]; target: number; i
       >
         <defs>
           <linearGradient id={`${id}-fill`} x1="0" x2="0" y1="0" y2="1">
-            <stop offset="0%" stopColor="currentColor" stopOpacity="0.22" />
+            <stop offset="0%" stopColor="currentColor" stopOpacity="0.14" />
             <stop offset="100%" stopColor="currentColor" stopOpacity="0" />
           </linearGradient>
         </defs>
@@ -229,13 +229,13 @@ function Sparkline({ points, target, id }: { points: number[]; target: number; i
           x2={w}
           y1={y(target)}
           y2={y(target)}
-          stroke="var(--success)"
+          stroke="var(--primary)"
           strokeDasharray="4 5"
           strokeWidth="1.25"
           vectorEffect="non-scaling-stroke"
           opacity="0.8"
         />
-        <g className={below ? "text-success" : "text-accent"}>
+        <g className={below ? "text-success" : "text-foreground"}>
           <motion.path
             d={area}
             fill={`url(#${id}-fill)`}
@@ -262,7 +262,7 @@ function Sparkline({ points, target, id }: { points: number[]; target: number; i
         aria-hidden
         className={cn(
           "absolute size-2 -translate-x-1/2 -translate-y-1/2 rounded-full ring-4",
-          below ? "bg-success ring-success-soft" : "bg-accent ring-info-soft",
+          below ? "bg-success ring-success-soft" : "bg-foreground ring-fill-strong",
         )}
         style={{ left: "100%", top: `${(y(last) / h) * 100}%` }}
         initial={reduce ? false : { scale: 0 }}
@@ -332,7 +332,7 @@ export function PriceWatchView({ props }: R<PropsOf<"PriceWatch">>) {
         <span
           className={cn(
             "rounded-full px-2 py-1 font-medium",
-            hit ? "bg-success-soft text-success" : "bg-surface-2 text-muted-foreground",
+            hit ? "bg-success-soft text-success-text" : "bg-surface-2 text-muted-foreground",
           )}
         >
           {hit ? (
@@ -380,7 +380,7 @@ function WeightSlider({
   return (
     <div className="relative flex h-6 flex-1 items-center">
       <div className="absolute inset-x-0 h-1.5 rounded-full bg-surface-3" />
-      <motion.div className="absolute left-0 h-1.5 rounded-full bg-accent" style={{ width }} />
+      <motion.div className="absolute left-0 h-1.5 rounded-full bg-primary" style={{ width }} />
       <input
         type="range"
         min={1}
@@ -389,7 +389,7 @@ function WeightSlider({
         value={value}
         aria-label={label}
         onChange={(e) => onChange(Number(e.target.value))}
-        className="relative h-6 w-full cursor-pointer appearance-none bg-transparent [&::-moz-range-thumb]:size-4 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:border-0 [&::-moz-range-thumb]:bg-white [&::-webkit-slider-thumb]:size-4 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:shadow-[0_1px_3px_rgba(0,0,0,0.4)] [&::-webkit-slider-thumb]:transition-transform active:[&::-webkit-slider-thumb]:scale-110"
+        className="relative h-6 w-full cursor-pointer appearance-none bg-transparent [&::-moz-range-thumb]:size-4 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:border-0 [&::-moz-range-thumb]:bg-background [&::-moz-range-thumb]:shadow-[0_0_0_1.5px_var(--primary)] [&::-webkit-slider-thumb]:size-4 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-background [&::-webkit-slider-thumb]:shadow-[0_0_0_1.5px_var(--primary)] [&::-webkit-slider-thumb]:transition-transform active:[&::-webkit-slider-thumb]:scale-110"
       />
     </div>
   );
@@ -439,7 +439,7 @@ export function SplitBreakdownView({ props }: R<PropsOf<"SplitBreakdown">>) {
       tone="neutral"
       aside={
         editable ? (
-          <div className="relative flex rounded-full bg-surface-2 p-0.5 text-xs font-medium">
+          <div className="relative flex rounded-lg bg-fill p-0.5 text-xs font-medium">
             {(["equal", "weights"] as const).map((m) => (
               <button
                 key={m}
@@ -447,7 +447,7 @@ export function SplitBreakdownView({ props }: R<PropsOf<"SplitBreakdown">>) {
                 onClick={() => update(m)}
                 aria-pressed={mode === m}
                 className={cn(
-                  "relative h-6 rounded-full px-2.5 capitalize transition-colors",
+                  "relative h-6 rounded-md px-2.5 capitalize transition-colors",
                   mode === m ? "text-foreground" : "text-muted-foreground",
                 )}
               >
@@ -455,7 +455,7 @@ export function SplitBreakdownView({ props }: R<PropsOf<"SplitBreakdown">>) {
                   <motion.span
                     layoutId={`${layout}-seg`}
                     transition={SPRING_LAYOUT}
-                    className="absolute inset-0 rounded-full bg-surface-3 shadow-sm"
+                    className="absolute inset-0 rounded-md bg-background shadow-[0_0_0_1px_var(--border)]"
                   />
                 )}
                 <span className="relative">{m === "equal" ? "Equal" : "By weight"}</span>
@@ -493,7 +493,7 @@ export function SplitBreakdownView({ props }: R<PropsOf<"SplitBreakdown">>) {
               ) : (
                 <div className="mt-1.5 ml-[34px] h-1.5 overflow-hidden rounded-full bg-surface-3">
                   <motion.div
-                    className={cn("h-full rounded-full", over ? "bg-danger" : "bg-accent")}
+                    className={cn("h-full rounded-full", over ? "bg-danger" : "bg-primary")}
                     initial={false}
                     animate={{ width: `${pct}%` }}
                     transition={{ type: "spring", stiffness: 360, damping: 32 }}
@@ -571,15 +571,15 @@ export function ScheduleCardView({ props }: R<PropsOf<"ScheduleCard">>) {
                 initial={{ opacity: 0, x: -4 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: i * 0.05, duration: 0.3, ease: EASE_OUT }}
-                className="flex min-h-12 items-center gap-3 border-t border-border px-3 py-2 first:border-t-0"
+                className="flex min-h-12 items-center gap-3 border-t border-dashed border-border px-3 py-2 first:border-t-0"
               >
                 <span
                   className={cn(
-                    "flex size-9 shrink-0 flex-col items-center justify-center rounded-[10px] leading-none",
-                    i === 0 ? "bg-info-soft text-accent" : "bg-surface-3 text-muted-foreground",
+                    "flex size-9 shrink-0 flex-col items-center justify-center rounded-md leading-none",
+                    i === 0 ? "bg-primary-soft text-primary" : "bg-fill text-muted-foreground",
                   )}
                 >
-                  <span className="text-[9px] font-semibold uppercase">
+                  <span className="font-mono text-[9px] uppercase">
                     {d.toLocaleDateString(undefined, { month: "short" })}
                   </span>
                   <span className="text-sm font-semibold">{d.getDate()}</span>

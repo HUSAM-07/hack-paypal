@@ -55,7 +55,7 @@ export function Sheet({
           <Dialog.Portal forceMount>
             <Dialog.Overlay asChild forceMount>
               <motion.div
-                className="fixed inset-0 z-50 bg-black/50 backdrop-blur-[2px]"
+                className="fixed inset-0 z-50 bg-background/70 backdrop-blur-[2px]"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
@@ -78,22 +78,22 @@ export function Sheet({
                   if (info.offset.y > 120 || info.velocity.y > 600) onOpenChange(false);
                 }}
                 className={cn(
-                  "fixed z-50 flex flex-col bg-surface text-foreground shadow-pop outline-none",
+                  "fixed z-50 flex flex-col bg-background text-foreground shadow-pop outline-none",
                   narrow
-                    ? "inset-x-0 bottom-0 max-h-[92dvh] rounded-t-[28px] pb-[max(env(safe-area-inset-bottom),16px)]"
-                    : "inset-0 m-auto h-fit max-h-[86dvh] w-[min(440px,calc(100vw-32px))] rounded-[28px]",
+                    ? "inset-x-0 bottom-0 max-h-[92dvh] rounded-t-2xl pb-[max(env(safe-area-inset-bottom),16px)]"
+                    : "inset-0 m-auto h-fit max-h-[86dvh] w-[min(440px,calc(100vw-32px))] rounded-2xl",
                   className,
                 )}
               >
                 {narrow && (
                   <div
                     aria-hidden
-                    className="mx-auto mt-2.5 h-1 w-10 rounded-full bg-border-strong"
+                    className="mx-auto mt-2.5 h-1 w-10 rounded-full bg-fill-strong"
                   />
                 )}
                 <div className="flex items-start justify-between gap-4 px-6 pt-5">
                   <div>
-                    <Dialog.Title className="text-base font-medium leading-6">{title}</Dialog.Title>
+                    <Dialog.Title className="display text-[26px]">{title}</Dialog.Title>
                     {description ? (
                       <Dialog.Description className="mt-1 text-sm text-muted-foreground">
                         {description}
@@ -105,7 +105,7 @@ export function Sheet({
                   {dismissible && (
                     <Dialog.Close
                       aria-label="Close"
-                      className="group flex size-[30px] shrink-0 items-center justify-center rounded-full bg-surface-2 text-foreground transition-colors hover:bg-surface-3 active:scale-90"
+                      className="group flex size-[30px] shrink-0 items-center justify-center rounded-lg bg-fill text-foreground transition-colors hover:bg-fill-strong active:scale-90"
                     >
                       <X className="size-4 transition-transform duration-300 group-hover:rotate-90" />
                     </Dialog.Close>
