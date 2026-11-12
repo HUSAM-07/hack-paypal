@@ -83,7 +83,7 @@ function PactMark({ size = 28 }: { size?: number }) {
   return (
     <span
       aria-hidden
-      className="flex shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground"
+      className="flex shrink-0 items-center justify-center rounded-md bg-foreground text-background"
       style={{ width: size, height: size }}
     >
       <svg viewBox="0 0 32 32" className="size-[60%]" aria-hidden>
@@ -95,7 +95,7 @@ function PactMark({ size = 28 }: { size?: number }) {
           strokeLinecap="round"
           strokeLinejoin="round"
         />
-        <circle cx="22.5" cy="22.5" r="2.5" fill="var(--success)" />
+        <circle cx="22.5" cy="22.5" r="2.5" fill="var(--primary)" />
       </svg>
     </span>
   );
@@ -241,7 +241,7 @@ export function ChatView({
               toBottom(true);
             }}
             aria-label="Jump to latest"
-            className="absolute bottom-3 left-1/2 flex size-9 -translate-x-1/2 items-center justify-center rounded-full bg-surface-2 text-foreground shadow-pop hover:bg-surface-3"
+            className="absolute bottom-3 left-1/2 flex size-9 -translate-x-1/2 items-center justify-center rounded-lg bg-popover text-foreground shadow-pop hover:bg-muted"
           >
             <ArrowDown className="size-4" />
           </motion.button>
@@ -275,7 +275,7 @@ function renderBlock(
             <p
               data-testid="user-message"
               className={cn(
-                "max-w-[85%] whitespace-pre-wrap break-words rounded-[20px] rounded-br-md bg-accent text-accent-foreground px-4 py-2.5 text-[15px] leading-6",
+                "max-w-[85%] whitespace-pre-wrap break-words rounded-xl rounded-br-sm bg-primary text-primary-foreground px-4 py-2.5 text-[15px] leading-6",
                 b.item.status === "inProgress" && "opacity-70",
               )}
             >
@@ -294,7 +294,7 @@ function renderBlock(
           <Avatar name={name} id={b.item.authorId} size={28} />
           <div className="max-w-[80%]">
             <div className="mb-1 pl-1 text-xs text-muted-foreground">{name.split(" ")[0]}</div>
-            <p className="whitespace-pre-wrap break-words rounded-[20px] rounded-bl-md bg-surface-2 px-4 py-2.5 text-[15px] leading-6">
+            <p className="whitespace-pre-wrap break-words rounded-xl rounded-bl-sm bg-muted px-4 py-2.5 text-[15px] leading-6">
               {b.item.text}
             </p>
           </div>
@@ -379,10 +379,10 @@ export function EmptyThread({ title, onPick }: { title: string; onPick: (text: s
       transition={{ duration: 0.5, ease: EASE_OUT }}
       className="flex flex-col items-center py-10 text-center sm:py-16"
     >
-      <span className="mb-4 flex size-12 items-center justify-center rounded-2xl bg-info-soft text-accent">
+      <span className="mb-4 flex size-12 items-center justify-center rounded-lg bg-primary-soft text-primary">
         <Sparkles className="size-5" />
       </span>
-      <h2 className="text-xl font-semibold tracking-tight">{title}</h2>
+      <h2 className="display text-[34px]">{title}</h2>
       <p className="mt-1.5 max-w-sm text-sm text-muted-foreground">
         Ask Pact to watch a price, split a purchase, run a standing order or send money. Nothing
         moves without a mandate or your approval.
@@ -396,7 +396,7 @@ export function EmptyThread({ title, onPick }: { title: string; onPick: (text: s
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 + i * 0.05, duration: 0.4, ease: EASE_OUT }}
             onClick={() => onPick(s)}
-            className="rounded-2xl bg-surface px-4 py-3 text-left text-sm leading-5 text-foreground/90 shadow-card transition-[background-color,transform] duration-150 hover:bg-surface-2 active:scale-[0.98]"
+            className="rounded-lg border border-dashed border-border bg-card px-4 py-3 text-left text-sm leading-5 text-foreground/90 transition-[background-color,transform] duration-150 hover:bg-hover active:scale-[0.98]"
           >
             {s}
           </motion.button>

@@ -4,7 +4,14 @@
  * passes through, so each row compares the two agents at the same moment of their run.
  * Everything a model or a third party wrote is rendered with textContent, never as HTML.
  */
-import { SITE_HEADER_CSS, SITE_NAV_TOUCH_CSS, SITE_THEME_CSS, siteHeader } from "@pact/protocol";
+import {
+  SITE_HEAD_HTML,
+  SITE_HEADER_CSS,
+  SITE_NAV_TOUCH_CSS,
+  SITE_THEME_CSS,
+  siteHeader,
+  siteMeta,
+} from "@pact/protocol";
 import { TRY_CATEGORIES, type TryCategoryId, tryCategory } from "./categories";
 
 const esc = (s: string) => s.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
@@ -18,139 +25,120 @@ const STAGES: [id: string, label: string][] = [
   ["engine", "Engine"],
 ];
 
-/* After the shared dark theme. */
-const TRY_DARK = `main{max-width:1280px;padding-left:clamp(16px,4vw,56px);padding-right:clamp(16px,4vw,56px)}button{background:var(--cream);color:var(--bg);font-family:var(--mono);font-weight:500;letter-spacing:.07em;text-transform:uppercase;font-size:.72rem}button:hover{background:#2B2E36}`;
-
 const CSS = `
-@font-face{font-family:"Newsreader";font-style:normal;font-weight:200 800;font-display:swap;src:url("/fonts/newsreader-latin-opsz-v1.woff2") format("woff2-variations")}
-@font-face{font-family:"Newsreader";font-style:italic;font-weight:200 800;font-display:swap;src:url("/fonts/newsreader-latin-opsz-italic-v1.woff2") format("woff2-variations")}
-@font-face{font-family:"Geist";font-style:normal;font-weight:100 900;font-display:swap;src:url("/fonts/geist-latin-v1.woff2") format("woff2-variations")}
-@font-face{font-family:"Geist Mono";font-style:normal;font-weight:100 900;font-display:swap;src:url("/fonts/geist-mono-latin-v1.woff2") format("woff2-variations")}
-:root{
-  --bg:#FAF8F4;--paper:#FFFFFF;--ink:#16181D;--muted:#5B5F68;--line:#E6E2DA;
-  --test:#1F7A55;--test-tint:#E7F1EC;--held:#B7791F;--held-ink:#8A5A12;--held-tint:#F7EEDD;
-  --pp-navy:#003087;
-  --serif:"Newsreader",Charter,"Iowan Old Style","Palatino Linotype",Georgia,serif;
-  --sans:"Geist",ui-sans-serif,-apple-system,"Segoe UI",Helvetica,Arial,sans-serif;
-  --mono:"Geist Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
-}
-*{box-sizing:border-box}
-html{font-size:20px;-webkit-text-size-adjust:100%}
-body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);line-height:1.45;-webkit-font-smoothing:antialiased}
+*,*::before,*::after{box-sizing:border-box}
+body{font:400 15px/1.55 var(--font-sans)}
 .num{font-variant-numeric:tabular-nums lining-nums}
-a{color:inherit}
-:focus-visible{outline:2px solid var(--ink);outline-offset:3px;border-radius:2px}
-
-.nav{display:flex;align-items:baseline;gap:2rem;max-width:1320px;margin:0 auto;padding:22px 48px 0;font-size:.8rem}
-.nav .mark{font-family:var(--serif);font-size:1.15rem;font-weight:600;letter-spacing:.06em;text-decoration:none;margin-right:auto}
-.nav a{color:var(--muted);text-decoration:none;padding:.3rem 0;white-space:nowrap}
-.nav a:hover{color:var(--ink)}
-.nav a[aria-current]{color:var(--ink);box-shadow:inset 0 -1.5px 0 var(--ink)}
-
-main{max-width:1320px;margin:0 auto;padding:40px 48px 72px}
-.eyebrow{margin:0 0 .5rem;font-size:.8rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
-form{margin:0}
-.cats{border:0;margin:0 0 1.8rem;padding:0;min-width:0}
-.cats legend{padding:0;margin:0 0 .6rem;font-size:.8rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
-.cats .opts{display:flex;flex-wrap:wrap;gap:.5rem}
-.cats label{position:relative;display:inline-flex;align-items:center;min-height:44px;padding:.45rem 1.1rem;border:1.5px solid var(--line);border-radius:999px;font-size:.9rem;font-weight:500;cursor:pointer}
-.cats label:hover{border-color:var(--ink)}
-.cats input{position:absolute;inset:0;width:100%;height:100%;margin:0;opacity:0;cursor:pointer}
-.cats label:has(input:checked){background:var(--ink);border-color:var(--ink);color:var(--bg)}
-.cats label:has(input:focus-visible){outline:2px solid var(--ink);outline-offset:3px}
-.cats label:has(input:disabled){cursor:default;opacity:.65}
-.examples{margin:1.1rem 0 0;padding:0;border:0;min-width:0}
-.examples legend{padding:0;margin:0 0 .4rem;font-size:.8rem;color:var(--muted)}
-.examples .opts{display:flex;flex-wrap:wrap;gap:.5rem}
+a{color:inherit;text-underline-offset:3px;text-decoration-color:var(--border)}
+a:hover{text-decoration-color:var(--foreground)}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
-textarea{display:block;width:100%;max-width:34ch;resize:none;border:0;border-bottom:1.5px solid var(--line);background:transparent;color:var(--ink);
-  font-family:var(--serif);font-weight:400;font-size:2.4rem;line-height:1.12;letter-spacing:-.012em;padding:0 0 .35rem;field-sizing:content;min-height:2.4em}
-textarea:focus{outline:none;border-bottom-color:var(--ink);box-shadow:0 1.5px 0 var(--ink)}
-textarea:disabled{color:var(--muted)}
-.controls{display:flex;align-items:center;gap:.8rem 1.2rem;flex-wrap:wrap;margin:1.3rem 0 0}
-button{font:inherit;font-size:.9rem;font-weight:600;background:var(--ink);color:var(--bg);border:1.5px solid var(--ink);border-radius:999px;padding:.65rem 1.4rem;min-height:44px;cursor:pointer}
-button:hover{background:#2B2E36}
-button.quiet{background:transparent;color:var(--ink)}
-button.quiet:hover{background:var(--paper)}
-button.chip{font-family:var(--sans);font-size:.8rem;font-weight:500;letter-spacing:0;text-transform:none;text-align:left;line-height:1.3;border-radius:14px;padding:.5rem .9rem;border-color:var(--line)}
-button.chip:hover{border-color:var(--ink)}
-button:active{transform:scale(.96)}
-button:disabled{background:transparent;border-color:var(--line);color:var(--muted);cursor:default;transform:none}
-.who{font-size:.8rem;color:var(--muted);margin:0}
-.who b{font-family:var(--mono);font-weight:500;color:var(--ink)}
-.who.scripted b{color:var(--held-ink)}
-.fixed{margin:.9rem 0 0;font-size:.8rem;color:var(--muted);max-width:46rem}
-.status{min-height:1.4em;margin:.6rem 0 0;font-size:.85rem;color:var(--muted)}
-.status.bad{color:var(--held-ink)}
+
+.hero{padding:36px var(--pad) 32px}
+.eyebrow{margin:0 0 22px;font:400 clamp(34px,5vw,48px)/1.06 var(--font-serif);letter-spacing:-.015em;max-width:22ch;text-wrap:balance}
+form{margin:0}
+.cats{border:0;margin:0 0 22px;padding:0;min-width:0}
+.cats legend,.examples legend{padding:0;margin:0 0 10px;font:400 11px/1.4 var(--font-mono);letter-spacing:.06em;text-transform:uppercase;color:var(--muted-foreground)}
+.cats .opts{display:flex;flex-wrap:wrap;gap:6px}
+.cats label{position:relative;display:inline-flex;align-items:center;height:36px;padding:0 14px;border-radius:10px;font:500 14px/1 var(--font-sans);background:var(--fill);color:var(--foreground);cursor:pointer;transition:background-color .15s,color .15s}
+.cats label:hover{background:var(--fill-strong);color:var(--foreground)}
+.cats input{position:absolute;inset:0;width:100%;height:100%;margin:0;opacity:0;cursor:pointer}
+.cats label:has(input:checked){background:var(--foreground);color:var(--background)}
+.cats label:has(input:focus-visible){outline:2px solid var(--primary);outline-offset:2px}
+.cats label:has(input:disabled){cursor:default;opacity:.6}
+.examples{margin:16px 0 0;padding:0;border:0;min-width:0}
+.examples .opts{display:flex;flex-wrap:wrap;gap:8px}
+textarea{display:block;width:100%;max-width:36ch;resize:none;border:0;border-bottom:1px dashed var(--border);border-radius:0;background:transparent;color:var(--foreground);
+  font:400 clamp(26px,3.4vw,34px)/1.15 var(--font-serif);letter-spacing:-.01em;padding:0 0 8px;field-sizing:content;min-height:2.4em}
+textarea::placeholder{color:var(--muted-foreground)}
+textarea:focus{outline:none;border-bottom:1px solid var(--foreground)}
+textarea:disabled{color:var(--muted-foreground)}
+.controls{display:flex;align-items:center;gap:10px 14px;flex-wrap:wrap;margin:20px 0 0}
+.ui-btn:disabled{opacity:.5;cursor:default;transform:none}
+.chip{display:inline-block;padding:3px 10px 2px;border:0;border-radius:3px;font:italic 400 17px/1.3 var(--font-serif);text-align:left;color:var(--foreground);background:var(--band);box-shadow:inset 0 0 0 1px var(--border);cursor:pointer;transition:background-color .15s}
+.chip:hover{background:var(--hover)}
+.chip:active{transform:scale(.98)}
+.chip:disabled{opacity:.5;cursor:default;transform:none}
+@media (pointer:coarse){.ui-btn,.chip,.cats label{min-height:44px}}
+.who{font-size:13px;color:var(--muted-foreground);margin:0}
+.who b{font-family:var(--font-mono);font-weight:500;color:var(--foreground)}
+.who.scripted b{color:var(--warning)}
+.fixed{margin:14px 0 0;font-size:14px;color:var(--muted-foreground);max-width:62ch}
+.status{min-height:1.5em;margin:8px 0 0;font:400 12px/1.5 var(--font-mono);color:var(--muted-foreground)}
+.status.bad{color:var(--destructive)}
 
 /* The board: test lane | stage spine | held-out lane. Every row is one stage, both lanes. */
-.board{display:grid;grid-template-columns:minmax(0,1fr) 7.5rem minmax(0,1fr);margin-top:2.2rem;border-top:1px solid var(--ink)}
+.board{display:grid;grid-template-columns:minmax(0,1fr) 120px minmax(0,1fr);padding:0 var(--pad) 28px}
 .board[hidden]{display:none}
 .board > *{grid-row:var(--r)}
 .board .spine{grid-column:2}
 .board .test{grid-column:1}
 .board .held{grid-column:3}
-.lh{padding:1.3rem 2rem 1.1rem 0;grid-row:1}
-.lh.held{padding:1.3rem 0 1.1rem 2rem}
-.lh h2{margin:0;display:flex;align-items:baseline;gap:.55rem;font-family:var(--serif);font-size:1.7rem;font-weight:500;letter-spacing:-.005em}
-.lh h2::before{content:"";flex:none;width:.6rem;height:.6rem;border-radius:50%;background:var(--accent);transform:translateY(-.1em)}
-.lh p{margin:.2rem 0 0;font-size:.8rem;color:var(--muted)}
-.lh .agent{font-family:var(--mono);font-size:.7rem}
-.test{--accent:var(--test);--accent-ink:var(--test);--tint:var(--test-tint)}
-.held{--accent:var(--held);--accent-ink:var(--held-ink);--tint:var(--held-tint)}
-.spine{position:relative;text-align:center;padding:1.15rem .4rem;border-top:1px solid var(--line)}
-.spine::before{content:"";position:absolute;left:50%;top:0;bottom:0;width:1px;background:var(--line)}
-.spine span{position:relative;display:inline-block;background:var(--bg);padding:.15rem .35rem;font-size:.66rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
-.spine small{position:relative;display:block;margin-top:.35rem;background:var(--bg);font-size:.66rem;line-height:1.3;color:var(--muted)}
+.test{--lane:var(--primary);--lane-ink:var(--primary);--lane-tint:var(--primary-soft)}
+.held{--lane:var(--subtle);--lane-ink:var(--muted-foreground);--lane-tint:var(--fill)}
+.lh{padding:24px 28px 18px 0;grid-row:1}
+.lh.held{padding:24px 0 18px 28px}
+.lh h2{margin:0;display:flex;align-items:baseline;gap:10px;font:400 28px/1.15 var(--font-serif);letter-spacing:-.01em}
+.lh h2::before{content:"";flex:none;width:9px;height:9px;border-radius:50%;background:var(--lane);transform:translateY(-.15em)}
+.lh p{margin:3px 0 0;font-size:14px;color:var(--muted-foreground)}
+.lh .agent{font:400 11px/1.5 var(--font-mono);letter-spacing:.04em}
+.spine{position:relative;text-align:center;padding:18px 6px;border-top:1px dashed var(--border)}
+.spine::before{content:"";position:absolute;left:50%;top:0;bottom:0;border-left:1px dashed var(--border)}
+.spine span{position:relative;display:inline-block;background:var(--background);padding:3px 6px;font:500 11px/1.3 var(--font-mono);letter-spacing:.06em;text-transform:uppercase;color:var(--muted-foreground)}
+.spine small{position:relative;display:block;margin-top:6px;background:var(--background);font-size:11px;line-height:1.3;color:var(--muted-foreground)}
 .spine.head{border-top:0}
-.cell{border-top:1px solid var(--line);padding:1.1rem 2rem 1.2rem 0;min-height:4.6rem;transition:background-color .35s}
-.cell.held{padding:1.1rem 0 1.2rem 2rem}
-.cell:empty::before{content:"";display:block;width:1.6rem;height:2px;margin-top:.6rem;background:var(--line)}
-.cell.now{box-shadow:inset 3px 0 0 var(--accent)}
-.cell.held.now{box-shadow:inset -3px 0 0 var(--accent)}
+.cell{border-top:1px dashed var(--border);padding:18px 28px 20px 0;min-height:92px;font-size:14px;transition:background-color .35s}
+.cell.held{padding:18px 0 20px 28px}
+.cell:empty::before{content:"";display:block;width:28px;height:2px;margin-top:10px;background:var(--subtle)}
+.cell.now{box-shadow:inset 2px 0 0 var(--lane-ink)}
+.cell.held.now{box-shadow:inset -2px 0 0 var(--lane-ink)}
+.cell.test.now{padding-left:14px}
+.cell.held.now{padding-right:14px}
 .cell p{margin:0}
-.cell .sub{color:var(--muted);font-size:.78rem;margin-top:.3rem}
-.cell .thought{font-family:var(--serif);font-style:italic;font-size:1rem;line-height:1.35;color:var(--ink-2);margin-top:.45rem}
-.offers{width:100%;border-collapse:collapse;font-size:.8rem;margin-top:.35rem}
-.offers td{padding:.26rem 0;border-top:1px solid var(--line)}
-.offers td:first-child{color:var(--muted);width:2ch}
-.offers td:last-child{text-align:right}
+.cell .sub{color:var(--muted-foreground);font-size:13px;margin-top:5px}
+.cell .thought{font:italic 400 17px/1.35 var(--font-serif);color:var(--muted-foreground);margin-top:8px}
+.offers{width:100%;border-collapse:collapse;font-size:13px;margin-top:6px}
+.offers td{padding:5px 0;border-top:1px dashed var(--border)}
+.offers td:first-child{font-family:var(--font-mono);color:var(--muted-foreground);width:3ch}
+.offers td:last-child{text-align:right;font-family:var(--font-mono)}
 .offers tr:first-child td{border-top:0}
-blockquote{margin:0;padding:.15rem 0 .15rem .9rem;border-left:2px solid var(--accent);font-family:var(--serif);font-size:1.05rem;line-height:1.35}
-blockquote cite{display:block;font-family:var(--sans);font-style:normal;font-size:.68rem;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--accent-ink);margin-bottom:.2rem}
-.absent{font-family:var(--serif);font-size:1.05rem;color:var(--held-ink)}
-.pick{font-family:var(--serif);font-size:1.35rem;font-weight:500;line-height:1.15}
-.price{font-family:var(--sans);font-size:.95rem;font-weight:500;color:var(--muted);margin-left:.35rem}
-code{font-family:var(--mono);font-size:.7rem;background:var(--paper);border:1px solid var(--line);border-radius:4px;padding:.06rem .3rem;overflow-wrap:anywhere}
-.pp{font-weight:700;font-style:italic;color:var(--pp-text);letter-spacing:-.01em}
-.ids{display:flex;flex-wrap:wrap;gap:.3rem .5rem;align-items:center;margin-top:.35rem;font-size:.75rem;color:var(--muted)}
+blockquote{margin:0;padding:2px 0 2px 14px;border-left:2px solid var(--lane);font:400 18px/1.35 var(--font-serif)}
+blockquote cite{display:block;font:500 11px/1.4 var(--font-mono);font-style:normal;letter-spacing:.06em;text-transform:uppercase;color:var(--lane-ink);margin-bottom:4px}
+.absent{font:italic 400 18px/1.35 var(--font-serif);color:var(--muted-foreground)}
+.pick{font:400 24px/1.15 var(--font-serif);letter-spacing:-.01em}
+.price{font:500 14px/1 var(--font-mono);color:var(--muted-foreground);margin-left:8px}
+code{font-size:12px;overflow-wrap:anywhere}
+.pp{font-weight:700;font-style:italic;color:var(--paypal);letter-spacing:-.01em}
+.ids{display:flex;flex-wrap:wrap;gap:5px 8px;align-items:center;margin-top:6px;font:400 11px/1.4 var(--font-mono);letter-spacing:.04em;text-transform:uppercase;color:var(--muted-foreground)}
+.ids code{text-transform:none;letter-spacing:0}
 
-/* The result row: what each agent bought, and whether HouseFresh earned anything. */
-.out{background:var(--tint);border-top:3px solid var(--accent);padding:1.1rem 1.4rem 1.3rem;margin:0 1.2rem 0 0;transition:background-color .4s}
-.out.held{margin:0 0 0 1.2rem}
-.out.wait{background:transparent;border-top-color:var(--line)}
-.out .k{font-size:.68rem;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--accent-ink)}
-.out.wait .k{color:var(--muted)}
-.out strong{display:block;font-family:var(--serif);font-weight:500;font-size:2.3rem;line-height:1.05;letter-spacing:-.015em;margin:.25rem 0 .5rem;text-wrap:balance}
-.out.wait strong{color:var(--muted);font-size:1.6rem}
-.out .credit{font-size:.9rem;margin:0}
-.out .credit b{font-weight:600;color:var(--accent-ink)}
-.out .why{font-family:var(--serif);font-style:italic;font-size:.95rem;margin:.6rem 0 0;color:var(--ink-2)}
-.spine.result{border-top:1px solid var(--ink)}
-.result-cell{border-top:1px solid var(--ink);padding-top:1.2rem}
+/* The result row: what each agent bought, and whether the creator earned anything. */
+.out{background:var(--lane-tint);border:1px dashed var(--lane);border-top:2px solid var(--lane);border-radius:0 0 6px 6px;padding:18px 22px 20px;margin:0 20px 0 0;transition:background-color .4s}
+.out.held{margin:0 0 0 20px}
+.out.wait{background:transparent;border-color:var(--border)}
+.out .k{font:500 11px/1.5 var(--font-mono);letter-spacing:.06em;text-transform:uppercase;color:var(--lane-ink)}
+.out.wait .k{color:var(--muted-foreground)}
+.out strong{display:block;font:400 38px/1.05 var(--font-serif);letter-spacing:-.015em;margin:6px 0 10px;text-wrap:balance}
+.out.wait strong{color:var(--muted-foreground);font-size:26px}
+.out .credit{font-size:14px;margin:0}
+.out .credit b{font-weight:600;color:var(--lane-ink)}
+.out .why{font:italic 400 17px/1.4 var(--font-serif);margin:10px 0 0;color:var(--muted-foreground)}
+.spine.result{border-top:1px solid var(--border)}
+.result-cell{border-top:1px solid var(--border);padding-top:20px}
 
-.after{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:3rem;margin-top:2.6rem;padding-top:1.4rem;border-top:1px solid var(--line)}
-.note p{margin:0;font-family:var(--serif);font-size:1.15rem;line-height:1.4;max-width:36rem}
-.note p + p{margin-top:.6rem;font-family:var(--sans);font-size:.8rem;color:var(--muted)}
-.tally h3{margin:0 0 .6rem;font-size:.7rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.after{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+.after > *{padding:4px var(--pad) 0}
+.note{border-right:1px dashed var(--border)}
+.note p{margin:0;font:400 20px/1.4 var(--font-serif);max-width:36em}
+.note p + p{margin-top:10px;font:400 14px/1.6 var(--font-sans);color:var(--muted-foreground)}
+.tally h3{margin:0 0 10px;font:400 11px/1.4 var(--font-mono);letter-spacing:.06em;text-transform:uppercase;color:var(--muted-foreground)}
 .tally[hidden]{display:none}
-.trow{display:grid;grid-template-columns:6.5rem auto 1fr;align-items:center;gap:.8rem;padding:.45rem 0;border-top:1px solid var(--line);font-size:.85rem}
-.trow b{font-weight:600;color:var(--accent-ink)}
-.dots{display:flex;gap:.3rem}
-.dot{width:.75rem;height:.75rem;border-radius:50%;border:1.5px solid var(--accent);background:transparent}
-.dot.y{background:var(--accent)}
+.trow{display:grid;grid-template-columns:110px auto 1fr;align-items:center;gap:14px;padding:8px 0;border-top:1px dashed var(--border);font-size:14px}
+.trow b{font-weight:600;color:var(--lane-ink)}
+.dots{display:flex;gap:5px}
+.dot{width:12px;height:12px;border-radius:50%;border:1.5px solid var(--lane-ink);background:transparent}
+.dot.y{background:var(--lane-ink)}
 .dot.x{border-style:dashed;opacity:.5}
-.tally .sub{font-size:.75rem;color:var(--muted);margin:.5rem 0 0}
+.tally .sub{font-size:13px;color:var(--muted-foreground);margin:8px 0 0}
 
 @media (prefers-reduced-motion:no-preference){
   .cell > *{animation:arrive .3s ease-out}
@@ -160,27 +148,24 @@ code{font-family:var(--mono);font-size:.7rem;background:var(--paper);border:1px 
 
 /* Narrow: the lanes interleave per stage, test above held, so each stage still compares. */
 @media (max-width:860px){
-  .nav,main{padding-left:20px;padding-right:20px}
-  .nav{gap:.2rem .9rem;font-size:.72rem;flex-wrap:wrap}
-  .nav .mark{flex-basis:100%}
-  main{padding-top:28px}
-  textarea{font-size:1.7rem;max-width:none}
+  :root{--pad:16px}
+  textarea{max-width:none}
   .board{grid-template-columns:minmax(0,1fr)}
   .board > *,.board .spine,.board .test,.board .held{grid-row:auto;grid-column:auto}
   .spine.head{display:none}
   .lh,.lh.held{display:none}
-  .spine{text-align:left;padding:1.1rem 0 .3rem;border-top:1px solid var(--ink)}
+  .spine{text-align:left;padding:18px 0 6px;border-top:1px dashed var(--border)}
   .spine::before{display:none}
   .spine span{padding:0;background:none}
-  .spine small{display:inline;margin:0 0 0 .5rem;background:none}
-  .cell,.cell.held{border-top:0;padding:.55rem 0 .7rem .9rem;min-height:0;box-shadow:inset 3px 0 0 var(--accent)}
-  .cell.held.now{box-shadow:inset 3px 0 0 var(--accent)}
-  .cell::before,.cell:empty::before{content:attr(data-lane);display:block;width:auto;height:auto;margin:0 0 .25rem;background:none;font-size:.62rem;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--accent-ink)}
-  .cell:empty::after{content:"waiting";display:block;font-size:.75rem;color:var(--muted)}
-  .out,.out.held{margin:0 0 .8rem}
-  .out strong{font-size:1.8rem}
-  .result-cell{border-top:0;padding-top:.4rem}
-  .after{grid-template-columns:1fr;gap:1.6rem}
+  .spine small{display:inline;margin:0 0 0 8px;background:none}
+  .cell,.cell.held,.cell.test.now,.cell.held.now{border-top:0;padding:9px 0 12px 14px;min-height:0;box-shadow:inset 2px 0 0 var(--lane)}
+  .cell::before,.cell:empty::before{content:attr(data-lane);display:block;width:auto;height:auto;margin:0 0 4px;background:none;font:500 11px/1.4 var(--font-mono);letter-spacing:.06em;text-transform:uppercase;color:var(--lane-ink)}
+  .cell:empty::after{content:"waiting";display:block;font-size:13px;color:var(--muted-foreground)}
+  .out,.out.held{margin:0 0 14px}
+  .out strong{font-size:30px}
+  .result-cell{border-top:0;padding-top:8px}
+  .after{grid-template-columns:minmax(0,1fr)}
+  .note{border-right:0;padding-bottom:20px}
 }
 `;
 
@@ -434,24 +419,12 @@ export function tryPage(o: {
   const last = STAGES.length + 2;
   return `<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Two agents, one request · CITED</title>
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="description" content="Type what the buyer wants. An agent shops, pays a seller through PayPal, and CITED decides whether the creator earns.">
-<meta property="og:type" content="website" />
-<meta property="og:site_name" content="CITED" />
-<meta property="og:title" content="CITED · Run a shopping agent" />
-<meta property="og:description" content="Type what the buyer wants. An agent shops, pays a seller through PayPal, and CITED decides whether the creator earns." />
-<meta property="og:url" content="https://pact-worker.vincent-wesley-liem.workers.dev/try" />
-<meta property="og:image" content="https://pact-worker.vincent-wesley-liem.workers.dev/og/cited-proof-v1.png" />
-<meta property="og:image:width" content="1200" />
-<meta property="og:image:height" content="630" />
-<meta property="og:image:alt" content="Bar chart: 100% of AI agents shown a creator's test bought the Winix, against 6% shown a placebo and 8% shown nothing." />
-<meta name="twitter:card" content="summary_large_image" />
-<meta name="twitter:title" content="CITED · Run a shopping agent" />
-<meta name="twitter:description" content="Type what the buyer wants. An agent shops, pays a seller through PayPal, and CITED decides whether the creator earns." />
-<meta name="twitter:image" content="https://pact-worker.vincent-wesley-liem.workers.dev/og/cited-proof-v1.png" />
-<meta name="twitter:image:alt" content="Bar chart: 100% of AI agents shown a creator's test bought the Winix, against 6% shown a placebo and 8% shown nothing." />
-<style>${CSS}${SITE_NAV_TOUCH_CSS}${SITE_THEME_CSS}${SITE_HEADER_CSS}${TRY_DARK}</style></head><body>
+${siteMeta({ title: "Run a shopping agent · CITED", description: "Type what the buyer wants. An agent shops, pays a seller through PayPal, and CITED decides whether the creator earns.", path: "/try" })}
+${SITE_HEAD_HTML}
+<style>${SITE_THEME_CSS}${CSS}${SITE_NAV_TOUCH_CSS}${SITE_HEADER_CSS}</style></head><body>
 ${siteHeader("try")}
-<main id="main">
+<div class="ui-frame-wide"><main id="main">
+<section class="hero">
 <h1 class="eyebrow">One request, two live shopping agents</h1>
 <form id="ask">
 <fieldset class="cats" id="cats"><legend>What are they shopping for?</legend><div class="opts">${TRY_CATEGORIES.map(
@@ -462,19 +435,20 @@ ${siteHeader("try")}
 <textarea id="request" name="request" rows="2" maxlength="280" spellcheck="false" placeholder="${esc(cat.placeholder)}">${esc(o.request)}</textarea>
 <fieldset class="examples" id="examples"><legend>Or start from an example</legend><div class="opts">${cat.examples.map((x) => `<button type="button" class="quiet chip">${esc(x)}</button>`).join("")}</div></fieldset>
 <div class="controls">
-<button id="go" type="submit">Run side by side</button>
-<button id="five" type="button" class="quiet">Run 5 pairs</button>
+<button id="go" type="submit" class="ui-btn ui-btn-solid">Run side by side</button>
+<button id="five" type="button" class="ui-btn ui-btn-quiet">Run 5 pairs</button>
 <p class="who${o.scripted ? " scripted" : ""}">Agents: <b>${esc(o.agent)}</b> · each pays the seller through PayPal from the buyer's linked wallet (simulated PayPal)</p>
 </div>
 <p class="fixed">Both agents get the same request and the same offers in the same order. For this side by side we fix the groups; the real catalogue assigns them at random.</p>
 <p id="status" class="status" role="status" aria-live="polite"></p>
 </form>
-<section id="board" class="board" hidden aria-label="The two agents' runs">
+</section>
+<section id="board" class="board ui-band" hidden aria-label="The two agents' runs">
 <div class="spine head" style="--r:1"></div>${laneHead("test", "Test group", `Sees ${esc(cat.creatorName)}'s test of the ${esc(cat.tested.name)}`, o.agent)}${laneHead("held", "Held out", "Sees everything except the test", o.agent)}
 ${rows}
 <div class="spine result" style="--r:${last}"><span>Bought</span></div><div class="result-cell test" style="--r:${last}"><div id="test-out" class="out test wait" aria-live="polite"></div></div><div class="result-cell held" style="--r:${last}"><div id="held-out" class="out held wait" aria-live="polite"></div></div>
 </section>
-<section class="after">
+<section class="after ui-band">
 <div class="note"><p><span id="note-text">${esc(cat.note)}</span> <a href="/proof">See the proof</a>.</p>
 <p>Live runs keep their own record. They never change the recorded demo's numbers on the console, and a side by side counts as two runs against the hourly limit.</p></div>
 <div id="tally" class="tally" hidden aria-live="polite"><h3 id="tally-title">${esc(cat.tested.short)} picks over five pairs</h3>
@@ -482,7 +456,7 @@ ${rows}
 <div class="trow held"><b>Held out</b><span class="dots" id="held-dots"></span><span id="held-count" class="num"></span></div>
 <p class="sub">Filled: bought the tested product. Dashed: not run yet, or no purchase.</p></div>
 </section>
-</main>
+</main></div>
 <script>${JS}</script>
 </body></html>`;
 }

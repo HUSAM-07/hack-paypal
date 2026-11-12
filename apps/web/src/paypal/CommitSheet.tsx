@@ -96,7 +96,7 @@ export function CommitSheet({
               above your cap
             </li>
             <li className="flex items-center gap-2">
-              <Fingerprint className="size-4 text-accent" /> Passkey required for larger charges
+              <Fingerprint className="size-4 text-primary" /> Passkey required for larger charges
             </li>
             <li className="flex items-center gap-2">
               <Timer className="size-4" /> Expires with the pact; revoke any time
@@ -139,7 +139,7 @@ export function CommitSheet({
 function Segmented({ mode, onChange }: { mode: Mode; onChange: (m: Mode) => void }) {
   return (
     <div
-      className="mt-5 grid grid-cols-2 rounded-full bg-surface-2 p-1 text-[13px] font-medium"
+      className="mt-5 grid grid-cols-2 rounded-lg bg-fill p-1 text-[13px] font-medium"
       role="tablist"
     >
       {(
@@ -155,7 +155,7 @@ function Segmented({ mode, onChange }: { mode: Mode; onChange: (m: Mode) => void
           aria-selected={mode === m}
           onClick={() => onChange(m)}
           className={cn(
-            "relative h-8 rounded-full transition-colors",
+            "relative h-8 rounded-md transition-colors",
             mode === m ? "text-foreground" : "text-muted-foreground",
           )}
         >
@@ -163,7 +163,7 @@ function Segmented({ mode, onChange }: { mode: Mode; onChange: (m: Mode) => void
             <motion.span
               layoutId="commit-seg"
               transition={SPRING_LAYOUT}
-              className="absolute inset-0 rounded-full bg-surface-3 shadow-sm"
+              className="absolute inset-0 rounded-md bg-background shadow-[0_0_0_1px_var(--border)]"
             />
           )}
           <span className="relative">{label}</span>
@@ -179,13 +179,13 @@ function DoneOverlay() {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 rounded-2xl bg-surface/95"
+      className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 rounded-md bg-background/95"
     >
       <motion.span
         initial={{ scale: 0 }}
         animate={{ scale: 1 }}
         transition={SPRING_POP}
-        className="flex size-14 items-center justify-center rounded-full bg-success-soft text-success"
+        className="flex size-14 items-center justify-center rounded-full bg-success-soft text-success-text"
       >
         <Check className="size-7" strokeWidth={2.6} />
       </motion.span>
@@ -327,7 +327,7 @@ function StandInPayPal({
       {...(reduce ? {} : { whileTap: { scale: 0.98 } })}
       data-testid="paypal-button"
       aria-label={mode === "vault" ? "Save PayPal for this pact" : "Pay with PayPal"}
-      className="relative flex h-12 w-full items-center justify-center overflow-hidden rounded-full bg-[#ffc439] text-[#003087] transition-[filter] hover:brightness-[1.03] disabled:cursor-default"
+      className="relative flex h-12 w-full items-center justify-center overflow-hidden rounded-lg border border-dashed border-input bg-card text-foreground transition-colors hover:bg-hover disabled:cursor-default"
     >
       <AnimatePresence mode="wait" initial={false}>
         {step ? (
@@ -338,7 +338,7 @@ function StandInPayPal({
             exit={{ opacity: 0, y: -6 }}
             className="flex items-center gap-2 text-sm font-semibold"
           >
-            <span className="size-3.5 animate-spin rounded-full border-2 border-[#003087] border-t-transparent" />
+            <span className="size-3.5 animate-spin rounded-full border-2 border-current border-t-transparent" />
             {step}
           </motion.span>
         ) : (
@@ -352,8 +352,8 @@ function StandInPayPal({
             <span className="text-sm font-medium">
               {mode === "vault" ? "Save with" : "Pay with"}
             </span>
-            <span className="text-[19px] font-extrabold italic tracking-tight">
-              Pay<span className="text-[#0070e0]">Pal</span>
+            <span className="text-[19px] font-extrabold italic tracking-tight text-paypal">
+              PayPal
             </span>
           </motion.span>
         )}

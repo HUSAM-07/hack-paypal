@@ -1,6 +1,7 @@
 import { StrictMode } from "react";
 import { createRoot, hydrateRoot } from "react-dom/client";
 import { Landing } from "./Landing";
+import "../styles/site-theme.css";
 import "./landing.css";
 
 const root = document.getElementById("root");

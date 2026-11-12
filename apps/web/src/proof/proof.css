@@ -1,4 +1,4 @@
-/* /proof. Loads after landing.css and reuses its tokens, header, sections, tables and footer. */
+/* /proof. Loads after site-theme.css and base.css. Reads tokens only. */
 
 .proof-hero {
   display: grid;
@@ -14,10 +14,10 @@
 .hero-body {
   margin-top: 1.6rem;
   max-width: 52ch;
-  color: var(--muted);
+  color: var(--muted-foreground);
 }
 .hero-body strong {
-  color: var(--proof);
+  color: var(--primary);
   font-weight: 600;
 }
 .hero-links {
@@ -25,12 +25,12 @@
   font-size: 0.95rem;
 }
 .hero-links a {
-  color: var(--ink);
+  color: var(--foreground);
   text-underline-offset: 3px;
-  text-decoration-color: var(--rule);
+  text-decoration-color: var(--border);
 }
 .hero-links a:hover {
-  text-decoration-color: var(--proof);
+  text-decoration-color: var(--primary);
 }
 
 /* Fig. 1: one square per session */
@@ -46,14 +46,14 @@
   align-items: center;
   gap: 0.4rem;
   font-size: 0.8rem;
-  color: var(--muted);
+  color: var(--muted-foreground);
 }
 .arms {
   margin-top: 0.4rem;
 }
 .arm {
   padding: 1rem 0 1.05rem;
-  border-bottom: 1px solid var(--rule);
+  border-bottom: 1px dashed var(--border);
 }
 .arm-top {
   display: flex;
@@ -67,7 +67,7 @@
 }
 .arm-note {
   font-size: 0.78rem;
-  color: var(--muted);
+  color: var(--muted-foreground);
 }
 .arm-share {
   display: flex;
@@ -76,14 +76,14 @@
   line-height: 1.1;
 }
 .arm-share > span:first-child {
-  font: 450 1.55rem / 1.05 var(--serif);
+  font: 450 1.55rem / 1.05 var(--font-serif);
 }
 .arm-test .arm-share > span:first-child {
-  color: var(--proof);
+  color: var(--primary);
 }
 .arm-count {
   font-size: 0.78rem;
-  color: var(--muted);
+  color: var(--muted-foreground);
 }
 .arm-models {
   margin-top: 0.7rem;
@@ -97,7 +97,7 @@
 }
 .arm-model-name {
   font-size: 0.74rem;
-  color: var(--muted);
+  color: var(--muted-foreground);
   white-space: nowrap;
 }
 .sq-run {
@@ -110,11 +110,11 @@
   width: 11px;
   height: 11px;
   border-radius: 2px;
-  box-shadow: inset 0 0 0 1px #cfc9bd;
-  background: var(--paper);
+  box-shadow: inset 0 0 0 1px var(--border);
+  background: var(--card);
 }
 .sq-on {
-  background: var(--proof);
+  background: var(--primary);
   box-shadow: none;
 }
 .legend .sq:last-of-type {
@@ -130,14 +130,14 @@
 }
 .fixed {
   margin: 0;
-  border-top: 1px solid var(--ink);
+  border-top: 1px solid var(--foreground);
 }
 .fixed-row {
   display: grid;
   grid-template-columns: 6rem minmax(0, 1fr);
   gap: 1rem;
   padding: 0.75rem 0;
-  border-bottom: 1px solid var(--rule);
+  border-bottom: 1px dashed var(--border);
   font-size: 0.95rem;
 }
 .fixed dt {
@@ -145,10 +145,10 @@
 }
 .fixed dd {
   margin: 0;
-  color: var(--muted);
+  color: var(--muted-foreground);
 }
 .timeline-wrap {
-  border-top: 1px solid var(--ink);
+  border-top: 1px solid var(--foreground);
   padding-top: 0.9rem;
 }
 .timeline {
@@ -164,7 +164,7 @@
   top: 0.5rem;
   bottom: 0.5rem;
   width: 1px;
-  background: var(--rule);
+  background: var(--border);
 }
 .tl {
   position: relative;
@@ -180,16 +180,16 @@
   width: 9px;
   height: 9px;
   border-radius: 50%;
-  background: var(--bg);
-  box-shadow: inset 0 0 0 1.5px var(--ink);
+  background: var(--background);
+  box-shadow: inset 0 0 0 1.5px var(--foreground);
 }
 .tl-result::before {
-  background: var(--proof);
+  background: var(--primary);
   box-shadow: none;
 }
 .tl-time {
   font-size: 0.78rem;
-  color: var(--muted);
+  color: var(--muted-foreground);
 }
 .tl-what {
   font-weight: 500;
@@ -211,11 +211,11 @@
 }
 .design-item p {
   margin-top: 0.45rem;
-  color: var(--muted);
+  color: var(--muted-foreground);
   font-size: 0.98rem;
 }
 .design-item strong {
-  color: var(--ink);
+  color: var(--foreground);
   font-weight: 600;
 }
 
@@ -231,15 +231,15 @@
   text-align: left;
 }
 .result-table td {
-  font: 400 1.05rem var(--serif);
+  font: 400 1.05rem var(--font-serif);
   padding-left: 1rem;
 }
 .result-table td.pos {
   font-weight: 500;
 }
 .model-id {
-  font: 0.74rem var(--mono);
-  color: var(--muted);
+  font: 0.74rem var(--font-mono);
+  color: var(--muted-foreground);
   margin-left: 0.35rem;
 }
 
@@ -267,7 +267,7 @@
 }
 .iv-keys {
   font-size: 0.74rem;
-  color: var(--muted);
+  color: var(--muted-foreground);
 }
 .iv-axis {
   margin-top: 0.9rem;
@@ -276,18 +276,18 @@
 .iv-ticks {
   position: relative;
   height: 100%;
-  border-bottom: 1px solid var(--rule);
+  border-bottom: 1px dashed var(--border);
 }
 .iv-tick {
   position: absolute;
   bottom: 0.3rem;
   transform: translateX(-50%);
   font-size: 0.7rem;
-  color: var(--muted);
+  color: var(--muted-foreground);
   white-space: nowrap;
 }
 .iv-tick.iv-zero {
-  color: var(--ink);
+  color: var(--foreground);
   font-weight: 600;
 }
 .iv-group {
@@ -300,7 +300,7 @@
 }
 .iv-group-title span {
   font-weight: 400;
-  color: var(--muted);
+  color: var(--muted-foreground);
 }
 .iv-row {
   padding: 0.35rem 0;
@@ -324,13 +324,14 @@
 }
 .iv-sub {
   font-size: 0.72rem;
-  color: var(--muted);
+  color: var(--muted-foreground);
 }
 .iv-track {
   position: relative;
   height: 22px;
   /* Zero line: the only vertical rule, because it is the pay/no-pay threshold. */
-  background: linear-gradient(var(--ink), var(--ink)) no-repeat calc(100% / 6) 0 / 1px 100%;
+  background:
+    linear-gradient(var(--foreground), var(--foreground)) no-repeat calc(100% / 6) 0 / 1px 100%;
 }
 .iv-band,
 .iv-se,
@@ -342,31 +343,31 @@
 .iv-band {
   height: 10px;
   margin-top: -5px;
-  background: rgba(31, 122, 85, 0.13);
+  background: var(--primary-soft);
   border-radius: 0 2px 2px 0;
 }
 .iv-se {
   height: 2px;
   margin-top: -1px;
-  background: var(--ink);
+  background: var(--foreground);
 }
 .iv-bound {
   width: 2px;
   height: 16px;
   margin: -8px 0 0 -1px;
-  background: var(--proof);
+  background: var(--primary);
 }
 .iv-dot {
   width: 11px;
   height: 11px;
   margin: -5.5px 0 0 -5.5px;
   border-radius: 50%;
-  background: var(--proof);
-  box-shadow: 0 0 0 2px var(--bg);
+  background: var(--primary);
+  box-shadow: 0 0 0 2px var(--background);
 }
 .iv-nopay .iv-bound,
 .iv-nopay .iv-dot {
-  background: var(--held);
+  background: var(--warning);
 }
 .iv-row:not(.iv-strong):not(:has(.iv-sub)) .iv-dot {
   width: 8px;
@@ -374,18 +375,18 @@
   margin: -4px 0 0 -4px;
 }
 .iv-nopay .iv-band {
-  background: rgba(183, 121, 31, 0.15);
+  background: var(--warning-soft);
 }
 .iv-lift {
-  font: 500 1rem var(--serif);
+  font: 500 1rem var(--font-serif);
 }
 .iv-lb {
   font-size: 0.84rem;
-  color: var(--proof);
+  color: var(--primary);
   align-self: center;
 }
 .iv-nopay .iv-lb {
-  color: var(--held-ink);
+  color: var(--warning);
 }
 .iv-legend {
   display: flex;
@@ -393,7 +394,7 @@
   gap: 0.5rem 1.4rem;
   margin-top: 1.1rem;
   font-size: 0.8rem;
-  color: var(--muted);
+  color: var(--muted-foreground);
 }
 .iv-legend > span {
   display: inline-flex;
@@ -404,22 +405,22 @@
   width: 9px;
   height: 9px;
   border-radius: 50%;
-  background: var(--proof);
+  background: var(--primary);
 }
 .lg-se {
   width: 18px;
   height: 2px;
-  background: var(--ink);
+  background: var(--foreground);
 }
 .lg-band {
   width: 22px;
   height: 10px;
-  background: rgba(31, 122, 85, 0.13);
-  box-shadow: inset 2px 0 0 var(--proof);
+  background: var(--primary-soft);
+  box-shadow: inset 2px 0 0 var(--primary);
 }
 .lg-band.lg-nopay {
-  background: rgba(183, 121, 31, 0.15);
-  box-shadow: inset 2px 0 0 var(--held);
+  background: var(--warning-soft);
+  box-shadow: inset 2px 0 0 var(--warning);
 }
 
 /* Secondary studies */
@@ -432,12 +433,12 @@
 }
 .secondary p {
   margin-top: 0.45rem;
-  color: var(--muted);
+  color: var(--muted-foreground);
   font-size: 0.95rem;
 }
 .hyps {
   margin-top: 2.5rem;
-  border-top: 1px solid var(--ink);
+  border-top: 1px solid var(--foreground);
   padding-top: 1rem;
 }
 .hyp-table {
@@ -451,7 +452,7 @@
 .hyp-table tbody th,
 .hyp-table tbody td {
   padding: 0.6rem 0;
-  border-bottom: 1px solid var(--rule);
+  border-bottom: 1px dashed var(--border);
   text-align: left;
   vertical-align: baseline;
   font-size: 0.93rem;
@@ -471,13 +472,13 @@
   white-space: nowrap;
 }
 .v-met {
-  color: var(--proof);
+  color: var(--primary);
 }
 .v-not-met {
-  color: var(--held-ink);
+  color: var(--warning);
 }
 .v-reported {
-  color: var(--muted);
+  color: var(--muted-foreground);
 }
 
 /* Money */
@@ -494,13 +495,13 @@
   gap: 1.4rem 2.5rem;
 }
 .limits li {
-  color: var(--muted);
+  color: var(--muted-foreground);
   font-size: 0.97rem;
   max-width: 48ch;
 }
 .limits strong {
   display: block;
-  color: var(--ink);
+  color: var(--foreground);
   font-weight: 600;
   margin-bottom: 0.2rem;
 }
@@ -520,9 +521,9 @@
   width: 100%;
   min-height: 100%;
   padding: 1rem 1.1rem 1.05rem;
-  border: 1px solid var(--rule);
+  border: 1px dashed var(--border);
   border-radius: 6px;
-  background: var(--paper);
+  background: var(--card);
   color: inherit;
   font: inherit;
   text-align: left;
@@ -531,18 +532,18 @@
   transition: border-color 0.15s ease;
 }
 .dl:hover {
-  border-color: var(--ink);
+  border-color: var(--foreground);
 }
 .dl:disabled {
   cursor: progress;
 }
 .dl-title {
-  font: 450 1.15rem / 1.25 var(--serif);
+  font: 450 1.15rem / 1.25 var(--font-serif);
 }
 .dl-fmt {
-  font: 600 0.7rem / 1 var(--sans);
+  font: 600 0.7rem / 1 var(--font-sans);
   letter-spacing: 0.06em;
-  color: var(--proof);
+  color: var(--primary);
   border: 1px solid currentColor;
   border-radius: 3px;
   padding: 0.15rem 0.3rem;
@@ -551,21 +552,21 @@
 }
 .dl-body {
   font-size: 0.88rem;
-  color: var(--muted);
+  color: var(--muted-foreground);
 }
 .dl-msg {
   font-size: 0.82rem;
-  color: var(--muted);
+  color: var(--muted-foreground);
   margin-top: 0.4rem;
   min-height: 1.2em;
 }
 .dl-err {
-  color: var(--held-ink);
+  color: var(--warning);
 }
 .note-data {
   margin-top: 1.5rem;
   font-size: 0.9rem;
-  color: var(--muted);
+  color: var(--muted-foreground);
   max-width: 70ch;
 }
 
@@ -647,4 +648,82 @@
 .sandbox-runs code {
   font-size: 0.82rem;
   overflow-wrap: anywhere;
+}
+
+/* Column layout, as on the landing: one bordered column (.ui-frame), sections as dashed bands
+   with a tinted heading strip (.ui-band, .ui-band-h) and an Instrument Serif title below it. */
+.wrap {
+  max-width: none;
+  padding: 0 var(--pad);
+}
+.proof-hero {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 28px;
+  padding-top: 36px;
+  padding-bottom: 32px;
+}
+.proof-hero .h1 {
+  font-size: clamp(2.3rem, 6vw, 3.4rem);
+  letter-spacing: -0.02em;
+}
+.kicker {
+  font: 500 11px / 1.4 var(--font-mono);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.lede {
+  font-size: 17px;
+}
+.hero-body,
+.prose,
+.caption {
+  font-size: 15px;
+  line-height: 1.7;
+}
+.prose {
+  color: var(--muted-foreground);
+}
+.section {
+  display: block;
+  padding: 24px 0 32px;
+  border-bottom: 0;
+}
+.section > :not(.ui-band-h) {
+  padding-inline: var(--pad);
+}
+.section-title {
+  margin: 4px 0 20px;
+  font: 400 clamp(26px, 4.4vw, 32px) / 1.1 var(--font-serif);
+  letter-spacing: -0.015em;
+  text-wrap: balance;
+}
+.section-body > * + * {
+  margin-top: 18px;
+}
+.foot {
+  background: none;
+  border-bottom: 0;
+  padding-bottom: 72px;
+}
+.foot > :not(.ui-band-h) {
+  padding-inline: var(--pad);
+}
+.foot-line {
+  padding-top: 16px;
+  border-top: 1px dashed var(--border);
+}
+
+/* Result tables scroll inside their own box on narrow phones; the page never scrolls sideways. */
+.table-scroll {
+  max-width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.table-scroll:focus-visible {
+  outline: 2px solid var(--primary);
+}
+@media (max-width: 420px) {
+  .result-table td {
+    padding-left: 0.6rem;
+  }
 }

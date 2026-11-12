@@ -93,11 +93,11 @@ const STATUS_ICON: Record<ToastStatus, LucideIcon> = {
 };
 
 const STATUS_CLASS: Record<ToastStatus, string> = {
-  neutral: "text-muted-foreground bg-primary/[0.05]",
-  info: "text-primary bg-primary/10",
-  loading: "text-primary bg-primary/10",
-  success: "text-emerald-600 bg-emerald-500/10 dark:text-emerald-400",
-  error: "text-destructive bg-destructive/10",
+  neutral: "text-muted-foreground bg-fill",
+  info: "text-primary bg-primary-soft",
+  loading: "text-primary bg-primary-soft",
+  success: "text-success bg-success-soft",
+  error: "text-destructive bg-destructive-soft",
 };
 
 const POSITION_CLASS: Record<ToastPosition, string> = {
@@ -352,7 +352,7 @@ const ToastItem = memo(function ToastItem({
     >
       <div
         className={cn(
-          "relative overflow-hidden rounded-2xl border border-border bg-card/95 p-3 shadow-2xl backdrop-blur-xl",
+          "relative overflow-hidden rounded-lg border border-border bg-card/95 p-3 shadow-pop backdrop-blur-xl",
           classNames?.surface,
         )}
       >
@@ -363,7 +363,7 @@ const ToastItem = memo(function ToastItem({
             <motion.span
               layout
               className={cn(
-                "mt-0.5 inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full",
+                "mt-0.5 inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md",
                 STATUS_CLASS[status],
                 classNames?.iconWrap,
               )}
@@ -427,7 +427,7 @@ const ToastItem = memo(function ToastItem({
                   type="button"
                   onClick={() => toast.action?.onClick(toast)}
                   className={cn(
-                    "mt-2 inline-flex h-7 items-center rounded-full bg-primary/[0.06] px-3 text-xs font-medium text-foreground transition-colors hover:bg-primary/[0.1]",
+                    "mt-2 inline-flex h-7 items-center rounded-md bg-fill px-3 text-xs font-medium text-foreground transition-colors hover:bg-fill-strong",
                     classNames?.action,
                   )}
                 >
@@ -442,7 +442,7 @@ const ToastItem = memo(function ToastItem({
                 onClick={() => onDismiss?.(toast.id)}
                 aria-label="Dismiss toast"
                 className={cn(
-                  "inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-primary/[0.06] hover:text-foreground",
+                  "inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-fill hover:text-foreground",
                   classNames?.close,
                 )}
               >

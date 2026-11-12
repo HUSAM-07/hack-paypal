@@ -128,7 +128,7 @@ export function Composer({
               exit={{ opacity: 0, y: 4, scale: 0.98 }}
               transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
               style={{ transformOrigin: "bottom left" }}
-              className="absolute bottom-full left-0 z-20 mb-2 w-64 rounded-2xl bg-surface-2 p-1.5 shadow-pop"
+              className="absolute bottom-full left-0 z-20 mb-2 w-64 rounded-lg bg-popover p-1.5 shadow-pop"
               role="menu"
             >
               {QUICK.map((q) => (
@@ -141,7 +141,7 @@ export function Composer({
                     setMenu(false);
                     ref.current?.focus();
                   }}
-                  className="flex w-full items-center gap-2.5 rounded-xl px-2.5 py-2 text-left text-sm transition-colors hover:bg-surface-3"
+                  className="flex w-full items-center gap-2.5 rounded-md px-2.5 py-2 text-left text-sm transition-colors hover:bg-hover"
                 >
                   <q.icon className="size-4 text-muted-foreground" />
                   {q.label}
@@ -156,7 +156,7 @@ export function Composer({
           onSubmit={submit}
           data-testid="composer"
           className={cn(
-            "relative flex rounded-[26px] bg-surface shadow-card transition-shadow focus-within:shadow-[0_0_0_1px_var(--lav-400),0_12px_32px_-14px_oklch(0.45_0.15_285/0.45)]",
+            "relative flex rounded-xl border border-dashed border-input bg-card transition-[border-color,box-shadow] focus-within:border-solid focus-within:border-primary focus-within:shadow-[0_0_0_3px_var(--primary-soft)]",
             multiline ? "flex-col gap-1 p-2.5" : "items-end gap-1 p-1.5",
           )}
         >
@@ -197,12 +197,12 @@ export function Composer({
               transition={SPRING_PRESS}
               data-testid="send"
               className={cn(
-                "flex size-9 shrink-0 items-center justify-center rounded-full transition-colors duration-200",
+                "flex size-9 shrink-0 items-center justify-center rounded-lg transition-colors duration-200",
                 showStop
-                  ? "bg-surface-3 text-foreground"
+                  ? "bg-fill-strong text-foreground"
                   : empty
-                    ? "bg-surface-2 text-subtle-foreground"
-                    : "bg-accent text-accent-foreground shadow-[0_4px_14px_-4px_var(--accent)]",
+                    ? "bg-fill text-muted-foreground"
+                    : "bg-primary text-primary-foreground",
               )}
             >
               <AnimatePresence mode="popLayout" initial={false}>
@@ -239,7 +239,7 @@ function PlusButton({ open, onClick }: { open: boolean; onClick: () => void }) {
       onClick={onClick}
       aria-label="Quick actions"
       aria-expanded={open}
-      className="flex size-9 items-center justify-center rounded-full text-muted-foreground transition-[background-color,color,transform] hover:bg-surface-2 hover:text-foreground active:scale-90"
+      className="flex size-9 items-center justify-center rounded-lg text-muted-foreground transition-[background-color,color,transform] hover:bg-hover hover:text-foreground active:scale-90"
     >
       <Plus className={cn("size-[18px] transition-transform duration-300", open && "rotate-45")} />
     </button>

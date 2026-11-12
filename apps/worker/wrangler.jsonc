@@ -16,6 +16,8 @@
     "not_found_handling": "404-page",
     "run_worker_first": [
       "/api/*",
+      "/sitemap.xml",
+      "/robots.txt",
       "/ws",
       "/app",
       "/app/*",

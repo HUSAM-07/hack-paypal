@@ -1,70 +1,65 @@
 import { studioTheme } from "ag-studio";
 
 /**
- * CITED's palette, shared with the landing page. Proof green is the one strong colour: it marks
- * what the test caused and what was paid. Amber marks money still held (30-day hold, disputes).
+ * AG Studio, AG Grid and AG Charts read CITED's semantic tokens (packages/protocol/src/theme.ts),
+ * never a colour of their own. The Theming API writes each param into a CSS variable, so
+ * `var(--border)` follows the page's light or dark theme. Charts draw on a canvas: Studio resolves
+ * their params from computed styles and re-reads them when the page's colours change (its style
+ * sensor watches the grid's foreground and background), so a theme flip repaints them too.
+ *
+ * Chart colours must resolve to plain colours (Studio converts only rgb() to hex), so chart params
+ * use base tokens, never the color-mix() tints.
  */
-export const C = {
-  paper: "#FAF8F4",
-  surface: "#FFFDF9",
-  ink: "#16181D",
-  muted: "#5B5F68",
-  proof: "#1F7A55",
-  proofTint: "#E3EFE8",
-  amber: "#B7791F",
-  amberTint: "#F5EAD6",
-  hairline: "#E6E2DA",
-  quiet: "#C9C3B8",
-} as const;
+const t = (name: string) => `var(--${name})`;
 
-export const SERIF = `"Newsreader", Georgia, "Times New Roman", serif`;
-export const SANS = `"Geist", "Geist Fallback", system-ui, sans-serif`;
+const SANS = t("font-sans");
+const SERIF = t("font-serif");
 
 export const citedTheme = studioTheme.withParams({
-  browserColorScheme: "light",
-  backgroundColor: C.paper,
-  foregroundColor: C.ink,
-  textColor: C.ink,
-  subtleTextColor: C.muted,
-  accentColor: C.proof,
-  borderColor: C.hairline,
+  browserColorScheme: "inherit",
+  backgroundColor: t("card"),
+  foregroundColor: t("foreground"),
+  textColor: t("foreground"),
+  subtleTextColor: t("muted-foreground"),
+  accentColor: t("primary"),
+  borderColor: t("border"),
   fontFamily: SANS,
   fontSize: 14,
   borderRadius: 6,
-  invalidColor: "#9B3B2A",
-  studioWrapperBackgroundColor: C.paper,
-  studioCanvasBackgroundColor: C.paper,
+  invalidColor: t("destructive"),
+  studioWrapperBackgroundColor: t("background"),
+  studioCanvasBackgroundColor: t("background"),
   studioCanvasFontFamily: SANS,
-  studioWidgetBackgroundColor: C.surface,
-  studioWidgetBorder: { color: C.hairline, width: 1 },
-  studioWidgetBorderRadius: 10,
+  studioWidgetBackgroundColor: t("card"),
+  studioWidgetBorder: { style: "dashed", color: t("border"), width: 1 },
+  studioWidgetBorderRadius: 6,
   studioWidgetShadow: "none",
   studioWidgetTitleFontFamily: SERIF,
-  studioWidgetTitleFontSize: 19,
-  studioWidgetTitleFontWeight: 500,
-  studioWidgetTitleTextColor: C.ink,
-  studioWidgetSubtitleTextColor: C.muted,
+  studioWidgetTitleFontSize: 22,
+  studioWidgetTitleFontWeight: 400,
+  studioWidgetTitleTextColor: t("foreground"),
+  studioWidgetSubtitleTextColor: t("muted-foreground"),
   studioPanelHeaderFontFamily: SERIF,
-  studioPanelHeaderFontSize: 17,
-  studioPanelHeaderFontWeight: 500,
-  studioPanelContainerBackgroundColor: C.surface,
-  gridHeaderBackgroundColor: C.paper,
+  studioPanelHeaderFontSize: 20,
+  studioPanelHeaderFontWeight: 400,
+  studioPanelContainerBackgroundColor: t("card"),
+  gridHeaderBackgroundColor: t("band"),
   gridHeaderFontWeight: 600,
-  gridHeaderTextColor: C.muted,
-  gridOddRowBackgroundColor: C.surface,
-  gridRowHoverColor: "#F1EEE7",
-  valueChangeUpColor: C.proof,
-  valueChangeHighlightBackgroundColor: C.proofTint,
-  chartAccentColor: C.proof,
+  gridHeaderTextColor: t("muted-foreground"),
+  gridOddRowBackgroundColor: t("card"),
+  gridRowHoverColor: t("hover"),
+  valueChangeUpColor: t("primary"),
+  valueChangeHighlightBackgroundColor: t("primary-soft"),
+  chartAccentColor: t("primary"),
   chartFontFamily: SANS,
-  chartTextColor: C.ink,
-  chartSubtleTextColor: C.muted,
-  chartGridLineColor: C.hairline,
-  chartAxisLineColor: C.quiet,
-  // Proof green first: a chart of money paid reads in the colour the page uses for "paid".
-  chartPaletteFills1Color: C.proof,
-  chartPaletteFills2Color: C.amber,
-  chartPaletteFills3Color: C.muted,
-  chartPaletteFills4Color: "#8FB8A2",
-  chartPaletteFills5Color: "#D9B98A",
+  chartTextColor: t("foreground"),
+  chartSubtleTextColor: t("muted-foreground"),
+  chartGridLineColor: t("border"),
+  chartAxisLineColor: t("subtle"),
+  // Primary first: a chart of money paid reads in the colour the page uses for "paid".
+  chartPaletteFills1Color: t("chart-1"),
+  chartPaletteFills2Color: t("chart-4"),
+  chartPaletteFills3Color: t("chart-2"),
+  chartPaletteFills4Color: t("chart-3"),
+  chartPaletteFills5Color: t("chart-5"),
 });

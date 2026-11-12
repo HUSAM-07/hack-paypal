@@ -17,7 +17,7 @@ export function ProductImage({ product, className }: { product: ProductData; cla
   return (
     <div
       className={cn(
-        "relative flex aspect-square items-center justify-center overflow-hidden rounded-[14px] bg-gradient-to-b from-white to-lav-50 dark:from-lav-50 dark:to-lav-100",
+        "relative flex aspect-square items-center justify-center overflow-hidden rounded-md bg-muted",
         className,
       )}
     >
@@ -32,7 +32,7 @@ export function ProductImage({ product, className }: { product: ProductData; cla
           className="size-[78%] object-contain transition-transform duration-500 ease-out group-hover:scale-[1.04]"
         />
       ) : (
-        <Gamepad2 className="size-1/3 text-lav-400" strokeWidth={1.4} />
+        <Gamepad2 className="size-1/3 text-muted-foreground" strokeWidth={1.4} />
       )}
     </div>
   );
@@ -67,9 +67,9 @@ function ProductTile({ refId, index }: { refId: string; index: number }) {
     return (
       <div
         data-testid="ref-skeleton"
-        className="w-[206px] shrink-0 snap-start rounded-[20px] p-1.5 shadow-card sm:w-[220px]"
+        className="w-[206px] shrink-0 snap-start rounded-lg border border-dashed border-border p-1.5 sm:w-[220px]"
       >
-        <Skeleton className="aspect-square w-full rounded-[14px]" />
+        <Skeleton className="aspect-square w-full rounded-md" />
         <div className="space-y-2 px-1.5 py-3">
           <Skeleton className="h-3.5 w-full" />
           <Skeleton className="h-3.5 w-2/3" />
@@ -84,7 +84,7 @@ function ProductTile({ refId, index }: { refId: string; index: number }) {
       initial={reduce ? false : { opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.45, ease: EASE_OUT, delay: reduce ? 0 : index * 0.06 }}
-      className="group flex w-[206px] shrink-0 snap-start flex-col rounded-[20px] bg-surface p-1.5 shadow-card transition-shadow hover:shadow-pop sm:w-[220px]"
+      className="group flex w-[206px] shrink-0 snap-start flex-col rounded-lg border border-dashed border-border bg-card p-1.5 transition-[border-color] hover:border-input sm:w-[220px]"
     >
       <ProductImage product={product} />
       <div className="flex flex-1 flex-col px-1.5 pb-1.5 pt-3">
@@ -98,7 +98,7 @@ function ProductTile({ refId, index }: { refId: string; index: number }) {
               <span className="tabular text-xs text-subtle-foreground line-through">
                 {formatMoney(product.listPrice)}
               </span>
-              <span className="rounded-full bg-success-soft px-1.5 py-0.5 text-[11px] font-medium text-success">
+              <span className="rounded-sm bg-success-soft px-1.5 py-0.5 font-mono text-[11px] text-success">
                 {off}% off
               </span>
             </>
@@ -116,7 +116,7 @@ function ProductTile({ refId, index }: { refId: string; index: number }) {
         <button
           type="button"
           onClick={() => run("openProduct", { productRef: refId })}
-          className="mt-3 flex h-8 w-full items-center justify-center gap-1.5 rounded-full text-[13px] font-medium shadow-[inset_0_0_0_1px_var(--border-strong)] transition-[background-color,transform] duration-150 hover:bg-surface-2 active:scale-[0.97]"
+          className="mt-3 flex h-8 w-full items-center justify-center gap-1.5 rounded-lg border border-dashed border-input text-[13px] font-medium transition-[background-color,transform] duration-150 hover:bg-hover active:scale-[0.97]"
         >
           View product <ExternalLink className="size-3.5" />
         </button>
@@ -180,7 +180,7 @@ export function ProductCardsView({ props }: R<PropsOf<"ProductCards">>) {
               aria-label={d < 0 ? "Previous products" : "Next products"}
               disabled={d < 0 ? edges.start : edges.end}
               onClick={() => page(d)}
-              className="flex size-7 items-center justify-center rounded-full bg-surface-2 text-foreground transition-[opacity,transform,background-color] hover:bg-surface-3 active:scale-90 disabled:opacity-35"
+              className="flex size-7 items-center justify-center rounded-lg bg-fill text-foreground transition-[opacity,transform,background-color] hover:bg-fill-strong active:scale-90 disabled:opacity-35"
             >
               {d < 0 ? <ChevronLeft className="size-4" /> : <ChevronRight className="size-4" />}
             </button>
@@ -217,14 +217,14 @@ export function ProductCompareView({ props }: R<PropsOf<"ProductCompare">>) {
                 <th key={id} scope="col" className="px-2 pb-3 text-left align-bottom font-normal">
                   {p ? (
                     <div className="flex flex-col gap-2">
-                      <ProductImage product={p} className="size-14 rounded-xl" />
+                      <ProductImage product={p} className="size-14 rounded-md" />
                       <span className="line-clamp-2 text-[13px] font-medium leading-[18px]">
                         {p.title}
                       </span>
                     </div>
                   ) : (
                     <div data-testid="ref-skeleton" className="space-y-2">
-                      <Skeleton className="size-14 rounded-xl" />
+                      <Skeleton className="size-14 rounded-md" />
                       <Skeleton className="h-3 w-24" />
                     </div>
                   )}
@@ -235,12 +235,12 @@ export function ProductCompareView({ props }: R<PropsOf<"ProductCompare">>) {
           <tbody>
             <CompareRow label="Price">
               {products.map(({ id, p }) => (
-                <td key={id} className="border-t border-border px-2 py-2.5">
+                <td key={id} className="border-t border-dashed border-border px-2 py-2.5">
                   {p ? (
                     <span className="flex flex-wrap items-center gap-1.5">
                       <span className="tabular font-semibold">{formatMoney(p.price)}</span>
                       {id === cheapest && resolved.length > 1 && (
-                        <span className="rounded-full bg-success-soft px-1.5 py-0.5 text-[10px] font-medium text-success">
+                        <span className="rounded-sm bg-success-soft px-1.5 py-0.5 font-mono text-[10px] text-success">
                           Best price
                         </span>
                       )}
@@ -253,7 +253,10 @@ export function ProductCompareView({ props }: R<PropsOf<"ProductCompare">>) {
             </CompareRow>
             <CompareRow label="Seller">
               {products.map(({ id, p }) => (
-                <td key={id} className="border-t border-border px-2 py-2.5 text-muted-foreground">
+                <td
+                  key={id}
+                  className="border-t border-dashed border-border px-2 py-2.5 text-muted-foreground"
+                >
                   {p ? p.merchant : <Skeleton className="h-4 w-16" />}
                 </td>
               ))}
@@ -261,7 +264,7 @@ export function ProductCompareView({ props }: R<PropsOf<"ProductCompare">>) {
             {rows.map((label) => (
               <CompareRow key={label} label={label}>
                 {products.map(({ id, p }) => (
-                  <td key={id} className="border-t border-border px-2 py-2.5">
+                  <td key={id} className="border-t border-dashed border-border px-2 py-2.5">
                     {p ? cellFor(p, label) : <Skeleton className="h-4 w-12" />}
                   </td>
                 ))}
@@ -279,7 +282,7 @@ function CompareRow({ label, children }: { label: string; children: React.ReactN
     <tr>
       <th
         scope="row"
-        className="sticky left-0 z-10 border-t border-border bg-surface py-2.5 pr-2 text-left text-[13px] font-normal text-muted-foreground"
+        className="sticky left-0 z-10 border-t border-dashed border-border bg-surface py-2.5 pr-2 text-left text-[13px] font-normal text-muted-foreground"
       >
         {label}
       </th>

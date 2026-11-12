@@ -2,12 +2,9 @@
  * Link previews (Open Graph and Twitter card tags) for the server-rendered pages, so a link pasted
  * into Devpost, Slack or a chat shows a title, a line and the result chart instead of a bare URL.
  * Pages that already carry their own `og:title` (the landing page, /proof, /try, /studio) are left
- * alone; for the rest the tags are added just before `</head>`.
+ * alone; for the rest the tags (siteMeta, from @pact/protocol) are added just before `</head>`.
  */
-const ORIGIN = "https://pact-worker.vincent-wesley-liem.workers.dev";
-const IMAGE = `${ORIGIN}/og/cited-proof-v1.png`;
-const IMAGE_ALT =
-  "Bar chart: 100% of AI agents shown a creator's test bought the Winix, against 6% shown a placebo and 8% shown nothing.";
+import { siteMeta } from "@pact/protocol";
 
 interface Preview {
   title: string;
@@ -66,32 +63,12 @@ const PREVIEWS: [string, Preview][] = [
   ],
 ];
 
-const esc = (s: string) =>
-  s.replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-
 export function previewFor(pathname: string): Preview | undefined {
   return PREVIEWS.find(([p]) => pathname === p || pathname.startsWith(`${p}/`))?.[1];
 }
 
 export function previewTags(pathname: string, p: Preview): string {
-  const t = esc(p.title);
-  const d = esc(p.description);
-  return [
-    `<meta name="description" content="${d}">`,
-    `<meta property="og:type" content="website">`,
-    `<meta property="og:site_name" content="CITED">`,
-    `<meta property="og:title" content="${t}">`,
-    `<meta property="og:description" content="${d}">`,
-    `<meta property="og:url" content="${ORIGIN}${esc(pathname)}">`,
-    `<meta property="og:image" content="${IMAGE}">`,
-    `<meta property="og:image:width" content="1200">`,
-    `<meta property="og:image:height" content="630">`,
-    `<meta property="og:image:alt" content="${esc(IMAGE_ALT)}">`,
-    `<meta name="twitter:card" content="summary_large_image">`,
-    `<meta name="twitter:title" content="${t}">`,
-    `<meta name="twitter:description" content="${d}">`,
-    `<meta name="twitter:image" content="${IMAGE}">`,
-  ].join("");
+  return siteMeta({ title: p.title, description: p.description, path: pathname });
 }
 
 /** Adds the tags to an HTML page that has none; anything else is returned unchanged. */
