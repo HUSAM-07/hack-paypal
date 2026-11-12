@@ -552,6 +552,8 @@ async function journeys(env: Env, limit: number, source: "agent" | "mcp" = "agen
       ...(source === "mcp"
         ? {
             source,
+            /** Which creators' content this session was shown (their test, or the placebo). */
+            creatorsSeen: JSON.parse(first.creators_seen as string) as string[],
             verdict: mcpVerdict(first.arm, JSON.parse(first.creators_seen as string) as string[]),
           }
         : {}),
