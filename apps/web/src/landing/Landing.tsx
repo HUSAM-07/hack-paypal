@@ -1,5 +1,6 @@
 import { type CSSProperties, type ReactNode, useEffect, useState } from "react";
 import { DitherField } from "../components/magicui/dither-field";
+import { Halftone } from "./Halftone";
 import { SessionField } from "./SessionField";
 import { SiteHeader } from "./SiteHeader";
 import { STICKERS, type StickerName } from "./stickers";
@@ -355,6 +356,8 @@ export function Landing() {
   return (
     <>
       <SiteHeader skip column links={["console", "proof", "studio", "creators"]} />
+      <Halftone src="/art/stickers/robot.webp" className="ht ht-robot" />
+      <Halftone src="/art/stickers/magnifier.webp" className="ht ht-glass" />
       <Rail />
       <DitherField
         aria-hidden="true"
