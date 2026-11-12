@@ -16,6 +16,9 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
+/** The sandbox app's own business account: every seller's payee on the shipwith target. */
+const SANDBOX_PAYEE = "TODO_APP_BUSINESS_ACCOUNT";
+
 const TARGETS = {
   // The one deploy target: Husam's Cloudflare account on the custom domain. Passkeys are bound
   // to RP_ID, so its users are its own. (The old team workers.dev target is retired.)
@@ -24,7 +27,19 @@ const TARGETS = {
     workers_dev: false,
     routes: [{ pattern: "caaash.shipwith.si", custom_domain: true }],
     d1: { DB: "e1003458-8946-4f7b-ba51-775092dd7243" },
-    vars: { RP_ID: "caaash.shipwith.si", ORIGINS: "https://caaash.shipwith.si" },
+    vars: {
+      RP_ID: "caaash.shipwith.si",
+      ORIGINS: "https://caaash.shipwith.si",
+      // CITED runs against the real PayPal sandbox here (the legacy Pact app stays simulated).
+      // Needs the worker secrets PAYPAL_CLIENT_ID, PAYPAL_CLIENT_SECRET, CITED_BUYER_VAULT_ID
+      // and CITED_PASSPORT_SECRET. Local dev, tests and the demo keep wrangler.jsonc's simulated.
+      CITED_PAYPAL_MODE: "sandbox",
+      // A wallet vaulted by the app can only pay the app's own business account, so every
+      // seller's payee is that account (separate sellers need PayPal multiparty access).
+      CITED_SELLER_NORTHWIND_PAYEE: SANDBOX_PAYEE,
+      CITED_SELLER_LUMEN_PAYEE: SANDBOX_PAYEE,
+      CITED_SELLER_MEGAMART_PAYEE: SANDBOX_PAYEE,
+    },
   },
 };
 
@@ -87,6 +102,11 @@ function configFor(name) {
       o.d1[db.binding] ? { ...db, database_id: o.d1[db.binding] } : db,
     ),
   };
+  if (mode === "deploy") {
+    const todo = Object.entries(out.vars).filter(([, v]) => String(v).startsWith("TODO_"));
+    if (todo.length)
+      fail(`Set ${todo.map(([k]) => k).join(", ")} in deploy.mjs before deploying ${name}.`);
+  }
   // Written next to wrangler.jsonc so its relative paths (main, assets, migrations) resolve.
   const file = `wrangler.${name}.generated.jsonc`;
   writeFileSync(join(workerDir, file), `${JSON.stringify(out, null, 2)}\n`);
