@@ -10,6 +10,7 @@ import { deleteCookie, getCookie, setCookie } from "hono/cookie";
 import { z } from "zod";
 import { allowedOrigins, type Env } from "../env";
 import { fromB64url, newId, nowIso } from "../ids";
+import { google } from "./google";
 import { clearSessionCookie, sessionUser, setSessionCookie } from "./session";
 import { AssertionJSON, stepUpOptions, verifyAssertion } from "./webauthn";
 
@@ -101,6 +102,9 @@ async function inviteAccepted(env: Env, code: string | undefined): Promise<boole
 }
 
 export const auth = new Hono<{ Bindings: Env }>();
+
+// Google sign-in for the shop (404 unless SHOP_ENABLED and the Google client are configured).
+auth.route("/google", google);
 
 auth.post("/register/options", async (c) => {
   const body = await parseBody(c, RegisterOptionsBody);
