@@ -15,7 +15,9 @@ import { ipRateLimit } from "./security";
 export const LEDGER_PATH = "/console/ledger";
 export const LEDGER_CHECKS_PATH = `${LEDGER_PATH}/checks.json`;
 export const LEDGER_TTL_MS = 20_000;
-const JOURNEYS_LIMIT = 200;
+const JOURNEYS_PAGE = 200; // the most one engine read returns
+/** Upper bound on sales read for the page; at or above it the sales check is skipped, not guessed. */
+export const JOURNEYS_LIMIT = 5000;
 
 export interface LedgerResponse {
   generatedAt: string;
@@ -35,13 +37,28 @@ async function read(engine: typeof fetch, path: string): Promise<Record<string, 
   return (await res.json()) as Record<string, unknown>;
 }
 
+/** Pages through /api/journeys (newest first) until the engine runs out or the bound is hit. */
+async function readJourneys(engine: typeof fetch): Promise<Record<string, unknown> | null> {
+  const all: unknown[] = [];
+  let first: Record<string, unknown> | null = null;
+  for (let offset = 0; offset < JOURNEYS_LIMIT; offset += JOURNEYS_PAGE) {
+    const page = await read(engine, `/api/journeys?limit=${JOURNEYS_PAGE}&offset=${offset}`);
+    if (!page) return null;
+    first ??= page;
+    const rows = Array.isArray(page.journeys) ? page.journeys : [];
+    all.push(...rows);
+    if (rows.length < JOURNEYS_PAGE) break;
+  }
+  return first && { ...first, journeys: all.slice(0, JOURNEYS_LIMIT) };
+}
+
 export async function loadSnapshot(engine: typeof fetch): Promise<LedgerSnapshot> {
   const [deposits, credits, payouts, invoices, journeys, mock] = await Promise.all([
     read(engine, "/api/deposits"),
     read(engine, "/api/credits"),
     read(engine, "/api/payouts"),
     read(engine, "/api/invoices"),
-    read(engine, `/api/journeys?limit=${JOURNEYS_LIMIT}`),
+    readJourneys(engine),
     read(engine, "/api/mock/state"),
   ]);
   if (!deposits || !credits || !payouts) throw new Error("ledger reads unavailable");

@@ -1,4 +1,5 @@
 import { SELF } from "cloudflare:test";
+import { ledgerChecks } from "@pact/protocol";
 import { describe, expect, it } from "vitest";
 import { loadSnapshot } from "../src/ledger";
 import { clearReadCache } from "../src/read-cache";
@@ -63,5 +64,28 @@ describe("/console/ledger", () => {
     expect(snap.mock).toBeNull();
     expect(seen.every((s) => s.startsWith("GET /api/"))).toBe(true);
     expect(seen).toHaveLength(6);
+  });
+  it("reads every sale, across engine pages, so the sales check runs above 200", async () => {
+    const N = 450;
+    const ids = Array.from({ length: N }, (_, i) => `CAP-${i}`);
+    const journeys = ids.map((captureId) => ({ shapley: [{ captureId }] }));
+    const engine = (async (input: RequestInfo | URL) => {
+      const url = new URL(new Request(input).url);
+      const body = (o: unknown) => Response.json(o);
+      if (url.pathname === "/api/journeys") {
+        const limit = Math.min(200, Number(url.searchParams.get("limit")) || 50);
+        const offset = Number(url.searchParams.get("offset")) || 0;
+        return body({ journeys: journeys.slice(offset, offset + limit) });
+      }
+      if (url.pathname === "/api/credits")
+        return body({ creators: [{ credits: ids.map((captureId) => ({ captureId })) }] });
+      if (url.pathname === "/api/deposits") return body({ brands: [] });
+      if (url.pathname === "/api/payouts") return body({ batches: [] });
+      return new Response("{}", { status: 404 });
+    }) as typeof fetch;
+    const snap = await loadSnapshot(engine);
+    expect(((snap.journeys?.journeys ?? []) as unknown[]).length).toBe(N);
+    const check = ledgerChecks(snap).checks.find((c) => c.id === "sales-recorded");
+    expect(check?.status).toBe("pass");
   });
 });
