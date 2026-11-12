@@ -20,6 +20,23 @@ The day-30 payout to the creator (a sandbox personal account standing in for Hou
 | `transaction_status` | `SUCCESS` |
 | Amount | 383.96 USD |
 
+## Payouts in GBP and EUR: creators outside the US
+
+Two standalone Payouts calls on the same sandbox app, one item each, paid to the sandbox personal account by email. They show that PayPal Payouts pays a creator in their own currency with no third-party rail; they are separate from the demo's ledger (the hosted demo runs on simulated PayPal).
+
+| Field | GBP | EUR |
+|---|---|---|
+| API | Payouts v1, `POST /v1/payments/payouts` | same |
+| `payout_batch_id` | `XSW6UVT2HU77Y` | `KNDQUJELMMX4Q` |
+| `batch_status` | `SUCCESS` | `SUCCESS` |
+| Created / completed | 2026-11-12T07:44:26Z / 2026-11-12T07:44:49Z | 2026-11-12T07:44:37Z / 2026-11-12T07:45:02Z |
+| `payout_item_id` | `V78YYE587Z342` | `YCZ3JTN8ZDCGS` |
+| `transaction_id` | `4TE85158CU434130W` | `8E7542327R657440L` |
+| `transaction_status` | `SUCCESS` | `SUCCESS` |
+| Amount (fee) | 0.50 GBP (0.01 GBP) | 0.50 EUR (0.01 EUR) |
+
+The same day, a Payouts item with `recipient_wallet: "VENMO"` (by email and by phone) was refused by the sandbox with `VALIDATION_ERROR`: "Recipient wallet not supported in sandbox." Venmo payouts in CITED are therefore built and tested against the simulated PayPal only.
+
 ## Invoicing: the brand's statement
 
 Winix's first-cycle statement, issued through Invoicing v2 by the engine's own statement code and settled against the prepaid deposit, so no money moves twice. Reproduce with `npx tsx apps/engine/scripts/sandbox-statement.ts <env file>` ([script](../apps/engine/scripts/sandbox-statement.ts)).

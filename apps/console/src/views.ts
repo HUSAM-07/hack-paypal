@@ -1,4 +1,10 @@
-import { SITE_HEADER_CSS, SITE_NAV_TOUCH_CSS, SITE_THEME_CSS, siteHeader } from "@pact/protocol";
+import {
+  SITE_HEADER_CSS,
+  SITE_NAV_TOUCH_CSS,
+  SITE_THEME_CSS,
+  siteHeader,
+  TOUR_SCRIPT,
+} from "@pact/protocol";
 import type { DemoData, PayoutData, RunView, StatementData } from "./data";
 import { creatorName, esc, shopName, usd } from "./format";
 import { agentLabel } from "./runs";
@@ -327,7 +333,7 @@ function page(title: string, here: Here, body: string, opts: Opts): string {
   return `<!doctype html><html lang="en"><head><meta charset="utf-8"><title>${esc(title)}</title>
 <meta name="viewport" content="width=device-width,initial-scale=1">
 ${opts.live ? '<meta http-equiv="refresh" content="2">' : ""}
-<style>${CSS}${SITE_NAV_TOUCH_CSS}${SITE_THEME_CSS}${SITE_HEADER_CSS}${CONSOLE_DARK}</style></head><body class="${cls}">${nav(here)}${body}</body></html>`;
+<style>${CSS}${SITE_NAV_TOUCH_CSS}${SITE_THEME_CSS}${SITE_HEADER_CSS}${CONSOLE_DARK}</style></head><body class="${cls}">${nav(here)}${body}${TOUR_SCRIPT}</body></html>`;
 }
 
 function waiting(msg: string): string {

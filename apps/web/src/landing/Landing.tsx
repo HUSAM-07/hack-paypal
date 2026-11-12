@@ -318,6 +318,9 @@ export function Landing() {
                   <a className="btn btn-quiet" href="/console/payout?clean=1">
                     See the payout
                   </a>
+                  <a className="btn btn-tour" href="/?tour=1#problem">
+                    <span className="dot" aria-hidden="true" /> Take the 2-minute tour
+                  </a>
                 </div>
               </div>
               <a className="hero-proof" href="/proof">
