@@ -167,6 +167,7 @@ describe("picking the video pair", () => {
 
   it("labels seeded stand-in agents plainly and keeps real model ids", () => {
     expect(agentLabel("fake-gemini")).toBe("Seeded demo agent");
+    expect(agentLabel("scripted-gemini")).toBe("Seeded demo agent");
     expect(agentLabel("claude-sonnet-5-5")).toBe("claude-sonnet-5-5");
   });
 

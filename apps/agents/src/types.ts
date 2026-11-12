@@ -54,7 +54,7 @@ export interface RunRecord {
   seed: string;
   request: string;
   family: ModelFamily;
-  /** Model id actually used; `fake-<family>` under MODEL_PROVIDER=fake. */
+  /** Model id actually used; `scripted-<family>` under MODEL_PROVIDER=fake. */
   model: string;
   provider: "fake" | "openai-compatible";
   arm: Arm | null;

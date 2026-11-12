@@ -639,6 +639,10 @@
 .sandbox-runs tbody td {
   vertical-align: top;
   padding-right: 1rem;
+  white-space: normal;
+}
+.fig-sandbox {
+  overflow-x: auto;
 }
 .sandbox-runs code {
   font-size: 0.82rem;

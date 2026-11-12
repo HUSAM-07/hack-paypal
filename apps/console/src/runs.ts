@@ -92,7 +92,7 @@ const isScriptedPath = (r: AgentRun) =>
 
 /** What the lane header says about the agent. Seeded demo runs use a stand-in model. */
 export function agentLabel(model: string): string {
-  return model.startsWith("fake-") ? "Seeded demo agent" : model;
+  return /^(fake|scripted)-/.test(model) ? "Seeded demo agent" : model;
 }
 
 export function pickPair(

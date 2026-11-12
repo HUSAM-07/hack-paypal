@@ -161,6 +161,8 @@ body {
   min-height: 0;
   display: flex;
   flex-direction: column;
+  /* On a phone the dashboard is wider than the screen: scroll it, not the page. */
+  overflow-x: auto;
 }
 /* AgStudio renders a wrapper with a 600px default height; let it take the space. */
 .st-studio > * {

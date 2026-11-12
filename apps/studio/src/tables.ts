@@ -8,9 +8,9 @@
  */
 import type { ArmName, RawCredit, RawEngine, RawPayoutBatch } from "./dashboard";
 
-/** Seeded demo runs use a stand-in model (`fake-<family>`); say so plainly rather than show the id. */
+/** Seeded demo runs use a stand-in model (`scripted-<family>`, `fake-<family>` in older data); say so plainly rather than show the id. */
 export const agentLabel = (model: string): string =>
-  model.startsWith("fake-") ? "Seeded demo agent" : model;
+  /^(fake|scripted)-/.test(model) ? "Seeded demo agent" : model;
 
 export type Scope = "first" | "todate";
 export const SCOPES: Scope[] = ["first", "todate"];
