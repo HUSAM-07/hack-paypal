@@ -4,20 +4,46 @@
     {
       "name": "web",
       "runtimeExecutable": "npm",
-      "runtimeArgs": ["run", "dev", "-w", "@pact/web"],
+      "runtimeArgs": [
+        "run",
+        "dev",
+        "-w",
+        "@pact/web"
+      ],
       "port": 5180
     },
     {
       "name": "worker",
       "runtimeExecutable": "npm",
-      "runtimeArgs": ["run", "dev", "-w", "@pact/worker"],
+      "runtimeArgs": [
+        "run",
+        "dev",
+        "-w",
+        "@pact/worker"
+      ],
       "port": 8790
     },
     {
       "name": "web-live",
       "runtimeExecutable": "npm",
-      "runtimeArgs": ["run", "dev:live", "-w", "@pact/web"],
+      "runtimeArgs": [
+        "run",
+        "dev:live",
+        "-w",
+        "@pact/web"
+      ],
       "port": 5180
+    },
+    {
+      "name": "shop-web",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "dev",
+        "-w",
+        "@shop/web"
+      ],
+      "port": 5181
     }
   ]
 }
