@@ -66,7 +66,7 @@ describe("Studio money formats", () => {
     expect(formatOf(rows, "A")(5)).toBe("5.00");
     expect(currenciesIn(rows)).toEqual(["GBP", "USD"]);
   });
-  it("adds the Currency column to a mixed creator's grids only", () => {
+  it("adds the Currency column to a mixed creator's review-flags grid only (credits decide it themselves)", () => {
     const cols = (mixed: boolean) =>
       (
         initialState("creator", "A", 1440, mixed) as unknown as {
@@ -74,8 +74,16 @@ describe("Studio money formats", () => {
         }
       ).pages
         .find((p) => p.id === "creator")
-        ?.widgets.credits.dataMapping.cols.map((c: { id: string }) => c.id);
-    expect(cols(false)).not.toContain("credits.currency");
-    expect(cols(true)).toContain("credits.currency");
+        ?.widgets.flags.dataMapping.cols.map((c: { id: string }) => c.id);
+    expect(cols(false)).not.toContain("flags.currency");
+    expect(cols(true)).toContain("flags.currency");
+  });
+  it("shows the creator's credits in CITED's own grid widget, which has the CSV export", () => {
+    const state = initialState("creator", "A", 1440, false) as unknown as {
+      pages: { id: string; widgets: Record<string, { type: string }> }[];
+    };
+    expect(state.pages.find((p) => p.id === "creator")?.widgets.credits?.type).toBe(
+      "cited-credits",
+    );
   });
 });

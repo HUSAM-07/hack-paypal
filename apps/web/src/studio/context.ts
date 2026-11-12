@@ -49,3 +49,12 @@ export const whatIfStore = {
     return () => whatIfListeners.delete(l);
   },
 };
+
+/** The engine's (simulated) date, so an export's file name says when the figures are as of. */
+let currentAsOf: string | null = null;
+export const asOfStore = {
+  get: (): string | null => currentAsOf,
+  set(v: string | null) {
+    currentAsOf = v;
+  },
+};

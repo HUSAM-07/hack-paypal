@@ -19,6 +19,7 @@ import type { StudioContext } from "./context";
 import type { StudioConfig, StudioTables } from "./data";
 import { currenciesIn, initialState, sourcesFor } from "./layout";
 import { citedTheme } from "./theme";
+import { CreditsGrid } from "./widgets/CreditsGrid";
 import { ArmStrip, CausedTile, CreatorTiles, DepositMeter, ReviewFlags } from "./widgets/cited";
 import { JourneysGrid } from "./widgets/JourneysGrid";
 import { ProgrammesList, StartProgramme } from "./widgets/programmes";
@@ -112,6 +113,14 @@ const widgets = (defaults: AgWidgetsConfig<AgCoreDefaultRegistry>) =>
         minSize: { width: 320, height: 240 },
       },
       {
+        id: "cited-credits",
+        label: "Creator credits table",
+        comp: CreditsGrid,
+        form,
+        defaultSize: { width: 900, height: 360 },
+        minSize: { width: 320, height: 240 },
+      },
+      {
         id: "cited-journeys",
         label: "Journeys & creator split (Shapley)",
         comp: JourneysGrid,
@@ -131,6 +140,7 @@ const widgets = (defaults: AgWidgetsConfig<AgCoreDefaultRegistry>) =>
           "cited-creator",
           "cited-whatif",
           "cited-journeys",
+          "cited-credits",
           "cited-flags",
           "cited-trust-summary",
           "cited-trust-list",

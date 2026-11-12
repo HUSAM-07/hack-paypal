@@ -4,13 +4,14 @@
  * It re-runs the ledger's own pure maths on the engine's recorded sales (see ../whatif.ts) and
  * never writes to the engine: nothing here is paid, saved or changed.
  */
-import type { ColDef } from "ag-grid-community";
+import type { ColDef, GridApi } from "ag-grid-community";
 import { AllEnterpriseModule, ModuleRegistry } from "ag-grid-enterprise";
 import { AgGridReact } from "ag-grid-react";
 import type { AgWidgetParams } from "ag-studio";
 import { studioGridTheme } from "ag-studio";
-import { useMemo, useState, useSyncExternalStore } from "react";
-import { type StudioContext, scopeStore, whatIfStore } from "../context";
+import { useMemo, useRef, useState, useSyncExternalStore } from "react";
+import { asOfStore, type StudioContext, scopeStore, whatIfStore } from "../context";
+import { csvFileName, downloadCsv, scopeSlug, whatIfCsv } from "../csvExport";
 import {
   COMMISSION_BPS,
   RATE_MAX_BPS,
@@ -19,6 +20,7 @@ import {
   toMinor,
   whatIfFor,
 } from "../whatif";
+import { ExportButton } from "./ExportButton";
 import { money, num, useRows } from "./useRows";
 
 ModuleRegistry.registerModules([AllEnterpriseModule]);
@@ -42,6 +44,7 @@ export function WhatIfPanel(p: P) {
   const creators = useRows(p.widgetApi, "creators", ["creatorId", "creator"]);
   const [bps, setBps] = useState(COMMISSION_BPS);
   const [depositText, setDepositText] = useState<string | null>(null);
+  const api = useRef<GridApi<CreatorRow> | null>(null);
 
   const brandRow = brands?.find((b) => b.brandId === brandId && b.scopeKey === scope);
   const brandName = String(brandRow?.brand ?? "The brand");
@@ -116,6 +119,17 @@ export function WhatIfPanel(p: P) {
     ],
     [rows],
   );
+
+  const exportCsv = () => {
+    const shown: CreatorRow[] = [];
+    api.current?.forEachNodeAfterFilterAndSort((n) => n.data && shown.push(n.data));
+    const name = csvFileName(
+      ["what-if", pctText(bps).replace("%", "pct"), scopeSlug(scope)],
+      asOfStore.get(),
+    );
+    downloadCsv(name, whatIfCsv(shown, pctText(COMMISSION_BPS), pctText(bps)));
+    return name;
+  };
 
   if (data?.truncated)
     return (
@@ -210,11 +224,15 @@ export function WhatIfPanel(p: P) {
           </dd>
         </div>
       </dl>
+      <ExportButton label="what-if creator earnings" count={gridRows.length} onExport={exportCsv} />
       <div className="cw-wi-grid" style={{ height: GRID_HEAD + GRID_ROW * gridRows.length + 2 }}>
         <AgGridReact<CreatorRow>
           theme={studioGridTheme}
           rowData={gridRows}
           columnDefs={columns}
+          onGridReady={(e) => {
+            api.current = e.api;
+          }}
           defaultColDef={{ sortable: false, suppressMovable: true, suppressHeaderMenuButton: true }}
           getRowClass={(x) => (x.data?.total ? "cw-wi-total" : undefined)}
           getRowId={(x) => x.data.id}

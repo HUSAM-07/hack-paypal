@@ -7,6 +7,7 @@
 import type {
   ColDef,
   GetRowIdParams,
+  GridApi,
   ICellRendererParams,
   IDetailCellRendererParams,
 } from "ag-grid-community";
@@ -14,9 +15,11 @@ import { AllEnterpriseModule, ModuleRegistry } from "ag-grid-enterprise";
 import { AgGridReact } from "ag-grid-react";
 import type { AgWidgetParams } from "ag-studio";
 import { studioGridTheme } from "ag-studio";
-import { useMemo, useSyncExternalStore } from "react";
-import { type StudioContext, scopeStore } from "../context";
+import { useMemo, useRef, useSyncExternalStore } from "react";
+import { asOfStore, type StudioContext, scopeStore } from "../context";
+import { csvFileName, downloadCsv, journeysCsv, scopeSlug } from "../csvExport";
 import type { Row } from "../data";
+import { ExportButton } from "./ExportButton";
 import { money, num, useRows } from "./useRows";
 
 ModuleRegistry.registerModules([AllEnterpriseModule]);
@@ -152,6 +155,16 @@ export function JourneysGrid(p: P) {
       .sort((a, b) => (String(a.capturedAt) < String(b.capturedAt) ? 1 : -1));
   }, [journeys, shares, scope]);
 
+  // Export what the grid shows: its filter and sort decide the rows, and `shown` the count.
+  const api = useRef<GridApi<Journey> | null>(null);
+  const exportCsv = () => {
+    const shown: Journey[] = [];
+    api.current?.forEachNodeAfterFilterAndSort((n) => n.data && shown.push(n.data));
+    const name = csvFileName(["journeys", scopeSlug(scope)], asOfStore.get());
+    downloadCsv(name, journeysCsv(shown));
+    return name;
+  };
+
   const columns = useMemo<ColDef<Journey>[]>(
     () => [
       {
@@ -196,18 +209,24 @@ export function JourneysGrid(p: P) {
 
   return (
     <div className="cw cw-grid">
-      <AgGridReact<Journey>
-        theme={studioGridTheme}
-        rowData={rows}
-        columnDefs={columns}
-        getRowId={(x: GetRowIdParams<Journey>) => String(x.data.orderId)}
-        masterDetail
-        isRowMaster={() => true}
-        detailCellRenderer={Detail}
-        detailRowHeight={190}
-        animateRows
-        suppressCellFocus
-      />
+      <ExportButton label="cross-store journeys" count={rows.length} onExport={exportCsv} />
+      <div className="cw-grid-body">
+        <AgGridReact<Journey>
+          onGridReady={(e) => {
+            api.current = e.api;
+          }}
+          theme={studioGridTheme}
+          rowData={rows}
+          columnDefs={columns}
+          getRowId={(x: GetRowIdParams<Journey>) => String(x.data.orderId)}
+          masterDetail
+          isRowMaster={() => true}
+          detailCellRenderer={Detail}
+          detailRowHeight={190}
+          animateRows
+          suppressCellFocus
+        />
+      </div>
     </div>
   );
 }
