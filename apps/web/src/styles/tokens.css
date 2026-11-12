@@ -60,10 +60,15 @@
   --color-surface-3: var(--fill-strong);
   --color-subtle-foreground: var(--muted-foreground);
   --color-border-strong: var(--input);
-  --color-success: var(--primary);
-  --color-success-soft: var(--primary-soft);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-success-soft: var(--success-soft);
+  --color-success-text: var(--success-text);
+  --color-warning-text: var(--warning-text);
   --color-danger: var(--destructive);
   --color-danger-soft: var(--destructive-soft);
+  --color-danger-text: var(--destructive-text);
+  --color-media: var(--media);
   --color-skeleton: var(--fill);
 
   /* Small radii, as on the landing: 0.45rem base, 10px buttons. */

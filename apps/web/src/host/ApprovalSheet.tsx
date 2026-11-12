@@ -127,7 +127,7 @@ export function ApprovalSheet({
           className={cn(
             "flex size-7 items-center justify-center rounded-md",
             decision === "approved"
-              ? "bg-success-soft text-success"
+              ? "bg-success-soft text-success-text"
               : decision
                 ? "bg-fill text-muted-foreground"
                 : "bg-warning-soft text-warning",
@@ -153,7 +153,7 @@ export function ApprovalSheet({
             className={cn(
               "rounded-md px-2 py-1 font-mono text-[11px] uppercase tracking-[0.04em]",
               decision === "approved"
-                ? "bg-success-soft text-success"
+                ? "bg-success-soft text-success-text"
                 : "bg-fill text-muted-foreground",
             )}
           >

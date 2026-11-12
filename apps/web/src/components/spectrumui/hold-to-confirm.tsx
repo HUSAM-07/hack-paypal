@@ -253,7 +253,7 @@ export function HoldToConfirmButton({
         "focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-ring",
         "disabled:pointer-events-none disabled:opacity-50",
         confirmed
-          ? "border-transparent bg-success-soft text-success"
+          ? "border-transparent bg-success-soft text-success-text"
           : tone === "positive"
             ? "border-transparent bg-foreground text-background hover:opacity-90"
             : "border-transparent bg-danger-soft text-danger hover:bg-danger/20",

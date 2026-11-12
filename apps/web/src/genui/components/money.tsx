@@ -30,7 +30,7 @@ export const HostDataContext = createContext<{ activity: ActivityEntry[] | null 
 });
 
 const MANDATE_STATUS = {
-  active: "bg-success-soft text-success",
+  active: "bg-success-soft text-success-text",
   revoked: "bg-danger-soft text-danger",
   exhausted: "bg-surface-2 text-muted-foreground",
   expired: "bg-surface-2 text-muted-foreground",
@@ -268,7 +268,7 @@ export function ActivityRows({ entries, limit = 6 }: { entries: ActivityEntry[];
               className={cn(
                 "flex size-8 shrink-0 items-center justify-center rounded-full",
                 e.direction === "in"
-                  ? "bg-success-soft text-success"
+                  ? "bg-success-soft text-success-text"
                   : failed
                     ? "bg-danger-soft text-danger"
                     : "bg-fill text-muted-foreground",

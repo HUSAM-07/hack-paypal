@@ -41,7 +41,7 @@ export function TextView({ props }: R<PropsOf<"Text">>) {
 
 const CALLOUT = {
   info: { icon: Info, cls: "bg-primary-soft text-primary" },
-  success: { icon: CheckCircle2, cls: "bg-success-soft text-success" },
+  success: { icon: CheckCircle2, cls: "bg-success-soft text-success-text" },
   warning: { icon: TriangleAlert, cls: "bg-warning-soft text-warning" },
 } as const;
 

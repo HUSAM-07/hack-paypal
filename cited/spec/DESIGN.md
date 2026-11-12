@@ -13,9 +13,9 @@ Colour values live in **one file**: [`packages/protocol/src/theme.ts`](../../pac
   (`bg-white`, `text-zinc-500`, `ring-black/5`) or arbitrary colour values (`shadow-[0_0_rgba(…)]`).
   `apps/web/src/styles/no-raw-colours.test.ts` fails the build on any of them.
 - No `var(--x, #fallback)` fallbacks: the tokens are always loaded.
-- Need a tint? Use a derived token (`--primary-soft`, `--warning-soft`, `--destructive-soft`, `--fill`,
-  `--fill-strong`, `--band`, `--hover`); small coloured text on a soft tint uses `--warning-text` /
-  `--destructive-text`, and small grey text on a tint uses `--muted-text` (all AA-safe) or `color-mix(in oklab, var(--token) N%, transparent)`.
+- Need a tint? Use a derived token (`--primary-soft`, `--success-soft`, `--warning-soft`, `--destructive-soft`, `--fill`,
+  `--fill-strong`, `--band`, `--hover`); small coloured text on a soft tint uses `--success-text`,
+  `--warning-text` / `--destructive-text`, and small grey text on a tint uses `--muted-text` (all AA-safe) or `color-mix(in oklab, var(--token) N%, transparent)`.
 - Need a new role? Add it to `SITE_TOKENS` (light **and** dark), then run
   `npx tsx apps/web/scripts/gen-theme-css.ts`. Don't invent colours locally.
 
@@ -26,11 +26,13 @@ Colour values live in **one file**: [`packages/protocol/src/theme.ts`](../../pac
 | `--muted` / `--muted-foreground` | quiet surfaces / secondary text |
 | `--accent` / `--accent-foreground` | neutral hover and selection surfaces (shadcn meaning, **not** a brand colour) |
 | `--primary` / `--primary-foreground` | the one strong colour: links, the active nav pill, **the test arm, caused sales, money paid** |
+| `--success` / `--success-foreground` | **a step done: paid out, settled, verified, connected** (status only; the test arm and caused sales stay `--primary`) |
 | `--warning` | **the placebo arm, money still held, disputes** |
 | `--destructive` | **voided credits, refunds, errors** |
 | `--subtle` | **the nothing arm**, faint marks and glyphs |
 | `--border`, `--input`, `--ring` | hairlines (dashed for dividers), form borders, focus |
 | `--paypal` | PayPal's name only |
+| `--media` | backdrop behind product photos; stays light in dark mode so photos shot on white don't float |
 | `--chart-1…5` | charts (blue ramp, then warning, then neutral) |
 
 Dark mode is a token swap: `.dark` on `<html>` (the top bar's toggle, saved by `public/theme.js`),

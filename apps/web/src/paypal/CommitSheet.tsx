@@ -185,7 +185,7 @@ function DoneOverlay() {
         initial={{ scale: 0 }}
         animate={{ scale: 1 }}
         transition={SPRING_POP}
-        className="flex size-14 items-center justify-center rounded-full bg-success-soft text-success"
+        className="flex size-14 items-center justify-center rounded-full bg-success-soft text-success-text"
       >
         <Check className="size-7" strokeWidth={2.6} />
       </motion.span>

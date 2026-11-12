@@ -89,7 +89,7 @@ export function Receipt({
     >
       <div className="p-4 sm:p-5">
         <header className="flex items-center gap-2.5">
-          <span className="flex size-7 items-center justify-center rounded-md bg-success-soft text-success">
+          <span className="flex size-7 items-center justify-center rounded-md bg-success-soft text-success-text">
             <ReceiptIcon className="size-[15px]" strokeWidth={2.2} />
           </span>
           <h3 className="flex-1 text-[15px] font-medium">Receipt</h3>

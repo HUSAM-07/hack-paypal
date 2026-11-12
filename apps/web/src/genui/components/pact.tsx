@@ -332,7 +332,7 @@ export function PriceWatchView({ props }: R<PropsOf<"PriceWatch">>) {
         <span
           className={cn(
             "rounded-full px-2 py-1 font-medium",
-            hit ? "bg-success-soft text-success" : "bg-surface-2 text-muted-foreground",
+            hit ? "bg-success-soft text-success-text" : "bg-surface-2 text-muted-foreground",
           )}
         >
           {hit ? (

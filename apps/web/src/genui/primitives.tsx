@@ -41,8 +41,8 @@ export function GenCard({
               className={cn(
                 "flex size-7 shrink-0 items-center justify-center rounded-md",
                 tone === "accent" && "bg-primary-soft text-primary",
-                tone === "success" && "bg-success-soft text-success",
-                tone === "warning" && "bg-warning-soft text-warning",
+                tone === "success" && "bg-success-soft text-success-text",
+                tone === "warning" && "bg-warning-soft text-warning-text",
                 tone === "neutral" && "bg-fill text-muted-foreground",
               )}
             >
@@ -138,13 +138,13 @@ export function Avatar({
 
 const STATE_STYLE: Record<PactState, { label: string; cls: string; live?: boolean }> = {
   draft: { label: "Draft", cls: "bg-fill text-muted-foreground" },
-  collecting: { label: "Collecting", cls: "bg-fill-strong text-foreground", live: true },
-  armed: { label: "Armed", cls: "bg-success-soft text-success", live: true },
-  triggered: { label: "Triggered", cls: "bg-warning-soft text-warning", live: true },
-  settling: { label: "Settling", cls: "bg-warning-soft text-warning", live: true },
-  done: { label: "Done", cls: "bg-success-soft text-success" },
+  collecting: { label: "Collecting", cls: "bg-primary-soft text-primary", live: true },
+  armed: { label: "Armed", cls: "bg-success-soft text-success-text", live: true },
+  triggered: { label: "Triggered", cls: "bg-warning-soft text-warning-text", live: true },
+  settling: { label: "Settling", cls: "bg-warning-soft text-warning-text", live: true },
+  done: { label: "Done", cls: "bg-success-soft text-success-text" },
   cancelled: { label: "Cancelled", cls: "bg-fill text-muted-foreground" },
-  failed: { label: "Failed", cls: "bg-danger-soft text-danger" },
+  failed: { label: "Failed", cls: "bg-danger-soft text-danger-text" },
 };
 
 export function StateBadge({ state }: { state: PactState }) {

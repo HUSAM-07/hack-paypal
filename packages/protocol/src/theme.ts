@@ -3,9 +3,10 @@
  * React, reads these semantic custom properties and never a literal colour (a test enforces it).
  *
  * The names follow shadcn/ui's semantic set (background, foreground, primary, muted, accent, border,
- * ring, destructive, ...), the palette is its neutral scale with a blue primary, plus three
- * CITED roles: `warning` (money still held, the placebo arm), `subtle` (faint marks, the
- * nothing arm) and `paypal` (PayPal's own blue, for its name only).
+ * ring, destructive, ...), the palette is its neutral scale with a blue primary, plus CITED
+ * roles: `success` (a step done: paid out, settled, verified), `warning` (money still held, the
+ * placebo arm), `subtle` (faint marks, the nothing arm), `paypal` (PayPal's own blue, for its
+ * name only) and `media` (a light backdrop behind product photos, light in both themes).
  */
 
 const LIGHT = {
@@ -25,6 +26,8 @@ const LIGHT = {
   "accent-foreground": "#171717",
   destructive: "#e7000b",
   "destructive-foreground": "#fafafa",
+  success: "#15803d",
+  "success-foreground": "#fafafa",
   warning: "#b45309",
   "warning-foreground": "#fafafa",
   subtle: "#d4d4d4",
@@ -32,6 +35,7 @@ const LIGHT = {
   input: "#e5e5e5",
   ring: "#a1a1a1",
   paypal: "#003087",
+  media: "#f5f5f5",
   "chart-1": "#1447e6",
   "chart-2": "#5b7ff0",
   "chart-3": "#a5b8f7",
@@ -58,6 +62,8 @@ const DARK: Record<keyof typeof LIGHT, string> = {
   "accent-foreground": "#fafafa",
   destructive: "#ff6467",
   "destructive-foreground": "#0a0a0a",
+  success: "#4ade80",
+  "success-foreground": "#0a0a0a",
   warning: "#fbbf24",
   "warning-foreground": "#0a0a0a",
   subtle: "#404040",
@@ -65,6 +71,7 @@ const DARK: Record<keyof typeof LIGHT, string> = {
   input: "rgb(255 255 255 / 0.15)",
   ring: "#737373",
   paypal: "#7fb0ff",
+  media: "#e5e5e5",
   "chart-1": "#50a2ff",
   "chart-2": "#3b6fd8",
   "chart-3": "#28447e",
@@ -89,10 +96,12 @@ const DERIVED = [
   "--hover:color-mix(in oklab,var(--muted) 70%,transparent)",
   "--primary-soft:color-mix(in oklab,var(--primary) 12%,transparent)",
   "--warning-soft:color-mix(in oklab,var(--warning) 14%,transparent)",
+  "--success-soft:color-mix(in oklab,var(--success) 14%,transparent)",
   "--destructive-soft:color-mix(in oklab,var(--destructive) 12%,transparent)",
   // Small text on a tinted surface: pulled toward the foreground so it keeps AA contrast.
   "--muted-text:color-mix(in oklab,var(--muted-foreground) 70%,var(--foreground))",
   "--warning-text:color-mix(in oklab,var(--warning) 70%,var(--foreground))",
+  "--success-text:color-mix(in oklab,var(--success) 80%,var(--foreground))",
   "--destructive-text:color-mix(in oklab,var(--destructive) 75%,var(--foreground))",
   "--fill:color-mix(in oklab,var(--foreground) 5%,transparent)",
   "--fill-strong:color-mix(in oklab,var(--foreground) 9%,transparent)",

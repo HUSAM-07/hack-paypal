@@ -25,7 +25,7 @@ function MandateRow({ m, onRevoke }: { m: MandateData; onRevoke: (id: string) =>
         <span
           className={cn(
             "mt-0.5 flex size-7 items-center justify-center rounded-md",
-            active ? "bg-success-soft text-success" : "bg-surface-2 text-muted-foreground",
+            active ? "bg-success-soft text-success-text" : "bg-surface-2 text-muted-foreground",
           )}
         >
           <ShieldCheck className="size-[15px]" />
@@ -40,7 +40,7 @@ function MandateRow({ m, onRevoke }: { m: MandateData; onRevoke: (id: string) =>
         <span
           className={cn(
             "rounded-sm px-1.5 py-0.5 font-mono text-[11px] capitalize",
-            active ? "bg-success-soft text-success" : "bg-surface-2 text-muted-foreground",
+            active ? "bg-success-soft text-success-text" : "bg-surface-2 text-muted-foreground",
           )}
         >
           {m.mandate.status}
