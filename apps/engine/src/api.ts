@@ -9,7 +9,13 @@ import { Hono } from "hono";
 import { z } from "zod";
 import { advanceClock, nowOf } from "./clock";
 import { listCreatorTests, PublishTestInput, publishTest } from "./creator-tests";
-import { brandBalances, frozenCaptures, loadStoredCredits, recomputeCredits } from "./credits";
+import {
+  brandBalances,
+  frozenCaptures,
+  loadStoredCredits,
+  recomputeCredits,
+  whatIfInputs,
+} from "./credits";
 import { closeCycle } from "./cycle";
 import type { Env } from "./env";
 import { heldCredits, listFlags, resolveHold } from "./guard";
@@ -332,6 +338,9 @@ api.get("/lift/:brandId", async (c) => {
   const [one] = await liftView(c.env, c.req.param("brandId"));
   return one ? c.json(one) : c.json({ error: "unknown_brand" }, 404);
 });
+
+/** The recorded sales the Studio what-if re-prices in the browser. Read-only. */
+api.get("/what-if", async (c) => c.json(await whatIfInputs(c.env)));
 
 api.get("/caused-units", async (c) =>
   c.json({

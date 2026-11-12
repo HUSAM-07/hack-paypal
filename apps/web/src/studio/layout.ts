@@ -58,6 +58,10 @@ export function initialState(
             type: "cited-deposit",
             format: { title: { enabled: true, text: "Programme deposit" } },
           },
+          whatif: {
+            type: "cited-whatif",
+            format: { title: { enabled: true, text: "Commission what-if" } },
+          },
           journeys: {
             type: "cited-journeys",
             format: {
@@ -75,8 +79,9 @@ export function initialState(
           caused: { xTrack: 0, yTrack: 0, xSpan: 9, ySpan: 23 },
           arms: { xTrack: 9, yTrack: 0, xSpan: 7, ySpan: 23 },
           deposit: { xTrack: 16, yTrack: 0, xSpan: 8, ySpan: 23 },
-          journeys: { xTrack: 0, yTrack: 23, xSpan: 24, ySpan: 33 },
-          flags: { xTrack: 0, yTrack: 56, xSpan: 24, ySpan: 16 },
+          whatif: { xTrack: 0, yTrack: 23, xSpan: 24, ySpan: 36 },
+          journeys: { xTrack: 0, yTrack: 59, xSpan: 24, ySpan: 33 },
+          flags: { xTrack: 0, yTrack: 92, xSpan: 24, ySpan: 16 },
         },
       },
       {

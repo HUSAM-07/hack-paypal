@@ -1,4 +1,4 @@
-import type { Scope } from "@cited/studio/tables";
+import type { RawWhatIf, Scope } from "@cited/studio/tables";
 
 /** What the page hands every widget through AG Studio's `context` property. */
 export interface StudioContext {
@@ -25,5 +25,25 @@ export const scopeStore = {
   subscribe(l: () => void) {
     scopeListeners.add(l);
     return () => scopeListeners.delete(l);
+  },
+};
+
+/**
+ * The recorded sales the commission what-if re-prices. They arrive with every poll but are not a
+ * Studio table (a nested list of sales does not fit a row), so the widget reads them from here.
+ */
+let currentWhatIf: RawWhatIf | null = null;
+const whatIfListeners = new Set<() => void>();
+export const whatIfStore = {
+  get: (): RawWhatIf | null => currentWhatIf,
+  set(w: RawWhatIf | null) {
+    // A poll that found nothing new hands back an equal copy; skip it so the panel does not redraw.
+    if (JSON.stringify(w) === JSON.stringify(currentWhatIf)) return;
+    currentWhatIf = w;
+    for (const l of whatIfListeners) l();
+  },
+  subscribe(l: () => void) {
+    whatIfListeners.add(l);
+    return () => whatIfListeners.delete(l);
   },
 };

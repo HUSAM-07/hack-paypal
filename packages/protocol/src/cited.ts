@@ -178,10 +178,13 @@ export const ProgrammeDeposit = z.object({
 });
 export type ProgrammeDeposit = z.infer<typeof ProgrammeDeposit>;
 
-/** Commission on a sale amount, rounded down to the minor unit so we never overpay. */
-export function commissionOn(amount: Money): Money {
+/**
+ * Commission on a sale amount, rounded down to the minor unit so we never overpay.
+ * `bps` defaults to the programme's rate; only the what-if panel passes another.
+ */
+export function commissionOn(amount: Money, bps: number = COMMISSION_BPS): Money {
   return {
-    amountMinor: Math.floor((amount.amountMinor * COMMISSION_BPS) / 10_000),
+    amountMinor: Math.floor((amount.amountMinor * bps) / 10_000),
     currency: amount.currency,
   };
 }

@@ -48,6 +48,8 @@ export interface CreateCreditsInput {
   /** Credits already on the ledger: counted against deposits and never re-created. */
   existing?: readonly Credit[];
   holdDays?: number;
+  /** Commission rate in basis points. Defaults to the programme's 8%; only the what-if passes another. */
+  commissionBps?: number;
 }
 
 /**
@@ -61,6 +63,9 @@ export interface CreateCreditsInput {
  */
 export function createCredits(input: CreateCreditsInput): Credit[] {
   const existing = input.existing ?? [];
+  const bps = input.commissionBps ?? COMMISSION_BPS;
+  if (!Number.isInteger(bps) || bps < 0 || bps > 10_000)
+    throw new Error("commissionBps must be an integer from 0 to 10000");
   const have = new Set(existing.map((c) => c.id));
   const out: Credit[] = [];
 
@@ -87,7 +92,7 @@ export function createCredits(input: CreateCreditsInput): Credit[] {
     let allocated = 0;
     for (const sale of eligible) {
       if (sale.amount.currency !== cur) throw new Error(`currency mismatch for ${sale.captureId}`);
-      numerator += sale.amount.amountMinor * COMMISSION_BPS;
+      numerator += sale.amount.amountMinor * bps;
       const target = divRound(numerator, 10_000);
       const exact = target - allocated;
       allocated = target;
