@@ -10,8 +10,8 @@ import { describe, expect, it } from "vitest";
  */
 const root = fileURLToPath(new URL("../src", import.meta.url));
 
-/** The theme copy for standalone dev, and the mock merchant page (a third-party site, not our UI). */
-const ALLOWED = new Set(["styles/site-theme.css", "mock/pages.ts"]);
+/** The mock merchant page: a stand-in third-party site, not our UI. */
+const ALLOWED = new Set(["mock/pages.ts"]);
 
 const COLOUR = new RegExp(
   [

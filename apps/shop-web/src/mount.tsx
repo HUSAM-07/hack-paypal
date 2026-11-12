@@ -22,7 +22,7 @@ export type ShopHandle = { client: ShopClient; harness?: MockHarness; unmount: (
 
 /**
  * Mount the shop SPA into `el`. The host page must load the CITED theme (site-theme.css in
- * apps/web; the standalone entry imports a copy) before this runs.
+ * apps/web; the standalone entry imports that same file) before this runs.
  */
 export function mountShop(el: HTMLElement, options: MountShopOptions = {}): ShopHandle {
   applyTheme();

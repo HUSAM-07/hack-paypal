@@ -4,8 +4,7 @@
   "private": true,
   "type": "module",
   "exports": {
-    ".": "./src/index.ts",
-    "./site-theme.css": "./src/styles/site-theme.css"
+    ".": "./src/index.ts"
   },
   "scripts": {
     "dev": "vite",

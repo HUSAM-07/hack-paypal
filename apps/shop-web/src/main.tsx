@@ -1,6 +1,7 @@
 // Standalone dev entry: `npm run dev -w @shop/web`. `?ws=/api/shop/ws` talks to a real server;
 // otherwise the MockHarness runs in the page.
-import "./styles/site-theme.css";
+// The one CITED theme (generated from packages/protocol/src/theme.ts); apps/web owns the file.
+import "../../web/src/styles/site-theme.css";
 import { mountShop } from "./mount";
 
 const el = document.getElementById("root");
