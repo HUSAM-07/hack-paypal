@@ -1,6 +1,7 @@
 import { OrderRow, WatchRow, type WidgetContext, WidgetProvider } from "@shop/genui";
 import { MessageSquare, Plus, Settings } from "lucide-react";
 import { sortedThreads } from "../protocol/state";
+import { BrandMark } from "./BrandMark";
 import { useClient, useClientState } from "./store";
 
 export function Sidebar({
@@ -30,9 +31,7 @@ export function Sidebar({
   return (
     <nav className="sidebar" aria-label="Shop">
       <div className="sidebar__brand">
-        <span className="brand-mark" aria-hidden>
-          S
-        </span>
+        <BrandMark />
         <span className="brand-name">Shop</span>
         <span className="ui-label brand-tag">with PayPal</span>
       </div>

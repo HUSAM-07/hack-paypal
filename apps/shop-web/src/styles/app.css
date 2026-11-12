@@ -235,17 +235,15 @@ body {
   border-bottom: 1px dashed var(--border);
 }
 .brand-mark {
-  display: inline-grid;
-  place-items: center;
+  display: inline-flex;
+  flex: none;
   width: 26px;
   height: 26px;
-  border-radius: 7px;
-  background: var(--foreground);
-  color: var(--background);
-  font-family: var(--font-serif);
-  font-size: 18px;
-  font-style: italic;
-  line-height: 1;
+  color: var(--primary);
+}
+.brand-mark svg {
+  width: 100%;
+  height: 100%;
 }
 .brand-name {
   font-family: var(--font-serif);

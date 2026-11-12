@@ -49,19 +49,6 @@ a {
   outline: 2px solid var(--primary);
   outline-offset: 2px;
 }
-.row:focus-visible {
-  outline-offset: -2px;
-}
-.row:focus-visible .row-title {
-  color: var(--primary);
-}
-a:focus-visible .row-arrow {
-  color: var(--primary);
-  transform: translate(2px, -2px);
-}
-.row:active {
-  background: var(--fill-strong);
-}
 
 /* The column: everything sits between two hairlines, like a sheet of paper. */
 .col {
@@ -155,6 +142,7 @@ a:focus-visible .row-arrow {
   font-size: 15px;
   line-height: 1.65;
   color: var(--muted-foreground);
+  text-wrap: pretty;
 }
 .ctas {
   display: flex;
@@ -356,6 +344,7 @@ a:focus-visible .row-arrow {
 }
 .row-title {
   display: block;
+  text-wrap: balance;
   font: 500 15px / 1.45 var(--font-sans);
   transition: color 0.15s;
 }
@@ -397,6 +386,19 @@ a:hover .row-arrow {
   a:hover .row-arrow {
     transform: translate(2px, -2px);
   }
+}
+.row:focus-visible {
+  outline-offset: -2px;
+}
+.row:focus-visible .row-title {
+  color: var(--primary);
+}
+a:focus-visible .row-arrow {
+  color: var(--primary);
+  transform: translate(2px, -2px);
+}
+.row:active {
+  background: var(--fill-strong);
 }
 .pill-new {
   padding: 2px 7px;
@@ -1105,11 +1107,7 @@ a:hover .row-arrow {
   }
 }
 
-/* Wrapping: balanced headings, no orphans in body copy. */
-.row-title {
-  text-wrap: balance;
-}
-.lede,
+/* Wrapping: no orphans in body copy. */
 .prose,
 .row-body,
 .caption,
