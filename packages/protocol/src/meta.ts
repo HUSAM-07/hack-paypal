@@ -18,7 +18,7 @@ export const SITE_OG_IMAGE = {
   path: "/og/cited-agents-v1.png",
   width: 1200,
   height: 630,
-  alt: "CITED: AI agents for payments. Your wallet, behind gates. Agents, control gates and wallets on PayPal.",
+  alt: "CITED in serif over a dithered blue horizon: AI agents that pay creators only for proven lift, and shop from your PayPal wallet behind control gates.",
 };
 
 /**
