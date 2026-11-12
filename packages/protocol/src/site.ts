@@ -2,11 +2,20 @@
  * The CITED site navigation, shared by every public page (landing, /proof, /try, /mcp,
  * /creators, the console) so the top nav is the same wherever a judge lands.
  */
-export type SiteNavKey = "console" | "payout" | "try" | "mcp" | "proof" | "studio" | "creators";
+export type SiteNavKey =
+  | "console"
+  | "payout"
+  | "ledger"
+  | "try"
+  | "mcp"
+  | "proof"
+  | "studio"
+  | "creators";
 
 export const SITE_NAV: readonly { key: SiteNavKey; href: string; label: string }[] = [
   { key: "console", href: "/console", label: "Console" },
   { key: "payout", href: "/console/payout", label: "Payout" },
+  { key: "ledger", href: "/console/ledger", label: "Ledger" },
   { key: "try", href: "/try", label: "Run an agent" },
   { key: "mcp", href: "/mcp", label: "MCP" },
   { key: "proof", href: "/proof", label: "Proof" },
@@ -84,11 +93,17 @@ export const SITE_HEADER_CSS = [
   "@media (max-width:860px){.site-bar{height:auto;grid-template-columns:1fr auto;padding-top:12px;padding-bottom:2px;row-gap:2px}.site-nav{grid-column:1/-1;grid-row:2;gap:20px}}",
   "@media (pointer:coarse){.site-nav a{display:inline-flex;align-items:center;min-height:44px}}",
   ".clean .site-top{display:none}",
+  ".site-skip{position:absolute;left:12px;top:-64px;z-index:60;background:#16181D;color:#FAF8F4;font:500 13px/1 system-ui,sans-serif;padding:12px 16px;border-radius:4px;text-decoration:none}",
+  ".site-skip:focus{top:12px;outline:2px solid #1F7A55;outline-offset:2px}",
+  ".clean .site-skip{display:none}",
 ].join("");
 
 /** CITED's mark: a ring with an arc cut out (a holdout) and a dot (the credited sale). */
 export const SITE_MARK_SVG =
   '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="11" fill="currentColor"/><path d="M16.6 8.2A6 6 0 1 0 17.6 14" fill="none" stroke="var(--bg,#fff)" stroke-width="2.2" stroke-linecap="round"/><circle cx="17.4" cy="10.9" r="1.5" fill="var(--bg,#fff)"/></svg>';
+
+/** The skip link, first in the tab order; the page's `<main>` carries `id="main"`. */
+export const SITE_SKIP_HTML = `<a class="site-skip" href="#main">Skip to content</a>`;
 
 /** The top bar as HTML, for the server-rendered pages (`href` as in `siteNavLinks`). */
 export function siteHeader(
@@ -105,5 +120,11 @@ export function siteHeader(
   const ctaHtml = cta
     ? `<a class="site-cta" href="${href(cta.href)}"${current === SITE_CTA_KEY ? ' aria-current="page"' : ""}>${cta.label}</a>`
     : "";
-  return `<header class="site-top"><div class="site-bar"><a class="site-mark" href="${href("/")}">${SITE_MARK_SVG}CITED</a><nav class="site-nav" aria-label="CITED">${links}</nav>${ctaHtml}</div></header>`;
+  return `${SITE_SKIP_HTML}<header class="site-top"><div class="site-bar"><a class="site-mark" href="${href("/")}">${SITE_MARK_SVG}CITED</a><nav class="site-nav" aria-label="CITED">${links}</nav>${ctaHtml}</div></header>`;
 }
+
+/**
+ * The judge tour's script (apps/web/src/tour). Every public page loads it; it draws nothing
+ * unless the tour was started with `?tour=N`. A module script, so it runs after the page parses.
+ */
+export const TOUR_SCRIPT = '<script type="module" src="/fx/tour.js"></script>';

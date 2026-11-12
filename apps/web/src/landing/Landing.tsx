@@ -132,7 +132,7 @@ function VRandomise() {
         <span className="vis-ok" aria-hidden="true">
           ✓
         </span>{" "}
-        Ranking identical in every arm
+        Ranking identical in every group
       </p>
     </div>
   );
@@ -196,9 +196,10 @@ const STEPS: Step[] = [
     title: "The catalogue randomises what agents see.",
     body: (
       <>
-        PayPal's agent catalogue shows each shopping session the creator's test, a placebo from the
-        same creator, or nothing: 50/50 for a test's first 7 days, then a permanent 5% holdout. Only
-        the test is added or withheld. <strong>Ranking never changes.</strong>
+        The agent catalogue (a mock of PayPal's Store Sync in this demo) shows each shopping session
+        the creator's test, a placebo from the same creator, or nothing. For a test's first 7 days
+        half the sessions see it; after that, 5% are held out for good. Only the test is added or
+        withheld. <strong>Ranking never changes.</strong>
       </>
     ),
   },
@@ -208,11 +209,13 @@ const STEPS: Step[] = [
     title: "The passport goes into the PayPal order.",
     body: (
       <>
-        The catalogue signs an Agent Affiliate Passport. The shopping agent checks out through
-        PayPal itself, with the buyer's saved PayPal and the seller as payee, and puts the passport
-        in Orders v2 <code>purchase_units[].custom_id</code>, so the capture joins the sale to its
-        arm even when another seller gets paid. No storefront, no redirect, nothing for the seller
-        to install. In the demo, all 57 exposed Winix buys settled at Lumen, $4 cheaper
+        The catalogue signs an Agent Affiliate Passport: a tamper-proof tag recording what this
+        session was shown. The shopping agent checks out through PayPal itself, with the buyer's
+        saved PayPal and the seller as payee, and puts the passport in Orders v2{" "}
+        <code>purchase_units[].custom_id</code>, so the capture joins the sale to its group (test,
+        placebo or nothing) even when another seller gets paid. No storefront, no redirect, nothing
+        for the seller to install. In the demo, all 57 exposed Winix buys settled at Lumen, $4
+        cheaper
         <Ref n={5} />, not Northwind, whose offer carried the test.
       </>
     ),
@@ -224,9 +227,9 @@ const STEPS: Step[] = [
     body: (
       <>
         Credit is the attributable fraction at its 80% lower bound, at 8% commission, split by
-        Shapley value across co-exposed creators. Credits wait 30 days; refunds void them, and a
-        dispute holds them until PayPal decides. Then one batch Payout pays the creators and the
-        unspent deposit is refunded.
+        Shapley value (each creator's average contribution) when more than one creator's test was
+        shown. Credits wait 30 days; refunds void them, and a dispute holds them until PayPal
+        decides. Then one batch Payout pays the creators and the unspent deposit is refunded.
       </>
     ),
   },
@@ -463,7 +466,7 @@ export function Landing() {
               <span aria-hidden="true">›</span>
             </a>
             <h1 id="hero-h" className="h1">
-              PayPal's affiliate network, rebuilt for AI&nbsp;agents.
+              Affiliate marketing, rebuilt on PayPal for AI&nbsp;agents.
             </h1>
             <p className="lede">
               It pays creators on proven lift, not last-click cookies.{" "}
@@ -478,6 +481,9 @@ export function Landing() {
               </a>
               <a className="btn btn-quiet" href="/console/payout?clean=1">
                 See the payout
+              </a>
+              <a className="btn btn-tour" href="/?tour=1#problem">
+                <span className="dot" aria-hidden="true" /> Take the 2-minute tour
               </a>
             </div>
           </div>
@@ -521,9 +527,10 @@ export function Landing() {
                   <FlowTall />
                 </div>
                 <figcaption className="caption">
-                  <span className="fig-no">Fig. 2</span> The sale's path. The catalogue assigns an
-                  arm and signs the passport. The agent pays the seller through PayPal, the capture
-                  carries the passport to the engine, and the engine pays the creator.
+                  <span className="fig-no">Fig. 2</span> The sale's path. The catalogue assigns a
+                  group (test, placebo or nothing) and signs the passport. The agent pays the seller
+                  through PayPal, the capture carries the passport to the engine, and the engine
+                  pays the creator.
                 </figcaption>
               </figure>
             }
@@ -549,7 +556,7 @@ export function Landing() {
                 <p>
                   In 147 agent sessions with the Winix and Levoit priced the same, agents shown
                   HouseFresh's test chose the Winix 94 points more often than agents shown other
-                  HouseFresh content. The lower bound, +90.3pp, is what pays.
+                  HouseFresh content. The lower bound, +90.3 points, is what pays.
                   <Ref n={2} />
                 </p>
                 <p>
@@ -695,7 +702,7 @@ export function Landing() {
               <ul>
                 <li>
                   <strong>The eval used real models:</strong> gpt-6-luna, gemini-3.8-flash and
-                  claude-sonnet-5-5, 147 sessions per study condition.
+                  claude-sonnet-5-5, 147 sessions per price condition.
                   <Ref n={2} />
                 </li>
                 <li>

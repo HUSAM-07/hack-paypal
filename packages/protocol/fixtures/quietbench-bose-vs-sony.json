@@ -1,0 +1,13 @@
+{
+  "id": "qb-bose-quietcomfort-vs-sony-xm5",
+  "kind": "test",
+  "creatorId": "quietbench",
+  "category": "headphones",
+  "skus": [
+    { "upc": "100000000020", "brand": "Sony", "name": "WH-1000XM5" },
+    { "upc": "100000000021", "brand": "Bose", "name": "QuietComfort Headphones" }
+  ],
+  "verdictUpc": "100000000021",
+  "summary": "Both pairs of noise-cancelling headphones played the same three recorded scenes: a train carriage, a busy café and an open-plan office with a video call running. The Bose QuietComfort Headphones kept more of the low rumble and the nearby chatter out, stayed comfortable through a long session and left the caller's voice clearer on the other end. The Sony WH-1000XM5 let more of the chatter through and was heavier on the head by the end. Recommendation: Bose QuietComfort Headphones.",
+  "disclosure": "Illustrative sample test content for the CITED demo; QuietBench is a fictional creator. QuietBench may earn a commission from CITED when an agent purchase follows this test; the commission never affects the verdict."
+}

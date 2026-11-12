@@ -283,6 +283,69 @@ describe("payouts", () => {
     expect((await s.raw("POST", "/v1/payments/payouts", { items: [] })).status).toBe(400);
   });
 
+  describe("Venmo items", () => {
+    const venmo = (over: Record<string, unknown> = {}) => ({
+      recipient_type: "PHONE",
+      receiver: "1-415-555-0123",
+      amount: { currency: "USD", value: "0.50" },
+      sender_item_id: "v1",
+      recipient_wallet: "VENMO",
+      note: "Thanks for your patronage!",
+      ...over,
+    });
+    const send = (s: ReturnType<typeof setup>, id: string, items: unknown[]) =>
+      s.raw("POST", "/v1/payments/payouts", {
+        sender_batch_header: { sender_batch_id: id },
+        items,
+      });
+
+    it("accepts a Venmo item next to a PayPal one and echoes each wallet and type", async () => {
+      const s = setup();
+      const created = await send(s, "mix", [
+        venmo(),
+        venmo({ recipient_type: "USER_HANDLE", receiver: "@quietrooms", sender_item_id: "v2" }),
+        {
+          recipient_type: "PAYPAL_ID",
+          receiver: "SIMPAYER23456",
+          amount: { currency: "USD", value: "1.00" },
+          sender_item_id: "p1",
+        },
+      ]);
+      expect(created.status).toBe(201);
+      expect(validateResponse(PAYOUTS, "POST", "/v1/payments/payouts", created.json)).toEqual([]);
+      const id = created.json.batch_header.payout_batch_id as string;
+      s.mock.settlePayouts(id);
+      const got = await s.raw("GET", `/v1/payments/payouts/${id}`);
+      const echoed = got.json.items.map((i: any) => [
+        i.payout_item.sender_item_id,
+        i.payout_item.recipient_wallet,
+        i.payout_item.recipient_type,
+        i.transaction_status,
+      ]);
+      expect(echoed).toEqual([
+        ["v1", "VENMO", "PHONE", "SUCCESS"],
+        ["v2", "VENMO", "USER_HANDLE", "SUCCESS"],
+        ["p1", "PAYPAL", "PAYPAL_ID", "SUCCESS"],
+      ]);
+      expect(got.json.batch_header.amount).toEqual({ currency: "USD", value: "2.00" });
+    });
+
+    it("rejects a Venmo item with no note, in another currency, or with a PAYPAL_ID receiver", async () => {
+      const s = setup();
+      const noNote = await send(s, "n1", [venmo({ note: undefined })]);
+      expect(noNote.status).toBe(400);
+      expect(noNote.json.details[0].issue).toBe("MISSING_REQUIRED_PARAMETER");
+      const eur = await send(s, "n2", [venmo({ amount: { currency: "EUR", value: "1.00" } })]);
+      expect(eur.status).toBe(400);
+      expect(eur.json.details[0].issue).toBe("CURRENCY_NOT_SUPPORTED");
+      const badType = await send(s, "n3", [venmo({ recipient_type: "PAYPAL_ID" })]);
+      expect(badType.status).toBe(400);
+      const badWallet = await send(s, "n4", [venmo({ recipient_wallet: "CASHAPP" })]);
+      expect(badWallet.status).toBe(400);
+      expect(s.mock.state.batches.size).toBe(0);
+    });
+  });
+
   it("autoSettlePayouts settles after creation", async () => {
     const s = setup({ autoSettlePayouts: true });
     const created = await s.paypal.payouts.createBatch(
@@ -539,5 +602,128 @@ describe("invoicing", () => {
     await expect(
       s.paypal.invoicing.recordPayment(inv.id, { method: "OTHER" }, { requestId: "p1" }),
     ).rejects.toThrow();
+  });
+});
+
+describe("GBP and EUR, like the real API", () => {
+  const order = (currency: string, value: string) => ({
+    intent: "CAPTURE",
+    purchase_units: [{ amount: { currency_code: currency, value }, custom_id: "cited-dep:x" }],
+  });
+  const payout = (id: string, items: [string, string][]) => ({
+    sender_batch_header: { sender_batch_id: id },
+    items: items.map(([currency, value], i) => ({
+      recipient_type: "PAYPAL_ID",
+      receiver: `PAYER${i}`,
+      amount: { currency, value },
+      sender_item_id: `i${i}`,
+    })),
+  });
+
+  it("creates, approves and captures an order in pounds and in euros, spec-valid", async () => {
+    for (const cur of ["GBP", "EUR"]) {
+      const s = setup();
+      const created = await s.raw("POST", "/v2/checkout/orders", order(cur, "500.00"), `o-${cur}`);
+      expect(created.status).toBe(201);
+      expect(validateResponse(ORDERS, "POST", "/v2/checkout/orders", created.json)).toEqual([]);
+      expect(created.json.purchase_units[0].amount).toEqual({
+        currency_code: cur,
+        value: "500.00",
+      });
+      s.mock.approveOrder(created.json.id);
+      const done = await s.raw(
+        "POST",
+        `/v2/checkout/orders/${created.json.id}/capture`,
+        {},
+        `c-${cur}`,
+      );
+      expect(done.json.purchase_units[0].payments.captures[0].amount).toEqual({
+        currency_code: cur,
+        value: "500.00",
+      });
+    }
+  });
+
+  it("refuses a currency PayPal does not support", async () => {
+    const s = setup();
+    const o = await s.raw("POST", "/v2/checkout/orders", order("XYZ", "5.00"));
+    expect(o.status).toBe(422);
+    expect(o.json.details[0].issue).toBe("CURRENCY_NOT_SUPPORTED");
+    const p = await s.raw("POST", "/v1/payments/payouts", payout("bx", [["XYZ", "5.00"]]));
+    expect(p.status).toBe(400);
+    expect(p.json.details[0].issue).toBe("CURRENCY_NOT_SUPPORTED");
+  });
+
+  it("holds each currency to its own decimal places", async () => {
+    const s = setup();
+    for (const cur of ["GBP", "EUR", "USD"]) {
+      const r = await s.raw("POST", "/v2/checkout/orders", order(cur, "5.005"));
+      expect(r.status, cur).toBe(422);
+      expect(r.json.details[0].issue).toBe("DECIMAL_PRECISION");
+    }
+    const jpy = await s.raw("POST", "/v2/checkout/orders", order("JPY", "500.50"));
+    expect(jpy.json.details[0].issue).toBe("DECIMAL_PRECISION");
+    expect((await s.raw("POST", "/v2/checkout/orders", order("JPY", "500"))).status).toBe(201);
+  });
+
+  it("pays GBP and EUR in one batch: each item its own currency, no invented total", async () => {
+    const s = setup();
+    const mixed = await s.raw(
+      "POST",
+      "/v1/payments/payouts",
+      payout("mixed", [
+        ["GBP", "0.50"],
+        ["EUR", "0.50"],
+        ["USD", "1.00"],
+      ]),
+    );
+    expect(mixed.status).toBe(201);
+    const id = mixed.json.batch_header.payout_batch_id as string;
+    s.mock.settlePayouts(id);
+    const got = await s.raw("GET", `/v1/payments/payouts/${id}`);
+    expect(got.json.items.map((i: any) => i.payout_item.amount)).toEqual([
+      { currency: "GBP", value: "0.50" },
+      { currency: "EUR", value: "0.50" },
+      { currency: "USD", value: "1.00" },
+    ]);
+    // A header total would add pounds to euros. A mixed batch has none; each item carries its own.
+    expect(got.json.batch_header.amount).toBeUndefined();
+    expect(got.json.batch_header.fees).toBeUndefined();
+    expect(got.json.batch_header.batch_status).toBe("SUCCESS");
+    expect(
+      got.json.items.every(
+        (i: any) => i.payout_item_fee.currency === i.payout_item.amount.currency,
+      ),
+    ).toBe(true);
+
+    // A single-currency batch keeps its header total, in that currency.
+    const gbp = await s.raw(
+      "POST",
+      "/v1/payments/payouts",
+      payout("gbp", [
+        ["GBP", "0.50"],
+        ["GBP", "1.25"],
+      ]),
+    );
+    const one = await s.raw("GET", `/v1/payments/payouts/${gbp.json.batch_header.payout_batch_id}`);
+    expect(one.json.batch_header.amount).toEqual({ currency: "GBP", value: "1.75" });
+  });
+
+  it("keeps Venmo to dollars", async () => {
+    const s = setup();
+    const r = await s.raw("POST", "/v1/payments/payouts", {
+      sender_batch_header: { sender_batch_id: "v" },
+      items: [
+        {
+          recipient_type: "PHONE",
+          receiver: "1-415-555-0123",
+          recipient_wallet: "VENMO",
+          note: "n",
+          amount: { currency: "GBP", value: "1.00" },
+        },
+      ],
+    });
+    expect(r.status).toBe(400);
+    expect(r.json.details[0].issue).toBe("CURRENCY_NOT_SUPPORTED");
   });
 });

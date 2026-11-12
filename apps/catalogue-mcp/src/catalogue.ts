@@ -4,14 +4,16 @@ import {
   DEFAULT_SCHEDULE,
   type HoldoutSchedule,
   type PassportBody,
+  PUBLIC_MCP_SESSION_PREFIX,
   signPassport,
   type VerifiedTest,
   verifyPassport,
 } from "@pact/protocol";
 import { assignArm } from "./arms";
 import { DemoClock, testDay } from "./clock";
-import { buildOffers, creatorContent, type Offer, searchOffers } from "./offers";
-import { isSellerId, type Seller, type SellerId, sellersFromEnv } from "./sellers";
+import { buildOffers, categoryOfQuery, creatorContent, type Offer, searchOffers } from "./offers";
+import type { PublishedTests } from "./published";
+import { type Category, isSellerId, type Seller, type SellerId, sellersFromEnv } from "./sellers";
 
 export interface CatalogueOptions {
   seed: string;
@@ -24,7 +26,15 @@ export interface CatalogueOptions {
   testPublishedAt?: Date;
   /** The synced merchants and their PayPal payees. Default: the demo sellers with mock payees. */
   sellers?: Record<SellerId, Seller>;
+  /**
+   * Tests creators published at /creators. Served only to public MCP sessions (`mcp_…`): the
+   * study, the demo run and the replay never see them.
+   */
+  published?: PublishedTests;
 }
+
+/** A passport records at most this many creators (see PassportBody). */
+const MAX_CREATORS_SEEN = 4;
 
 export interface SearchInput {
   query: string;
@@ -54,6 +64,7 @@ export function createCatalogue(opts: CatalogueOptions) {
   const offers = buildOffers(sellers);
 
   async function search(input: SearchInput): Promise<SearchResult> {
+    const category = categoryOfQuery(input.query);
     const verified = input.passport ? await verifyPassport(input.passport, opts.passportKey) : null;
     let body: PassportBody =
       verified?.ok === true
@@ -62,18 +73,48 @@ export function createCatalogue(opts: CatalogueOptions) {
             (opts.allowSessionId && input.sessionId) ||
               crypto.randomUUID().replaceAll("-", "").slice(0, 20),
             input.coExposed ?? false,
+            category,
           );
     if (input.sellerId && isSellerId(input.sellerId)) body = addStoreViewed(body, input.sellerId);
+    const builtIn = creatorContent(body.arm, body.creatorsSeen.includes("airlab"), category);
+    // Creator-published tests go only to public MCP sessions, in the same group as the built-in
+    // test: the test arm gets each creator's test, the placebo arm their placebo (none if they
+    // have none), the held-out arm nothing. Ranking never sees any of it.
+    const live =
+      opts.published && body.sessionId.startsWith(PUBLIC_MCP_SESSION_PREFIX)
+        ? await opts.published.live(category)
+        : [];
+    const published =
+      body.arm === "test"
+        ? live.map((l) => l.test)
+        : body.arm === "placebo"
+          ? live.flatMap((l) => (l.placebo ? [l.placebo] : []))
+          : [];
+    // A session keeps its arm across categories; the passport must also name every creator it was
+    // shown, or that creator's test could not be credited. It has room for four, so content from
+    // a creator that no longer fits is left out rather than shown unrecorded.
+    const seen = new Set(body.creatorsSeen);
+    const shown = [...builtIn, ...published].filter((t) => {
+      if (seen.has(t.creatorId)) return true;
+      if (seen.size >= MAX_CREATORS_SEEN) return false;
+      seen.add(t.creatorId);
+      return true;
+    });
+    if (seen.size !== body.creatorsSeen.length) body = { ...body, creatorsSeen: [...seen] };
     return {
       offers: searchOffers(input.query, offers),
-      creatorContent: creatorContent(body.arm, body.creatorsSeen.includes("airlab")),
+      creatorContent: shown,
       passport: await signPassport(body, opts.passportKey),
     };
   }
 
-  function newSession(sessionId: string, coExposed: boolean): PassportBody {
+  function newSession(
+    sessionId: string,
+    coExposed: boolean,
+    category: Category = "air-purifier",
+  ): PassportBody {
     const arm: Arm = assignArm(opts.seed, sessionId, testDay(publishedAt, clock.now()), schedule);
-    const shown = creatorContent(arm, coExposed);
+    const shown = creatorContent(arm, coExposed, category);
     return {
       v: 1,
       sessionId,

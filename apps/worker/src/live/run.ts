@@ -10,8 +10,9 @@ import {
   type SearchResult,
   ShopperSession,
 } from "@cited/agents";
-import { LIVE_CATEGORY, type Money, UPC_LEVOIT_CORE300 } from "@pact/protocol";
+import { LIVE_CATEGORY, type Money } from "@pact/protocol";
 import { type PairArm, passportInArm } from "./arms";
+import { CREATOR_NAMES, type TryCategoryId, tryCategory } from "./categories";
 import { type LiveAgentChoice, type LiveProviderEnv, liveAgentChoice } from "./provider";
 import { type JoinedSale, liveVerdict, type ProgrammeFacts, type Verdict } from "./verdict";
 
@@ -25,7 +26,7 @@ export type LiveEvent =
       arm: string | null;
       creatorsSeen: string[];
       offers: { offerId: string; seller: string; product: string; priceMinor: number }[];
-      content: { kind: string; creatorId: string; summary: string }[];
+      content: { kind: string; creatorId: string; summary: string; disclosure: string }[];
     }
   | { type: "checkout"; offerId: string }
   | {
@@ -68,6 +69,8 @@ export interface LiveRunDeps {
   arm?: PairArm;
   /** Shared by the two lanes of one side-by-side. */
   pairId?: string;
+  /** What the buyer is shopping for. Default: air purifiers, as /try always was. */
+  category?: TryCategoryId;
 }
 
 export interface LiveRunRecord {
@@ -77,6 +80,7 @@ export interface LiveRunRecord {
   /** Set when /try's side-by-side fixed this run's arm. */
   forcedArm?: PairArm;
   pairId?: string;
+  category?: TryCategoryId;
   agent: string;
   scripted: boolean;
   sessionId: string | null;
@@ -128,6 +132,7 @@ class NarratedSession extends ShopperSession {
         kind: c.kind,
         creatorId: c.creatorId,
         summary: cap(c.summary, 280),
+        disclosure: cap(c.disclosure, 300),
       })),
     });
     return r;
@@ -192,7 +197,23 @@ async function programmeFor(deps: LiveRunDeps, upc: string): Promise<ProgrammeFa
   const f = deps.endpoints.engineFetch ?? fetch;
   const res = await f(`${deps.endpoints.engineUrl}/api/lift/${encodeURIComponent(b.brand_id)}`);
   const lift = res.ok ? ((await res.json()) as { causedUnits?: number }) : {};
-  return { brand: { brandId: b.brand_id, name: b.name }, causedUnits: lift.causedUnits ?? 0 };
+  const facts: ProgrammeFacts = {
+    brand: { brandId: b.brand_id, name: b.name },
+    causedUnits: lift.causedUnits ?? 0,
+  };
+  try {
+    const dep = await f(`${deps.endpoints.engineUrl}/api/deposits`);
+    if (dep.ok) {
+      const { brands } = (await dep.json()) as {
+        brands?: { brandId: string; available: number }[];
+      };
+      const mine = brands?.find((x) => x.brandId === b.brand_id);
+      if (mine && Number.isFinite(mine.available)) facts.availableMinor = mine.available;
+    }
+  } catch {
+    // Deposits unreadable: leave availableMinor unset and skip the deposit check.
+  }
+  return facts;
 }
 
 async function creatorNames(db: D1Database, ids: string[]): Promise<Record<string, string>> {
@@ -202,7 +223,7 @@ async function creatorNames(db: D1Database, ids: string[]): Promise<Record<strin
       .prepare("SELECT name FROM creators WHERE creator_id = ?")
       .bind(id)
       .first<{ name: string }>();
-    out[id] = r?.name ?? id;
+    out[id] = r?.name ?? CREATOR_NAMES[id] ?? id;
   }
   return out;
 }
@@ -230,12 +251,16 @@ export async function runLive(deps: LiveRunDeps): Promise<LiveRunRecord> {
   const session: NarratedSession = new NarratedSession(deps.endpoints, deps.runId, emit, () =>
     reportSession(deps.endpoints, session, choice.model, LIVE_CATEGORY),
   );
-  // Scripted and held out, the stand-in takes the Levoit, so the scripted pair still contrasts
-  // with the test lane, which reads the test and takes the Winix.
+  const cat = tryCategory(deps.category ?? "purifier");
+  // Scripted and held out, the stand-in takes the category's other product, so the scripted pair
+  // still contrasts with the test lane, which reads the test and takes the tested one.
   const agent =
     choice.kind === "scripted"
-      ? new FakeAgent(deps.arm === "none" ? { baselineUpc: UPC_LEVOIT_CORE300 } : {})
-      : new LlmAgent(choice.llm, choice.model);
+      ? new FakeAgent({
+          query: cat.query,
+          ...(deps.arm === "none" ? { baselineUpc: cat.rival.upc } : {}),
+        })
+      : new LlmAgent(choice.llm, choice.model, { productNoun: cat.noun });
 
   let outcome: AgentOutcome = { reason: null, steps: 0 };
   let error: string | undefined;
@@ -246,7 +271,7 @@ export async function runLive(deps: LiveRunDeps): Promise<LiveRunRecord> {
     if (deps.arm) {
       const prefix = deps.runId.replace(/[^A-Za-z0-9]/g, "").slice(-14);
       session.passport = await Promise.race([
-        passportInArm(deps.endpoints, deps.arm, prefix),
+        passportInArm(deps.endpoints, deps.arm, prefix, 6, cat.query),
         deadline,
       ]);
     }
@@ -319,6 +344,7 @@ export async function runLive(deps: LiveRunDeps): Promise<LiveRunRecord> {
     request: deps.request,
     ...(deps.arm ? { forcedArm: deps.arm } : {}),
     ...(deps.pairId ? { pairId: deps.pairId } : {}),
+    ...(deps.category ? { category: deps.category } : {}),
     agent: choice.label,
     scripted,
     sessionId: body?.sessionId ?? null,

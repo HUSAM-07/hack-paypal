@@ -1,6 +1,6 @@
 # Sandbox evidence
 
-The hosted demo runs on a simulated PayPal, so no money moves there. The money at the end of the demo was also run once against the real PayPal sandbox, with the demo's numbers, and the whole agent checkout (vault, order, capture, credit, refund void, payout) ran once end to end through the engine's code with small amounts. This page lists those runs by PayPal id only: no credentials, no account emails, no vault or payer ids.
+The hosted demo runs on a simulated PayPal, so no money moves there. The money at the end of the demo was also run once against the real PayPal sandbox, with the demo's numbers, and the whole agent checkout (vault, order, capture, credit, refund void, payout) ran once end to end through the engine's code with small amounts. A creator's Log in with PayPal also ran on the sandbox through the worker's own identity code. This page lists those runs by PayPal id only: no credentials, no account emails, no vault or payer ids.
 
 All runs are recorded in [HUSAM-07/hack-paypal#84](https://github.com/HUSAM-07/hack-paypal/issues/84).
 
@@ -19,6 +19,23 @@ The day-30 payout to the creator (a sandbox personal account standing in for Hou
 | `transaction_id` | `0P673371YB554783J` |
 | `transaction_status` | `SUCCESS` |
 | Amount | 383.96 USD |
+
+## Payouts in GBP and EUR: creators outside the US
+
+Two standalone Payouts calls on the same sandbox app, one item each, paid to the sandbox personal account by email. They show that PayPal Payouts pays a creator in their own currency with no third-party rail; they are separate from the demo's ledger (the hosted demo runs on simulated PayPal).
+
+| Field | GBP | EUR |
+|---|---|---|
+| API | Payouts v1, `POST /v1/payments/payouts` | same |
+| `payout_batch_id` | `XSW6UVT2HU77Y` | `KNDQUJELMMX4Q` |
+| `batch_status` | `SUCCESS` | `SUCCESS` |
+| Created / completed | 2026-11-12T07:44:26Z / 2026-11-12T07:44:49Z | 2026-11-12T07:44:37Z / 2026-11-12T07:45:02Z |
+| `payout_item_id` | `V78YYE587Z342` | `YCZ3JTN8ZDCGS` |
+| `transaction_id` | `4TE85158CU434130W` | `8E7542327R657440L` |
+| `transaction_status` | `SUCCESS` | `SUCCESS` |
+| Amount (fee) | 0.50 GBP (0.01 GBP) | 0.50 EUR (0.01 EUR) |
+
+The same day, a Payouts item with `recipient_wallet: "VENMO"` (by email and by phone) was refused by the sandbox with `VALIDATION_ERROR`: "Recipient wallet not supported in sandbox." Venmo payouts in CITED are therefore built and tested against the simulated PayPal only.
 
 ## Invoicing: the brand's statement
 
@@ -70,6 +87,18 @@ node --env-file=<env file with PAYPAL_CLIENT_ID and PAYPAL_CLIENT_SECRET> script
 ```
 
 It asks the simulator to deliver both events to subscription `8042373202922840X` and polls `/api/cited/api/webhook-proof` until both show `verified=true`, printing the event id, `signedFor`, transmission id and cert URL. Proof rows are keyed by transmission id, because the simulator reuses the event ids above on every run. A `subscription` row appears whenever PayPal sends a real event to the subscription, for example `PAYMENT.PAYOUTSBATCH.SUCCESS` after a sandbox payout.
+
+## Log in with PayPal: a creator connects
+
+Run on 11 Nov 2026 (20:22 UTC) against the sandbox app, with the worker's own identity code (`apps/worker/src/creators/identity.ts`, the functions `/creators` calls), through [`apps/worker/scripts/sandbox-login.ts`](../apps/worker/scripts/sandbox-login.ts).
+
+| Step | Result |
+|---|---|
+| Authorize (`/signin/authorize`, scopes `openid profile email paypalattributes`) | A sandbox personal account signed in and consented; PayPal redirected to the registered Return URL `…/creators/callback` with a code |
+| Token (`/v1/oauth2/token`, `authorization_code`) | Exchanged |
+| `userinfo` (`/v1/identity/oauth2/userinfo`) | Payer id returned (13 characters), name returned, email returned |
+
+The payer id is what `/creators` stores as the creator's Payouts receiver. It, the token and the email are not recorded here. The hosted `/creators` runs a labelled simulated sign-in, so its callback refuses this code (`error=state`: it did not start the flow); the code is read from the browser's network log (DevTools, Preserve log) and exchanged by the script.
 
 ## Agent checkout, end to end: vault → order → capture → credit → refund void → payout
 
@@ -132,3 +161,15 @@ All `verified=true`, `signedFor=subscription`, and listed at [/api/cited/api/web
 Earlier vault smoke test (2026-11-10): $1.00 order `50542347YD822594J`, capture `7NM60589UN236160Y` `COMPLETED`, `custom_id` kept; its capture event `WH-35E94278CM0934524-8AY757673V9186310` was verified on the hosted engine the same way.
 
 The eval numbers behind the $383.96 come from the committed results in [`packages/evals/results`](../packages/evals/results).
+
+## Separate seller accounts: what PayPal allows from a vaulted wallet
+
+2026-11-12, same sandbox app, same vaulted buyer wallet, $0.50 Orders v2 orders with `intent: CAPTURE`:
+
+| Payee | Charged to the vaulted wallet (`payment_source.paypal.vault_id`) | Order for the buyer to approve (no vault) |
+|---|---|---|
+| New sandbox business account 1 | 422 `BILLING_AGREEMENT_NOT_FOUND` | 201 `CREATED` |
+| New sandbox business account 2 | 422 `BILLING_AGREEMENT_NOT_FOUND` | 201 `CREATED` |
+| The app's own sandbox business account | 201 `COMPLETED` | 201 `CREATED` |
+
+A wallet vaulted with `usage_type: MERCHANT` is chargeable only by the merchant that vaulted it. An agent platform paying many sellers from one buyer wallet therefore needs PayPal's multiparty (partner) setup, with each seller onboarded through Partner Referrals; the demo's sellers share the one account the sandbox allows. The other sellers can still be paid when the buyer approves the order.

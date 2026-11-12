@@ -12,7 +12,13 @@
  * Money stays integer minor units internally; PayPal decimal strings are produced only
  * at the edge with `toPayPalValue`.
  */
-import { fromPayPalValue, type Money, toPayPalValue } from "@pact/protocol";
+import {
+  fromPayPalValue,
+  type Money,
+  minorUnits,
+  PAYPAL_CURRENCIES,
+  toPayPalValue,
+} from "@pact/protocol";
 import { makeTestCert, signWebhook, type TestSigner } from "../testing/x509";
 
 export const MOCK_API_BASE = "https://api-m.sandbox.paypal.com";
@@ -235,12 +241,39 @@ export function createMockPayPal(opts: MockPayPalOptions = {}) {
     if (!a || typeof a[key] !== "string" || typeof a.value !== "string") {
       throw fail(422, "INVALID_REQUEST", `${where} is invalid.`, "MISSING_REQUIRED_PARAMETER");
     }
+    const code = a[key] as string;
+    // Like the real API: only PayPal's currencies, and each currency's own decimal places
+    // (two for USD, GBP and EUR; none for JPY, HUF and TWD). Nothing is ever converted.
+    if (!PAYPAL_CURRENCIES.has(code)) {
+      throw key === "currency"
+        ? fail(
+            400,
+            "INVALID_REQUEST",
+            `${where}: ${code} is not supported.`,
+            "CURRENCY_NOT_SUPPORTED",
+          )
+        : fail(
+            422,
+            "UNPROCESSABLE_ENTITY",
+            `${where}: ${code} is not supported.`,
+            "CURRENCY_NOT_SUPPORTED",
+          );
+    }
     try {
-      const m = fromPayPalValue(a.value, a[key]);
+      const m = fromPayPalValue(a.value, code);
       if (m.amountMinor <= 0) throw new Error("must be positive");
       return m;
     } catch {
-      throw fail(422, "UNPROCESSABLE_ENTITY", `${where} is invalid.`, "INVALID_PARAMETER_VALUE");
+      const places = minorUnits(code);
+      const decimal = /^\d+\.\d+$/.test(a.value as string);
+      throw fail(
+        key === "currency" ? 400 : 422,
+        key === "currency" ? "INVALID_REQUEST" : "UNPROCESSABLE_ENTITY",
+        decimal
+          ? `${where} has too many decimal places for ${code} (${places} allowed).`
+          : `${where} is invalid.`,
+        decimal ? "DECIMAL_PRECISION" : "INVALID_PARAMETER_VALUE",
+      );
     }
   }
 
@@ -415,14 +448,22 @@ export function createMockPayPal(opts: MockPayPalOptions = {}) {
     const total = b.items.reduce((s, i) => s + i.amount.amountMinor, 0);
     const fees = b.items.reduce((s, i) => s + i.fee.amountMinor, 0);
     const cur = b.items[0]?.amount.currency ?? "USD";
+    // Each item carries its own currency. A batch's totals add up only when they share one;
+    // a mixed-currency batch has no single total, so the header leaves them out (never a sum
+    // across currencies, never a conversion). Per-item amounts and fees stay exact.
+    const mixed = b.items.some((i) => i.amount.currency !== cur);
     return {
       payout_batch_id: b.id,
       batch_status: b.status,
       time_created: b.createTime,
       ...(b.completeTime ? { time_completed: b.completeTime } : {}),
       sender_batch_header: b.header,
-      amount: payoutJson({ amountMinor: total, currency: cur }),
-      fees: payoutJson({ amountMinor: b.status === "SUCCESS" ? fees : 0, currency: cur }),
+      ...(mixed
+        ? {}
+        : {
+            amount: payoutJson({ amountMinor: total, currency: cur }),
+            fees: payoutJson({ amountMinor: b.status === "SUCCESS" ? fees : 0, currency: cur }),
+          }),
     };
   }
 
@@ -924,10 +965,43 @@ export function createMockPayPal(opts: MockPayPalOptions = {}) {
           }
           const amount = parseAmount(it.amount, "currency", "items[].amount");
           const { amount: _a, ...req } = it;
+          const type = it.recipient_type ?? hdr?.recipient_type ?? "EMAIL";
+          const wallet = it.recipient_wallet ?? "PAYPAL";
+          if (wallet !== "PAYPAL" && wallet !== "VENMO")
+            throw fail(
+              400,
+              "INVALID_REQUEST",
+              "items[].recipient_wallet must be PAYPAL or VENMO.",
+              "INVALID_STRING_LENGTH",
+            );
+          if (wallet === "VENMO") {
+            // PayPal's "Payouts to Venmo": US dollars, a note, and a phone, email or Venmo handle.
+            if (!["PHONE", "EMAIL", "USER_HANDLE"].includes(String(type)))
+              throw fail(
+                400,
+                "INVALID_REQUEST",
+                "Venmo payouts need recipient_type PHONE, EMAIL or USER_HANDLE.",
+                "INVALID_PARAMETER_VALUE",
+              );
+            if (amount.currency !== "USD")
+              throw fail(
+                400,
+                "INVALID_REQUEST",
+                "Venmo payouts are in USD only.",
+                "CURRENCY_NOT_SUPPORTED",
+              );
+            if (typeof it.note !== "string" || it.note.length === 0)
+              throw fail(
+                400,
+                "INVALID_REQUEST",
+                "Venmo payouts need a note.",
+                "MISSING_REQUIRED_PARAMETER",
+              );
+          }
           return {
             id: id("", 13),
             txId: id("0C"),
-            req: { recipient_type: hdr?.recipient_type ?? "EMAIL", ...req },
+            req: { recipient_type: type, recipient_wallet: wallet, ...req },
             amount,
             fee: {
               amountMinor: Math.max(25, Math.round(amount.amountMinor / 100)),

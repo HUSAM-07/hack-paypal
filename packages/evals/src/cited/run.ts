@@ -6,13 +6,23 @@
 import { appendFileSync, existsSync, mkdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import type { SessionRecord } from "./analyze";
-import { PRICE_DESIGNS, PRICE_SEED, plan, type Session } from "./design";
+import {
+  HEADPHONE_DESIGNS,
+  HEADPHONE_SEED,
+  PRICE_DESIGNS,
+  PRICE_SEED,
+  plan,
+  type Session,
+  VACUUM_DESIGNS,
+  VACUUM_SEED,
+} from "./design";
 import { chatWithTools } from "./llm";
 import {
   ABSTAIN_SYSTEM,
   cataloguePayload,
   FORCED_SYSTEM,
-  INTENTS,
+  intentsFor,
+  searchQueryFor,
   TARGET_UPC,
   TOOLS,
   userMessage,
@@ -23,7 +33,18 @@ const arg = (name: string, def?: string) => {
   return i >= 0 ? (process.argv[i + 1] ?? def) : def;
 };
 const priceSet = arg("set") === "price-matched";
-const out = arg("out", priceSet ? "results/cited-price-matched" : "results/cited") as string;
+const vacuumSet = arg("set") === "robot-vacuum";
+const headphoneSet = arg("set") === "headphones";
+const out = arg(
+  "out",
+  headphoneSet
+    ? "results/cited-headphones"
+    : vacuumSet
+      ? "results/cited-robot-vacuum"
+      : priceSet
+        ? "results/cited-price-matched"
+        : "results/cited",
+) as string;
 const concurrency = Number(arg("concurrency", "8"));
 const dry = process.argv.includes("--dry");
 const only = arg("only");
@@ -44,7 +65,11 @@ function priceOf(
 async function runSession(s: Session): Promise<SessionRecord> {
   const payload = cataloguePayload(s.study, s.arm, s.id, s.price);
   const abstain = s.variant === "abstain";
-  const user = userMessage(INTENTS[s.intent] as string, payload);
+  const user = userMessage(
+    intentsFor(s.study)[s.intent] as string,
+    payload,
+    searchQueryFor(s.study),
+  );
   const rec = {
     id: s.id,
     ...(s.price ? { price: s.price } : {}),
@@ -98,7 +123,13 @@ async function runSession(s: Session): Promise<SessionRecord> {
 }
 
 async function main() {
-  let sessions = priceSet ? plan(PRICE_DESIGNS, PRICE_SEED) : plan();
+  let sessions = headphoneSet
+    ? plan(HEADPHONE_DESIGNS, HEADPHONE_SEED)
+    : vacuumSet
+      ? plan(VACUUM_DESIGNS, VACUUM_SEED)
+      : priceSet
+        ? plan(PRICE_DESIGNS, PRICE_SEED)
+        : plan();
   if (only) sessions = sessions.filter((s) => `${s.study}-${s.price ?? ""}-${s.variant}` === only);
   if (dry) {
     const by: { [k: string]: number } = {};

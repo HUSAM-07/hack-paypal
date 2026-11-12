@@ -39,9 +39,12 @@ export const PublishTestInput = z
   });
 export type PublishTestInput = z.infer<typeof PublishTestInput>;
 
+/** A creator can have this many tests published; it keeps one account from filling the store. */
+export const MAX_TESTS_PER_CREATOR = 10;
+
 export type PublishResult =
   | { ok: true; testId: string; placeboId: string; publishedAt: string }
-  | { ok: false; status: 409; error: string };
+  | { ok: false; status: 409 | 429; error: string };
 
 export async function publishTest(env: Env, input: PublishTestInput): Promise<PublishResult> {
   const { creator, test, placebo } = input;
@@ -51,6 +54,13 @@ export async function publishTest(env: Env, input: PublishTestInput): Promise<Pu
   // The demo's creators are seeded by the runner; onboarding may never overwrite them.
   if (existing && existing.source !== "onboarding")
     return { ok: false, status: 409, error: "creator_reserved" };
+  const have = await env.DB.prepare(
+    "SELECT COUNT(*) AS n FROM creator_tests WHERE creator_id = ? AND kind = 'test'",
+  )
+    .bind(creator.creatorId)
+    .first<{ n: number }>();
+  if ((have?.n ?? 0) >= MAX_TESTS_PER_CREATOR)
+    return { ok: false, status: 429, error: "too_many_tests" };
   const at = await nowOf(env);
   const put = (t: VerifiedTest, pairsWith: string | null) =>
     env.DB.prepare(
@@ -72,20 +82,25 @@ export async function publishTest(env: Env, input: PublishTestInput): Promise<Pu
 
 export interface StoredCreatorTest {
   test: VerifiedTest;
+  /** The byline the creator publishes under (public: it is the name on the test). */
+  creatorName: string | null;
   pairsWith: string | null;
   source: string;
   publishedAt: string;
 }
 
 export async function listCreatorTests(env: Env, creatorId?: string): Promise<StoredCreatorTest[]> {
+  const base =
+    "SELECT t.*, c.name AS creator_name FROM creator_tests t LEFT JOIN creators c ON c.creator_id = t.creator_id";
   const q = creatorId
-    ? env.DB.prepare(
-        "SELECT * FROM creator_tests WHERE creator_id = ? ORDER BY published_at DESC, test_id",
-      ).bind(creatorId)
-    : env.DB.prepare("SELECT * FROM creator_tests ORDER BY published_at DESC, test_id LIMIT 200");
+    ? env.DB.prepare(`${base} WHERE t.creator_id = ? ORDER BY t.published_at DESC, t.test_id`).bind(
+        creatorId,
+      )
+    : env.DB.prepare(`${base} ORDER BY t.published_at DESC, t.test_id LIMIT 200`);
   const { results } = await q.all<Record<string, unknown>>();
   return results.map((r) => ({
     test: VerifiedTest.parse(JSON.parse(r.body as string)),
+    creatorName: (r.creator_name as string | null) ?? null,
     pairsWith: (r.pairs_with as string | null) ?? null,
     source: r.source as string,
     publishedAt: r.published_at as string,

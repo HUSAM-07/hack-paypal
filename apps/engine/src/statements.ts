@@ -15,11 +15,14 @@
  * close's refunds. Its id, invoice number and every `PayPal-Request-Id` derive from those, so a
  * retried close repeats the same calls and never issues a second invoice.
  */
+
 import { type CreateInvoiceInput, invoicePayerUrl, type PayPalClient } from "@pact/paypal";
+import { currencySymbol } from "@pact/protocol";
 import { nowOf } from "./clock";
 import { loadStoredCredits, type StoredCredit } from "./credits";
 import type { CycleBrandResult } from "./cycle";
 import type { Env } from "./env";
+import { loadWallets } from "./payout-wallet";
 import { getPayPal } from "./paypal";
 import { getBrand, listDeposits } from "./programme";
 
@@ -32,6 +35,8 @@ export interface StatementLine {
   voidedMinor: number;
   paidMinor: number;
   credits: number;
+  /** Set when this creator is paid to Venmo; absent means PayPal, as before. */
+  wallet?: "VENMO";
 }
 
 export interface Statement {
@@ -69,13 +74,15 @@ async function sha256Hex(s: string): Promise<string> {
   return [...new Uint8Array(d)].map((b) => b.toString(16).padStart(2, "0")).join("");
 }
 
+/** "$12.00", "£12.00", "€12.00": the statement's own currency, never converted. */
 const usd = (minor: number, currency: string) =>
-  `${currency === "USD" ? "$" : `${currency} `}${(minor / 100).toFixed(2)}`;
+  `${currencySymbol(currency)}${(minor / 100).toFixed(2)}`;
 
 /** Per-creator lines from the credits a statement covers. Pure: the tests pin it. */
 export function statementLines(
   credits: readonly Pick<StoredCredit, "creatorId" | "amount" | "state">[],
   names: ReadonlyMap<string, string>,
+  venmo: ReadonlySet<string> = new Set(),
 ): StatementLine[] {
   const by = new Map<string, StatementLine>();
   for (const c of credits) {
@@ -86,6 +93,7 @@ export function statementLines(
       voidedMinor: 0,
       paidMinor: 0,
       credits: 0,
+      ...(venmo.has(c.creatorId) ? { wallet: "VENMO" as const } : {}),
     };
     l.creditedMinor += c.amount.amountMinor;
     if (c.state === "voided") l.voidedMinor += c.amount.amountMinor;
@@ -148,9 +156,12 @@ export async function issueStatements(
       r.name as string,
     ]),
   );
+  const venmo = new Set(
+    [...(await loadWallets(env))].filter(([, w]) => w.venmo).map(([creatorId]) => creatorId),
+  );
   const out: Statement[] = [];
   for (const b of cycle) {
-    const s = await issueOne(env, b, credits, names);
+    const s = await issueOne(env, b, credits, names, venmo);
     if (s) out.push(s);
   }
   return out;
@@ -161,6 +172,7 @@ async function issueOne(
   b: CycleBrandResult,
   credits: readonly StoredCredit[],
   names: ReadonlyMap<string, string>,
+  venmo: ReadonlySet<string>,
 ): Promise<Statement | null> {
   const brand = await getBrand(env, b.brandId);
   if (!brand) return null;
@@ -178,7 +190,8 @@ async function issueOne(
   const existing = prior.find((s) => s.id === id);
   if (existing && FINAL.has(existing.status)) return existing;
 
-  const lines = statementLines(covered, names);
+  // Venmo takes US dollars only; a creator paid in another currency was paid through PayPal.
+  const lines = statementLines(covered, names, brand.currency === "USD" ? venmo : new Set());
   const sum = (k: "creditedMinor" | "voidedMinor" | "paidMinor") =>
     lines.reduce((a, l) => a + l[k], 0);
   const now = await nowOf(env);
@@ -276,7 +289,7 @@ export function statementInvoice(st: Statement, o: StatementInvoiceOptions): Cre
           (l.voidedMinor
             ? `; ${usd(l.voidedMinor, cur)} voided by refunds or lost disputes, taken off as a discount`
             : "") +
-          `; ${usd(l.paidMinor, cur)} paid through PayPal Payouts.`
+          `; ${usd(l.paidMinor, cur)} paid through PayPal Payouts${l.wallet === "VENMO" ? " to Venmo" : ""}.`
         ).slice(0, 1000),
         quantity: "1",
         unit_amount: money(l.creditedMinor),

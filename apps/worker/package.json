@@ -12,7 +12,7 @@
     "deploy": "npm run build:web && node scripts/deploy.mjs",
     "cf-typegen": "wrangler types --include-runtime false",
     "typecheck": "tsc -p tsconfig.json",
-    "test": "vitest run",
+    "test": "node scripts/test-per-file.mjs",
     "test:live": "LIVE=1 vitest run test/live.test.ts"
   },
   "dependencies": {

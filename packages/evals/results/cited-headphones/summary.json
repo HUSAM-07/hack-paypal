@@ -1,0 +1,638 @@
+{
+  "headphones-parity-forced": {
+    "sessions": 147,
+    "lift": {
+      "exposedRate": 1,
+      "placeboRate": 0.3333333333333333,
+      "lift": 0.6666666666666667,
+      "stdError": 0.064377055893253,
+      "lowerBound": 0.6124855694719947,
+      "perModel": [
+        {
+          "model": "gpt-6-luna",
+          "exposedRate": 1,
+          "placeboRate": 0.5555555555555556,
+          "lift": 0.4444444444444444,
+          "weight": 9.243243243243244
+        },
+        {
+          "model": "gemini-3.8-flash",
+          "exposedRate": 1,
+          "placeboRate": 0.4444444444444444,
+          "lift": 0.5555555555555556,
+          "weight": 9.243243243243244
+        },
+        {
+          "model": "claude-sonnet-5-5",
+          "exposedRate": 1,
+          "placeboRate": 0,
+          "lift": 1,
+          "weight": 9.243243243243244
+        }
+      ]
+    },
+    "pooled": {
+      "test": {
+        "sessions": 57,
+        "target": 57,
+        "buyers": 57,
+        "declines": 0
+      },
+      "placebo": {
+        "sessions": 54,
+        "target": 18,
+        "buyers": 54,
+        "declines": 0
+      },
+      "none": {
+        "sessions": 36,
+        "target": 12,
+        "buyers": 36,
+        "declines": 0
+      }
+    },
+    "byModel": [
+      {
+        "model": "gpt-6-luna",
+        "test": {
+          "sessions": 19,
+          "target": 19,
+          "buyers": 19,
+          "declines": 0
+        },
+        "placebo": {
+          "sessions": 18,
+          "target": 10,
+          "buyers": 18,
+          "declines": 0
+        },
+        "none": {
+          "sessions": 12,
+          "target": 6,
+          "buyers": 12,
+          "declines": 0
+        }
+      },
+      {
+        "model": "gemini-3.8-flash",
+        "test": {
+          "sessions": 19,
+          "target": 19,
+          "buyers": 19,
+          "declines": 0
+        },
+        "placebo": {
+          "sessions": 18,
+          "target": 8,
+          "buyers": 18,
+          "declines": 0
+        },
+        "none": {
+          "sessions": 12,
+          "target": 6,
+          "buyers": 12,
+          "declines": 0
+        }
+      },
+      {
+        "model": "claude-sonnet-5-5",
+        "test": {
+          "sessions": 19,
+          "target": 19,
+          "buyers": 19,
+          "declines": 0
+        },
+        "placebo": {
+          "sessions": 18,
+          "target": 0,
+          "buyers": 18,
+          "declines": 0
+        },
+        "none": {
+          "sessions": 12,
+          "target": 0,
+          "buyers": 12,
+          "declines": 0
+        }
+      }
+    ],
+    "placeboVsNone": 0,
+    "invalid": 0
+  },
+  "headphones-parity-forced-derived": {
+    "exposedSales": 50,
+    "fraction": 0.6124855694719947,
+    "units": 30,
+    "commission": {
+      "amountMinor": 83037,
+      "currency": "USD"
+    },
+    "refund": {
+      "amountMinor": 216963,
+      "currency": "USD"
+    }
+  },
+  "headphones-parity-abstain": {
+    "sessions": 147,
+    "lift": {
+      "exposedRate": 0.9298245614035086,
+      "placeboRate": 0.1851851851851852,
+      "lift": 0.7446393762183233,
+      "stdError": 0.06087263192628282,
+      "lowerBound": 0.6934076766456952,
+      "perModel": [
+        {
+          "model": "gpt-6-luna",
+          "exposedRate": 1,
+          "placeboRate": 0.5555555555555556,
+          "lift": 0.4444444444444444,
+          "weight": 9.243243243243244
+        },
+        {
+          "model": "gemini-3.8-flash",
+          "exposedRate": 0.7894736842105263,
+          "placeboRate": 0,
+          "lift": 0.7894736842105263,
+          "weight": 9.243243243243244
+        },
+        {
+          "model": "claude-sonnet-5-5",
+          "exposedRate": 1,
+          "placeboRate": 0,
+          "lift": 1,
+          "weight": 9.243243243243244
+        }
+      ]
+    },
+    "pooled": {
+      "test": {
+        "sessions": 57,
+        "target": 53,
+        "buyers": 53,
+        "declines": 4
+      },
+      "placebo": {
+        "sessions": 54,
+        "target": 10,
+        "buyers": 36,
+        "declines": 18
+      },
+      "none": {
+        "sessions": 36,
+        "target": 7,
+        "buyers": 24,
+        "declines": 12
+      }
+    },
+    "byModel": [
+      {
+        "model": "gpt-6-luna",
+        "test": {
+          "sessions": 19,
+          "target": 19,
+          "buyers": 19,
+          "declines": 0
+        },
+        "placebo": {
+          "sessions": 18,
+          "target": 10,
+          "buyers": 18,
+          "declines": 0
+        },
+        "none": {
+          "sessions": 12,
+          "target": 6,
+          "buyers": 12,
+          "declines": 0
+        }
+      },
+      {
+        "model": "gemini-3.8-flash",
+        "test": {
+          "sessions": 19,
+          "target": 15,
+          "buyers": 15,
+          "declines": 4
+        },
+        "placebo": {
+          "sessions": 18,
+          "target": 0,
+          "buyers": 0,
+          "declines": 18
+        },
+        "none": {
+          "sessions": 12,
+          "target": 0,
+          "buyers": 0,
+          "declines": 12
+        }
+      },
+      {
+        "model": "claude-sonnet-5-5",
+        "test": {
+          "sessions": 19,
+          "target": 19,
+          "buyers": 19,
+          "declines": 0
+        },
+        "placebo": {
+          "sessions": 18,
+          "target": 0,
+          "buyers": 18,
+          "declines": 0
+        },
+        "none": {
+          "sessions": 12,
+          "target": 1,
+          "buyers": 12,
+          "declines": 0
+        }
+      }
+    ],
+    "placeboVsNone": -0.009259259259259273,
+    "invalid": 0
+  },
+  "headphones-parity-abstain-buyers-only": {
+    "lift": {
+      "exposedRate": 1,
+      "placeboRate": 0.2777777777777778,
+      "lift": 0.7222222222222222,
+      "stdError": 0.07273707488137397,
+      "lowerBound": 0.6610051555340748,
+      "perModel": [
+        {
+          "model": "gpt-6-luna",
+          "exposedRate": 1,
+          "placeboRate": 0.5555555555555556,
+          "lift": 0.4444444444444444,
+          "weight": 9.243243243243244
+        },
+        {
+          "model": "gemini-3.8-flash",
+          "exposedRate": 1,
+          "placeboRate": 0,
+          "lift": 1,
+          "weight": 0
+        },
+        {
+          "model": "claude-sonnet-5-5",
+          "exposedRate": 1,
+          "placeboRate": 0,
+          "lift": 1,
+          "weight": 9.243243243243244
+        }
+      ]
+    },
+    "pooled": {
+      "test": {
+        "sessions": 57,
+        "target": 53,
+        "buyers": 53,
+        "declines": 4
+      },
+      "placebo": {
+        "sessions": 54,
+        "target": 10,
+        "buyers": 36,
+        "declines": 18
+      },
+      "none": {
+        "sessions": 36,
+        "target": 7,
+        "buyers": 24,
+        "declines": 12
+      }
+    }
+  },
+  "headphones-parity-abstain-derived": {
+    "exposedSales": 50,
+    "fraction": 0.74574033148688,
+    "units": 37,
+    "commission": {
+      "amountMinor": 102413,
+      "currency": "USD"
+    },
+    "refund": {
+      "amountMinor": 197587,
+      "currency": "USD"
+    }
+  },
+  "headphones-rival-cheaper-forced": {
+    "sessions": 147,
+    "lift": {
+      "exposedRate": 1,
+      "placeboRate": 0.16666666666666666,
+      "lift": 0.8333333333333334,
+      "stdError": 0.054085760815707165,
+      "lowerBound": 0.7878136085968883,
+      "perModel": [
+        {
+          "model": "gpt-6-luna",
+          "exposedRate": 1,
+          "placeboRate": 0.5,
+          "lift": 0.5,
+          "weight": 9.243243243243244
+        },
+        {
+          "model": "gemini-3.8-flash",
+          "exposedRate": 1,
+          "placeboRate": 0,
+          "lift": 1,
+          "weight": 9.243243243243244
+        },
+        {
+          "model": "claude-sonnet-5-5",
+          "exposedRate": 1,
+          "placeboRate": 0,
+          "lift": 1,
+          "weight": 9.243243243243244
+        }
+      ]
+    },
+    "pooled": {
+      "test": {
+        "sessions": 57,
+        "target": 57,
+        "buyers": 57,
+        "declines": 0
+      },
+      "placebo": {
+        "sessions": 54,
+        "target": 9,
+        "buyers": 54,
+        "declines": 0
+      },
+      "none": {
+        "sessions": 36,
+        "target": 7,
+        "buyers": 36,
+        "declines": 0
+      }
+    },
+    "byModel": [
+      {
+        "model": "gpt-6-luna",
+        "test": {
+          "sessions": 19,
+          "target": 19,
+          "buyers": 19,
+          "declines": 0
+        },
+        "placebo": {
+          "sessions": 18,
+          "target": 9,
+          "buyers": 18,
+          "declines": 0
+        },
+        "none": {
+          "sessions": 12,
+          "target": 6,
+          "buyers": 12,
+          "declines": 0
+        }
+      },
+      {
+        "model": "gemini-3.8-flash",
+        "test": {
+          "sessions": 19,
+          "target": 19,
+          "buyers": 19,
+          "declines": 0
+        },
+        "placebo": {
+          "sessions": 18,
+          "target": 0,
+          "buyers": 18,
+          "declines": 0
+        },
+        "none": {
+          "sessions": 12,
+          "target": 1,
+          "buyers": 12,
+          "declines": 0
+        }
+      },
+      {
+        "model": "claude-sonnet-5-5",
+        "test": {
+          "sessions": 19,
+          "target": 19,
+          "buyers": 19,
+          "declines": 0
+        },
+        "placebo": {
+          "sessions": 18,
+          "target": 0,
+          "buyers": 18,
+          "declines": 0
+        },
+        "none": {
+          "sessions": 12,
+          "target": 0,
+          "buyers": 12,
+          "declines": 0
+        }
+      }
+    ],
+    "placeboVsNone": -0.02777777777777779,
+    "invalid": 0
+  },
+  "headphones-rival-cheaper-forced-derived": {
+    "exposedSales": 50,
+    "fraction": 0.7878136085968883,
+    "units": 39,
+    "commission": {
+      "amountMinor": 107948,
+      "currency": "USD"
+    },
+    "refund": {
+      "amountMinor": 192052,
+      "currency": "USD"
+    }
+  },
+  "headphones-rival-cheaper-abstain": {
+    "sessions": 147,
+    "lift": {
+      "exposedRate": 0.9298245614035086,
+      "placeboRate": 0.16666666666666666,
+      "lift": 0.7631578947368419,
+      "stdError": 0.06099925750694133,
+      "lowerBound": 0.7118196243868181,
+      "perModel": [
+        {
+          "model": "gpt-6-luna",
+          "exposedRate": 1,
+          "placeboRate": 0.5,
+          "lift": 0.5,
+          "weight": 9.243243243243244
+        },
+        {
+          "model": "gemini-3.8-flash",
+          "exposedRate": 0.7894736842105263,
+          "placeboRate": 0,
+          "lift": 0.7894736842105263,
+          "weight": 9.243243243243244
+        },
+        {
+          "model": "claude-sonnet-5-5",
+          "exposedRate": 1,
+          "placeboRate": 0,
+          "lift": 1,
+          "weight": 9.243243243243244
+        }
+      ]
+    },
+    "pooled": {
+      "test": {
+        "sessions": 57,
+        "target": 53,
+        "buyers": 53,
+        "declines": 4
+      },
+      "placebo": {
+        "sessions": 54,
+        "target": 9,
+        "buyers": 51,
+        "declines": 3
+      },
+      "none": {
+        "sessions": 36,
+        "target": 6,
+        "buyers": 25,
+        "declines": 11
+      }
+    },
+    "byModel": [
+      {
+        "model": "gpt-6-luna",
+        "test": {
+          "sessions": 19,
+          "target": 19,
+          "buyers": 19,
+          "declines": 0
+        },
+        "placebo": {
+          "sessions": 18,
+          "target": 9,
+          "buyers": 18,
+          "declines": 0
+        },
+        "none": {
+          "sessions": 12,
+          "target": 6,
+          "buyers": 12,
+          "declines": 0
+        }
+      },
+      {
+        "model": "gemini-3.8-flash",
+        "test": {
+          "sessions": 19,
+          "target": 15,
+          "buyers": 15,
+          "declines": 4
+        },
+        "placebo": {
+          "sessions": 18,
+          "target": 0,
+          "buyers": 15,
+          "declines": 3
+        },
+        "none": {
+          "sessions": 12,
+          "target": 0,
+          "buyers": 1,
+          "declines": 11
+        }
+      },
+      {
+        "model": "claude-sonnet-5-5",
+        "test": {
+          "sessions": 19,
+          "target": 19,
+          "buyers": 19,
+          "declines": 0
+        },
+        "placebo": {
+          "sessions": 18,
+          "target": 0,
+          "buyers": 18,
+          "declines": 0
+        },
+        "none": {
+          "sessions": 12,
+          "target": 0,
+          "buyers": 12,
+          "declines": 0
+        }
+      }
+    ],
+    "placeboVsNone": 0,
+    "invalid": 0
+  },
+  "headphones-rival-cheaper-abstain-buyers-only": {
+    "lift": {
+      "exposedRate": 1,
+      "placeboRate": 0.1778471138845554,
+      "lift": 0.8221528861154446,
+      "stdError": 0.0575319320617734,
+      "lowerBound": 0.7737327904837817,
+      "perModel": [
+        {
+          "model": "gpt-6-luna",
+          "exposedRate": 1,
+          "placeboRate": 0.5,
+          "lift": 0.5,
+          "weight": 9.243243243243244
+        },
+        {
+          "model": "gemini-3.8-flash",
+          "exposedRate": 1,
+          "placeboRate": 0,
+          "lift": 1,
+          "weight": 7.5
+        },
+        {
+          "model": "claude-sonnet-5-5",
+          "exposedRate": 1,
+          "placeboRate": 0,
+          "lift": 1,
+          "weight": 9.243243243243244
+        }
+      ]
+    },
+    "pooled": {
+      "test": {
+        "sessions": 57,
+        "target": 53,
+        "buyers": 53,
+        "declines": 4
+      },
+      "placebo": {
+        "sessions": 54,
+        "target": 9,
+        "buyers": 51,
+        "declines": 3
+      },
+      "none": {
+        "sessions": 36,
+        "target": 6,
+        "buyers": 25,
+        "declines": 11
+      }
+    }
+  },
+  "headphones-rival-cheaper-abstain-derived": {
+    "exposedSales": 50,
+    "fraction": 0.765541860189597,
+    "units": 38,
+    "commission": {
+      "amountMinor": 105180,
+      "currency": "USD"
+    },
+    "refund": {
+      "amountMinor": 194820,
+      "currency": "USD"
+    }
+  }
+}

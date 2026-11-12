@@ -7,6 +7,7 @@
 import type {
   ColDef,
   GetRowIdParams,
+  GridApi,
   ICellRendererParams,
   IDetailCellRendererParams,
 } from "ag-grid-community";
@@ -14,9 +15,11 @@ import { AllEnterpriseModule, ModuleRegistry } from "ag-grid-enterprise";
 import { AgGridReact } from "ag-grid-react";
 import type { AgWidgetParams } from "ag-studio";
 import { studioGridTheme } from "ag-studio";
-import { useMemo, useSyncExternalStore } from "react";
-import { type StudioContext, scopeStore } from "../context";
+import { useMemo, useRef, useSyncExternalStore } from "react";
+import { asOfStore, type StudioContext, scopeStore } from "../context";
+import { csvFileName, downloadCsv, journeysCsv, scopeSlug } from "../csvExport";
 import type { Row } from "../data";
+import { ExportButton } from "./ExportButton";
 import { money, num, useRows } from "./useRows";
 
 ModuleRegistry.registerModules([AllEnterpriseModule]);
@@ -29,6 +32,7 @@ const JOURNEY_FIELDS = [
   "model",
   "arm",
   "product",
+  "category",
   "firstStore",
   "firstPrice",
   "storeChosen",
@@ -101,7 +105,7 @@ function Detail(p: IDetailCellRendererParams<Journey>) {
         <p className="cw-note">
           {String(d.model)} · {String(d.arm).toLowerCase()} · {String(d.product)}. Order{" "}
           {String(d.orderId)}; the Affiliate Passport rode in <code>custom_id</code>, so the sale
-          joined its arm at whichever store it was paid.
+          joined its group at whichever store it was paid.
         </p>
       </section>
       <section>
@@ -138,7 +142,15 @@ function Detail(p: IDetailCellRendererParams<Journey>) {
 }
 
 export function JourneysGrid(p: P) {
-  const journeys = useRows(p.widgetApi, "journeys", JOURNEY_FIELDS);
+  const allJourneys = useRows(p.widgetApi, "journeys", JOURNEY_FIELDS);
+  const brands = useRows(p.widgetApi, "brands", ["brandId", "category"]);
+  // The orders of the picked brand's category: a vacuum programme shows vacuum sales, not purifiers.
+  const category = brands?.find((b) => b.brandId === (p.context?.brandId ?? "winix"))?.category;
+  const journeys = useMemo(
+    () =>
+      allJourneys && category ? allJourneys.filter((j) => j.category === category) : allJourneys,
+    [allJourneys, category],
+  );
   const shares = useRows(p.widgetApi, "shares", SHARE_FIELDS);
   // "First payout" shows only the orders its cycle covered, like the tiles and arm strip.
   const scope = useSyncExternalStore(scopeStore.subscribe, scopeStore.get);
@@ -152,6 +164,16 @@ export function JourneysGrid(p: P) {
       .sort((a, b) => (String(a.capturedAt) < String(b.capturedAt) ? 1 : -1));
   }, [journeys, shares, scope]);
 
+  // Export what the grid shows: its filter and sort decide the rows, and `shown` the count.
+  const api = useRef<GridApi<Journey> | null>(null);
+  const exportCsv = () => {
+    const shown: Journey[] = [];
+    api.current?.forEachNodeAfterFilterAndSort((n) => n.data && shown.push(n.data));
+    const name = csvFileName(["journeys", scopeSlug(scope)], asOfStore.get());
+    downloadCsv(name, journeysCsv(shown));
+    return name;
+  };
+
   const columns = useMemo<ColDef<Journey>[]>(
     () => [
       {
@@ -161,7 +183,7 @@ export function JourneysGrid(p: P) {
         minWidth: 210,
       },
       { field: "model", headerName: "Agent", width: 160 },
-      { field: "arm", headerName: "Arm", width: 150 },
+      { field: "arm", headerName: "Group", width: 150 },
       { field: "product", headerName: "Product", width: 150 },
       {
         headerName: "Store paid",
@@ -196,18 +218,24 @@ export function JourneysGrid(p: P) {
 
   return (
     <div className="cw cw-grid">
-      <AgGridReact<Journey>
-        theme={studioGridTheme}
-        rowData={rows}
-        columnDefs={columns}
-        getRowId={(x: GetRowIdParams<Journey>) => String(x.data.orderId)}
-        masterDetail
-        isRowMaster={() => true}
-        detailCellRenderer={Detail}
-        detailRowHeight={190}
-        animateRows
-        suppressCellFocus
-      />
+      <ExportButton label="cross-store journeys" count={rows.length} onExport={exportCsv} />
+      <div className="cw-grid-body">
+        <AgGridReact<Journey>
+          onGridReady={(e) => {
+            api.current = e.api;
+          }}
+          theme={studioGridTheme}
+          rowData={rows}
+          columnDefs={columns}
+          getRowId={(x: GetRowIdParams<Journey>) => String(x.data.orderId)}
+          masterDetail
+          isRowMaster={() => true}
+          detailCellRenderer={Detail}
+          detailRowHeight={190}
+          animateRows
+          suppressCellFocus
+        />
+      </div>
     </div>
   );
 }

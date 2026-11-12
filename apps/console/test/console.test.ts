@@ -167,6 +167,7 @@ describe("picking the video pair", () => {
 
   it("labels seeded stand-in agents plainly and keeps real model ids", () => {
     expect(agentLabel("fake-gemini")).toBe("Seeded demo agent");
+    expect(agentLabel("scripted-gemini")).toBe("Seeded demo agent");
     expect(agentLabel("claude-sonnet-5-5")).toBe("claude-sonnet-5-5");
   });
 
@@ -243,6 +244,19 @@ describe("payout moment (#29)", () => {
     expect(html).toContain('href="/payout" aria-current="page"');
     const clean = await (await appWith(RUNS).request("/payout?clean=1")).text();
     expect(clean).toContain('class="clean');
+  });
+
+  it("says paid to Venmo for a Venmo item, and not for a PayPal one", async () => {
+    const venmo = structuredClone(ENGINE) as any;
+    venmo["/api/payouts"].batches[0].items[0].wallet = "VENMO";
+    venmo["/api/payouts"].batches[0].items[0].receiver = "Venmo ···0123";
+    const html = await (await appWith(RUNS, venmo).request("/payout")).text();
+    expect(html).toContain("through PayPal Payouts, to Venmo.");
+    expect(html).toContain("paid to Venmo");
+    expect(html).toContain("Venmo ···0123");
+    expect(html).toContain("Sent with PayPal Payouts to Venmo.");
+    const paypal = await (await appWith(RUNS).request("/payout")).text();
+    expect(paypal).not.toContain("Venmo");
   });
 
   it("flags a payout that disagrees with the ledger", async () => {
@@ -385,5 +399,81 @@ describe("brand statement (PayPal Invoicing)", () => {
     const html = await (await appWith(RUNS, empty).request("/statement")).text();
     expect(html).toContain("No statement yet");
     expect((await appWith(RUNS, "down").request("/statement")).status).toBe(503);
+  });
+});
+
+describe("a programme in pounds", () => {
+  const GBP = structuredClone(ENGINE) as any;
+  GBP["/api/payouts"].batches[0].items[0].currency = "GBP";
+  GBP["/api/payouts"].batches[0].items[0].amountMinor = 39_164;
+  GBP["/api/credits"].creators[0].credits[0].currency = "GBP";
+  GBP["/api/invoices"] = {
+    statements: [
+      {
+        id: "stmt-g",
+        brandId: "winix",
+        invoiceNumber: "CITED-WINIX-GBP00001",
+        invoiceId: "INV2-GBP",
+        status: "MARKED_AS_PAID",
+        currency: "GBP",
+        creditedMinor: 39_164,
+        voidedMinor: 768,
+        paidMinor: 38_396,
+        returnedMinor: 61_604,
+        depositedMinor: 100_000,
+        reservedMinor: 0,
+        invoiceTotalMinor: 38_396,
+        invoicePaidMinor: 38_396,
+        invoiceDueMinor: 0,
+        lines: [
+          {
+            creatorId: "housefresh",
+            name: "HouseFresh",
+            creditedMinor: 39_164,
+            voidedMinor: 768,
+            paidMinor: 38_396,
+            credits: 51,
+          },
+        ],
+        payoutBatchIds: ["PAYOUT-BATCH-77"],
+        refundIds: ["REFUND-1"],
+        createdAt: "2026-12-02T00:00:00.000Z",
+      },
+    ],
+  };
+
+  it("shows the payout in pounds, with the pound symbol and no dollars", async () => {
+    const html = await (await appWith(RUNS, GBP).request("/payout")).text();
+    expect(html).toContain("£391.64");
+    expect(html).toContain("<small>GBP</small>");
+    expect(html).toContain("marked paid, £0 due");
+    expect(html).toContain("£0.00 paid · no lift");
+    expect(html).not.toContain("$391.64");
+    expect(html).not.toContain("differs from this payout");
+    // The sandbox note is for the dollar payout the sandbox actually ran.
+    expect(html).not.toContain("real PayPal sandbox");
+    // The item id names its currency, the way the engine does when it has no PayPal id.
+    const noId = structuredClone(GBP);
+    noId["/api/payouts"].batches[0].items[0].payoutItemId = undefined;
+    expect(await (await appWith(RUNS, noId).request("/payout")).text()).toContain(
+      "housefresh-abcdef01-GBP",
+    );
+  });
+
+  it("shows the statement in pounds, line by line", async () => {
+    const html = await (await appWith(RUNS, GBP).request("/statement?brand=winix")).text();
+    expect(html).toContain("£391.64");
+    expect(html).toContain("−£7.68");
+    expect(html).toContain("£383.96");
+    expect(html).toContain("£616.04");
+    expect(html).toContain("£0.00 due");
+    expect(html).not.toMatch(/\$\d/);
+  });
+
+  it("formats euros too", async () => {
+    const eur = structuredClone(GBP);
+    eur["/api/payouts"].batches[0].items[0].currency = "EUR";
+    const html = await (await appWith(RUNS, eur).request("/payout")).text();
+    expect(html).toContain("€391.64");
   });
 });

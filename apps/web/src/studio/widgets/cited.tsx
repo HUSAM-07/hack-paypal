@@ -7,7 +7,7 @@ import type { AgWidgetParams } from "ag-studio";
 import { useState, useSyncExternalStore } from "react";
 import { type StudioContext, scopeStore } from "../context";
 import { API, privateNote } from "../data";
-import { money, num, useRows } from "./useRows";
+import { currencyOf, money, num, useOfBrand, useRows } from "./useRows";
 
 type P = AgWidgetParams<never, unknown, StudioContext>;
 
@@ -18,6 +18,8 @@ const pct = (x: unknown) => (typeof x === "number" ? `${Math.round(x * 100)}%` :
 const BRAND_FIELDS = [
   "brandId",
   "brand",
+  "category",
+  "currency",
   "scopeKey",
   "exposedSales",
   "causedUnits",
@@ -41,18 +43,20 @@ const BRAND_FIELDS = [
 function useBrand(p: P, brandId: string) {
   const rows = useRows(p.widgetApi, "brands", BRAND_FIELDS);
   const scope = useSyncExternalStore(scopeStore.subscribe, scopeStore.get);
-  return {
-    rows,
-    scope,
-    row: rows?.find((r) => r.brandId === brandId && r.scopeKey === scope) ?? null,
-    rival: rows?.find((r) => r.brandId !== brandId && r.scopeKey === scope) ?? null,
-  };
+  const row = rows?.find((r) => r.brandId === brandId && r.scopeKey === scope) ?? null;
+  // The rival is the other brand in the same category: a programme started elsewhere is not one.
+  const rival =
+    rows?.find(
+      (r) => r.brandId !== brandId && r.scopeKey === scope && r.category === row?.category,
+    ) ?? null;
+  return { rows, scope, row, rival };
 }
 
 /** The signature tile: only the sales the test caused, as a lower bound, beside Levoit's $0. */
 export function CausedTile(p: P) {
   const { row, rival, scope } = useBrand(p, p.context?.brandId ?? "winix");
   if (!row) return <div className="cw-empty">Waiting for the first agent sale.</div>;
+  const m = (n: number) => money(n, true, currencyOf(row));
   const caused = num(row.causedUnits);
   const exposed = num(row.exposedSales);
   const notCredited = Math.max(0, exposed - caused);
@@ -96,27 +100,27 @@ export function CausedTile(p: P) {
         ) : (
           <>
             The cycle the first payout settled: {caused} sales credited ({pct(share)} of {exposed}{" "}
-            exposed), {money(num(row.voided))} voided by a refund before it ran.
+            exposed), {m(num(row.voided))} voided by a refund before it ran.
           </>
         )}
       </p>
       <dl className="cw-figures">
         <div>
           <dt>Credited</dt>
-          <dd>{money(num(row.credited))}</dd>
+          <dd>{m(num(row.credited))}</dd>
         </div>
         <div>
           <dt>Voided</dt>
-          <dd className={num(row.voided) > 0 ? "is-void" : ""}>{money(num(row.voided))}</dd>
+          <dd className={num(row.voided) > 0 ? "is-void" : ""}>{m(num(row.voided))}</dd>
         </div>
         <div>
           <dt>Paid</dt>
-          <dd className="is-paid">{money(num(row.paid))}</dd>
+          <dd className="is-paid">{m(num(row.paid))}</dd>
         </div>
         {num(row.held) > 0 ? (
           <div>
             <dt title="Held for review by the abuse guard: never paid automatically">Held</dt>
-            <dd className="is-held">{money(num(row.held))}</dd>
+            <dd className="is-held">{m(num(row.held))}</dd>
           </div>
         ) : null}
       </dl>
@@ -125,7 +129,7 @@ export function CausedTile(p: P) {
           <span>
             <b>{String(rival.brand)}</b> · {num(rival.causedUnits)} caused
           </span>
-          <span className="cw-rival-amount">{money(num(rival.paid))}</span>
+          <span className="cw-rival-amount">{money(num(rival.paid), true, currencyOf(rival))}</span>
           <small>
             {scope === "todate" ? `lift bound ${pts(rival.lowerBound)}: ` : ""}a close or negative
             verdict pays nothing
@@ -187,7 +191,7 @@ export function ArmStrip(p: P) {
             <b>{pts(num(test.share) - num(placebo.share))}</b>.
           </>
         ) : null}{" "}
-        Every arm sees the same offers in the same order; only the test is added or withheld.
+        Every group sees the same offers in the same order; only the test is added or withheld.
       </p>
     </div>
   );
@@ -197,6 +201,7 @@ export function ArmStrip(p: P) {
 export function DepositMeter(p: P) {
   const { row, scope } = useBrand(p, p.context?.brandId ?? "winix");
   if (!row) return <div className="cw-empty">No deposit yet.</div>;
+  const m = (n: number) => money(n, true, currencyOf(row));
   const deposited = num(row.deposited);
   const parts = [
     { key: "paid", label: "Paid to creators", value: num(row.spent) },
@@ -208,11 +213,11 @@ export function DepositMeter(p: P) {
     // biome-ignore lint/a11y/noNoninteractiveTabindex: the body scrolls when the widget is small; keyboard users must reach it (WCAG 2.1.1)
     <div className="cw cw-deposit" tabIndex={0}>
       <div className="cw-deposit-head">
-        <span className="cw-deposit-total">{money(deposited)}</span>
+        <span className="cw-deposit-total">{m(deposited)}</span>
         <span className="cw-muted">
           {scope === "todate" && num(row.topUps) > 0
-            ? `deposited: ${money(num(row.initialDeposit))} + ${money(num(row.topUps))} approved top-up`
-            : "deposited into the purifier programme"}
+            ? `deposited: ${m(num(row.initialDeposit))} + ${m(num(row.topUps))} approved top-up`
+            : `deposited into the ${String(row.category).replace("-", " ")} programme`}
         </span>
       </div>
       <div className="cw-meter" role="img" aria-label="Deposit breakdown">
@@ -222,7 +227,7 @@ export function DepositMeter(p: P) {
               key={x.key}
               className={`cw-meter-${x.key}`}
               style={{ flexGrow: x.value }}
-              title={`${x.label}: ${money(x.value)}`}
+              title={`${x.label}: ${m(x.value)}`}
             />
           ) : null,
         )}
@@ -234,7 +239,7 @@ export function DepositMeter(p: P) {
               <i />
               {x.label}
             </dt>
-            <dd>{money(x.value)}</dd>
+            <dd>{m(x.value)}</dd>
           </div>
         ))}
       </dl>
@@ -260,6 +265,7 @@ export function CreatorTiles(p: P) {
   const rows = useRows(p.widgetApi, "creators", [
     "creatorId",
     "creator",
+    "currency",
     "pending",
     "frozen",
     "held",
@@ -273,15 +279,38 @@ export function CreatorTiles(p: P) {
     "coExposed",
     "firstPayout",
   ]);
-  const row = rows?.find((r) => r.creatorId === creatorId);
+  // One row per currency the creator is credited in (USD first); almost always just the one.
+  const mine = (rows ?? [])
+    .filter((r) => r.creatorId === creatorId)
+    .sort((a, b) => Number(currencyOf(b) === "USD") - Number(currencyOf(a) === "USD"));
+  const row = mine[0];
   if (!row) return <div className="cw-empty">No credits yet for this creator.</div>;
   return (
     // biome-ignore lint/a11y/noNoninteractiveTabindex: the body scrolls when the widget is small; keyboard users must reach it (WCAG 2.1.1)
     <div className="cw cw-tiles" tabIndex={0}>
+      {mine.length > 1 ? (
+        <p className="cw-note cw-tiles-note">
+          Credited in {mine.map((r) => currencyOf(r)).join(" and ")}. Each currency is shown on its
+          own, never added to the other.
+        </p>
+      ) : null}
+      {mine.map((r) => (
+        <TileGroup key={currencyOf(r)} row={r} labelled={mine.length > 1} />
+      ))}
+    </div>
+  );
+}
+
+function TileGroup({ row, labelled }: { row: Record<string, unknown>; labelled: boolean }) {
+  const cur = currencyOf(row);
+  const money_ = (n: number) => money(n, true, cur);
+  return (
+    <>
+      {labelled ? <p className="cw-tiles-currency">Credits in {cur}</p> : null}
       {STATES.map((s) => (
         <div key={s.key} className={`cw-tile is-${s.key}`}>
           <span className="cw-tile-label">{s.label}</span>
-          <span className="cw-tile-value">{money(num(row[s.key]))}</span>
+          <span className="cw-tile-value">{money_(num(row[s.key]))}</span>
           <small>
             {s.key === "voided"
               ? `${num(row.voidedCount)} credit${num(row.voidedCount) === 1 ? "" : "s"} · ${s.hint}`
@@ -292,7 +321,7 @@ export function CreatorTiles(p: P) {
                     ? `${num(row.heldCount)} credit${num(row.heldCount) === 1 ? "" : "s"} · ${String(row.heldReasons).toLowerCase()}`
                     : s.hint
                   : s.key === "paid"
-                    ? `${money(num(row.firstPayout))} in the first payout`
+                    ? `${money_(num(row.firstPayout))} in the first payout`
                     : s.hint}
           </small>
         </div>
@@ -301,14 +330,16 @@ export function CreatorTiles(p: P) {
         {num(row.credits)} credits in all; {num(row.coExposed)} shared with another creator the
         agent also read, split by Shapley value.
       </p>
-    </div>
+    </>
   );
 }
 
 const FLAG_FIELDS = [
+  "brandId",
   "id",
   "creator",
   "amount",
+  "currency",
   "reason",
   "detail",
   "status",
@@ -323,7 +354,7 @@ const WAITING = "Waiting for a reviewer";
  * the next payout. Void: it is voided for good, so it asks once more before it goes.
  */
 export function ReviewFlags(p: P) {
-  const rows = useRows(p.widgetApi, "flags", FLAG_FIELDS);
+  const rows = useOfBrand(useRows(p.widgetApi, "flags", FLAG_FIELDS), p.context?.brandId);
   const [busy, setBusy] = useState<string | null>(null);
   const [confirming, setConfirming] = useState<string | null>(null);
   const [note, setNote] = useState<{ id: string; text: string; error?: boolean } | null>(null);
@@ -384,7 +415,7 @@ export function ReviewFlags(p: P) {
             return (
               <tr key={id}>
                 <td>{String(r.creator)}</td>
-                <td className="is-num">{money(num(r.amount))}</td>
+                <td className="is-num">{money(num(r.amount), true, currencyOf(r))}</td>
                 <td>
                   {String(r.reason)}
                   <small>{String(r.detail)}</small>
@@ -410,7 +441,7 @@ export function ReviewFlags(p: P) {
                           onClick={() => decide(id, "void")}
                           disabled={busy !== null}
                         >
-                          Void {money(num(r.amount))} for good
+                          Void {money(num(r.amount), true, currencyOf(r))} for good
                         </button>
                         <button
                           type="button"

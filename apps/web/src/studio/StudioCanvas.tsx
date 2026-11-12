@@ -17,10 +17,14 @@ import { useMemo } from "react";
 import type * as Analyst from "./agents/analyst";
 import type { StudioContext } from "./context";
 import type { StudioConfig, StudioTables } from "./data";
-import { initialState, sourcesFor } from "./layout";
+import { currenciesIn, initialState, sourcesFor } from "./layout";
 import { citedTheme } from "./theme";
+import { CreditsGrid } from "./widgets/CreditsGrid";
 import { ArmStrip, CausedTile, CreatorTiles, DepositMeter, ReviewFlags } from "./widgets/cited";
 import { JourneysGrid } from "./widgets/JourneysGrid";
+import { ProgrammesList, StartProgramme } from "./widgets/programmes";
+import { TrustList, TrustSummary } from "./widgets/trust";
+import { WhatIfPanel } from "./widgets/WhatIf";
 
 // biome-ignore lint/suspicious/noExplicitAny: our widgets take no data mapping
 const form = (p: AgWidgetFormParams<any>) => p.createDefaults({});
@@ -69,8 +73,56 @@ const widgets = (defaults: AgWidgetsConfig<AgCoreDefaultRegistry>) =>
         minSize: { width: 360, height: 160 },
       },
       {
+        id: "cited-whatif",
+        label: "Commission what-if",
+        comp: WhatIfPanel,
+        form,
+        defaultSize: { width: 900, height: 380 },
+        minSize: { width: 300, height: 300 },
+      },
+      {
+        id: "cited-trust-summary",
+        label: "Trust summary",
+        comp: TrustSummary,
+        form,
+        defaultSize: { width: 900, height: 200 },
+        minSize: { width: 300, height: 160 },
+      },
+      {
+        id: "cited-trust-list",
+        label: "Trust review",
+        comp: TrustList,
+        form,
+        defaultSize: { width: 900, height: 360 },
+        minSize: { width: 320, height: 200 },
+      },
+      {
+        id: "cited-start-programme",
+        label: "Start a programme",
+        comp: StartProgramme,
+        form,
+        defaultSize: { width: 420, height: 520 },
+        minSize: { width: 300, height: 360 },
+      },
+      {
+        id: "cited-programmes",
+        label: "Programmes",
+        comp: ProgrammesList,
+        form,
+        defaultSize: { width: 620, height: 520 },
+        minSize: { width: 320, height: 240 },
+      },
+      {
+        id: "cited-credits",
+        label: "Creator credits table",
+        comp: CreditsGrid,
+        form,
+        defaultSize: { width: 900, height: 360 },
+        minSize: { width: 320, height: 240 },
+      },
+      {
         id: "cited-journeys",
-        label: "Journeys & Shapley split",
+        label: "Journeys & creator split (Shapley)",
         comp: JourneysGrid,
         form,
         defaultSize: { width: 900, height: 360 },
@@ -86,8 +138,14 @@ const widgets = (defaults: AgWidgetsConfig<AgCoreDefaultRegistry>) =>
           "cited-arms",
           "cited-deposit",
           "cited-creator",
+          "cited-whatif",
           "cited-journeys",
+          "cited-credits",
           "cited-flags",
+          "cited-trust-summary",
+          "cited-trust-list",
+          "cited-start-programme",
+          "cited-programmes",
         ],
       },
     ],
@@ -95,6 +153,9 @@ const widgets = (defaults: AgWidgetsConfig<AgCoreDefaultRegistry>) =>
 
 /** The Analyst's chat on the right of the brand view; filters beside it. No builder chrome by default. */
 const PANELS: AgPanelConfig = { edit: { right: ["ai", "filters"] }, view: { right: ["filters"] } };
+/** The Programmes page has no filters, and on a phone their tab would sit over the form. */
+const PHONE_PANELS: AgPanelConfig = { edit: { right: [] }, view: { right: [] } };
+const PHONE_MAX_WIDTH = 760;
 
 export interface StudioCanvasProps {
   config: StudioConfig;
@@ -111,25 +172,39 @@ export interface StudioCanvasProps {
 
 export function StudioCanvas(p: StudioCanvasProps) {
   const { config, tables, analyst, initialView, creatorName } = p;
-  const data = useMemo(() => sourcesFor(config, tables), [config, tables]);
-  const state = useMemo(
-    () => initialState(initialView, creatorName, window.innerWidth),
-    [initialView, creatorName],
+  const data = useMemo(
+    () => sourcesFor(config, tables, creatorName),
+    [config, tables, creatorName],
   );
-  const ai = useMemo(() => analyst.citedHarness(config), [analyst, config]);
+  // A creator paid in two currencies sees a Currency column in their grids.
+  const mixed = useMemo(
+    () => currenciesIn((tables.credits ?? []).filter((r) => r.creator === creatorName)).length > 1,
+    [tables, creatorName],
+  );
+  const state = useMemo(
+    () => initialState(initialView, creatorName, window.innerWidth, mixed, p.context.brandName),
+    [initialView, creatorName, mixed, p.context.brandName],
+  );
+  // The harness reads the view the page opened on; `context` is one object for Studio's lifetime.
+  const ai = useMemo(() => analyst.citedHarness(config, p.context), [analyst, config, p.context]);
   // Before the journeys grid first renders; setting the same key again is harmless.
+  const phoneProgrammes = initialView === "programmes" && window.innerWidth < PHONE_MAX_WIDTH;
   if (config.gridLicenseKey) LicenseManager.setLicenseKey(config.gridLicenseKey);
   return (
     <AgStudioProvider
       {...(config.licenseKey ? { licenseKey: config.licenseKey } : {})}
       modules={[AgStudioAiModule]}
     >
-      <div className="st-studio">
+      <div className={`st-studio${phoneProgrammes ? " is-phone-programmes" : ""}`}>
         <AgStudio
           data={data}
           initialState={state}
           mode={p.mode}
-          panels={PANELS}
+          panels={
+            initialView === "programmes" && window.innerWidth < PHONE_MAX_WIDTH
+              ? PHONE_PANELS
+              : PANELS
+          }
           theme={citedTheme}
           context={p.context}
           widgets={widgets}

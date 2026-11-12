@@ -1,6 +1,6 @@
 # CITED: the affiliate network for the AI-agent era
 
-**Pitch:** Agents read but never click. CITED, PayPal's affiliate network for agents, pays creators on proven lift, not clicks.
+**Pitch:** Agents read but never click. CITED, affiliate marketing rebuilt on PayPal for agents, pays creators on proven lift, not clicks.
 
 **Who + pain:** US product-testing creators. Affiliate ($13.81B, eMarketer) pays per click. On the open web, Muse sold on Vacuum Wars' tests: unprovable, unpaid (Fast Company, Oct 2026).
 
@@ -26,6 +26,8 @@
 **Evidence** (`packages/evals/results/cited*`, each pre-registered in `packages/evals/scenarios/cited`; GPT/Gemini/Sonnet):
 - *Measured, price-matched (headline; Levoit priced like Winix at every shop):* purifiers, 147 forced-buy sessions, Winix share exposed 57/57 (100%), placebo 3/54 (6%), nothing 3/36 (8%). Lift +94pp (80% bound +90.3pp), positive in all three models (GPT +89, Gemini +100, Sonnet +94). Agents otherwise default to Levoit and flip when shown a test that names Winix, so this mostly measures deference to an explicit verdict. With Levoit $4 cheaper: +96pp (bound +92.6pp). Abstain allowed: +82pp (bound +77.2pp); among buyers +92pp (bound +86.3pp); Gemini declines more without the test.
 - *Measured, Winix already cheaper (catalogue prices):* 147 sessions, share 100% / 76% / 69%, lift +24pp (bound +18.8pp), Sonnet 0 (it bought Winix anyway). Price decided most picks, so exposure had little to add. Abstain allowed: +14pp, but 0 among buyers (bound −4.2pp). Narrow verdict (81): lift 0, bound −6.0pp, $0; QuietMax won every arm on price, so this is weak evidence.
+- *Measured, second category (robot vacuums, priced alike; fictional creator and illustrative test text):* 147 forced-buy sessions, Roborock share exposed 57/57, placebo 45/54, nothing 31/36. Lift +16.7pp (80% bound +11.7pp); Sonnet 0 (it bought the Roborock anyway), so "positive in every model" is not met. Agents already leaned towards it, so the credit is small (5 of 50 sales). With the Roomba $4 cheaper: +74.1pp (bound +68.6pp). 588 sessions in all: `results/cited-robot-vacuum`.
+- *Measured, third category (noise-cancelling headphones, priced alike; fictional creator and illustrative test text; the tested Bose is listed second at equal price):* 147 forced-buy sessions, Bose share exposed 57/57, placebo 18/54, nothing 12/36. Lift +66.7pp (80% bound +61.2pp), positive in all three models (GPT +44.4, Gemini +55.6, Sonnet +100.0). 30 of 50 sales credited. With the Sony $4 cheaper: +83.3pp (bound +78.8pp). 588 sessions in all: `results/cited-headphones`.
 - *Derived:* 57 exposed sales (one per exposed agent) × 90.3% (90.3pp/100%) = 51 units × $95.99 × 8% = $391.64 credited; one refund voids one credit (−$7.68), so $383.96 is paid and $616.04 of the $1,000 deposit returns. (Winix-cheaper study: 37 units of 200 sales, $284.13.)
 - *Scripted:* Lumen's $4 discount, the $1,000 deposit, equal Winix and Levoit prices.
 

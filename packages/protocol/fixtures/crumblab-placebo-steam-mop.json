@@ -1,0 +1,9 @@
+{
+  "id": "cl-placebo-steam-mop",
+  "kind": "placebo",
+  "creatorId": "crumblab",
+  "category": "steam-mop",
+  "skus": [{ "upc": "100000000008", "brand": "Steamline", "name": "SM-2" }],
+  "summary": "A separate CrumbLab write-up on a steam mop: how long it takes to heat up, how it handles dried spills on tile and how often the water tank needs a refill. It makes no recommendation about robot vacuums.",
+  "disclosure": "Illustrative sample content for the CITED demo; CrumbLab is a fictional creator. CrumbLab may earn a commission from CITED on purchases that follow its tests; this article is shown as a control and carries no verdict."
+}

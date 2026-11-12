@@ -9,6 +9,7 @@ import {
   depositBalance,
   type ReviewFlag,
   type VoidEvent,
+  type WhatIfBrand,
 } from "@pact/attribution";
 import { type AttributedSale, type Credit, LIVE_CATEGORY } from "@pact/protocol";
 import type { Env } from "./env";
@@ -195,6 +196,49 @@ export async function coalitionValueFor(env: Env, brand: Brand): Promise<Coaliti
   };
 }
 
+/** More recorded sales than this and the what-if is left out: the page would be re-sending them every poll. */
+export const WHAT_IF_MAX_SALES = 5_000;
+
+/**
+ * What the Studio commission what-if needs to run the ledger's own maths again in the browser:
+ * per brand, the exposed-arm sales and the lift of every coalition of creators those sales saw.
+ * Read-only; nothing here changes a credit.
+ */
+export async function whatIfInputs(env: Env): Promise<{
+  brands: WhatIfBrand[];
+  truncated: boolean;
+}> {
+  const brands = await listBrands(env);
+  const all = (await loadAttributedSales(env)).filter((s) => s.arm === "test");
+  if (all.length > WHAT_IF_MAX_SALES) return { brands: [], truncated: true };
+  const selfDealt = await selfDealtSessions(env);
+  const out: WhatIfBrand[] = [];
+  for (const brand of brands) {
+    const mine = all.filter((s) => s.upc === brand.upc && s.amount.currency === brand.currency);
+    const value = await coalitionValueFor(env, brand);
+    const coalitions: Record<string, number> = {};
+    for (const sale of mine) {
+      const ids = [...new Set(sale.creatorsSeen)].sort();
+      // Shapley needs every non-empty subset of the creators this sale saw (at most 4).
+      for (let mask = 1; mask < 1 << ids.length; mask++) {
+        const subset = ids.filter((_, i) => mask & (1 << i));
+        coalitions[subset.join("+")] = value(subset);
+      }
+    }
+    const lift = evaluateBrand(await brandLiftData(env, brand));
+    out.push({
+      brandId: brand.brandId,
+      upc: brand.upc,
+      currency: brand.currency,
+      causedUnits: lift.units,
+      sales: mine.filter((s) => !selfDealt.has(s.sessionId)),
+      selfDealtSales: mine.filter((s) => selfDealt.has(s.sessionId)),
+      coalitions,
+    });
+  }
+  return { brands: out, truncated: false };
+}
+
 export interface RecomputeSummary {
   created: number;
   /** Guard holds on the ledger after this run (new and already open). */
@@ -233,18 +277,38 @@ export async function recomputeCredits(env: Env, now: string): Promise<Recompute
     const deposit = aggregateDeposit(brand, await listDeposits(env, brand.brandId));
     const value = await coalitionValueFor(env, brand);
     const fresh = createCredits({
-      sales: sales.filter((s) => s.upc === brand.upc),
-      brands: [{ brandId: brand.brandId, upc: brand.upc, units: lift.units, deposit }],
+      // A programme lives in one currency: a sale of its product in another is never credited,
+      // and never converted.
+      sales: sales.filter((s) => s.upc === brand.upc && s.amount.currency === brand.currency),
+      brands: [
+        {
+          brandId: brand.brandId,
+          upc: brand.upc,
+          units: lift.units,
+          deposit,
+          commissionBps: brand.commissionBps,
+        },
+      ],
       coalitionValue: () => value,
       existing: ledger,
     });
     ledger = [...ledger, ...fresh];
     summary.created += fresh.length;
-    const own = dealt.filter((s) => s.upc === brand.upc && s.arm === "test");
+    const own = dealt.filter(
+      (s) => s.upc === brand.upc && s.arm === "test" && s.amount.currency === brand.currency,
+    );
     if (own.length) {
       const held = createCredits({
         sales: own,
-        brands: [{ brandId: brand.brandId, upc: brand.upc, units: own.length, deposit }],
+        brands: [
+          {
+            brandId: brand.brandId,
+            upc: brand.upc,
+            units: own.length,
+            deposit,
+            commissionBps: brand.commissionBps,
+          },
+        ],
         coalitionValue: () => value,
         existing: ledger,
       });

@@ -1,6 +1,6 @@
 # CITED
 
-PayPal's affiliate network, rebuilt for AI agents: it pays creators on proven lift, not last-click cookies.
+Affiliate marketing, rebuilt on PayPal for AI agents: it pays creators on proven lift, not last-click cookies.
 
 **CITED is the product we're shipping.** It runs inside the `pact-worker` Worker (Pact is the repo's codename); the older Pact chat app in `apps/web` is not part of it. This folder holds the CITED specs.
 

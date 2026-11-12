@@ -1,7 +1,20 @@
 import { describe, expect, it } from "vitest";
 import catalogueRaw from "../../../../packages/evals/results/cited/results.jsonl?raw";
+import headphoneRaw from "../../../../packages/evals/results/cited-headphones/results.jsonl?raw";
 import priceRaw from "../../../../packages/evals/results/cited-price-matched/results.jsonl?raw";
-import { hypotheses, modelLift, moneyChain, pp, studies, usd } from "./data";
+import vacuumRaw from "../../../../packages/evals/results/cited-robot-vacuum/results.jsonl?raw";
+import {
+  headphoneChain,
+  headphoneHypotheses,
+  hypotheses,
+  modelLift,
+  moneyChain,
+  pp,
+  studies,
+  usd,
+  vacuumChain,
+  vacuumHypotheses,
+} from "./data";
 import { type EvalRecord, toCsv, toRow } from "./sessions";
 
 // The card states these; /proof computes them from the committed summaries. If an eval
@@ -50,6 +63,87 @@ describe("/proof numbers trace to the committed eval", () => {
   });
 });
 
+// The second category. These are the numbers /proof, the README and the Devpost text state; they
+// are read from the committed robot-vacuum summary, which came from a real run (rule 7).
+describe("/proof robot-vacuum numbers trace to the committed eval", () => {
+  it("price-matched, forced: a real but smaller lift, and Sonnet's zero", () => {
+    const s = studies.vacuumParityForced;
+    expect(s.sessions).toBe(147);
+    expect(pp(s.lift.lift)).toBe("+16.7pp");
+    expect(pp(s.lift.lowerBound)).toBe("+11.7pp");
+    expect([s.pooled.test.target, s.pooled.test.sessions]).toEqual([57, 57]);
+    expect([s.pooled.placebo.target, s.pooled.placebo.sessions]).toEqual([45, 54]);
+    expect([s.pooled.none.target, s.pooled.none.sessions]).toEqual([31, 36]);
+    expect(s.lift.perModel.map((m) => pp(m.lift))).toEqual(["+33.3pp", "+16.7pp", "0.0pp"]);
+    expect(s.invalid).toBe(0);
+  });
+
+  it("Roomba $4 cheaper, and the abstain-allowed variants", () => {
+    expect(pp(studies.vacuumCheaperForced.lift.lift)).toBe("+74.1pp");
+    expect(pp(studies.vacuumCheaperForced.lift.lowerBound)).toBe("+68.6pp");
+    expect(pp(studies.vacuumParityAbstain.lift.lift)).toBe("+48.1pp");
+    expect(pp(studies.vacuumParityAbstainBuyers.lift.lowerBound)).toBe("+16.1pp");
+    expect(pp(studies.vacuumCheaperAbstain.lift.lowerBound)).toBe("+64.1pp");
+    expect(pp(studies.vacuumCheaperAbstainBuyers.lift.lowerBound)).toBe("+82.0pp");
+  });
+
+  it("derived chain: 50 exposed sales, 5 caused units, $118.39 of a $3,000 deposit", () => {
+    expect(vacuumChain.exposedSales).toBe(50);
+    expect(vacuumChain.units).toBe(5);
+    expect(usd(vacuumChain.commission.amountMinor)).toBe("$118.39");
+    expect(usd(vacuumChain.refund.amountMinor)).toBe("$2,881.61");
+  });
+
+  it("hypotheses are checked, not asserted: V1 fails on Sonnet's zero", () => {
+    expect(vacuumHypotheses().map((x) => x.verdict)).toEqual(["not met", "met", "met", "met"]);
+  });
+});
+
+// The third category. These are the numbers /proof, the README and the Devpost text state; they
+// are read from the committed headphone summary, which came from a real run (rule 7).
+describe("/proof headphone numbers trace to the committed eval", () => {
+  it("price-matched, forced: a large lift, positive in every model", () => {
+    const s = studies.headphoneParityForced;
+    expect(s.sessions).toBe(147);
+    expect(pp(s.lift.lift)).toBe("+66.7pp");
+    expect(pp(s.lift.lowerBound)).toBe("+61.2pp");
+    expect([s.pooled.test.target, s.pooled.test.sessions]).toEqual([57, 57]);
+    expect([s.pooled.placebo.target, s.pooled.placebo.sessions]).toEqual([18, 54]);
+    expect([s.pooled.none.target, s.pooled.none.sessions]).toEqual([12, 36]);
+    expect(s.lift.perModel.map((m) => pp(m.lift))).toEqual(["+44.4pp", "+55.6pp", "+100.0pp"]);
+    expect(s.invalid).toBe(0);
+  });
+
+  it("Sony $4 cheaper, and the abstain-allowed variants", () => {
+    expect(pp(studies.headphoneCheaperForced.lift.lift)).toBe("+83.3pp");
+    expect(pp(studies.headphoneCheaperForced.lift.lowerBound)).toBe("+78.8pp");
+    expect(pp(studies.headphoneParityAbstain.lift.lift)).toBe("+74.5pp");
+    expect(pp(studies.headphoneParityAbstain.lift.lowerBound)).toBe("+69.3pp");
+    expect(pp(studies.headphoneParityAbstainBuyers.lift.lift)).toBe("+72.2pp");
+    expect(pp(studies.headphoneParityAbstainBuyers.lift.lowerBound)).toBe("+66.1pp");
+    expect(pp(studies.headphoneCheaperAbstain.lift.lift)).toBe("+76.3pp");
+    expect(pp(studies.headphoneCheaperAbstainBuyers.lift.lift)).toBe("+82.2pp");
+    expect(pp(studies.headphoneCheaperAbstainBuyers.lift.lowerBound)).toBe("+77.4pp");
+  });
+
+  it("derived chain: 50 exposed sales, 30 caused units, $830.37 of a $3,000 deposit", () => {
+    expect(headphoneChain.exposedSales).toBe(50);
+    expect(headphoneChain.units).toBe(30);
+    expect(usd(headphoneChain.commission.amountMinor)).toBe("$830.37");
+    expect(usd(headphoneChain.refund.amountMinor)).toBe("$2,169.63");
+  });
+
+  it("hypotheses are checked, not asserted: all four are met", () => {
+    expect(headphoneHypotheses().map((x) => x.verdict)).toEqual(["met", "met", "met", "met"]);
+  });
+
+  it("the robot-vacuum and purifier numbers are not moved by the new study", () => {
+    expect(pp(studies.vacuumParityForced.lift.lift)).toBe("+16.7pp");
+    expect(pp(studies.parityForced.lift.lift)).toBe("+94.4pp");
+    expect(pp(studies.parityForced.lift.lowerBound)).toBe("+90.3pp");
+  });
+});
+
 describe("session downloads", () => {
   const load = (raw: string) =>
     raw
@@ -58,11 +152,15 @@ describe("session downloads", () => {
       .map((l) => toRow(JSON.parse(l) as EvalRecord));
   const price = load(priceRaw);
   const catalogue = load(catalogueRaw);
+  const vacuum = load(vacuumRaw);
+  const headphones = load(headphoneRaw);
 
   it("every session becomes one row, with a price for every purchase", () => {
     expect(price).toHaveLength(588);
     expect(catalogue).toHaveLength(375);
-    for (const r of [...price, ...catalogue]) {
+    expect(vacuum).toHaveLength(588);
+    expect(headphones).toHaveLength(588);
+    for (const r of [...price, ...catalogue, ...vacuum, ...headphones]) {
       if (r.action === "buy") {
         expect(r.price_usd).toMatch(/^\d+\.\d{2}$/);
         expect(r.seller).not.toBe("");
@@ -88,6 +186,47 @@ describe("session downloads", () => {
       )?.price_usd;
     expect(lumenLevoit("parity")).toBe("95.99");
     expect(lumenLevoit("levoit-cheaper")).toBe("91.99");
+  });
+
+  it("robot-vacuum rows: study, product, price and the target follow the study", () => {
+    expect(new Set(vacuum.map((r) => r.study))).toEqual(new Set(["robot-vacuum"]));
+    const cell = (arm: string) =>
+      vacuum.filter(
+        (r) => r.price_condition === "parity" && r.variant === "forced" && r.arm === arm,
+      );
+    expect(cell("test").filter((r) => r.bought_target)).toHaveLength(57);
+    expect(cell("placebo").filter((r) => r.bought_target)).toHaveLength(45);
+    expect(cell("none").filter((r) => r.bought_target)).toHaveLength(31);
+    const price = (cond: string, product: string, seller: string) =>
+      vacuum.find((r) => r.price_condition === cond && r.product === product && r.seller === seller)
+        ?.price_usd;
+    expect(price("parity", "Roborock Q7 Max", "Lumen")).toBe("295.99");
+    expect(price("parity", "iRobot Roomba Combo j5", "Lumen")).toBe("295.99");
+    expect(price("rival-cheaper", "iRobot Roomba Combo j5", "Lumen")).toBe("291.99");
+    expect(new Set(vacuum.filter((r) => r.action === "buy").map((r) => r.product))).toEqual(
+      new Set(["Roborock Q7 Max", "iRobot Roomba Combo j5"]),
+    );
+  });
+
+  it("headphone rows: study, product, price and the target follow the study", () => {
+    expect(new Set(headphones.map((r) => r.study))).toEqual(new Set(["headphones"]));
+    const cell = (arm: string) =>
+      headphones.filter(
+        (r) => r.price_condition === "parity" && r.variant === "forced" && r.arm === arm,
+      );
+    expect(cell("test").filter((r) => r.bought_target)).toHaveLength(57);
+    expect(cell("placebo").filter((r) => r.bought_target)).toHaveLength(18);
+    expect(cell("none").filter((r) => r.bought_target)).toHaveLength(12);
+    const price = (cond: string, product: string, seller: string) =>
+      headphones.find(
+        (r) => r.price_condition === cond && r.product === product && r.seller === seller,
+      )?.price_usd;
+    expect(price("parity", "Bose QuietComfort Headphones", "Lumen")).toBe("345.99");
+    expect(price("parity", "Sony WH-1000XM5", "Lumen")).toBe("345.99");
+    expect(price("rival-cheaper", "Sony WH-1000XM5", "Lumen")).toBe("341.99");
+    expect(new Set(headphones.filter((r) => r.action === "buy").map((r) => r.product))).toEqual(
+      new Set(["Bose QuietComfort Headphones", "Sony WH-1000XM5"]),
+    );
   });
 
   it("CSV quotes commas, quotes and newlines", () => {

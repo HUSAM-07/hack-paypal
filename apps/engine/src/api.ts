@@ -9,14 +9,29 @@ import { Hono } from "hono";
 import { z } from "zod";
 import { advanceClock, nowOf } from "./clock";
 import { listCreatorTests, PublishTestInput, publishTest } from "./creator-tests";
-import { brandBalances, frozenCaptures, loadStoredCredits, recomputeCredits } from "./credits";
+import {
+  brandBalances,
+  frozenCaptures,
+  loadStoredCredits,
+  recomputeCredits,
+  whatIfInputs,
+} from "./credits";
 import { closeCycle } from "./cycle";
 import type { Env } from "./env";
 import { heldCredits, listFlags, resolveHold } from "./guard";
 import { brandLiftData, evaluateBrand } from "./lift";
+import { PayoutMethodInput } from "./payout-method";
+import { getPayoutMethod, setPayoutMethod } from "./payout-wallet";
 import { payoutItemIds, refreshPayouts, runPayouts, senderItemId } from "./payouts";
 import { getPayPal } from "./paypal";
-import { captureDeposit, getBrand, listBrands, requestDeposit, upsertBrand } from "./programme";
+import {
+  captureDeposit,
+  getBrand,
+  listBrands,
+  requestDeposit,
+  startProgramme,
+  upsertBrand,
+} from "./programme";
 import { issueStatements, listStatements } from "./statements";
 import { listProofs } from "./webhooks/proof";
 
@@ -89,11 +104,42 @@ api.post("/brands", async (c) => {
       category: z.string().min(1).max(40),
       upc: Upc,
       currency: Cur.default("USD"),
+      commissionBps: z.number().int().min(0).max(10_000).optional(),
     }),
   );
   if ("error" in r) return c.json(r, 400);
   await upsertBrand(c.env, r.data);
   return c.json(r.data, 201);
+});
+
+/**
+ * A brand starts a programme from AG Studio: a catalogue product, a deposit and a commission
+ * rate. Creates the programme and captures its deposit (Orders v2). A write, so it needs the
+ * token like every other; Studio's own guard decides who may reach it on the hosted demo.
+ */
+api.post("/programmes", async (c) => {
+  const r = await body(
+    c,
+    z.object({
+      category: z.string().min(1).max(40),
+      upc: Upc,
+      depositMinor: z.number(),
+      commissionBps: z.number(),
+      /** USD, GBP or EUR; absent means USD. The terms check refuses any other. */
+      currency: z.string().max(8).optional(),
+    }),
+  );
+  if ("error" in r) return c.json(r, 400);
+  try {
+    const out = await startProgramme(c.env, r.data);
+    if (!out.ok) return c.json({ error: out.error, message: out.message }, out.status);
+    return c.json(
+      { brand: out.brand, deposit: out.deposit },
+      out.deposit.status === "captured" ? 201 : 202,
+    );
+  } catch (e) {
+    return c.json({ error: (e as Error).message }, 422);
+  }
 });
 
 api.post("/creators", async (c) => {
@@ -121,6 +167,21 @@ api.post("/tests", async (c) => {
   if ("error" in r) return c.json(r, 400);
   const out = await publishTest(c.env, r.data);
   return out.ok ? c.json(out, 201) : c.json({ error: out.error }, out.status);
+});
+
+/** An onboarded creator chooses PayPal or Venmo for payouts (from /creators). Never a demo creator. */
+api.post("/payout-method", async (c) => {
+  const r = await body(c, PayoutMethodInput);
+  if ("error" in r) return c.json(r, 400);
+  const out = await setPayoutMethod(c.env, r.data);
+  return out.ok ? c.json(out, 200) : c.json({ error: out.error }, out.status);
+});
+
+/** Which wallet a creator is paid to, with a masked label: the full Venmo receiver is never returned. */
+api.get("/payout-method", async (c) => {
+  const creatorId = c.req.query("creatorId") ?? "";
+  if (!/^[A-Za-z0-9_-]{1,24}$/.test(creatorId)) return c.json({ error: "invalid_creator" }, 400);
+  return c.json(await getPayoutMethod(c.env, creatorId));
 });
 
 api.post("/listings", async (c) => {
@@ -304,6 +365,8 @@ async function liftView(env: Env, brandId?: string) {
       name: brand.name,
       category: brand.category,
       upc: brand.upc,
+      currency: brand.currency,
+      commissionBps: brand.commissionBps,
       arms: data.arms,
       exposedRate: r.exposedRate,
       placeboRate: r.placeboRate,
@@ -332,6 +395,9 @@ api.get("/lift/:brandId", async (c) => {
   const [one] = await liftView(c.env, c.req.param("brandId"));
   return one ? c.json(one) : c.json({ error: "unknown_brand" }, 404);
 });
+
+/** The recorded sales the Studio what-if re-prices in the browser. Read-only. */
+api.get("/what-if", async (c) => c.json(await whatIfInputs(c.env)));
 
 api.get("/caused-units", async (c) =>
   c.json({
@@ -401,6 +467,11 @@ api.get("/credits", async (c) => {
   for (const x of credits) by.set(x.creatorId, [...(by.get(x.creatorId) ?? []), x]);
   const sum = (xs: typeof credits, state: string) =>
     xs.filter((x) => x.state === state).reduce((a, x) => a + x.amount.amountMinor, 0);
+  /** A creator's credits per currency, USD first: money in two currencies is never added together. */
+  const currenciesOf = (xs: typeof credits) =>
+    [...new Set(xs.map((x) => x.amount.currency))].sort(
+      (a, b) => Number(b === "USD") - Number(a === "USD") || (a < b ? -1 : 1),
+    );
   const flags = await listFlags(c.env);
   const frozen = await frozenCaptures(c.env);
   const isFrozen = (x: (typeof credits)[number]) =>
@@ -412,11 +483,8 @@ api.get("/credits", async (c) => {
   return c.json({
     creators: [...by.entries()]
       .sort(([a], [b]) => (a < b ? -1 : 1))
-      .map(([creatorId, xs]) => ({
-        creatorId,
-        name: names.get(creatorId)?.name ?? creatorId,
-        paypalLinked: names.get(creatorId)?.paypalLinked ?? false,
-        totals: {
+      .map(([creatorId, all]) => {
+        const totalsOf = (xs: typeof credits) => ({
           pending: sum(xs, "pending"),
           voided: sum(xs, "voided"),
           paid: sum(xs, "paid"),
@@ -424,24 +492,38 @@ api.get("/credits", async (c) => {
           frozen: xs.filter(isFrozen).reduce((a, x) => a + x.amount.amountMinor, 0),
           /** Part of `pending`: held by the abuse guard for a reviewer; never paid automatically. */
           held: xs.filter(isHeld).reduce((a, x) => a + x.amount.amountMinor, 0),
-        },
-        credits: xs.map((x) => ({
-          id: x.id,
-          captureId: x.captureId,
-          brandId: x.brandId,
-          upc: x.upc,
-          amountMinor: x.amount.amountMinor,
-          currency: x.amount.currency,
-          state: x.state,
-          voidReason: x.voidReason ?? null,
-          holdUntil: x.holdUntil,
-          payoutBatchId: x.payoutBatchId ?? null,
-          payoutStatus: x.payoutStatus,
-          frozen: isFrozen(x),
-          held: isHeld(x),
-          holdReasons: isHeld(x) ? holdReasons(x.id) : [],
-        })),
-      })),
+        });
+        const currencies = currenciesOf(all);
+        // `totals` is in `currency` (the creator's first, USD when they have any); the rest are in
+        // `totalsByCurrency`. A creator paid in one currency, as every creator was, sees no change.
+        const xs = all.filter((x) => x.amount.currency === currencies[0]);
+        return {
+          creatorId,
+          name: names.get(creatorId)?.name ?? creatorId,
+          paypalLinked: names.get(creatorId)?.paypalLinked ?? false,
+          currency: currencies[0] ?? "USD",
+          totals: totalsOf(xs),
+          totalsByCurrency: Object.fromEntries(
+            currencies.map((cur) => [cur, totalsOf(all.filter((x) => x.amount.currency === cur))]),
+          ),
+          credits: all.map((x) => ({
+            id: x.id,
+            captureId: x.captureId,
+            brandId: x.brandId,
+            upc: x.upc,
+            amountMinor: x.amount.amountMinor,
+            currency: x.amount.currency,
+            state: x.state,
+            voidReason: x.voidReason ?? null,
+            holdUntil: x.holdUntil,
+            payoutBatchId: x.payoutBatchId ?? null,
+            payoutStatus: x.payoutStatus,
+            frozen: isFrozen(x),
+            held: isHeld(x),
+            holdReasons: isHeld(x) ? holdReasons(x.id) : [],
+          })),
+        };
+      }),
     reviewFlags: flags.map((f) => ({
       id: f.id,
       creditId: f.creditId,
@@ -474,7 +556,7 @@ function mcpVerdict(arm: unknown, creatorsSeen: string[]) {
   };
 }
 
-async function journeys(env: Env, limit: number, source: "agent" | "mcp" = "agent") {
+async function journeys(env: Env, limit: number, source: "agent" | "mcp" = "agent", offset = 0) {
   const sales = (
     await env.DB.prepare(
       `SELECT x.*, s.stores_viewed AS stores_viewed FROM sales x
@@ -482,7 +564,7 @@ async function journeys(env: Env, limit: number, source: "agent" | "mcp" = "agen
        WHERE x.unattributed_reason IS NULL AND x.source = ? AND COALESCE(s.category, '') != ?
        ORDER BY x.captured_at DESC, x.order_id LIMIT ?`,
     )
-      .bind(source, LIVE_CATEGORY, limit * 4)
+      .bind(source, LIVE_CATEGORY, (offset + limit) * 4)
       .all<Row>()
   ).results;
   const prices = new Map(
@@ -496,7 +578,7 @@ async function journeys(env: Env, limit: number, source: "agent" | "mcp" = "agen
   for (const r of sales)
     orders.set(r.order_id as string, [...(orders.get(r.order_id as string) ?? []), r]);
 
-  return [...orders.entries()].slice(0, limit).map(([orderId, rows]) => {
+  return [...orders.entries()].slice(offset, offset + limit).map(([orderId, rows]) => {
     const first = rows[0] as Row;
     const viewed = JSON.parse((first.stores_viewed as string) ?? "[]") as string[];
     const captureIds = [...new Set(rows.map((r) => r.capture_id as string))];
@@ -552,6 +634,8 @@ async function journeys(env: Env, limit: number, source: "agent" | "mcp" = "agen
       ...(source === "mcp"
         ? {
             source,
+            /** Which creators' content this session was shown (their test, or the placebo). */
+            creatorsSeen: JSON.parse(first.creators_seen as string) as string[],
             verdict: mcpVerdict(first.arm, JSON.parse(first.creators_seen as string) as string[]),
           }
         : {}),
@@ -572,6 +656,8 @@ api.get("/journeys", async (c) =>
       c.env,
       Math.min(200, Number(c.req.query("limit")) || 50),
       c.req.query("source") === "mcp" ? "mcp" : "agent",
+      // Optional paging, newest first; absent means the first page as before.
+      Math.min(20_000, Math.max(0, Math.floor(Number(c.req.query("offset"))) || 0)),
     ),
   }),
 );
@@ -626,8 +712,10 @@ api.get("/payouts", async (c) => {
     const ids = r.paypal_batch_id
       ? await payoutItemIds(c.env, r.paypal_batch_id as string)
       : new Map<string, string>();
-    const items = (JSON.parse(r.items_json as string) as { creatorId: string }[]).map((i) => {
-      const payoutItemId = ids.get(senderItemId(i.creatorId, senderBatchId));
+    const items = (
+      JSON.parse(r.items_json as string) as { creatorId: string; currency?: string }[]
+    ).map((i) => {
+      const payoutItemId = ids.get(senderItemId(i.creatorId, senderBatchId, i.currency));
       return payoutItemId ? { ...i, payoutItemId } : i;
     });
     batches.push({

@@ -1,6 +1,6 @@
 # CITED
 
-PayPal's affiliate network, rebuilt for AI agents: it pays creators on proven lift, not last-click cookies. Built for the PayPal AI Hackathon. Deadline: **2026-11-12 12:00pm PT** (internal: freeze 9 Nov, video 10 Nov, submit 11 Nov).
+Affiliate marketing, rebuilt on PayPal for AI agents: it pays creators on proven lift, not last-click cookies. Built for the PayPal AI Hackathon. Deadline: **2026-11-12 12:00pm PT** (internal: freeze 9 Nov, video 10 Nov, submit 11 Nov).
 
 Read these first:
 - [cited/spec/CITED-card.md](cited/spec/CITED-card.md): the product, in 450 words

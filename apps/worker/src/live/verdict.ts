@@ -16,6 +16,11 @@ export interface ProgrammeFacts {
   brand: { brandId: string; name: string } | null;
   /** Caused units the programme's lift measured for that brand (0 = no proven lift). */
   causedUnits: number;
+  /**
+   * What the brand's deposit has left to fund credits, in its minor units. Undefined when the
+   * engine's deposits couldn't be read: the check is then skipped rather than guessed.
+   */
+  availableMinor?: number;
 }
 
 export interface Verdict {
@@ -62,6 +67,11 @@ export function liveVerdict(sale: JoinedSale | null, p: ProgrammeFacts): Verdict
   if (sale.creatorsSeen.length === 0)
     return none("Not credited: no creator was shown in this session.", p.brand.brandId);
   const commission = commissionOn(sale.amount);
+  if (p.availableMinor !== undefined && p.availableMinor < commission.amountMinor)
+    return none(
+      `Not credited: ${p.brand.name}'s deposit has too little left to fund this credit, so the brand needs to top it up first. No credit ever draws more than the deposit.`,
+      p.brand.brandId,
+    );
   // Every creator shown counts; with one creator the whole commission is theirs.
   const split = splitCommission(commission, sale.creatorsSeen, (s) => (s.length ? 1 : 0));
   const credits = [...split].map(([creatorId, amount]) => ({ creatorId, amount }));

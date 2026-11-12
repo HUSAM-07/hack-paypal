@@ -152,6 +152,40 @@ describe("createCredits", () => {
   });
 });
 
+describe("a programme's own commission rate", () => {
+  const sales = [sale(1), sale(2, { upc: LEVOIT })];
+  const brands = (winixBps?: number) => [
+    {
+      brandId: "winix",
+      upc: WINIX,
+      units: 1,
+      deposit: deposit("winix"),
+      ...(winixBps === undefined ? {} : { commissionBps: winixBps }),
+    },
+    { brandId: "levoit", upc: LEVOIT, units: 1, deposit: deposit("levoit") },
+  ];
+  const total = (cs: Credit[], brandId: string) =>
+    cs.filter((c) => c.brandId === brandId).reduce((a, c) => a + c.amount.amountMinor, 0);
+
+  it("applies to that brand only: the others keep the default 8%", () => {
+    const cs = createCredits({ sales, brands: brands(1_200), coalitionValue: solo() });
+    expect(total(cs, "winix")).toBe(1_152); // 12% of $95.99, rounded to the cent
+    expect(total(cs, "levoit")).toBe(768); // 8% of $95.99
+  });
+
+  it("changes nothing when no programme sets a rate", () => {
+    const plain = createCredits({ sales, brands: brands(), coalitionValue: solo() });
+    const explicit = createCredits({ sales, brands: brands(800), coalitionValue: solo() });
+    expect(explicit).toEqual(plain);
+  });
+
+  it("refuses a rate outside 0 to 100%", () => {
+    expect(() => createCredits({ sales, brands: brands(10_001), coalitionValue: solo() })).toThrow(
+      /commissionBps/,
+    );
+  });
+});
+
 describe("clock and fee", () => {
   it("only moves forward", () => {
     const c = new DemoClock(T0);

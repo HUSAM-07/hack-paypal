@@ -1,10 +1,14 @@
 # CITED
 
-**PayPal's affiliate network, rebuilt for AI agents: it pays creators on proven lift, not last-click cookies.**
+**Affiliate marketing, rebuilt on PayPal for AI agents: it pays creators on proven lift, not last-click cookies.**
 
 AI shopping agents read product tests but never click an affiliate link, so creators go unpaid when an agent buys on their verdict. CITED fixes that. Brands fund a category programme (say, air purifiers), never a verdict. In PayPal's agent catalogue (our mock of Store Sync), each shopping session randomly sees a creator's test, a placebo (other content from the same creator), or nothing; ranking never changes. A signed **Agent Affiliate Passport** rides in the PayPal Orders v2 `purchase_units[].custom_id`, so the sale joins back to its arm even when the agent pays a different seller. There are no storefronts: the agent checks out through PayPal itself, paying the seller's PayPal account from the wallet the buyer linked to it ([AGENT-CHECKOUT.md](cited/spec/AGENT-CHECKOUT.md)). The engine credits only the sales the test caused (80% lower bound, Shapley split across co-exposed creators), holds credits 30 days, voids them on refunds, freezes them while a dispute is open (voided if the buyer wins), then pays creators by batch Payouts and refunds the unspent deposit. AG Studio shows it to the brand and the creator.
 
-**The result:** in a pre-registered eval across GPT, Gemini and Claude, with both purifiers at the same price, agents shown a creator's test bought the tested pick 57/57 times; agents shown a placebo from the same creator bought it 3/54. That is +94pp, with an 80% lower bound of +90.3pp, and it is positive in all three models ([/proof](https://pact-worker.vincent-wesley-liem.workers.dev/proof), all 963 sessions downloadable). CITED pays on that lower bound, not on clicks.
+**The result:** in a pre-registered eval across GPT, Gemini and Claude, with both purifiers at the same price, agents shown a creator's test bought the tested pick 57/57 times; agents shown a placebo from the same creator bought it 3/54. That is +94pp, with an 80% lower bound of +90.3pp, and it is positive in all three models ([/proof](https://pact-worker.vincent-wesley-liem.workers.dev/proof), all 2,139 sessions downloadable). CITED pays on that lower bound, not on clicks.
+
+**A second category:** the same pre-registered study, run for robot vacuums with a different (fictional) creator, different products and different buyer requests (Roborock Q7 Max vs iRobot Roomba Combo j5, 588 sessions, same three models). With the two priced alike, agents shown the test bought the Roborock 57/57; shown the placebo, 45/54. That is +16.7pp, 80% lower bound +11.7pp, smaller than the purifiers because agents already leaned towards the Roborock; Sonnet showed no lift, so the pre-registered "positive in every model" check is not met. With the Roomba $4 cheaper it is +74.1pp (bound +68.6pp). Results: [/proof#vacuums](https://pact-worker.vincent-wesley-liem.workers.dev/proof#vacuums), [`results/cited-robot-vacuum`](packages/evals/results/cited-robot-vacuum/summary.md).
+
+**A third category:** the same pre-registered study a third time, for noise-cancelling headphones (a fictional creator, Bose QuietComfort Headphones vs Sony WH-1000XM5, 588 sessions, same three models), this time with the tested pick listed second at equal price. With the two priced alike, agents shown the test bought the Bose 57/57; shown the placebo, 18/54. That is +66.7pp, 80% lower bound +61.2pp, positive in all three models (GPT +44.4, Gemini +55.6, Sonnet +100.0), and the engine credits 30 of 50 sales. With the Sony $4 cheaper it is +83.3pp (bound +78.8pp). Much of this is deference to an explicit verdict, in text we wrote. Results: [/proof#headphones](https://pact-worker.vincent-wesley-liem.workers.dev/proof#headphones), [`results/cited-headphones`](packages/evals/results/cited-headphones/summary.md).
 
 **Why now:** US affiliate spend is $13.81B in 2026 ([EMARKETER](https://www.emarketer.com/content/faq-on-affiliate-marketing--how-ai-creators-reshaping-channel-2026)), all of it paid per click. When [Fast Company](https://www.fastcompany.com/91621388/i-let-ai-assistant-shop-me-reviewers-got-nothing) let Meta's Muse buy a robot vacuum, it relied on Vacuum Wars' tests and the reviewers earned nothing.
 
@@ -22,10 +26,11 @@ Every money step ran against the PayPal sandbox through the engine's own code. T
 | Agent pays the seller, passport in `custom_id` | Orders v2 with `payment_source.paypal.vault_id` | `8E6030344K4198450`, `8F195714E6441535R`, `4XV50799SF6195530` |
 | Seller refunds a sale; its credit is voided | Refunds (PayPal Agent Toolkit `create_refund`) | `81C245246C527113H` |
 | PayPal notifies CITED; signature verified | Webhooks (SHA256withRSA, subscription `8042373202922840X`) | 7 events, [listed live](https://pact-worker.vincent-wesley-liem.workers.dev/api/cited/api/webhook-proof) |
+| A creator connects PayPal; its payer id is the Payouts receiver | Log in with PayPal (code → token → `userinfo`) | payer id returned (not shown) |
 | HouseFresh paid $383.96 | Payouts v1 (batch) | `ME2KV57B7KYNS`, `SUCCESS` |
 | Brand's statement settled against its deposit | Invoicing v2 | `INV2-TNXC-9GA6-W36V-WTF6`, `MARKED_AS_PAID` |
 
-AI does three jobs: shopping agents (Claude, GPT and Gemini) read the catalogue and buy through PayPal; a pre-registered eval of 963 sessions across those models measures how much a creator's test moves their choice; and an AG Studio Analyst agent answers the brand's questions from the ledger.
+AI does three jobs: shopping agents (Claude, GPT and Gemini) read the catalogue and buy through PayPal; pre-registered evals of 2,139 sessions across those models measures how much a creator's test moves their choice; and an AG Studio Analyst agent answers the brand's questions from the ledger.
 
 The hosted demo uses a simulated PayPal so anyone can click through it without keys, and its seeded shopper runs are scripted. [`/try`](https://pact-worker.vincent-wesley-liem.workers.dev/try) runs a live model. Locally, everything runs with no keys; set `PAYPAL_MODE=sandbox` to use the sandbox (below).
 
@@ -45,13 +50,13 @@ Hosted demo (one Cloudflare Worker, `pact-worker`; Pact is the project's codenam
 
 ### Use it from your agent
 
-The catalogue is also a public remote MCP server, so your own agent can shop through it and the creator still gets credited only if the test caused the sale. URL: <https://pact-worker.vincent-wesley-liem.workers.dev/mcp> (Streamable HTTP, no sign-in, simulated PayPal: no real money moves). Open it in a browser for the config snippets.
+The catalogue is also a public remote MCP server, so your own agent can shop through it and the creator still gets credited only if the test caused the sale. URL: <https://pact-worker.vincent-wesley-liem.workers.dev/mcp> (Streamable HTTP, no sign-in, simulated PayPal: no real money moves). Open it in a browser for copy-paste setup and a live list of the sales agents make through it.
 
 ```bash
 claude mcp add --transport http cited https://pact-worker.vincent-wesley-liem.workers.dev/mcp
 ```
 
-Claude Desktop: Settings → Connectors → Add custom connector with the URL (or `npx -y mcp-remote <url>` in `claude_desktop_config.json`). Cursor: `{"mcpServers":{"cited":{"url":"<url>"}}}`. Tools: `search_product` (offers, plus the creator content for your session's arm, with its FTC disclosure) and `checkout` (Orders v2, seller as payee, passport in `custom_id`). Each MCP session is one shopping session with its own passport. Your purchase shows at [`/api/cited/api/journeys?source=mcp`](https://pact-worker.vincent-wesley-liem.workers.dev/api/cited/api/journeys?source=mcp) with a credit verdict; these sales are kept out of the recorded demo numbers on `/console`. Limits: 60 requests a minute per IP, three orders per session.
+Claude Desktop: Settings → Connectors → Add custom connector with the URL (or `npx -y mcp-remote <url>` in `claude_desktop_config.json`). Cursor: `{"mcpServers":{"cited":{"url":"<url>"}}}`. Tools: `search_product` (offers, plus the creator content for your session's arm, with its FTC disclosure) and `checkout` (Orders v2, seller as payee, passport in `custom_id`). Each MCP session is one shopping session with its own passport. Your purchase shows on that page, and in the raw record at [`/api/cited/api/journeys?source=mcp`](https://pact-worker.vincent-wesley-liem.workers.dev/api/cited/api/journeys?source=mcp) with a credit verdict; these sales are kept out of the recorded demo numbers on `/console`. A test published at `/creators` is served here too, to public sessions only (never the recorded study or the demo run): a session is randomly shown that creator's test, their placebo or nothing, ranking unchanged, and its sale shows on the `/mcp` feed under the creator's name as a would-be credit. Creator text is untrusted: markup and links stripped, length-capped, products validated against the catalogue, the FTC disclosure kept, and only the newest three creators are live at once. Limits: 60 requests a minute per IP, three orders per session.
 
 ### Run it locally in 3 lines
 
@@ -59,7 +64,7 @@ Needs Node 22+.
 
 ```bash
 npm ci
-npm run demo:cited     # the full demo in your terminal, 14 beats, self-checking
+npm run demo:cited     # the full demo in your terminal, 15 beats, self-checking
 npm run dev:cited      # every app locally: console, catalogue, agents, studio, engine
 ```
 
@@ -67,7 +72,7 @@ npm run dev:cited      # every app locally: console, catalogue, agents, studio, 
 
 ## What the demo shows
 
-Purifier programme, price-matched, 147 scripted sessions (the same numbers as the [product card](cited/spec/CITED-card.md)):
+Purifier programme, price-matched: the pre-registered eval's 147 sessions across GPT, Gemini and Claude (the same numbers as the [product card](cited/spec/CITED-card.md)). The hosted demo's shopper runs replay them, scripted:
 
 | Beat | Result |
 |---|---|

@@ -50,6 +50,8 @@ export interface PayoutData {
   creatorId: string;
   creatorName: string;
   receiver: string;
+  /** "VENMO" when the payout went to Venmo; absent means PayPal. */
+  wallet?: "VENMO";
   amountMinor: number;
   currency: string;
   status: string;
@@ -77,19 +79,25 @@ export interface StatementData {
   brandName: string;
 }
 
-/** Mirrors the engine's sender_item_id rule (apps/engine/src/payouts.ts). */
-function senderItemId(creatorId: string, senderBatchId: string): string {
-  return `${creatorId}-${senderBatchId.slice(6, 14)}`.slice(0, 63);
+/** Mirrors the engine's sender_item_id rule (apps/engine/src/payouts.ts): USD ids end at the batch. */
+function senderItemId(creatorId: string, senderBatchId: string, currency = "USD"): string {
+  const base = `${creatorId}-${senderBatchId.slice(6, 14)}`;
+  return (currency === "USD" ? base : `${base}-${currency}`).slice(0, 63);
 }
 
 function rivalOf(
   lift: EngineLift[],
-  credits: { brandId: string; amountMinor: number; state: string }[],
+  credits: { brandId: string; amountMinor: number; currency?: string; state: string }[],
+  currency: string,
 ): PayoutData["rival"] {
   const flat = lift.find((b) => b.causedUnits === 0);
   if (!flat) return null;
+  // Only the payout's own currency: a rival's credits in another currency are never added in.
   const paid = credits
-    .filter((c) => c.brandId === flat.brandId && c.state !== "voided")
+    .filter(
+      (c) =>
+        c.brandId === flat.brandId && c.state !== "voided" && (c.currency ?? "USD") === currency,
+    )
     .reduce((a, c) => a + c.amountMinor, 0);
   return { name: flat.name, causedUnits: flat.causedUnits, paidMinor: paid };
 }
@@ -102,14 +110,25 @@ function rivalOf(
 function ledgerPaidIn(
   mine: {
     totals: { paid: number };
-    credits: { amountMinor: number; state: string; payoutBatchId?: string | null }[];
+    credits: {
+      amountMinor: number;
+      currency?: string;
+      state: string;
+      payoutBatchId?: string | null;
+    }[];
   },
   batch: EnginePayoutBatch,
+  currency: string,
 ): number {
   if (!mine.credits.some((c) => c.payoutBatchId !== undefined)) return mine.totals.paid;
   const ids = [batch.paypalBatchId, batch.senderBatchId];
   return mine.credits
-    .filter((c) => c.state === "paid" && ids.includes(c.payoutBatchId ?? null))
+    .filter(
+      (c) =>
+        c.state === "paid" &&
+        ids.includes(c.payoutBatchId ?? null) &&
+        (c.currency ?? "USD") === currency,
+    )
     .reduce((a, c) => a + c.amountMinor, 0);
 }
 
@@ -160,16 +179,17 @@ export async function loadPayout(
     creatorId: item.creatorId,
     creatorName: mine?.name ?? item.creatorId,
     receiver: item.receiver,
+    ...(item.wallet === "VENMO" ? { wallet: "VENMO" as const } : {}),
     amountMinor: item.amountMinor,
     currency: item.currency,
     status: batch.status,
     paypalBatchId: batch.paypalBatchId,
     senderBatchId: batch.senderBatchId,
-    itemId: item.payoutItemId ?? senderItemId(item.creatorId, batch.senderBatchId),
+    itemId: item.payoutItemId ?? senderItemId(item.creatorId, batch.senderBatchId, item.currency),
     itemIdKind: item.payoutItemId ? "payout_item_id" : "sender_item_id",
     paidAt: batch.createdAt,
-    ledgerPaidMinor: mine ? ledgerPaidIn(mine, batch) : null,
-    rival: rivalOf(lift, allCredits),
+    ledgerPaidMinor: mine ? ledgerPaidIn(mine, batch, item.currency) : null,
+    rival: rivalOf(lift, allCredits, item.currency),
     statement: covering
       ? {
           brandId: covering.brandId,

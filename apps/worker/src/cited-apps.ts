@@ -1,4 +1,9 @@
-import { type CatalogueApp, createCatalogueApp } from "@cited/catalogue-mcp";
+import {
+  type CatalogueApp,
+  createCatalogueApp,
+  createPublishedTests,
+  type StoredTestRow,
+} from "@cited/catalogue-mcp";
 import {
   createConsoleApp,
   createEngineClient,
@@ -8,6 +13,7 @@ import {
 import { app as engine } from "@cited/engine";
 import {
   createEngineApprover,
+  createEngineProgrammeStarter,
   createEngineReader,
   createEngineReviewer,
   createStudioApp,
@@ -111,6 +117,22 @@ function catalogueWriteDenied(req: Request, env: Env): Response | null {
   return citedWriteDenied(env, req);
 }
 
+/**
+ * What creators published at /creators, read from the engine in-process (never the shared read
+ * cache: a creator who just published should see their test within seconds). The catalogue keeps
+ * its own few-second copy, so a search costs no D1 read most of the time.
+ */
+function publishedTests(env: Env, ctx: ExecCtx) {
+  return createPublishedTests(async () => {
+    const res = await withReadRetry(
+      new Request("https://engine.internal/api/tests"),
+      async (r) => engine.fetch(r, citedEnv(env, "internal"), ctx) as Promise<Response>,
+    );
+    if (!res.ok) throw new Error(`published tests: ${res.status}`);
+    return ((await res.json()) as { tests: StoredTestRow[] }).tests;
+  });
+}
+
 let catalogue: CatalogueApp | undefined;
 
 function catalogueFor(env: Env, ctx: ExecCtx): CatalogueApp {
@@ -128,7 +150,7 @@ function catalogueFor(env: Env, ctx: ExecCtx): CatalogueApp {
     MODEL_PROVIDER: "fake",
   };
   if (mode === "sandbox") {
-    catalogue = createCatalogueApp({ env: catalogueEnv });
+    catalogue = createCatalogueApp({ env: catalogueEnv, published: publishedTests(env, ctx) });
     return catalogue;
   }
   // Simulated: the mock signs the agents' captures and the sellers' refunds as webhooks and
@@ -141,7 +163,11 @@ function catalogueFor(env: Env, ctx: ExecCtx): CatalogueApp {
     idOffset: Date.now(),
   });
   mock.registerWebhook("https://engine.internal/webhooks/paypal");
-  catalogue = createCatalogueApp({ env: catalogueEnv, mock });
+  catalogue = createCatalogueApp({
+    env: catalogueEnv,
+    mock,
+    published: publishedTests(env, ctx),
+  });
   return catalogue;
 }
 
@@ -230,6 +256,10 @@ export async function studioHandler(c: Ctx): Promise<Response> {
     }),
     approve: createEngineApprover({ baseUrl: "https://engine.internal", fetch: engineWrite }),
     review: createEngineReviewer({ baseUrl: "https://engine.internal", fetch: engineWrite }),
+    startProgramme: createEngineProgrammeStarter({
+      baseUrl: "https://engine.internal",
+      fetch: engineWrite,
+    }),
     privateWrites,
     llm: studioLlmChoice(env),
     limit: async (req) => {

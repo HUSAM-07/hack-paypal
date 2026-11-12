@@ -1,5 +1,11 @@
 import type { ProgrammeDeposit } from "@pact/protocol";
-import { toPayPalValue } from "@pact/protocol";
+import {
+  COMMISSION_BPS,
+  checkProgrammeTerms,
+  type ProgrammeRefusal,
+  type ProgrammeTerms,
+  toPayPalValue,
+} from "@pact/protocol";
 import { nowOf } from "./clock";
 import type { Env } from "./env";
 import { getPayPal } from "./paypal";
@@ -10,6 +16,8 @@ export interface Brand {
   category: string;
   upc: string;
   currency: string;
+  /** This programme's commission rate. Programmes made before rates were per programme pay 8%. */
+  commissionBps: number;
 }
 
 export interface DepositRow {
@@ -34,6 +42,7 @@ const toBrand = (r: Row): Brand => ({
   category: r.category as string,
   upc: r.upc as string,
   currency: r.currency as string,
+  commissionBps: (r.commission_bps as number | null) ?? COMMISSION_BPS,
 });
 const toDeposit = (r: Row): DepositRow => ({
   id: r.id as string,
@@ -84,13 +93,30 @@ export function aggregateDeposit(brand: Brand, rows: readonly DepositRow[]): Pro
   };
 }
 
-export async function upsertBrand(env: Env, b: Brand): Promise<void> {
+/**
+ * Create or update a brand. `commissionBps` is only written when given, so the demo's setup call
+ * (which never names a rate) can never move a programme off the rate it was started with.
+ */
+export async function upsertBrand(
+  env: Env,
+  b: Omit<Brand, "commissionBps"> & { commissionBps?: number | undefined },
+): Promise<void> {
   await env.DB.prepare(
-    `INSERT INTO brands (brand_id, name, category, upc, currency) VALUES (?, ?, ?, ?, ?)
+    `INSERT INTO brands (brand_id, name, category, upc, currency, commission_bps)
+     VALUES (?, ?, ?, ?, ?, ?)
      ON CONFLICT (brand_id) DO UPDATE SET name = excluded.name, category = excluded.category,
-       upc = excluded.upc, currency = excluded.currency`,
+       upc = excluded.upc, currency = excluded.currency,
+       commission_bps = CASE WHEN ?7 IS NULL THEN brands.commission_bps ELSE excluded.commission_bps END`,
   )
-    .bind(b.brandId, b.name, b.category, b.upc, b.currency)
+    .bind(
+      b.brandId,
+      b.name,
+      b.category,
+      b.upc,
+      b.currency,
+      b.commissionBps ?? COMMISSION_BPS,
+      b.commissionBps ?? null,
+    )
     .run();
 }
 
@@ -190,6 +216,87 @@ export async function captureDeposit(env: Env, orderId: string): Promise<Deposit
     .bind(cap.id, orderId)
     .run();
   return { ...row, captureId: cap.id, status: "captured" };
+}
+
+export type StartProgramme =
+  | { ok: true; brand: Brand; deposit: DepositRow }
+  | { ok: false; status: 400 | 409; error: ProgrammeRefusal | "terms_changed"; message: string };
+
+/**
+ * A brand starts a programme: pick a catalogue product, a currency (USD, GBP or EUR), the deposit
+ * and the commission rate. Creates the programme and the Orders v2 deposit, captured in that
+ * currency, that funds it. The programme then lives entirely in that currency: nothing is converted. Each product has one programme,
+ * so a new one can never share a UPC (and so a sale) with a programme that already runs.
+ *
+ * The deposit's PayPal-Request-Id is derived from the programme id and the fixed key "initial",
+ * so confirming twice (a double click, a retry after a failure) charges once. A programme whose
+ * deposit never captured is finished by the same terms, never left half made.
+ */
+export async function startProgramme(
+  env: Env,
+  input: {
+    category: string;
+    upc: string;
+    depositMinor: number;
+    commissionBps: number;
+    currency?: string | undefined;
+  },
+): Promise<StartProgramme> {
+  const brands = await listBrands(env);
+  const running = new Set<string>();
+  const unfunded = new Map<string, Brand>();
+  for (const b of brands) {
+    const captured = (await listDeposits(env, b.brandId)).some((d) => d.status === "captured");
+    if (captured) running.add(b.upc);
+    else unfunded.set(b.upc, b);
+  }
+  // A product whose programme exists but never got its deposit is not "running": finish it.
+  const check = checkProgrammeTerms(input, running);
+  if (!check.ok)
+    return {
+      ok: false,
+      status: check.error === "programme_exists" ? 409 : 400,
+      error: check.error,
+      message: check.message,
+    };
+  const t: ProgrammeTerms = check.terms;
+  const half = unfunded.get(t.upc);
+  if (
+    half &&
+    (half.brandId !== t.brandId ||
+      half.commissionBps !== t.commissionBps ||
+      half.currency !== t.currency)
+  )
+    return {
+      ok: false,
+      status: 409,
+      error: "terms_changed",
+      message: "This product has a programme waiting for its deposit, on different terms.",
+    };
+  const clash = brands.find((b) => b.brandId === t.brandId && b.upc !== t.upc);
+  if (clash)
+    return {
+      ok: false,
+      status: 409,
+      error: "programme_exists",
+      message: "That programme id is taken.",
+    };
+
+  await upsertBrand(env, {
+    brandId: t.brandId,
+    name: t.name,
+    category: t.category,
+    upc: t.upc,
+    currency: t.currency,
+    commissionBps: t.commissionBps,
+  });
+  const deposit = await requestDeposit(env, {
+    brandId: t.brandId,
+    amountMinor: t.depositMinor,
+    kind: "initial",
+    key: "initial",
+  });
+  return { ok: true, brand: (await getBrand(env, t.brandId)) as Brand, deposit };
 }
 
 export { toPayPalValue };

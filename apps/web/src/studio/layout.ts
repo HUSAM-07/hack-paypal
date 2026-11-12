@@ -1,13 +1,42 @@
 import type { AgReportState } from "ag-studio";
 import type { StudioConfig } from "./data";
+import { programmesPage } from "./programmesPage";
+import { trustPage } from "./trustPage";
 
-const USD = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" });
+const formatFor = (currency: string) =>
+  new Intl.NumberFormat("en-US", { style: "currency", currency });
+/** Money in two currencies in one column: plain figures, with the Currency column beside them. */
+const PLAIN = new Intl.NumberFormat("en-US", {
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
+});
 
-/** Studio's data sources: our tables, live (transactions on), keyed by row id. */
+/** The distinct currencies in some rows; none (an older table, no rows) reads as dollars. */
+export function currenciesIn(rows: readonly Record<string, unknown>[]): string[] {
+  const seen = new Set(rows.map((r) => (typeof r.currency === "string" ? r.currency : "USD")));
+  return seen.size ? [...seen].sort() : ["USD"];
+}
+
+/**
+ * A money column has one number format, so each table is formatted in the one currency its rows
+ * share ($, £ or €). The creator's view looks only at that creator's rows, so a dollar creator
+ * keeps their dollars even while a pound programme runs beside them. Two currencies in the rows
+ * that are shown: plain figures, and the grids add a Currency column. Never a conversion.
+ */
 export function sourcesFor(
   config: StudioConfig,
   tables: Record<string, Record<string, unknown>[]>,
+  creatorName?: string,
 ) {
+  const formatOf = (tableId: string) => {
+    const rows = tables[tableId] ?? [];
+    const mine =
+      creatorName && rows.some((r) => "creator" in r)
+        ? rows.filter((r) => r.creator === creatorName)
+        : rows;
+    const cs = currenciesIn(mine.length ? mine : rows);
+    return cs.length === 1 ? formatFor(cs[0] as string) : PLAIN;
+  };
   return {
     sources: config.tables.map((t) => ({
       id: t.id,
@@ -20,7 +49,7 @@ export function sourcesFor(
         id: f.id,
         name: f.name,
         format: f.format,
-        ...(f.format === "currencyFormat" ? { formatOptions: { format: USD } } : {}),
+        ...(f.format === "currencyFormat" ? { formatOptions: { format: formatOf(t.id) } } : {}),
         ...(f.description ? { description: f.description } : {}),
       })),
     })),
@@ -35,12 +64,19 @@ const creatorFilter = (table: string, creator: string) => ({
 /** Two pages: Maya's brand view and the creator's view. Widget ids are stable for the agents. */
 /** Below this width the AI panel would cover the dashboard, so it starts collapsed (one click opens it). */
 export const AI_PANEL_MIN_WIDTH = 1200;
+/** Below this width the Programmes page stacks its two widgets. */
+const NARROW_PAGE_MAX_WIDTH = 760;
 
 export function initialState(
-  view: "brand" | "creator",
+  view: "brand" | "creator" | "trust" | "programmes",
   creatorName: string,
   viewportWidth = AI_PANEL_MIN_WIDTH,
+  /** The creator has credits in more than one currency: their grids show a Currency column. */
+  currencyColumn = false,
+  /** The brand view's brand; its arm strip is titled for it. */
+  brandName = "Winix",
 ): AgReportState {
+  const cur = (table: string) => (currencyColumn ? [{ id: `${table}.currency` }] : []);
   return {
     pages: [
       {
@@ -52,11 +88,15 @@ export function initialState(
           },
           arms: {
             type: "cited-arms",
-            format: { title: { enabled: true, text: "Winix share by arm" } },
+            format: { title: { enabled: true, text: `${brandName} share by group` } },
           },
           deposit: {
             type: "cited-deposit",
             format: { title: { enabled: true, text: "Programme deposit" } },
+          },
+          whatif: {
+            type: "cited-whatif",
+            format: { title: { enabled: true, text: "Commission what-if" } },
           },
           journeys: {
             type: "cited-journeys",
@@ -75,8 +115,9 @@ export function initialState(
           caused: { xTrack: 0, yTrack: 0, xSpan: 9, ySpan: 23 },
           arms: { xTrack: 9, yTrack: 0, xSpan: 7, ySpan: 23 },
           deposit: { xTrack: 16, yTrack: 0, xSpan: 8, ySpan: 23 },
-          journeys: { xTrack: 0, yTrack: 23, xSpan: 24, ySpan: 33 },
-          flags: { xTrack: 0, yTrack: 56, xSpan: 24, ySpan: 16 },
+          whatif: { xTrack: 0, yTrack: 23, xSpan: 24, ySpan: 36 },
+          journeys: { xTrack: 0, yTrack: 59, xSpan: 24, ySpan: 33 },
+          flags: { xTrack: 0, yTrack: 92, xSpan: 24, ySpan: 16 },
         },
       },
       {
@@ -87,20 +128,7 @@ export function initialState(
             format: { title: { enabled: true, text: "Credits by state" } },
           },
           credits: {
-            type: "grid",
-            dataMapping: {
-              cols: [
-                { id: "credits.orderId" },
-                { id: "credits.brand" },
-                { id: "credits.amount" },
-                { id: "credits.state" },
-                { id: "credits.voidReason" },
-                { id: "credits.holdReason" },
-                { id: "credits.holdUntil" },
-                { id: "credits.payoutBatch" },
-                { id: "credits.splitWith" },
-              ],
-            },
+            type: "cited-credits",
             format: { title: { enabled: true, text: "Every credit, live from the ledger" } },
           },
           flags: {
@@ -109,6 +137,7 @@ export function initialState(
               cols: [
                 { id: "flags.creator" },
                 { id: "flags.amount" },
+                ...cur("flags"),
                 { id: "flags.reason" },
                 { id: "flags.detail" },
                 { id: "flags.status" },
@@ -145,13 +174,17 @@ export function initialState(
           },
         },
       },
+      trustPage(),
+      programmesPage(viewportWidth < NARROW_PAGE_MAX_WIDTH),
     ],
     selectedPageId: view,
     panels: {
       filters: { collapsed: true },
       data: { collapsed: true },
       edit: { collapsed: true },
-      ai: { collapsed: view !== "brand" || viewportWidth < AI_PANEL_MIN_WIDTH },
+      ai: {
+        collapsed: (view !== "brand" && view !== "creator") || viewportWidth < AI_PANEL_MIN_WIDTH,
+      },
     },
   } as unknown as AgReportState;
 }

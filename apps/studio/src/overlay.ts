@@ -3,6 +3,12 @@
  * cookie and replayed over the engine's reads, so they see the effect while the shared ledger
  * (the numbers the demo script and every other visitor rely on) never changes. Pure.
  */
+import {
+  isProgrammeCurrency,
+  PROGRAMME_CATEGORIES,
+  type ProgrammeCurrency,
+  type ProgrammeTerms,
+} from "@pact/protocol";
 import type { RawEngine, RawReviewFlag, ReviewAction } from "./dashboard";
 import { ReviewRejected } from "./dashboard";
 
@@ -14,7 +20,12 @@ const MAX_CHANGES = 24;
 
 export type OverlayChange =
   | { kind: "approve"; approvalId: string; brandId: string; amountMinor: number }
-  | { kind: "review"; flagId: string; action: ReviewAction };
+  | { kind: "review"; flagId: string; action: ReviewAction }
+  // A cookie from before currencies carries no currency: it is a dollar programme.
+  | {
+      kind: "programme";
+      terms: Omit<ProgrammeTerms, "currency"> & { currency?: ProgrammeCurrency };
+    };
 
 export interface Overlay {
   /** Unix seconds: when this visitor's private changes are dropped. */
@@ -42,7 +53,32 @@ function isChange(x: unknown): x is OverlayChange {
       ID.test(c.flagId) &&
       (c.action === "release" || c.action === "void")
     );
+  if (c.kind === "programme") return isTerms(c.terms);
   return false;
+}
+
+/** A programme's terms in a cookie are only believed if they still name a catalogue product. */
+function isTerms(x: unknown): boolean {
+  if (!x || typeof x !== "object") return false;
+  const t = x as Record<string, unknown>;
+  const product = PROGRAMME_CATEGORIES.flatMap((c) =>
+    c.products.map((p) => ({ ...p, category: c.id })),
+  ).find((p) => p.upc === t.upc);
+  return (
+    !!product &&
+    t.brandId === product.brandId &&
+    t.category === product.category &&
+    t.name === product.brand &&
+    t.product === product.product &&
+    // A cookie from before currencies has none: it is a dollar programme.
+    (t.currency === undefined ||
+      (typeof t.currency === "string" && isProgrammeCurrency(t.currency))) &&
+    Number.isSafeInteger(t.depositMinor) &&
+    (t.depositMinor as number) > 0 &&
+    Number.isSafeInteger(t.commissionBps) &&
+    (t.commissionBps as number) >= 0 &&
+    (t.commissionBps as number) <= 10_000
+  );
 }
 
 const b64 = (s: string) =>
@@ -133,6 +169,59 @@ function approve(raw: RawEngine, c: Extract<OverlayChange, { kind: "approve" }>)
   };
 }
 
+/** A programme the visitor started: empty, funded, and only in their view. */
+function programme(raw: RawEngine, c: Extract<OverlayChange, { kind: "programme" }>): RawEngine {
+  const t = c.terms;
+  if (raw.lift.some((b) => b.brandId === t.brandId || b.upc === t.upc)) return raw;
+  return {
+    ...raw,
+    lift: [
+      ...raw.lift,
+      {
+        brandId: t.brandId,
+        name: t.name,
+        category: t.category,
+        upc: t.upc,
+        currency: t.currency ?? "USD",
+        commissionBps: t.commissionBps,
+        arms: {
+          test: { sessions: 0, purchases: 0 },
+          placebo: { sessions: 0, purchases: 0 },
+          none: { sessions: 0, purchases: 0 },
+        },
+        lift: null,
+        lowerBound: null,
+        attributableFraction: 0,
+        exposedSales: 0,
+        causedUnits: 0,
+      },
+    ],
+    deposits: [
+      ...raw.deposits,
+      {
+        brandId: t.brandId,
+        name: t.name,
+        currency: t.currency ?? "USD",
+        deposited: t.depositMinor,
+        reserved: 0,
+        spent: 0,
+        returned: 0,
+        available: t.depositMinor,
+        deposits: [
+          {
+            id: `private-programme-${t.brandId}`,
+            kind: "initial",
+            amountMinor: t.depositMinor,
+            returnedMinor: 0,
+            // No createdAt: "day N" in the batch labels counts from the first real deposit.
+            status: "captured",
+          },
+        ],
+      },
+    ],
+  };
+}
+
 function review(raw: RawEngine, c: Extract<OverlayChange, { kind: "review" }>): RawEngine {
   let flag: RawReviewFlag;
   try {
@@ -214,6 +303,12 @@ function review(raw: RawEngine, c: Extract<OverlayChange, { kind: "review" }>): 
 export function applyOverlay(raw: RawEngine, o: Overlay | null): RawEngine {
   if (!o) return raw;
   let out = raw;
-  for (const c of o.changes) out = c.kind === "approve" ? approve(out, c) : review(out, c);
+  for (const c of o.changes)
+    out =
+      c.kind === "approve"
+        ? approve(out, c)
+        : c.kind === "programme"
+          ? programme(out, c)
+          : review(out, c);
   return out;
 }

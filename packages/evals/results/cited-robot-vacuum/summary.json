@@ -1,0 +1,638 @@
+{
+  "vacuum-parity-forced": {
+    "sessions": 147,
+    "lift": {
+      "exposedRate": 1,
+      "placeboRate": 0.8333333333333334,
+      "lift": 0.16666666666666663,
+      "stdError": 0.058998517596372195,
+      "lowerBound": 0.11701226150823457,
+      "perModel": [
+        {
+          "model": "gpt-6-luna",
+          "exposedRate": 1,
+          "placeboRate": 0.6666666666666666,
+          "lift": 0.33333333333333337,
+          "weight": 9.243243243243244
+        },
+        {
+          "model": "gemini-3.8-flash",
+          "exposedRate": 1,
+          "placeboRate": 0.8333333333333334,
+          "lift": 0.16666666666666663,
+          "weight": 9.243243243243244
+        },
+        {
+          "model": "claude-sonnet-5-5",
+          "exposedRate": 1,
+          "placeboRate": 1,
+          "lift": 0,
+          "weight": 9.243243243243244
+        }
+      ]
+    },
+    "pooled": {
+      "test": {
+        "sessions": 57,
+        "target": 57,
+        "buyers": 57,
+        "declines": 0
+      },
+      "placebo": {
+        "sessions": 54,
+        "target": 45,
+        "buyers": 54,
+        "declines": 0
+      },
+      "none": {
+        "sessions": 36,
+        "target": 31,
+        "buyers": 36,
+        "declines": 0
+      }
+    },
+    "byModel": [
+      {
+        "model": "gpt-6-luna",
+        "test": {
+          "sessions": 19,
+          "target": 19,
+          "buyers": 19,
+          "declines": 0
+        },
+        "placebo": {
+          "sessions": 18,
+          "target": 12,
+          "buyers": 18,
+          "declines": 0
+        },
+        "none": {
+          "sessions": 12,
+          "target": 7,
+          "buyers": 12,
+          "declines": 0
+        }
+      },
+      {
+        "model": "gemini-3.8-flash",
+        "test": {
+          "sessions": 19,
+          "target": 19,
+          "buyers": 19,
+          "declines": 0
+        },
+        "placebo": {
+          "sessions": 18,
+          "target": 15,
+          "buyers": 18,
+          "declines": 0
+        },
+        "none": {
+          "sessions": 12,
+          "target": 12,
+          "buyers": 12,
+          "declines": 0
+        }
+      },
+      {
+        "model": "claude-sonnet-5-5",
+        "test": {
+          "sessions": 19,
+          "target": 19,
+          "buyers": 19,
+          "declines": 0
+        },
+        "placebo": {
+          "sessions": 18,
+          "target": 18,
+          "buyers": 18,
+          "declines": 0
+        },
+        "none": {
+          "sessions": 12,
+          "target": 12,
+          "buyers": 12,
+          "declines": 0
+        }
+      }
+    ],
+    "placeboVsNone": -0.02777777777777779,
+    "invalid": 0
+  },
+  "vacuum-parity-forced-derived": {
+    "exposedSales": 50,
+    "fraction": 0.11701226150823457,
+    "units": 5,
+    "commission": {
+      "amountMinor": 11839,
+      "currency": "USD"
+    },
+    "refund": {
+      "amountMinor": 288161,
+      "currency": "USD"
+    }
+  },
+  "vacuum-parity-abstain": {
+    "sessions": 147,
+    "lift": {
+      "exposedRate": 1,
+      "placeboRate": 0.5185185185185185,
+      "lift": 0.4814814814814815,
+      "stdError": 0.05394290893387613,
+      "lowerBound": 0.4360819839220413,
+      "perModel": [
+        {
+          "model": "gpt-6-luna",
+          "exposedRate": 1,
+          "placeboRate": 0.5555555555555556,
+          "lift": 0.4444444444444444,
+          "weight": 9.243243243243244
+        },
+        {
+          "model": "gemini-3.8-flash",
+          "exposedRate": 1,
+          "placeboRate": 0,
+          "lift": 1,
+          "weight": 9.243243243243244
+        },
+        {
+          "model": "claude-sonnet-5-5",
+          "exposedRate": 1,
+          "placeboRate": 1,
+          "lift": 0,
+          "weight": 9.243243243243244
+        }
+      ]
+    },
+    "pooled": {
+      "test": {
+        "sessions": 57,
+        "target": 57,
+        "buyers": 57,
+        "declines": 0
+      },
+      "placebo": {
+        "sessions": 54,
+        "target": 28,
+        "buyers": 36,
+        "declines": 18
+      },
+      "none": {
+        "sessions": 36,
+        "target": 18,
+        "buyers": 23,
+        "declines": 13
+      }
+    },
+    "byModel": [
+      {
+        "model": "gpt-6-luna",
+        "test": {
+          "sessions": 19,
+          "target": 19,
+          "buyers": 19,
+          "declines": 0
+        },
+        "placebo": {
+          "sessions": 18,
+          "target": 10,
+          "buyers": 18,
+          "declines": 0
+        },
+        "none": {
+          "sessions": 12,
+          "target": 6,
+          "buyers": 11,
+          "declines": 1
+        }
+      },
+      {
+        "model": "gemini-3.8-flash",
+        "test": {
+          "sessions": 19,
+          "target": 19,
+          "buyers": 19,
+          "declines": 0
+        },
+        "placebo": {
+          "sessions": 18,
+          "target": 0,
+          "buyers": 0,
+          "declines": 18
+        },
+        "none": {
+          "sessions": 12,
+          "target": 0,
+          "buyers": 0,
+          "declines": 12
+        }
+      },
+      {
+        "model": "claude-sonnet-5-5",
+        "test": {
+          "sessions": 19,
+          "target": 19,
+          "buyers": 19,
+          "declines": 0
+        },
+        "placebo": {
+          "sessions": 18,
+          "target": 18,
+          "buyers": 18,
+          "declines": 0
+        },
+        "none": {
+          "sessions": 12,
+          "target": 12,
+          "buyers": 12,
+          "declines": 0
+        }
+      }
+    ],
+    "placeboVsNone": 0.01851851851851849,
+    "invalid": 0
+  },
+  "vacuum-parity-abstain-buyers-only": {
+    "lift": {
+      "exposedRate": 1,
+      "placeboRate": 0.7777777777777778,
+      "lift": 0.2222222222222222,
+      "stdError": 0.07273707488137399,
+      "lowerBound": 0.1610051555340748,
+      "perModel": [
+        {
+          "model": "gpt-6-luna",
+          "exposedRate": 1,
+          "placeboRate": 0.5555555555555556,
+          "lift": 0.4444444444444444,
+          "weight": 9.243243243243244
+        },
+        {
+          "model": "gemini-3.8-flash",
+          "exposedRate": 1,
+          "placeboRate": 0,
+          "lift": 1,
+          "weight": 0
+        },
+        {
+          "model": "claude-sonnet-5-5",
+          "exposedRate": 1,
+          "placeboRate": 1,
+          "lift": 0,
+          "weight": 9.243243243243244
+        }
+      ]
+    },
+    "pooled": {
+      "test": {
+        "sessions": 57,
+        "target": 57,
+        "buyers": 57,
+        "declines": 0
+      },
+      "placebo": {
+        "sessions": 54,
+        "target": 28,
+        "buyers": 36,
+        "declines": 18
+      },
+      "none": {
+        "sessions": 36,
+        "target": 18,
+        "buyers": 23,
+        "declines": 13
+      }
+    }
+  },
+  "vacuum-parity-abstain-derived": {
+    "exposedSales": 50,
+    "fraction": 0.4360819839220413,
+    "units": 21,
+    "commission": {
+      "amountMinor": 49726,
+      "currency": "USD"
+    },
+    "refund": {
+      "amountMinor": 250274,
+      "currency": "USD"
+    }
+  },
+  "vacuum-rival-cheaper-forced": {
+    "sessions": 147,
+    "lift": {
+      "exposedRate": 1,
+      "placeboRate": 0.2592592592592592,
+      "lift": 0.7407407407407408,
+      "stdError": 0.06532887658307372,
+      "lowerBound": 0.6857585710429617,
+      "perModel": [
+        {
+          "model": "gpt-6-luna",
+          "exposedRate": 1,
+          "placeboRate": 0.4444444444444444,
+          "lift": 0.5555555555555556,
+          "weight": 9.243243243243244
+        },
+        {
+          "model": "gemini-3.8-flash",
+          "exposedRate": 1,
+          "placeboRate": 0.2222222222222222,
+          "lift": 0.7777777777777778,
+          "weight": 9.243243243243244
+        },
+        {
+          "model": "claude-sonnet-5-5",
+          "exposedRate": 1,
+          "placeboRate": 0.1111111111111111,
+          "lift": 0.8888888888888888,
+          "weight": 9.243243243243244
+        }
+      ]
+    },
+    "pooled": {
+      "test": {
+        "sessions": 57,
+        "target": 57,
+        "buyers": 57,
+        "declines": 0
+      },
+      "placebo": {
+        "sessions": 54,
+        "target": 14,
+        "buyers": 54,
+        "declines": 0
+      },
+      "none": {
+        "sessions": 36,
+        "target": 11,
+        "buyers": 36,
+        "declines": 0
+      }
+    },
+    "byModel": [
+      {
+        "model": "gpt-6-luna",
+        "test": {
+          "sessions": 19,
+          "target": 19,
+          "buyers": 19,
+          "declines": 0
+        },
+        "placebo": {
+          "sessions": 18,
+          "target": 8,
+          "buyers": 18,
+          "declines": 0
+        },
+        "none": {
+          "sessions": 12,
+          "target": 5,
+          "buyers": 12,
+          "declines": 0
+        }
+      },
+      {
+        "model": "gemini-3.8-flash",
+        "test": {
+          "sessions": 19,
+          "target": 19,
+          "buyers": 19,
+          "declines": 0
+        },
+        "placebo": {
+          "sessions": 18,
+          "target": 4,
+          "buyers": 18,
+          "declines": 0
+        },
+        "none": {
+          "sessions": 12,
+          "target": 5,
+          "buyers": 12,
+          "declines": 0
+        }
+      },
+      {
+        "model": "claude-sonnet-5-5",
+        "test": {
+          "sessions": 19,
+          "target": 19,
+          "buyers": 19,
+          "declines": 0
+        },
+        "placebo": {
+          "sessions": 18,
+          "target": 2,
+          "buyers": 18,
+          "declines": 0
+        },
+        "none": {
+          "sessions": 12,
+          "target": 1,
+          "buyers": 12,
+          "declines": 0
+        }
+      }
+    ],
+    "placeboVsNone": -0.046296296296296335,
+    "invalid": 0
+  },
+  "vacuum-rival-cheaper-forced-derived": {
+    "exposedSales": 50,
+    "fraction": 0.6857585710429617,
+    "units": 34,
+    "commission": {
+      "amountMinor": 80509,
+      "currency": "USD"
+    },
+    "refund": {
+      "amountMinor": 219491,
+      "currency": "USD"
+    }
+  },
+  "vacuum-rival-cheaper-abstain": {
+    "sessions": 147,
+    "lift": {
+      "exposedRate": 0.8070175438596491,
+      "placeboRate": 0.1111111111111111,
+      "lift": 0.695906432748538,
+      "stdError": 0.06495023050164374,
+      "lowerBound": 0.6412429396328995,
+      "perModel": [
+        {
+          "model": "gpt-6-luna",
+          "exposedRate": 0.9473684210526315,
+          "placeboRate": 0.3333333333333333,
+          "lift": 0.6140350877192982,
+          "weight": 9.243243243243244
+        },
+        {
+          "model": "gemini-3.8-flash",
+          "exposedRate": 0.47368421052631576,
+          "placeboRate": 0,
+          "lift": 0.47368421052631576,
+          "weight": 9.243243243243244
+        },
+        {
+          "model": "claude-sonnet-5-5",
+          "exposedRate": 1,
+          "placeboRate": 0,
+          "lift": 1,
+          "weight": 9.243243243243244
+        }
+      ]
+    },
+    "pooled": {
+      "test": {
+        "sessions": 57,
+        "target": 46,
+        "buyers": 46,
+        "declines": 11
+      },
+      "placebo": {
+        "sessions": 54,
+        "target": 6,
+        "buyers": 48,
+        "declines": 6
+      },
+      "none": {
+        "sessions": 36,
+        "target": 5,
+        "buyers": 25,
+        "declines": 11
+      }
+    },
+    "byModel": [
+      {
+        "model": "gpt-6-luna",
+        "test": {
+          "sessions": 19,
+          "target": 18,
+          "buyers": 18,
+          "declines": 1
+        },
+        "placebo": {
+          "sessions": 18,
+          "target": 6,
+          "buyers": 18,
+          "declines": 0
+        },
+        "none": {
+          "sessions": 12,
+          "target": 5,
+          "buyers": 12,
+          "declines": 0
+        }
+      },
+      {
+        "model": "gemini-3.8-flash",
+        "test": {
+          "sessions": 19,
+          "target": 9,
+          "buyers": 9,
+          "declines": 10
+        },
+        "placebo": {
+          "sessions": 18,
+          "target": 0,
+          "buyers": 12,
+          "declines": 6
+        },
+        "none": {
+          "sessions": 12,
+          "target": 0,
+          "buyers": 1,
+          "declines": 11
+        }
+      },
+      {
+        "model": "claude-sonnet-5-5",
+        "test": {
+          "sessions": 19,
+          "target": 19,
+          "buyers": 19,
+          "declines": 0
+        },
+        "placebo": {
+          "sessions": 18,
+          "target": 0,
+          "buyers": 18,
+          "declines": 0
+        },
+        "none": {
+          "sessions": 12,
+          "target": 0,
+          "buyers": 12,
+          "declines": 0
+        }
+      }
+    ],
+    "placeboVsNone": -0.02777777777777779,
+    "invalid": 0
+  },
+  "vacuum-rival-cheaper-abstain-buyers-only": {
+    "lift": {
+      "exposedRate": 1,
+      "placeboRate": 0.12828132738979692,
+      "lift": 0.8717186726102031,
+      "stdError": 0.06131250810726511,
+      "lowerBound": 0.8201167639035173,
+      "perModel": [
+        {
+          "model": "gpt-6-luna",
+          "exposedRate": 1,
+          "placeboRate": 0.3333333333333333,
+          "lift": 0.6666666666666667,
+          "weight": 9
+        },
+        {
+          "model": "gemini-3.8-flash",
+          "exposedRate": 1,
+          "placeboRate": 0,
+          "lift": 1,
+          "weight": 5.142857142857143
+        },
+        {
+          "model": "claude-sonnet-5-5",
+          "exposedRate": 1,
+          "placeboRate": 0,
+          "lift": 1,
+          "weight": 9.243243243243244
+        }
+      ]
+    },
+    "pooled": {
+      "test": {
+        "sessions": 57,
+        "target": 46,
+        "buyers": 46,
+        "declines": 11
+      },
+      "placebo": {
+        "sessions": 54,
+        "target": 6,
+        "buyers": 48,
+        "declines": 6
+      },
+      "none": {
+        "sessions": 36,
+        "target": 5,
+        "buyers": 25,
+        "declines": 11
+      }
+    }
+  },
+  "vacuum-rival-cheaper-abstain-derived": {
+    "exposedSales": 50,
+    "fraction": 0.7945836425885928,
+    "units": 39,
+    "commission": {
+      "amountMinor": 92348,
+      "currency": "USD"
+    },
+    "refund": {
+      "amountMinor": 207652,
+      "currency": "USD"
+    }
+  }
+}

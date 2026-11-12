@@ -4,8 +4,9 @@
  *
  *   PAYPAL_CLIENT_ID=… PAYPAL_CLIENT_SECRET=… npx tsx apps/worker/scripts/sandbox-login.ts url
  *     → prints the authorize URL. Approve it as a sandbox personal account; PayPal redirects to
- *       /creators/callback?code=…&state=… (the hosted page is simulated and will reject the code;
- *       copy it from the address bar).
+ *       /creators/callback?code=…&state=…. The hosted page is simulated: it refuses the code
+ *       (error=state) and redirects, so read the callback URL from DevTools → Network with
+ *       Preserve log on.
  *   … sandbox-login.ts exchange <code>
  *     → exchanges the code and reads userinfo. Prints only whether a payer id came back and its
  *       shape; never the token, payer id or email.

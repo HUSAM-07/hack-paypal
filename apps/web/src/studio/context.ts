@@ -1,12 +1,20 @@
-import type { Scope } from "@cited/studio/tables";
+import type { RawWhatIf, Scope } from "@cited/studio/tables";
 
 /** What the page hands every widget through AG Studio's `context` property. */
 export interface StudioContext {
-  view: "brand" | "creator";
+  view: "brand" | "creator" | "trust" | "programmes";
   brandId: string;
+  /** The brand view's brand: its name and programme category (for the Analyst), and every funded brand's id. */
+  brandName?: string;
+  category?: string;
+  brandIds?: string[];
+  /** The other funded brand in the same category, if there is one. */
+  rivalName?: string;
   creatorId: string;
   /** "First payout" (the day-30 batch) or "Programme to date". */
   scope: Scope;
+  /** The hosted demo: writes are locked, so a started programme stays in this browser. */
+  demo?: boolean;
 }
 
 /**
@@ -25,5 +33,34 @@ export const scopeStore = {
   subscribe(l: () => void) {
     scopeListeners.add(l);
     return () => scopeListeners.delete(l);
+  },
+};
+
+/**
+ * The recorded sales the commission what-if re-prices. They arrive with every poll but are not a
+ * Studio table (a nested list of sales does not fit a row), so the widget reads them from here.
+ */
+let currentWhatIf: RawWhatIf | null = null;
+const whatIfListeners = new Set<() => void>();
+export const whatIfStore = {
+  get: (): RawWhatIf | null => currentWhatIf,
+  set(w: RawWhatIf | null) {
+    // A poll that found nothing new hands back an equal copy; skip it so the panel does not redraw.
+    if (JSON.stringify(w) === JSON.stringify(currentWhatIf)) return;
+    currentWhatIf = w;
+    for (const l of whatIfListeners) l();
+  },
+  subscribe(l: () => void) {
+    whatIfListeners.add(l);
+    return () => whatIfListeners.delete(l);
+  },
+};
+
+/** The engine's (simulated) date, so an export's file name says when the figures are as of. */
+let currentAsOf: string | null = null;
+export const asOfStore = {
+  get: (): string | null => currentAsOf,
+  set(v: string | null) {
+    currentAsOf = v;
   },
 };

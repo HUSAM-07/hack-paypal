@@ -1,6 +1,13 @@
-import { SITE_HEADER_CSS, SITE_NAV_TOUCH_CSS, SITE_THEME_CSS, siteHeader } from "@pact/protocol";
+import {
+  currencySymbol,
+  SITE_HEADER_CSS,
+  SITE_NAV_TOUCH_CSS,
+  SITE_THEME_CSS,
+  siteHeader,
+  TOUR_SCRIPT,
+} from "@pact/protocol";
 import type { DemoData, PayoutData, RunView, StatementData } from "./data";
-import { creatorName, esc, shopName, usd } from "./format";
+import { creatorName, esc, money, shopName, usd } from "./format";
 import { agentLabel } from "./runs";
 
 /*
@@ -43,6 +50,7 @@ const CONSOLE_DARK = `/* the film: two agent transcripts, rows aligned like a di
 .notice .status{padding:.18rem .6rem;border-radius:999px;background:#E7F1EC;font-size:.66rem}
 .notice footer{background:#F7F8FA;padding:.8rem 1.6rem;font-size:.58rem;border-radius:0 0 16px 16px}
 .pay-cap{margin:.8rem 0 0;text-align:center;font-size:.58rem;color:var(--muted)}
+.pay-cap a{color:inherit;text-decoration:underline;text-underline-offset:2px}
 @media (max-width:1100px){.pay{padding:32px 24px 48px}.pay-grid{grid-template-columns:1fr;gap:2.4rem}.pay-h{font-size:2rem}}
 @media (max-width:640px){.pay-h{font-size:1.6rem}.notice .amount{font-size:2.4rem}.notice dl div{grid-template-columns:1fr;gap:.1rem}.pay-sub,.pay-card{font-size:.85rem}.notice dt,.notice dd,.notice .top p{font-size:.8rem}}
 /* Content sits in the same 1280px frame as the site header. */
@@ -326,7 +334,7 @@ function page(title: string, here: Here, body: string, opts: Opts): string {
   return `<!doctype html><html lang="en"><head><meta charset="utf-8"><title>${esc(title)}</title>
 <meta name="viewport" content="width=device-width,initial-scale=1">
 ${opts.live ? '<meta http-equiv="refresh" content="2">' : ""}
-<style>${CSS}${SITE_NAV_TOUCH_CSS}${SITE_THEME_CSS}${SITE_HEADER_CSS}${CONSOLE_DARK}</style></head><body class="${cls}">${nav(here)}${body}</body></html>`;
+<style>${CSS}${SITE_NAV_TOUCH_CSS}${SITE_THEME_CSS}${SITE_HEADER_CSS}${CONSOLE_DARK}</style></head><body class="${cls}">${nav(here)}${body}${TOUR_SCRIPT}</body></html>`;
 }
 
 function waiting(msg: string): string {
@@ -411,7 +419,7 @@ function runColumn(v: RunView | null, kind: "exposed" | "held"): string {
   const capture = journey
     ? `<p class="capture"><span class="pp">PayPal</span> captured <code>Order ${esc(journey.orderId)}</code><span class="dim via">The agent paid with the buyer's saved PayPal${paidAt ? `, straight to ${esc(shopName(paidAt))}'s PayPal account` : ""}. No website, no redirect.</span>${
         run.passportAttached
-          ? `<span class="dim via">Passport read from <code>custom_id</code> · sale joined to the ${kind === "exposed" ? "test" : "held-out"} arm</span>`
+          ? `<span class="dim via">Passport read from <code>custom_id</code> · sale joined to the ${kind === "exposed" ? "test" : "held-out"} group</span>`
           : ""
       }</p>`
     : `<p class="note">Order ${esc(run.orderId ?? "")} is waiting for the engine to record it.</p>`;
@@ -523,8 +531,8 @@ function film(d: DemoData): string {
 }
 
 export function demoPage(d: DemoData, opts: Opts): string {
-  const body = `<main class="stage">
-<div class="lede"><h1>One A/B test, two agents</h1><p>Same request, same offers, same ranking. Watch an agent shop without the creator's review, then the same request with it, then compare.</p><p class="lede-note">These two are seeded replays. The effect was measured with live GPT, Gemini and Claude agents in a pre-registered eval: <a href="/proof">see the proof</a>.</p></div>
+  const body = `<main id="main" class="stage">
+<div class="lede"><h1>One A/B test, two agents</h1><p>Same request, same offers, same ranking. Watch an agent shop without the creator's review, then the same request with it, then compare.</p><p class="lede-note">These two are seeded replays. The effect was measured with live GPT, Gemini and Claude agents in a pre-registered eval: <a href="../proof">see the proof</a>.</p></div>
 ${
   d.exposed && d.heldOut
     ? film(d)
@@ -550,40 +558,41 @@ export function payoutPage(p: PayoutData | null, opts: Opts): string {
     return page(
       "CITED · payout",
       "payout",
-      `<main class="pay"><h1 class="sr">Creator payout</h1>${waiting("No payout yet. Payouts are sent when a 30-day hold ends.")}</main>`,
+      `<main id="main" class="pay"><h1 class="sr">Creator payout</h1>${waiting("No payout yet. Payouts are sent when a 30-day hold ends.")}</main>`,
       opts,
     );
   }
   const mismatch = p.ledgerPaidMinor !== null && p.ledgerPaidMinor !== p.amountMinor;
   const name = p.creatorName;
+  const cur = p.currency;
   // The demo clock jumps past the hold, so a calendar date would sit in the future: say when
   // the payout happened relative to the demo instead.
   const date = "After the 30-day hold";
-  const body = `<main class="pay"><div class="pay-grid">
+  const body = `<main id="main" class="pay"><div class="pay-grid">
 <div class="pay-copy">
   <p class="pay-k">Day 30 · creator payout</p>
-  <h1 class="pay-h">${esc(name)} got paid <span class="num">${usd(p.amountMinor)}</span> through PayPal Payouts.</h1>
+  <h1 class="pay-h">${esc(name)} got paid <span class="num">${money(p.amountMinor, cur)}</span> through PayPal Payouts${p.wallet === "VENMO" ? ", to Venmo" : ""}.</h1>
   <p class="pay-sub">Commission on the sales its test caused, paid once the 30-day hold ended. AI shopping agents read the test and bought; nobody clicked a link.</p>
   <div class="pay-cards">
 ${
   p.rival
-    ? `  <div class="pay-card"><span><b>${esc(p.rival.name)}</b> · <span class="num">${p.rival.causedUnits}</span> extra units caused</span><span class="num zero">${usd(p.rival.paidMinor)} paid · no lift</span></div>`
+    ? `  <div class="pay-card"><span><b>${esc(p.rival.name)}</b> · <span class="num">${p.rival.causedUnits}</span> extra units caused</span><span class="num zero">${money(p.rival.paidMinor, cur)} paid · no lift</span></div>`
     : ""
 }
 ${
   p.statement && !opts.clean
-    ? `  <div class="pay-card pay-stmt"><span>${esc(p.statement.brandName)} paid for it from its deposit: ${esc(invoiceStatusWord(p.statement.status))}${p.statement.dueMinor === 0 ? ", $0 due" : ""}</span><a href="/statement?brand=${encodeURIComponent(p.statement.brandId)}">Statement ${esc(p.statement.invoiceNumber)} →</a></div>`
+    ? `  <div class="pay-card pay-stmt"><span>${esc(p.statement.brandName)} paid for it from its deposit: ${esc(invoiceStatusWord(p.statement.status))}${p.statement.dueMinor === 0 ? `, ${currencySymbol(cur)}0 due` : ""}</span><a href="/statement?brand=${encodeURIComponent(p.statement.brandId)}">Statement ${esc(p.statement.invoiceNumber)} →</a></div>`
     : ""
 }
   </div>
-${mismatch ? `<p class="warn">Ledger shows ${usd(p.ledgerPaidMinor ?? 0)} paid, which differs from this payout.</p>` : ""}
+${mismatch ? `<p class="warn">Ledger shows ${money(p.ledgerPaidMinor ?? 0, cur)} paid, which differs from this payout.</p>` : ""}
 </div>
 <figure class="mail">
 <article class="notice" aria-label="PayPal payment notice">
-<header><span class="pp">Pay<span>Pal</span></span><small>Payment received</small></header>
+<header><span class="pp">Pay<span>Pal</span></span><small>Payment received${p.wallet === "VENMO" ? " · paid to Venmo" : ""}</small></header>
 <div class="top">
   <p class="hello">${esc(name)}, you received a payment</p>
-  <div class="amount num">${usd(p.amountMinor)}<small>${esc(p.currency)}</small></div>
+  <div class="amount num">${money(p.amountMinor, cur)}<small>${esc(p.currency)}</small></div>
   <p>From CITED · commission on sales your test caused</p>
 </div>
 <dl>
@@ -593,9 +602,9 @@ ${mismatch ? `<p class="warn">Ledger shows ${usd(p.ledgerPaidMinor ?? 0)} paid, 
   <div><dt>Payout batch ID</dt><dd class="mono">${esc(p.paypalBatchId ?? p.senderBatchId)}</dd></div>
   <div><dt>${p.itemIdKind === "payout_item_id" ? "Payout item ID" : "Item reference"}</dt><dd class="mono">${esc(p.itemId)}</dd></div>
 </dl>
-<footer>Sent with PayPal Payouts. A refund during the hold voids the credit; a dispute holds it until PayPal decides.</footer>
+<footer>Sent with PayPal Payouts${p.wallet === "VENMO" ? " to Venmo" : ""}. A refund during the hold voids the credit; a dispute holds it until PayPal decides.</footer>
 </article>
-<figcaption class="pay-cap">The notice ${esc(name)} receives from PayPal. Simulated PayPal on this demo.</figcaption>
+<figcaption class="pay-cap">The notice ${esc(name)} receives from PayPal. Simulated PayPal on this demo.${p.amountMinor === 38396 && cur === "USD" ? ` The same $383.96 payout also ran on the real PayPal sandbox: <a href="https://github.com/HUSAM-07/hack-paypal/blob/main/cited/SANDBOX-EVIDENCE.md">batch <span class="mono">ME2KV57B7KYNS</span>, SUCCESS</a>.` : ""}</figcaption>
 </figure>
 </div></main>`;
   return page("CITED · payout", "payout", body, opts);
@@ -618,11 +627,12 @@ export function statementPage(d: StatementData | null, opts: Opts): string {
     return page(
       "CITED · statement",
       "payout",
-      `<main class="pay"><h1 class="sr">Brand statement</h1>${waiting("No statement yet. Brands get one when a programme cycle closes.")}</main>`,
+      `<main id="main" class="pay"><h1 class="sr">Brand statement</h1>${waiting("No statement yet. Brands get one when a programme cycle closes.")}</main>`,
       opts,
     );
   }
   const s = d.statement;
+  const usd = (minor: number) => money(minor, s.currency);
   const mismatch =
     s.invoiceId !== null &&
     (s.invoiceTotalMinor !== s.paidMinor || s.creditedMinor - s.voidedMinor !== s.paidMinor);
@@ -640,7 +650,7 @@ export function statementPage(d: StatementData | null, opts: Opts): string {
       : []),
     row("Paid to creators through PayPal Payouts", usd(s.paidMinor), "total"),
   ].join("");
-  const body = `<main class="pay"><div class="mail">
+  const body = `<main id="main" class="pay"><div class="mail">
 <article class="notice">
 <header><span class="pp">Pay<span>Pal</span></span><small>${s.invoiceId ? "Invoice · statement" : "Statement"}</small></header>
 <div class="top">

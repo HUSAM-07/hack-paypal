@@ -9,7 +9,22 @@
  * scripted to that shape, so the card's numbers (57 sales → 51 units → $391.64) come out of the real
  * pipeline, not out of the script. With real models the numbers are whatever the models do.
  */
-import { type Arm, DEMO_SHOP_PRICES, UPC_LEVOIT_CORE300, UPC_WINIX_A230 } from "@pact/protocol";
+import {
+  type Arm,
+  batchesTotal,
+  brandAddsUp,
+  DEMO_SHOP_PRICES,
+  HEADPHONE_SHOP_PRICES,
+  paidInLedger,
+  paidWithoutBatch,
+  UPC_BOSE_QC,
+  UPC_LEVOIT_CORE300,
+  UPC_ROBOROCK_Q7MAX,
+  UPC_ROOMBA_J5,
+  UPC_SONY_XM5,
+  UPC_WINIX_A230,
+  VACUUM_SHOP_PRICES,
+} from "@pact/protocol";
 import { runSession } from "./run";
 import { ShopperSession } from "./session";
 import { type Endpoints, MODEL_FAMILIES, type ModelFamily, type RunRecord } from "./types";
@@ -28,6 +43,7 @@ export const BEATS = [
   "shapley",
   "dispute",
   "guard",
+  "categories",
   "checks",
 ] as const;
 export type BeatId = (typeof BEATS)[number];
@@ -86,6 +102,8 @@ export interface DemoResult {
     coExposure: CoExposureNumbers;
     /** The guard beat: a creator buys through their own PayPal; the credit is held. */
     guard: GuardNumbers;
+    /** The categories beat: robot vacuums and headphones, each a funded programme of its own. */
+    categories: CategoryNumbers[];
   };
   checks: Check[];
   /** True when every number on the card was reproduced (fake provider only). */
@@ -161,6 +179,89 @@ export interface GuardNumbers {
 
 /** What the guard beat must reproduce under the fake provider (seed cited-demo). */
 export const GUARD = { payerId: "HOUSEFRESH-PP", heldMinor: 768, holdReasons: ["self_purchase"] };
+
+/**
+ * The categories beat: the same pipeline in two more categories, played after every purifier beat
+ * so no purifier number moves. Each is a funded programme (the brand of the creator's tested
+ * product) with its own creator and a smaller study than the purifier card's. Under the fake
+ * provider the test arm buys the creator's pick and the other arms mostly buy the rival, so the
+ * measured lift is positive. The study is sized so the whole demo stays under the 200 sales one
+ * read of the engine's journeys returns (the ledger page skips its sales check beyond that).
+ */
+export interface CategoryStudy {
+  category: string;
+  brandId: string;
+  brand: string;
+  upc: string;
+  rivalUpc: string;
+  /** What the agents search for; the catalogue routes it to the category. */
+  query: string;
+  request: string;
+  creator: { creatorId: string; name: string; paypalId: string };
+  prices: Record<string, Record<string, number>>;
+  /** Suffix of the probed session ids, so the two categories never share one. */
+  tag: string;
+  /** The brand's deposit into its programme (minor units). */
+  depositMinor: number;
+}
+
+export const CATEGORY_STUDIES: CategoryStudy[] = [
+  {
+    category: "robot-vacuum",
+    brandId: "roborock",
+    brand: "Roborock",
+    upc: UPC_ROBOROCK_Q7MAX,
+    rivalUpc: UPC_ROOMBA_J5,
+    query: "robot vacuum",
+    request: "Robot vacuum for a small apartment with pets, under $350, just buy it",
+    creator: { creatorId: "crumblab", name: "CrumbLab", paypalId: "CRUMBLAB-PP" },
+    prices: VACUUM_SHOP_PRICES,
+    tag: "v",
+    // The smallest programme (PROGRAMME_LIMITS.minDepositMinor). After its small study the credits
+    // reserve $71.04 of it, so the $28.96 left cannot fund another payout cycle ($35.52): the
+    // Analyst, asked about the cap on ?brand=roborock, drafts a $500 top-up Maya can approve. A
+    // /try purchase is still credited while the $28.96 lasts (Roborock's trade-off: a small deposit).
+    depositMinor: 10_000,
+  },
+  {
+    category: "headphones",
+    brandId: "bose",
+    brand: "Bose",
+    upc: UPC_BOSE_QC,
+    rivalUpc: UPC_SONY_XM5,
+    query: "noise-cancelling headphones",
+    request: "Noise-cancelling headphones for a noisy commute and calls, under $400, just buy it",
+    creator: { creatorId: "quietbench", name: "QuietBench", paypalId: "QUIETBENCH-PP" },
+    prices: HEADPHONE_SHOP_PRICES,
+    tag: "h",
+    depositMinor: 100_000,
+  },
+];
+
+/** Sessions per model in each category's study, in MODEL_FAMILIES order. */
+export const CATEGORY_PLAN = {
+  exposed: [2, 2, 2],
+  placebo: [2, 2, 2],
+  none: [1, 1, 1],
+  /** Placebo sessions that buy the creator's pick anyway. */
+  placeboTested: [1, 0, 0],
+  /** Held-out sessions that buy the creator's pick anyway. */
+  noneTested: [0, 1, 0],
+};
+
+export interface CategoryNumbers {
+  category: string;
+  brandId: string;
+  creatorId: string;
+  sessions: number;
+  testedBuyers: Record<Arm, number>;
+  exposedSales: number;
+  causedUnits: number;
+  liftPoints: number;
+  depositMinor: number;
+  /** Credited to the creator and still pending: the beat pays nothing. */
+  pendingMinor: number;
+}
 
 /** The card: what the pipeline must reproduce. */
 export const CARD = {
@@ -955,6 +1056,210 @@ export async function runDemo(o: DemoOptions): Promise<DemoResult> {
     },
   );
 
+  // ── Two more categories: robot vacuums and headphones are funded programmes too ──
+  const categoryRecords: RunRecord[] = [];
+  const categoryNumbers: CategoryNumbers[] = [];
+  /** The purifier numbers before and after the beat: it must not move any. */
+  const purifierBefore: Json = {};
+  const purifierAfter: Json = {};
+  await beat(
+    "categories",
+    "Roborock and Bose fund robot-vacuum and headphone programmes: a /try purchase can be credited",
+    async () => {
+      const snapshot = async (into: Json) => {
+        const w = await eng("GET", "/lift/winix");
+        const l = await eng("GET", "/lift/levoit");
+        const c = await eng("GET", "/credits");
+        const guarded = await eng("GET", "/review-flags");
+        into.winix = [w.exposedSales, w.causedUnits];
+        into.levoit = l.causedUnits;
+        into.housefresh = hfOf(c).totals;
+        into.airlab = (c.creators as Json[]).find((x) => x.creatorId === "airlab")?.totals;
+        into.paid = paidInLedger(c.creators as Json[]);
+        into.openFlags = (guarded.flags as Json[]).filter((f) => f.status === "open").length;
+      };
+      await snapshot(purifierBefore);
+
+      for (const st of CATEGORY_STUDIES) {
+        await eng("POST", "/brands", {
+          brandId: st.brandId,
+          name: st.brand,
+          category: st.category,
+          upc: st.upc,
+        });
+        await eng("POST", "/creators", st.creator);
+      }
+      await eng("POST", "/listings", {
+        listings: CATEGORY_STUDIES.flatMap((st) =>
+          Object.entries(st.prices).flatMap(([shopId, byUpc]) =>
+            Object.entries(byUpc).map(([upc, priceMinor]) => ({
+              shopId,
+              upc,
+              priceMinor,
+              currency: "USD",
+            })),
+          ),
+        ),
+      });
+      for (const st of CATEGORY_STUDIES) {
+        const d = await eng("POST", `/brands/${st.brandId}/deposits`, {
+          amountMinor: st.depositMinor,
+        });
+        await line(
+          "categories",
+          `${st.brand} deposits ${usd(st.depositMinor)} into the ${st.category.replace("-", " ")} programme (Orders v2 capture ${d.captureId}), and ${st.creator.name} registers. Until now a /try purchase of the ${st.brand} was never credited: no brand funded it.`,
+          { brandId: st.brandId, amountMinor: st.depositMinor, captureId: d.captureId },
+        );
+      }
+
+      const slotsOf = (pool: Record<Arm, string[]>): Slot[] => {
+        const out: Slot[] = [];
+        const counts: Record<Arm, number[]> = {
+          test: CATEGORY_PLAN.exposed,
+          placebo: CATEGORY_PLAN.placebo,
+          none: CATEGORY_PLAN.none,
+        };
+        const at: Record<Arm, number> = { test: 0, placebo: 0, none: 0 };
+        const rounds = Math.max(
+          ...CATEGORY_PLAN.exposed,
+          ...CATEGORY_PLAN.placebo,
+          ...CATEGORY_PLAN.none,
+        );
+        for (let i = 0; i < rounds; i++) {
+          MODEL_FAMILIES.forEach((model, m) => {
+            for (const arm of ["test", "placebo", "none"] as const) {
+              const total = counts[arm][m] as number;
+              if (i >= total) continue;
+              const tested =
+                arm === "placebo"
+                  ? CATEGORY_PLAN.placeboTested[m]
+                  : arm === "none"
+                    ? CATEGORY_PLAN.noneTested[m]
+                    : total;
+              out.push({
+                id: pool[arm][at[arm]++] as string,
+                arm,
+                model,
+                index: i,
+                buysWinix: arm === "test" ? true : i >= total - (tested as number),
+                // Never Northwind: the exposed purifier hero (read Northwind, paid Lumen) stays
+                // the console's pair.
+                browse: (["lumen", "megamart"] as const)[(i + m) % 2] as string,
+              });
+            }
+          });
+        }
+        return out;
+      };
+
+      for (const st of CATEGORY_STUDIES) {
+        // A later cycle: the catalogue's steady-state schedule leaves few placebo and held-out
+        // draws, so the ids are probed (free: the catalogue is stateless) until every arm is full.
+        const need: Record<Arm, number> = {
+          test: CATEGORY_PLAN.exposed.reduce((a, b) => a + b, 0),
+          placebo: CATEGORY_PLAN.placebo.reduce((a, b) => a + b, 0),
+          none: CATEGORY_PLAN.none.reduce((a, b) => a + b, 0),
+        };
+        const pool: Record<Arm, string[]> = { test: [], placebo: [], none: [] };
+        for (
+          let n = 0;
+          pool.test.length < need.test ||
+          pool.placebo.length < need.placebo ||
+          pool.none.length < need.none;
+          n++
+        ) {
+          if (n > 20_000)
+            throw new Error(`could not find session ids for every ${st.category} arm`);
+          const id = `${t}-${st.tag}-${n.toString(36)}`;
+          const probe = new ShopperSession(ep, `probe-${id}`, { sessionId: id });
+          try {
+            await probe.search({ query: st.query });
+          } finally {
+            await probe.close();
+          }
+          const arm = probe.passportBody()?.arm;
+          if (arm && pool[arm].length < need[arm]) pool[arm].push(id);
+        }
+        const mine: RunRecord[] = [];
+        for (const s of slotsOf(pool)) {
+          const r = await runSession({
+            endpoints: ep,
+            seed: o.seed,
+            runIndex: records.size,
+            family: s.model,
+            provider: o.provider,
+            request: st.request,
+            sessionId: s.id,
+            category: st.category,
+            fake: {
+              browseSeller: s.browse,
+              loyalty: 0,
+              query: st.query,
+              ...(s.arm === "test" ? {} : { baselineUpc: s.buysWinix ? st.upc : st.rivalUpc }),
+            },
+          });
+          if (r.status === "error") throw new Error(`session ${s.id} failed: ${r.error}`);
+          records.set(s.id, r);
+          categoryRecords.push(r);
+          mine.push(r);
+          await emit({ type: "session", data: sessionData(r) });
+        }
+        const bought = (arm: Arm) =>
+          mine.filter((r) => r.arm === arm && r.product?.upc === st.upc).length;
+        const n = (arm: Arm) => mine.filter((r) => r.arm === arm).length;
+        await line(
+          "categories",
+          `${st.brand} study (${mine.length} sessions, three models): shown ${st.creator.name}'s test ${bought("test")}/${n("test")} buy the ${st.brand}; shown its placebo ${bought("placebo")}/${n("placebo")}; held out ${bought("none")}/${n("none")}.`,
+          {
+            category: st.category,
+            test: bought("test"),
+            placebo: bought("placebo"),
+            none: bought("none"),
+          },
+        );
+        categoryNumbers.push({
+          category: st.category,
+          brandId: st.brandId,
+          creatorId: st.creator.creatorId,
+          sessions: mine.length,
+          testedBuyers: { test: bought("test"), placebo: bought("placebo"), none: bought("none") },
+          exposedSales: 0,
+          causedUnits: 0,
+          liftPoints: 0,
+          depositMinor: st.depositMinor,
+          pendingMinor: 0,
+        });
+      }
+
+      await eng("POST", "/credits/recompute");
+      const allCredits = await eng("GET", "/credits");
+      for (const cn of categoryNumbers) {
+        const lift = await eng("GET", `/lift/${cn.brandId}`);
+        const mineCredits = (
+          (allCredits.creators as Json[]).find((c) => c.creatorId === cn.creatorId)?.credits as
+            | Json[]
+            | undefined
+        )?.filter((c) => c.state === "pending");
+        cn.exposedSales = lift.exposedSales;
+        cn.causedUnits = lift.causedUnits;
+        cn.liftPoints = Math.round(lift.lift * 100);
+        cn.pendingMinor = (mineCredits ?? []).reduce((a, c) => a + c.amountMinor, 0);
+        const st = CATEGORY_STUDIES.find((x) => x.brandId === cn.brandId) as CategoryStudy;
+        await line(
+          "categories",
+          `${st.brand}: ${cn.exposedSales} exposed sales → ${cn.causedUnits} caused units (lift +${cn.liftPoints} points) → ${usd(cn.pendingMinor)} credited to ${st.creator.name}, pending: the 30-day hold has not ended, so nothing is paid. A test-arm /try purchase of the ${st.brand} now earns its creator a credit.`,
+          { ...cn },
+        );
+      }
+      await snapshot(purifierAfter);
+      await numbers("categories", { categories: categoryNumbers });
+      await line(
+        "categories",
+        "No purifier number moved: Winix, Levoit, HouseFresh and AirLab are exactly as they were before this beat.",
+      );
+    },
+  );
+
   // ── The ledger and PayPal must agree ──
   await beat("checks", "Ledger and PayPal agree", async () => {
     const [deposits, credits, payouts, mock, salesMock, journeys, offers] = await Promise.all([
@@ -968,12 +1273,9 @@ export async function runDemo(o: DemoOptions): Promise<DemoResult> {
     ]);
     const hf = hfOf(credits);
     const creators = credits.creators as Json[];
-    const ledgerPaid = creators.reduce((a, c) => a + c.totals.paid, 0);
+    const ledgerPaid = paidInLedger(creators);
     const itemsOf = (b: Json) => b.items as Json[];
-    const mockBatchTotal = (mock.batches as Json[]).reduce(
-      (a, b) => a + itemsOf(b).reduce((x, i) => x + i.amount.amountMinor, 0),
-      0,
-    );
+    const mockBatchTotal = batchesTotal(mock.batches as Json[]);
     check(
       "payouts: ledger paid == PayPal batch totals",
       ledgerPaid === mockBatchTotal && mock.batches.length === payouts.batches.length,
@@ -982,6 +1284,8 @@ export async function runDemo(o: DemoOptions): Promise<DemoResult> {
     const receivers: Record<string, string> = {
       housefresh: "HOUSEFRESH-PP",
       airlab: "AIRLAB-PP",
+      crumblab: "CRUMBLAB-PP",
+      quietbench: "QUIETBENCH-PP",
     };
     for (const c of creators) {
       const inPayPal = (mock.batches as Json[])
@@ -1032,7 +1336,7 @@ export async function runDemo(o: DemoOptions): Promise<DemoResult> {
       );
       check(
         `${b.brandId}: spent + returned + reserved + available == deposited`,
-        b.spent + b.returned + b.reserved + b.available === b.deposited,
+        brandAddsUp(b),
         `${usd(b.deposited)}`,
       );
     }
@@ -1150,13 +1454,55 @@ export async function runDemo(o: DemoOptions): Promise<DemoResult> {
         `${frozenIds.length} frozen, ${releasedIds.size} released`,
       );
     }
+    // The purifier cycle ends with nothing pending but the held credit. The categories beat runs
+    // after it and leaves its creators' credits pending on purpose (their holds have not ended).
+    const categoryCreators = new Set(CATEGORY_STUDIES.map((x) => x.creator.creatorId));
+    const purifierCreators = creators.filter((c) => !categoryCreators.has(c.creatorId));
     check(
       "every credit ends paid or voided, but the one held for review: none left pending or frozen",
-      creators.every((c) => c.totals.frozen === 0 && c.totals.pending === c.totals.held),
-      creators
+      purifierCreators.every((c) => c.totals.frozen === 0 && c.totals.pending === c.totals.held),
+      purifierCreators
         .map((c) => `${c.name} pending ${usd(c.totals.pending)} (held ${usd(c.totals.held)})`)
         .join(", "),
     );
+    {
+      const batchedIds = new Set(
+        (payouts.batches as Json[]).flatMap((b) =>
+          (b.items as Json[]).flatMap((i) => (i.creditIds as string[] | undefined) ?? []),
+        ),
+      );
+      for (const st of CATEGORY_STUDIES) {
+        const cn = categoryNumbers.find((x) => x.brandId === st.brandId);
+        const mine = creators
+          .filter((c) => c.creatorId === st.creator.creatorId)
+          .flatMap((c) => c.credits as Json[]);
+        const brand = (deposits.brands as Json[]).find((b) => b.brandId === st.brandId);
+        check(
+          `${st.brand}: funded, and the test caused units, so a test-arm sale is credited`,
+          (cn?.causedUnits ?? 0) > 0 && (brand?.deposited ?? 0) === st.depositMinor,
+          `${usd(brand?.deposited ?? 0)} deposited, ${cn?.exposedSales} exposed sales → ${cn?.causedUnits} caused units`,
+        );
+        check(
+          `${st.creator.name}: credits are pending, unpaid and in no PayPal batch`,
+          mine.length > 0 &&
+            mine.every(
+              (x) =>
+                x.state === "pending" &&
+                !x.frozen &&
+                !x.payoutBatchId &&
+                !batchedIds.has(x.id) &&
+                x.amountMinor > 0,
+            ),
+          `${mine.length} credits, ${usd(mine.reduce((a, x) => a + x.amountMinor, 0))} pending`,
+        );
+      }
+      const sameJson = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
+      check(
+        "the new programmes move no purifier number",
+        sameJson(purifierBefore, purifierAfter),
+        `winix ${purifierAfter.winix?.join(" → ")}, levoit ${purifierAfter.levoit}, ${purifierAfter.openFlags} open flag, ${usd(purifierAfter.paid)} paid`,
+      );
+    }
     if (guardRecords.length) {
       const batchedIds = new Set(
         (payouts.batches as Json[]).flatMap((b) =>
@@ -1202,7 +1548,7 @@ export async function runDemo(o: DemoOptions): Promise<DemoResult> {
     );
     check(
       "no credit paid inside its hold",
-      hf.credits.every((c: Json) => c.state !== "paid" || c.payoutBatchId),
+      paidWithoutBatch(hf.credits).length === 0,
       "all paid credits carry a batch id",
     );
 
@@ -1222,9 +1568,13 @@ export async function runDemo(o: DemoOptions): Promise<DemoResult> {
     (returned.brands as Json[]).find((b) => b.brandId === "winix")?.returnedNow ?? 0;
   const result: DemoResult = {
     numbers: {
-      sessions: records.size - cohort.length - guardRecords.length,
+      sessions: records.size - cohort.length - guardRecords.length - categoryRecords.length,
       purchased: [...records.values()].filter(
-        (r) => r.status === "purchased" && !cohort.includes(r) && !guardRecords.includes(r),
+        (r) =>
+          r.status === "purchased" &&
+          !cohort.includes(r) &&
+          !guardRecords.includes(r) &&
+          !categoryRecords.includes(r),
       ).length,
       exposedSales,
       causedUnits,
@@ -1235,6 +1585,7 @@ export async function runDemo(o: DemoOptions): Promise<DemoResult> {
       liftPoints,
       coExposure: co,
       guard: gd,
+      categories: categoryNumbers,
     },
     checks,
     matchesCard: false,
@@ -1244,7 +1595,8 @@ export async function runDemo(o: DemoOptions): Promise<DemoResult> {
     const expectPaid =
       o.refund === "before-payout" ? CARD.creditedMinor - voidedMinor : CARD.creditedMinor;
     const cardOk =
-      records.size - cohort.length - guardRecords.length === CARD.sessions &&
+      records.size - cohort.length - guardRecords.length - categoryRecords.length ===
+        CARD.sessions &&
       exposedSales === CARD.exposedSales &&
       causedUnits === CARD.causedUnits &&
       creditedMinor === CARD.creditedMinor &&

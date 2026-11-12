@@ -9,7 +9,7 @@ export interface BrandLiftData {
   /** Sessions per arm in the brand's category (all models) and how many bought the SKU. */
   arms: Record<Arm, { sessions: number; purchases: number }>;
   strata: ModelCounts[];
-  /** Captured sales of the brand's SKU made by exposed-arm sessions. */
+  /** Captured sales of the brand's SKU, in its currency, made by exposed-arm sessions: the ones that can be credited. */
   exposedSales: number;
 }
 
@@ -43,9 +43,9 @@ export async function brandLiftData(env: Env, brand: Brand): Promise<BrandLiftDa
   const exposed = await env.DB.prepare(
     `SELECT COUNT(*) AS n FROM sales x JOIN agent_sessions s ON s.session_id = x.session_id
      WHERE x.upc = ? AND s.category = ? AND s.arm = 'test' AND x.unattributed_reason IS NULL
-       AND x.source = 'agent' AND s.session_id NOT IN ${SELF_DEALT_SESSIONS}`,
+       AND x.source = 'agent' AND x.currency = ? AND s.session_id NOT IN ${SELF_DEALT_SESSIONS}`,
   )
-    .bind(brand.upc, brand.category)
+    .bind(brand.upc, brand.category, brand.currency)
     .first<{ n: number }>();
 
   const arms: BrandLiftData["arms"] = {

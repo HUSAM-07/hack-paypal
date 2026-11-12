@@ -3,7 +3,7 @@
 //
 // The numbers (cited/spec/CITED-packet.md): 62 caused units over 69 exposed sales, Levoit 0;
 // first payout $383.96 to HouseFresh; programme to date $468.43 in 3 batches; Winix invoiced
-// $383.96 and marked paid, Levoit no charge; HouseFresh's $7.68 self-purchase held for review.
+// $383.96 and marked paid, Levoit no charge; HouseFresh's $7.68 self-purchase held for review; Roborock and Bose each funded with lift > 0.
 // Reads only: safe against production.
 import { fileURLToPath } from "node:url";
 
@@ -38,6 +38,12 @@ export function checkCited({ lift, payouts, invoices, flags }) {
   expect("winix caused units", brand("winix")?.causedUnits, LOCKED.causedUnits);
   expect("winix exposed sales", brand("winix")?.exposedSales, LOCKED.exposedSales);
   expect("levoit caused units", brand("levoit")?.causedUnits, 0);
+  // The demo's last beat funds Roborock and Bose and plays a small study in each category, so a
+  // /try purchase of either can be credited: their programmes must have measured lift.
+  for (const id of ["roborock", "bose"]) {
+    const units = brand(id)?.causedUnits;
+    if (!(units > 0)) problems.push(`${id} caused units: got ${units}, want more than 0`);
+  }
 
   const batches = [...(payouts.batches ?? [])].sort((a, b) =>
     String(a.createdAt).localeCompare(String(b.createdAt)),

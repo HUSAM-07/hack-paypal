@@ -1,10 +1,14 @@
+import { checkProgrammeTerms } from "@pact/protocol";
 import { Hono } from "hono";
 import { recommend } from "./analyst";
+import { CREATOR_TOPICS, type CreatorTopic, creatorAnswer } from "./creator";
 import {
   createEngineApprover,
+  createEngineProgrammeStarter,
   createEngineReader,
   createEngineReviewer,
   EngineUnavailable,
+  ProgrammeRejected,
   type RawEngine,
   type RawReviewFlag,
   type ReviewAction,
@@ -37,6 +41,8 @@ export interface StudioDeps {
   approve?:
     | ((a: { approvalId: string; brandId: string; amountMinor: number }) => Promise<unknown>)
     | undefined;
+  /** Start a programme: create it and capture its deposit through the engine's /programmes. */
+  startProgramme?: ReturnType<typeof createEngineProgrammeStarter> | undefined;
   /** Release or void a credit the abuse guard held, through the engine's review endpoints. */
   review?: ((id: string, action: ReviewAction) => Promise<RawReviewFlag>) | undefined;
   llm?: StudioLlmChoice | undefined;
@@ -63,6 +69,7 @@ export function depsFromEnv(env: Record<string, string | undefined>): StudioDeps
   return {
     read: createEngineReader(engine),
     approve: createEngineApprover(engine),
+    startProgramme: createEngineProgrammeStarter(engine),
     review: createEngineReviewer(engine),
     llm: studioLlmChoice(env as StudioLlmEnv),
     licenseKey: env.AG_STUDIO_LICENSE_KEY,
@@ -125,6 +132,24 @@ export function createStudioApp(deps: StudioDeps = depsFromEnv(process.env)) {
     }
   });
 
+  // The Creator Analyst's figures: read-only, GET only. There is no write counterpart.
+  app.get("/api/creator-analyst", async (c) => {
+    c.header("cache-control", "no-store");
+    const topic = c.req.query("topic") ?? "overview";
+    if (!(CREATOR_TOPICS as readonly string[]).includes(topic))
+      return c.json({ error: `unknown topic; use one of ${CREATOR_TOPICS.join(", ")}` }, 400);
+    try {
+      const a = creatorAnswer(
+        await readFor(c.req.raw),
+        c.req.query("creator") ?? "housefresh",
+        topic as CreatorTopic,
+      );
+      return a ? c.json(a) : c.json({ error: "no such creator yet" }, 404);
+    } catch (e) {
+      return c.json(engineError(e), 503);
+    }
+  });
+
   // Maya's approval. The amount comes from a fresh recommendation, never from the request;
   // the approval id must match the card she saw, so a stale card can't approve a new top-up.
   app.post("/api/analyst/approve", async (c) => {
@@ -174,6 +199,71 @@ export function createStudioApp(deps: StudioDeps = depsFromEnv(process.env)) {
         deposit,
       });
     } catch (e) {
+      return c.json(engineError(e), 503);
+    }
+  });
+
+  // A brand starts a programme. The terms are checked here with the engine's own rules; on the
+  // hosted demo (locked writes) the programme then stays in the visitor's cookie, exactly like
+  // Approve, and no PayPal order is made. Only a keyless local stack writes through to the engine.
+  app.post("/api/programmes", async (c) => {
+    if (c.req.header("x-studio") !== "programme") return c.json({ error: "forbidden" }, 403);
+    if (!priv && !deps.startProgramme)
+      return c.json({ error: "programmes are not configured" }, 501);
+    const input = (await c.req.json().catch(() => null)) as Record<string, unknown> | null;
+    if (!input || typeof input !== "object") return c.json({ error: "invalid_json" }, 400);
+    const terms = {
+      category: String(input.category ?? ""),
+      upc: String(input.upc ?? ""),
+      depositMinor: Number(input.depositMinor),
+      commissionBps: Number(input.commissionBps),
+      ...(input.currency === undefined ? {} : { currency: String(input.currency) }),
+    };
+    try {
+      if (priv) {
+        const raw = await readFor(c.req.raw);
+        const funded = new Set(
+          raw.lift
+            .filter((b) => raw.deposits.some((d) => d.brandId === b.brandId && d.deposited > 0))
+            .map((b) => b.upc),
+        );
+        const check = checkProgrammeTerms(terms, funded);
+        if (!check.ok)
+          return c.json(
+            { error: check.error, message: check.message },
+            check.error === "programme_exists" ? 409 : 400,
+          );
+        const o = withChange(
+          overlayOf(c.req.raw),
+          { kind: "programme", terms: check.terms },
+          nowSec(),
+        );
+        return c.json(
+          {
+            started: true,
+            brandId: check.terms.brandId,
+            depositMinor: check.terms.depositMinor,
+            currency: check.terms.currency,
+            deposit: { status: "captured", currency: check.terms.currency },
+            ...keep(c, o),
+          },
+          201,
+        );
+      }
+      const out = await (deps.startProgramme as NonNullable<StudioDeps["startProgramme"]>)(terms);
+      return c.json(
+        {
+          started: true,
+          brandId: out.brand.brandId,
+          depositMinor: out.deposit.amountMinor,
+          currency: out.deposit.currency ?? out.brand.currency ?? "USD",
+          deposit: out.deposit,
+        },
+        201,
+      );
+    } catch (e) {
+      if (e instanceof ProgrammeRejected)
+        return c.json({ error: e.code, message: e.message }, e.status);
       return c.json(engineError(e), 503);
     }
   });
@@ -246,6 +336,7 @@ export function createStudioApp(deps: StudioDeps = depsFromEnv(process.env)) {
 
 export const app = createStudioApp();
 export * from "./analyst";
+export * from "./creator";
 export * from "./dashboard";
 export * from "./llm";
 export * from "./overlay";

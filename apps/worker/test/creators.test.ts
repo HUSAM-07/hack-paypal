@@ -1,8 +1,17 @@
 import { SELF } from "cloudflare:test";
 import { env as rawEnv } from "cloudflare:workers";
-import { UPC_LEVOIT_CORE300, UPC_WINIX_A230 } from "@pact/protocol";
+import { categoryOfQuery } from "@cited/catalogue-mcp";
+import {
+  UPC_BOSE_QC,
+  UPC_LEVOIT_CORE300,
+  UPC_ROBOROCK_Q7MAX,
+  UPC_ROOMBA_J5,
+  UPC_SONY_XM5,
+  UPC_WINIX_A230,
+} from "@pact/protocol";
 import { describe, expect, it } from "vitest";
-import { buildTests, type TestForm } from "../src/creators/routes";
+import { CREATOR_CATEGORIES } from "../src/creators/categories";
+import { buildTests, parsePayoutForm, type TestForm } from "../src/creators/routes";
 import { creatorIdFor } from "../src/creators/session";
 
 const env = rawEnv as unknown as { DB: D1Database };
@@ -179,5 +188,188 @@ describe("buildTests", () => {
     );
     expect(r.ok).toBe(false);
     expect(!r.ok && r.errors.join(" ")).toMatch(/at least two products.*other than air purifiers/);
+  });
+
+  it("only takes air purifiers: a test mixing in a robot vacuum would never go live", () => {
+    const r = buildTests({ ...base, skus: [UPC_WINIX_A230, "100000000006"] }, "c-1", "abc");
+    expect(r.ok).toBe(false);
+    expect(!r.ok && r.errors.join(" ")).toMatch(/at least two products/);
+  });
+});
+
+describe("buildTests per category", () => {
+  const base: TestForm = {
+    name: "Quiet Rooms",
+    skus: [],
+    verdict: "close",
+    summary: "x".repeat(80),
+    disclosure: "May earn a commission.",
+    placeboTopic: "Desk lamps",
+    placeboSummary: "y".repeat(50),
+  };
+  const vac = [UPC_ROBOROCK_Q7MAX, UPC_ROOMBA_J5];
+  const hp = [UPC_SONY_XM5, UPC_BOSE_QC];
+
+  it("builds a test in each category with that category on it", () => {
+    for (const [category, skus] of [
+      ["robot-vacuum", vac],
+      ["headphones", hp],
+      ["air-purifier", [UPC_WINIX_A230, UPC_LEVOIT_CORE300]],
+    ] as const) {
+      const r = buildTests({ ...base, category, skus: [...skus], verdict: skus[1] }, "c-1", "abc");
+      expect(r.ok && r.test).toMatchObject({ kind: "test", category, verdictUpc: skus[1] });
+      expect(r.ok && r.test.skus.map((s) => s.upc)).toEqual(skus);
+    }
+  });
+
+  it("with no category it is the air purifier form it always was", () => {
+    const r = buildTests({ ...base, skus: [UPC_WINIX_A230, UPC_LEVOIT_CORE300] }, "c-1", "abc");
+    expect(r.ok && r.test.category).toBe("air-purifier");
+  });
+
+  it("products must be from the category picked, and each one that is not is named", () => {
+    const r = buildTests(
+      { ...base, category: "headphones", skus: [UPC_SONY_XM5, ...vac] },
+      "c-1",
+      "abc",
+    );
+    expect(r.ok).toBe(false);
+    expect(!r.ok && r.errors.join(" ")).toMatch(
+      /noise-cancelling headphones only: Roborock Q7 Max, iRobot Roomba Combo j5 aren't.*at least two products/,
+    );
+    const all = buildTests({ ...base, category: "robot-vacuum", skus: hp }, "c-1", "abc");
+    expect(all.ok).toBe(false);
+  });
+
+  it("a verdict must be one of the products of the category", () => {
+    const r = buildTests(
+      { ...base, category: "robot-vacuum", skus: vac, verdict: UPC_SONY_XM5 },
+      "c-1",
+      "abc",
+    );
+    expect(!r.ok && r.errors.join(" ")).toMatch(/verdict must be one of the products/);
+  });
+
+  it("rejects a category the catalogue does not sell", () => {
+    const r = buildTests({ ...base, category: "toasters", skus: hp }, "c-1", "abc");
+    expect(!r.ok && r.errors.join(" ")).toMatch(/Pick a category/);
+  });
+
+  it("keeps the placebo off the category's own topic", () => {
+    const r = buildTests(
+      { ...base, category: "headphones", skus: hp, placeboTopic: "Wireless earbuds" },
+      "c-1",
+      "abc",
+    );
+    expect(!r.ok && r.errors.join(" ")).toMatch(/other than noise-cancelling headphones/);
+    const v = buildTests(
+      { ...base, category: "robot-vacuum", skus: vac, placeboTopic: "Cordless vacuums" },
+      "c-1",
+      "abc",
+    );
+    expect(!v.ok && v.errors.join(" ")).toMatch(/other than robot vacuums/);
+  });
+
+  it("what the success text tells a creator to search for lands in that category", () => {
+    for (const c of CREATOR_CATEGORIES) expect(categoryOfQuery(c.searchFor)).toBe(c.id);
+  });
+});
+
+describe("/creators payout choice (PayPal or Venmo)", () => {
+  const save = (j: ReturnType<typeof jar>, csrf: string, f: Record<string, string>) =>
+    j.fetch("/creators/payout", {
+      method: "POST",
+      headers: { origin: ORIGIN, "content-type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({ csrf, ...f }).toString(),
+    });
+  const tokenOf = (html: string) => /name="csrf" value="([^"]+)"/.exec(html)?.[1] ?? "";
+
+  it("offers the choice after connecting, with PayPal selected to start", async () => {
+    const j = await signIn();
+    const html = await (await j.fetch("/creators")).text();
+    expect(html).toContain("How you get paid");
+    expect(html).toMatch(/value="PAYPAL" checked/);
+    expect(html).not.toMatch(/value="VENMO" checked/);
+  });
+
+  it("saves Venmo, shows only a masked label, and never echoes the number", async () => {
+    const j = await signIn();
+    const home = await (await j.fetch("/creators")).text();
+    const payerId = /PayPal account ID <code>([A-Z0-9]+)<\/code>/.exec(home)?.[1] ?? "";
+    const res = await save(j, tokenOf(home), { method: "VENMO", venmo: "(415) 555-0123" });
+    expect(res.status).toBe(303);
+    expect(res.headers.get("location")).toBe("/creators?payout=saved");
+    const after = await (await j.fetch("/creators?payout=saved")).text();
+    expect(after).toContain("Saved. You will be paid to Venmo ···0123.");
+    expect(after).toMatch(/value="VENMO" checked/);
+    expect(after).not.toContain("555-0123");
+    expect(after).not.toContain("(415)");
+    const row = await env.DB.prepare("SELECT * FROM creators WHERE paypal_id = ?")
+      .bind(payerId)
+      .first();
+    expect(row).toMatchObject({
+      payout_wallet: "VENMO",
+      venmo_receiver: "1-415-555-0123",
+      venmo_receiver_type: "PHONE",
+      source: "onboarding",
+    });
+    const back = await save(j, tokenOf(after), { method: "PAYPAL" });
+    expect(back.status).toBe(303);
+    expect(
+      await env.DB.prepare("SELECT payout_wallet, venmo_receiver FROM creators WHERE paypal_id = ?")
+        .bind(payerId)
+        .first(),
+    ).toEqual({ payout_wallet: "PAYPAL", venmo_receiver: null });
+  });
+
+  it("re-renders with a plain message for a bad Venmo detail, and saves nothing", async () => {
+    const j = await signIn();
+    const home = await (await j.fetch("/creators")).text();
+    const payerId = /PayPal account ID <code>([A-Z0-9]+)<\/code>/.exec(home)?.[1] ?? "";
+    const res = await save(j, tokenOf(home), { method: "VENMO", venmo: "123" });
+    expect(res.status).toBe(422);
+    const html = await res.text();
+    expect(html).toContain("Venmo payouts need a US mobile number");
+    expect(html).toContain('value="123"');
+    expect(
+      await env.DB.prepare("SELECT 1 FROM creators WHERE paypal_id = ?").bind(payerId).first(),
+    ).toBeNull();
+  });
+
+  it("refuses a cross-site post, a bad form token and a signed-out post", async () => {
+    const j = await signIn();
+    const home = await (await j.fetch("/creators")).text();
+    const csrf = tokenOf(home);
+    const body = new URLSearchParams({ csrf, method: "PAYPAL" }).toString();
+    const post = (headers: Record<string, string>, b = body, via = j.fetch) =>
+      via("/creators/payout", {
+        method: "POST",
+        headers: { "content-type": "application/x-www-form-urlencoded", ...headers },
+        body: b,
+      });
+    expect((await post({ origin: "https://evil.example" })).status).toBe(403);
+    expect((await post({})).status).toBe(403);
+    expect((await save(j, "nope", { method: "PAYPAL" })).status).toBe(403);
+    const anon = jar();
+    const r = await post({ origin: ORIGIN }, body, anon.fetch);
+    expect(r.status).toBe(303);
+    expect(r.headers.get("location")).toBe("/creators");
+  });
+
+  it("parsePayoutForm checks the choice before anything is sent", () => {
+    expect(parsePayoutForm("PAYPAL", "ignored")).toEqual({ ok: true, method: "PAYPAL" });
+    expect(parsePayoutForm("VENMO", "@quiet-rooms")).toEqual({
+      ok: true,
+      method: "VENMO",
+      venmo: "@quiet-rooms",
+    });
+    for (const [m, v] of [
+      ["VENMO", ""],
+      ["VENMO", "+44 7700 900123"],
+      ["VENMO", "no"],
+      ["CASH", "@quiet-rooms"],
+      [undefined, undefined],
+    ])
+      expect(parsePayoutForm(m, v).ok).toBe(false);
   });
 });

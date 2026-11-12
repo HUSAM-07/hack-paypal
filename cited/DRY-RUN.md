@@ -4,6 +4,8 @@ Run on 2026-11-11 against https://pact-worker.vincent-wesley-liem.workers.dev (m
 
 **Result: numbers and picture both pass.** Every locked number matches on the hosted engine and in the local demo (14 beats, 32 of 32 ledger-vs-PayPal checks ok). The console now shows the scripted Northwind → Lumen run.
 
+> **Since this run (2026-11-12, #165):** the demo is 15 beats and 45 checks. Beat 14 funds Roborock and Bose and plays a small study in each category, so `/try` vacuum and headphone purchases are credited; every purifier number above is unchanged.
+
 ## Before recording
 
 1. **AG Studio shows "For Trial Use Only"** until `AG_STUDIO_LICENSE_KEY` and `AG_GRID_LICENSE_KEY` are set on `pact-worker`. Set them, redeploy, and check the watermark is gone.
